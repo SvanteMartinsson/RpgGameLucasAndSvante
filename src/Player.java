@@ -29,7 +29,7 @@ public class Player extends GameObject{
 	public void displayInv(){
 		
 		// Displays the inventory with place number
-		for(int i = 0; i<=lastSpot; i++){
+		for(int i = 0; i<lastSpot; i++){
 			invSpot = i+1;
 			
 			System.out.println(i+1 + " " + inv[i]);

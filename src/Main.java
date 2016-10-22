@@ -7,6 +7,9 @@ public class Main {
 	String name;
 	String sex;
 	Player player;
+	
+	Input input = new Input();
+	
 	public Main(){
 		init();
 		gameLoop();
@@ -33,6 +36,10 @@ public class Main {
 			player = new Player(1, 10, name, sex);
 		}
 		
+		System.out.println("Hello " + name + "i see that you're a " + sex);
+		
+		player.addToInv("Knife");
+		
 	}
 	
 	public void gameLoop(){
@@ -42,7 +49,10 @@ public class Main {
 	}
 	
 	public void update(){
-		
+		input.normalInput();
+		if(input.choise == 1){
+			player.displayInv();
+		}
 	}
 
 }
