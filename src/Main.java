@@ -7,7 +7,7 @@ public class Main {
 	String name;
 	String sex;
 	Player player;
-	
+	int boll = 0;
 	public Main(){
 		init();
 		gameLoop();
@@ -33,8 +33,6 @@ public class Main {
 		}else{
 			player = new Player(1, 10, name, sex);
 		}
-		
-		
 		
 	}
 	
