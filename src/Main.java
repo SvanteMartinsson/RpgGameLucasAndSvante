@@ -28,7 +28,7 @@ public class Main {
 		
 		name = scanner.nextLine();
 		
-		if(sex.equals("boy")){
+		if(sex.equals("boy.")){
 			player = new Player(100, 15, name, sex);
 		}else{
 			player = new Player(1, 10, name, sex);
