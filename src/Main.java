@@ -7,7 +7,6 @@ public class Main {
 	String name;
 	String sex;
 	Player player;
-	int b = 0;
 	public Main(){
 		init();
 		gameLoop();
