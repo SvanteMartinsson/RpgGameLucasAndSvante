@@ -1,14 +1,15 @@
 
 public class Player extends GameObject{
 
+	String klass;
 	String weapon;
 	int armor = 0;
 	int invSpot;
 	int lastSpot = 0;
-	
+	int xpReq = 100;
 	int gold = 0;
 	int xp = 0;
-	String klass;
+	
 
 	public Player(int hp, int dmg, String name, String klass){
 		this.hp = hp;
@@ -25,7 +26,15 @@ public class Player extends GameObject{
 		hp = maxHp;
 		
 	}
-	// Gör en level upgrade klass
+	
+	public void levelUp(){
+		if(xp == xpReq){
+			lvl++;
+			xp = 0;
+			xpReq *= xpReq*1.5;
+		}
+	}
+	
 	
 	public void displayStats(){
 		System.out.println(dmg + " DMG");
