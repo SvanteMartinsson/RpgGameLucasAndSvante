@@ -47,8 +47,10 @@ public class Fight {
 			}
 		}else if(input == 3){
 			if(r.nextInt(100 + 1) >= 25){
-				System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
 				enemy.hp -= enemy.dmg;
+			}else if(r.nextInt(100 + 1) >= 25){
+				System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
+				player.hp -= enemy.dmg;
 			}
 		}
 		
