@@ -40,7 +40,7 @@ public class Main {
 			System.out.println("invalid input!");
 		}
 		
-		System.out.println("Hello " + name + " i see that you're a " + klass);
+		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
 		
 		player.addToInv("Knife");
 
