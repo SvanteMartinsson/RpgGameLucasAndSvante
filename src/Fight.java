@@ -56,6 +56,7 @@ public class Fight {
 		
 		if(player.hp<=0){
 			System.out.println("You died!");
+			player.hp = 100;
 			loop = false;
 		}else if(enemy.hp <= 0){
 			System.out.println("You killed the enemy!");

@@ -4,6 +4,7 @@ public class Player extends GameObject{
 	String[] inv = new String[3];
 	int invSpot;
 	int lastSpot = 0;
+	int maxHp;
 	
 	// Lägg till pengar och xp variabler här och sätt dem till noll.
 	// Gör även en level variabel som du sätter till 1
@@ -14,6 +15,7 @@ public class Player extends GameObject{
 		this.name = name;
 		this.sex = sex;
 		dodgeChance = 4;
+		
 	}
 	
 	// Gör en level upgrade klass
@@ -30,6 +32,11 @@ public class Player extends GameObject{
 	
 	public void deleteFromInv(){
 		inv[lastSpot] = " ";
+	}
+	
+	public void displayStats(){
+		System.out.println(dmg + " DMG");
+		System.out.println(hp + " HP");
 	}
 	
 	public void checkForItems(){
