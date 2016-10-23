@@ -64,6 +64,10 @@ public class Main {
 
 	public void update(){
 		
+		for(int i = 0; i<enemies.size(); i++){
+			enemies.get(i).hp = enemies.get(i).maxHp;
+		}
+		
 		input.normalInput();
 		switch(input.choise){
 		case 1:
