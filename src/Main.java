@@ -46,6 +46,7 @@ public class Main {
 			player = new Player(120, 10, name, klass);
 		}else{
 			System.out.println("invalid input!");
+			System.exit(0);
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
