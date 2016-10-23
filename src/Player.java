@@ -5,12 +5,17 @@ public class Player extends GameObject{
 	int invSpot;
 	int lastSpot = 0;
 	
+	// Lägg till pengar och xp variabler här och sätt dem till noll.
+	// Gör även en level variabel som du sätter till 1
+	
 	public Player(int hp, int dmg, String name, String sex){
 		this.hp = hp;
 		this.dmg = dmg;
 		this.name = name;
 		this.sex = sex;
 	}
+	
+	// Gör en level
 	
 	public void attack() {
 		
