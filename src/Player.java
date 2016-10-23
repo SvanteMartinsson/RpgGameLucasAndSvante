@@ -29,6 +29,16 @@ public class Player extends GameObject{
 		
 	}
 	
+	public void incStats(){
+		if(xpLeft == 0){
+			System.out.println("You just increased lvl! choose 1 for increased dmg and 2 for increased hp! ");
+			
+			/*
+			 * antar att man ska scanna in i main classen och där increasa dmg med typ 3 eller hp med 10.
+			 */
+		}
+	}
+	
 	public void levelUp(){
 		if(xp == xpReq){
 			lvl++;
@@ -47,7 +57,7 @@ public class Player extends GameObject{
 		System.out.println(dmg + " DMG");
 		System.out.println(hp + " HP");
 		System.out.println(armor + " ARMOR");
-		System.out.println(xp + " XP, " + xpLeft + "left to next level");
+		System.out.println(xp + " XP, " + xpLeft + " XP left to next level");
 	}
 	
 

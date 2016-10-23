@@ -96,9 +96,9 @@ public class Fight {
 				enemy.hp = enemy.maxHp;
 				player.xp += enemy.lvl*5;
 				loop = false;
+
 			}
 		}
-
 	}
 
 }
