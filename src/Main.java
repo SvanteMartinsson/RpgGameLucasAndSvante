@@ -41,8 +41,6 @@ public class Main {
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
-		
-		player.addToInv("Knife");
 
 	}
 
@@ -53,11 +51,11 @@ public class Main {
 	}
 
 	public void update(){
-		player.checkForItems();
+		
 		input.normalInput();
 		switch(input.choise){
 		case 1:
-			player.displayInv();
+			player.displayStats();
 			break;
 		case 2:
 			fight.fight(player, new GiantRat());

@@ -6,7 +6,7 @@ public class Input {
 	int choise;
 	
 	public void normalInput(){
-		System.out.println("Display inventory: 1");
+		System.out.println("Display stats: 1");
 		System.out.println("Do a dungeon: 2");
 		System.out.println("");
 		choise = scanner.nextInt();
