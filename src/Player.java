@@ -22,17 +22,9 @@ public class Player extends GameObject{
 		}
 		
 		hp = maxHp;
-		dodgeChance = 4;
 		
 	}
-
-	
 	// Gör en level upgrade klass
-	
-	public void attack() {
-		
-		
-	}
 	
 	public void addToInv(String item){
 		inv[lastSpot] = item;
