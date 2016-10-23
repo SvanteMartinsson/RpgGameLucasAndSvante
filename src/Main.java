@@ -36,7 +36,7 @@ public class Main {
 			player = new Player(1, 10, name, sex);
 		}
 		
-		System.out.println("Hello " + name + "i see that you're a " + sex);
+		System.out.println("Hello " + name + " i see that you're a " + sex);
 		
 		player.addToInv("Knife");
 		
