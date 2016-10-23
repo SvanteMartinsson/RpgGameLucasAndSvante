@@ -20,26 +20,36 @@ public class Fight {
 			
 		System.out.println("HP: " + player.hp);
 		System.out.println("Enemy HP: " + enemy.hp);
-		System.out.println("Hit: 1");
-		System.out.println("Try to dodge: 2");
+		System.out.println("Power attack(30%): 1");
+		System.out.println("Normal attack(55%): 2");
+		System.out.println("Quick attack(75%): 3");
 		input = scanner.nextInt();
 		
-		dodge = r.nextInt(enemy.dodgeChance) + 1;
-		
 		if(input == 1){
-			if(dodge == 2){
+			if(r.nextInt(100 + 1) >= 70){
+				enemy.hp -= 20;
+			}else{
 				System.out.println("The " + enemy.name + " dodged your attack!");
-			}else{
-				enemy.hp -= player.dmg;
-				System.out.println(enemy.name + " took " + player.dmg + " damage!");
+				if(r.nextInt(100)+1 >= 25){
+					System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
+					player.hp -= enemy.dmg;
+				}
 			}
-			
 		}else if(input == 2){
-			if(r.nextInt(player.dodgeChance)+1 == 1){
-				System.out.println("You dodged!");
+			if(r.nextInt(100 + 1) >= 45){
+				enemy.hp -= 15;
 			}else{
-				player.hp -= enemy.dmg;
-				System.out.println(enemy.name + " dealt " + enemy.dmg + " damage to you!");
+				System.out.println("The " + enemy.name + " dodged your attack!");
+				if(r.nextInt(100)+1 >= 25){
+					System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
+					player.hp -= enemy.dmg;
+				}
+			}
+		}else if(input == 3){
+			if(r.nextInt(100 + 1) >= 25){
+				System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
+				enemy.hp -= 9;
+			
 			}
 		}
 		
