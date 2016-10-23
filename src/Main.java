@@ -50,9 +50,6 @@ public class Main {
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
 		
-		enemies.add(new GiantRat());
-		enemies.add(new CaveBear());
-		enemies.add(new Undead());
 
 	}
 
@@ -64,9 +61,11 @@ public class Main {
 
 	public void update(){
 		
-		for(int i = 0; i<enemies.size(); i++){
-			enemies.get(i).hp = enemies.get(i).maxHp;
-		}
+		
+		enemies.add(new GiantRat());
+		enemies.add(new CaveBear());
+		enemies.add(new Undead());
+		
 		
 		input.normalInput();
 		switch(input.choise){
@@ -80,6 +79,10 @@ public class Main {
 			break;
 		default:
 			System.out.println("Invalid command!");
+		}
+		
+		for(int i = 0; i<enemies.size(); i++){
+			enemies.remove(i);
 		}
 	}
 

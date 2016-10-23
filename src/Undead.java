@@ -4,12 +4,13 @@ public class Undead extends GameObject{
 
 	Random r = new Random();
 	
-	int maxHp = 45;
+	int maxHp;
 	
 	public Undead(){
 		dmg = 4;
 		hp = 45;
-		name = "Undead";		
+		name = "Undead";	
+		maxHp = 45;
 	}
 		
 }
