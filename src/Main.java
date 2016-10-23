@@ -7,6 +7,7 @@ public class Main {
 	String name;
 	String sex;
 	Player player;
+	Fight fight = new Fight();
 
 	Input input = new Input();
 
@@ -33,7 +34,7 @@ public class Main {
 		if(sex.equals("boy")){
 			player = new Player(100, 15, name, sex);
 		}else{
-			player = new Player(1, 10, name, sex);
+			player = new Player(120, 10, name, sex);
 		}
 
 		System.out.println("Hello " + name + "i see that you're a " + sex);
@@ -49,13 +50,14 @@ public class Main {
 	}
 
 	public void update(){
+		player.checkForItems();
 		input.normalInput();
 		switch(input.choise){
 		case 1:
 			player.displayInv();
 			break;
 		case 2:
-			//Enter dungeon code here
+			fight.fight(player, new GiantRat());
 			break;
 		default:
 			System.out.println("Invalid command!");
