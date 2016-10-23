@@ -13,6 +13,7 @@ public class Player extends GameObject{
 		this.dmg = dmg;
 		this.name = name;
 		this.sex = sex;
+		dodgeChance = 4;
 	}
 	
 	// Gör en level upgrade klass
@@ -36,6 +37,7 @@ public class Player extends GameObject{
 			
 			if(inv[i] == "knife"){
 				dmg+=5;
+				
 			}
 		}
 	}
