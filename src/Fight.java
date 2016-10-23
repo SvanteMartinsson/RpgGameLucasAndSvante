@@ -94,6 +94,7 @@ public class Fight {
 				System.out.println("You killed the enemy!");
 				player.hp = player.maxHp;
 				enemy.hp = enemy.maxHp;
+				player.xp += enemy.lvl*5;
 				loop = false;
 			}
 		}

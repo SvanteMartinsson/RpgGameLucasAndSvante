@@ -7,7 +7,8 @@ public class Undead extends GameObject{
 	public Undead(){
 		dmg = 4;
 		hp = 45;
-		name = "Undead";	
+		name = "Undead";
+		lvl = 2;
 	}
 		
 }

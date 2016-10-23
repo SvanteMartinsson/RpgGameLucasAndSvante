@@ -8,6 +8,7 @@ public class CaveBear extends GameObject{
 		dmg = 8;
 		hp = 55;
 		name = "CaveBear";
+		lvl = 3;
 	}
 }
 

@@ -49,7 +49,6 @@ public class Main {
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
-		
 
 	}
 
@@ -66,6 +65,8 @@ public class Main {
 		enemies.add(new CaveBear());
 		enemies.add(new Undead());
 		
+		
+		player.update();
 		
 		input.normalInput();
 		switch(input.choise){

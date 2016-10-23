@@ -8,7 +8,7 @@ public class Player extends GameObject{
 	int lastSpot = 0;
 	int xpReq = 100;
 	int gold = 0;
-	int xp = 0;
+	int xpLeft;
 	
 
 	public Player(int hp, int dmg, String name, String klass){
@@ -16,7 +16,9 @@ public class Player extends GameObject{
 		this.dmg = dmg;
 		this.name = name;
 		this.klass = klass;
-
+		
+		xp = 0;
+		
 		if(klass.equals("tank")){
 			maxHp = 120;
 		}else if(klass.equals("fighter")){
@@ -35,11 +37,17 @@ public class Player extends GameObject{
 		}
 	}
 	
+	public void update(){
+		levelUp();
+	}
+	
 	
 	public void displayStats(){
+		xpLeft = xpReq - xp;
 		System.out.println(dmg + " DMG");
 		System.out.println(hp + " HP");
 		System.out.println(armor + " ARMOR");
+		System.out.println(xp + " XP, " + xpLeft + "left to next level");
 	}
 	
 

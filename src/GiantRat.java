@@ -9,6 +9,7 @@ public class GiantRat extends GameObject{
 		dmg = 6;
 		hp = 20;
 		name = "Giant Rat";	
+		lvl = 1;
 	}
 	
 	
