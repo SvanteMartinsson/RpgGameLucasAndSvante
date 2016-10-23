@@ -5,7 +5,7 @@ public class Main {
 	Scanner scanner = new Scanner(System.in);
 	boolean isRunning = true;
 	String name;
-	String sex;
+	String klass;
 	Player player;
 	Fight fight = new Fight();
 
@@ -22,23 +22,26 @@ public class Main {
 
 	public void init(){
 
-		System.out.println("Welcome svantish rpg!");
-		System.out.print("Tell me, are you a boy or a girl?: ");
+		System.out.println("Welcome to svantrenish rpg!");
 
-		sex = scanner.nextLine();
-
-		System.out.print("That's nice! Now please tell me, what is your name?: ");
-
+		System.out.print("Please tell me, what is your name?: ");
+		
 		name = scanner.nextLine();
+		
+		System.out.print("Tell me, do you wish to be a fighter or a tank? ");
+		klass = scanner.nextLine();
 
-		if(sex.equals("boy")){
-			player = new Player(100, 15, name, sex);
+
+		if(klass.equals("fighter")){
+			player = new Player(100, 15, name, klass);
+		}else if(klass.equals("tank")){
+			player = new Player(120, 10, name, klass);
 		}else{
-			player = new Player(120, 10, name, sex);
+			System.out.println("invalid input!");
 		}
-
-		System.out.println("Hello " + name + "i see that you're a " + sex);
-
+		
+		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
+		
 		player.addToInv("Knife");
 
 	}

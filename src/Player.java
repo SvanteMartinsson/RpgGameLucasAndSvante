@@ -4,19 +4,28 @@ public class Player extends GameObject{
 	String[] inv = new String[3];
 	int invSpot;
 	int lastSpot = 0;
-	int maxHp;
 	
-	// Lägg till pengar och xp variabler här och sätt dem till noll.
-	// Gör även en level variabel som du sätter till 1
-	
-	public Player(int hp, int dmg, String name, String sex){
+	int gold = 0;
+	int xp = 0;
+	String klass;
+
+	public Player(int hp, int dmg, String name, String klass){
 		this.hp = hp;
 		this.dmg = dmg;
 		this.name = name;
-		this.sex = sex;
+		this.klass = klass;
+
+		if(klass.equals("tank")){
+			maxHp = 120;
+		}else if(klass.equals("fighter")){
+			maxHp = 100;
+		}
+		
+		hp = maxHp;
 		dodgeChance = 4;
 		
 	}
+
 	
 	// Gör en level upgrade klass
 	

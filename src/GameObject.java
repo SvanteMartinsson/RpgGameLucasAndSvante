@@ -5,7 +5,7 @@ public abstract class GameObject {
 	int dmg;
 	int dodgeChance;
 	String name;
-	String sex;
+	int maxHp;
 	
 	
 	public abstract void attack();

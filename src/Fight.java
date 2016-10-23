@@ -28,6 +28,7 @@ public class Fight {
 		if(input == 1){
 			if(r.nextInt(100 + 1) >= 70){
 				enemy.hp -= 20;
+				System.out.println("You did damage to " + enemy.name + "!");
 			}else{
 				System.out.println("The " + enemy.name + " dodged your attack!");
 				if(r.nextInt(100)+1 >= 25){
@@ -38,6 +39,7 @@ public class Fight {
 		}else if(input == 2){
 			if(r.nextInt(100 + 1) >= 45){
 				enemy.hp -= 15;
+				System.out.println("You did damage to " + enemy.name + "!");
 			}else{
 				System.out.println("The " + enemy.name + " dodged your attack!");
 				if(r.nextInt(100)+1 >= 25){
@@ -47,7 +49,8 @@ public class Fight {
 			}
 		}else if(input == 3){
 			if(r.nextInt(100 + 1) >= 25){
-				enemy.hp -= enemy.dmg;
+				enemy.hp -= 10;
+				System.out.println("You did damage to " + enemy.name + "!");
 			}else if(r.nextInt(100 + 1) >= 25){
 				System.out.println("The " + enemy.name + " dealt " + enemy.dmg + " damage to you!");
 				player.hp -= enemy.dmg;
@@ -56,10 +59,11 @@ public class Fight {
 		
 		if(player.hp<=0){
 			System.out.println("You died!");
-			player.hp = 100;
+			player.hp = player.maxHp;
 			loop = false;
 		}else if(enemy.hp <= 0){
 			System.out.println("You killed the enemy!");
+			player.hp = player.maxHp;
 			loop = false;
 		}
 		}
