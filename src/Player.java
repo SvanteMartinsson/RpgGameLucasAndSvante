@@ -23,17 +23,9 @@ public class Player extends GameObject{
 		}
 		
 		hp = maxHp;
-		dodgeChance = 4;
 		
 	}
-
-	
 	// Gör en level upgrade klass
-	
-	public void attack() {
-		
-		
-	}
 	
 	public void displayStats(){
 		System.out.println(dmg + " DMG");
