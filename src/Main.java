@@ -1,13 +1,21 @@
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
 
+	
+	LinkedList<GameObject> enemies = new LinkedList<GameObject>();
 	Scanner scanner = new Scanner(System.in);
 	boolean isRunning = true;
 	String name;
 	String klass;
 	Player player;
 	Fight fight = new Fight();
+	
+	Random r = new Random();
+	
+	int ranE;
 
 	Input input = new Input();
 
@@ -41,6 +49,10 @@ public class Main {
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
+		
+		enemies.add(new GiantRat());
+		enemies.add(new CaveBear());
+		enemies.add(new Undead());
 
 	}
 
@@ -58,7 +70,9 @@ public class Main {
 			player.displayStats();
 			break;
 		case 2:
-			fight.fight(player, new GiantRat());
+			ranE = r.nextInt(2) + 1;
+			
+			fight.fight(player, enemies.get(ranE));
 			break;
 		default:
 			System.out.println("Invalid command!");

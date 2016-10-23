@@ -88,10 +88,12 @@ public class Fight {
 			if(player.hp<=0){
 				System.out.println("You died!");
 				player.hp = player.maxHp;
+				enemy.hp = enemy.maxHp;
 				loop = false;
 			}else if(enemy.hp <= 0){
 				System.out.println("You killed the enemy!");
 				player.hp = player.maxHp;
+				enemy.hp = enemy.maxHp;
 				loop = false;
 			}
 		}
