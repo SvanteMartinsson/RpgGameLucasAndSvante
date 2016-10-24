@@ -12,6 +12,7 @@ public class Main {
 	String klass;
 	Player player;
 	Fight fight = new Fight();
+	Store store;
 	
 	boolean loop = true;
 	
@@ -60,6 +61,8 @@ public class Main {
 		player.weaponId = 0;
 		player.initWeaponArray();
 		player.xp = 99;
+		store = new Store(player);
+		store.initItems();
 		
 
 	}
@@ -95,7 +98,7 @@ public class Main {
 			player.displayInv();
 			break;
 		case 4:
-			System.out.println("snap - renrehn");
+			store.buyItems();
 			break;
 		default:
 			System.out.println("Invalid command!");
