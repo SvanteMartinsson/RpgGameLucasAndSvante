@@ -83,8 +83,11 @@ public class Player extends GameObject{
 
 	
 	public void displayInv(){
+		System.out.println("Inventory");
+		System.out.println("-------------------");
 		System.out.println(gold + " Gold");
 		System.out.println("You have a " + weaponArray[weaponId] + " as a weapon");
+		System.out.println("-------------------");
 		System.out.println();
 		
 	}
