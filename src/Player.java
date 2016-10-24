@@ -3,13 +3,15 @@ import java.util.Scanner;
 public class Player extends GameObject{
 
 	String klass;
-	String weapon;
 	int armor = 0;
 	int invSpot;
 	int lastSpot = 0;
 	int xpReq = 100;
-	int gold = 0;
 	int xpLeft;
+	
+	int weaponId;
+	
+	String[] weaponArray = new String[4];
 	
 	int inputVar;
 	
@@ -23,6 +25,7 @@ public class Player extends GameObject{
 		this.dmg = dmg;
 		this.name = name;
 		this.klass = klass;
+		gold = 0;
 
 		xp = 0;
 
@@ -34,6 +37,13 @@ public class Player extends GameObject{
 
 		hp = maxHp;
 
+	}
+	
+	public void initWeaponArray(){
+		weaponArray[0] = "Knife";
+		weaponArray[1] = "Sword";
+		weaponArray[2] = "Axe";
+		weaponArray[3] = "Longsword";
 	}
 
 	public void incStats(){
@@ -66,10 +76,19 @@ public class Player extends GameObject{
 	}
 
 	public void update(){
+		
 		levelUp();
 	}
 
 
+	
+	public void displayInv(){
+		System.out.println(gold + " Gold");
+		System.out.println("You have a " + weaponArray[weaponId] + " as a weapon");
+		System.out.println();
+		
+	}
+	
 	public void displayStats(){
 		xpLeft = xpReq - xp;
 		System.out.println(dmg + " DMG");

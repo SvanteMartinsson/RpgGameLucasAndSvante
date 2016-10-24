@@ -4,6 +4,8 @@ import java.util.Scanner;
 public class Fight {
 
 	boolean loop;
+	
+	int loot;
 
 	int eChoise = 0;
 
@@ -92,12 +94,26 @@ public class Fight {
 				System.out.println("You died!");
 				player.hp = player.maxHp;
 				enemy.hp = enemy.maxHp;
+				
 				loop = false;
 			}else if(enemy.hp <= 0){
 				System.out.println("You killed the enemy!");
 				player.hp = player.maxHp;
 				enemy.hp = enemy.maxHp;
 				player.xp += enemy.lvl*5;
+				if(enemy.lvl == 1){
+					loot += r.nextInt(7) + 3;
+					System.out.println("You got " + loot + " gold.");
+					player.gold += loot;
+				}else if(enemy.lvl == 2){
+					loot += r.nextInt(12) + 8;
+					System.out.println("You got " + loot + " gold.");
+					player.gold += loot;
+				}else if(enemy.lvl == 3){
+					loot += r.nextInt(22) + 18;
+					System.out.println("You got " + loot + " gold.");
+					player.gold += loot;
+				}
 				loop = false;
 
 			}

@@ -8,7 +8,7 @@ public class Input {
 	public void normalInput(){
 		System.out.println("Display stats and xp: 1");
 		System.out.println("Fight a random enemy: 2");
-		System.out.println("");
+		System.out.println("Display inventory: 3");
 		choise = scanner.nextInt();
 		
 		

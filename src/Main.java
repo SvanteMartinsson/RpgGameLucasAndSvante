@@ -57,6 +57,8 @@ public class Main {
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
+		player.weaponId = 0;
+		player.initWeaponArray();
 		
 
 	}
@@ -89,6 +91,9 @@ public class Main {
 			break;
 			
 		case 3:
+			player.displayInv();
+			break;
+		case 4:
 			System.out.println("snap - renrehn");
 			break;
 		default:

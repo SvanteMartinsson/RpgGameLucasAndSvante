@@ -6,5 +6,6 @@ public abstract class GameObject {
 	String name;
 	int maxHp;
 	int lvl;
-	int xp;	
+	int xp;
+	int gold;
 }
