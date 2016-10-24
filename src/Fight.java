@@ -72,6 +72,9 @@ public class Fight {
 
 	public void fight(GameObject player, GameObject enemy){
 		loop = true;
+		
+		System.out.println("You encounter a " + enemy.name);
+		
 		while(loop){
 
 			System.out.println("HP: " + player.hp);

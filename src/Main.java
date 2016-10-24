@@ -13,6 +13,8 @@ public class Main {
 	Player player;
 	Fight fight = new Fight();
 	
+	boolean loop = true;
+	
 	Random r = new Random();
 	
 	int ranE;
@@ -36,17 +38,22 @@ public class Main {
 		
 		name = scanner.nextLine();
 		
+		while(loop){
 		System.out.print("Tell me, do you wish to be a fighter or a tank? ");
 		klass = scanner.nextLine();
 
 
 		if(klass.equals("fighter")){
 			player = new Player(100, 15, name, klass);
+			loop = false;
 		}else if(klass.equals("tank")){
 			player = new Player(120, 10, name, klass);
+			loop = false;
 		}else{
 			System.out.println("invalid input!");
-			System.exit(0);
+			
+		}
+		
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
@@ -79,6 +86,10 @@ public class Main {
 			ranE = r.nextInt(2) + 1;
 			
 			fight.fight(player, enemies.get(ranE));
+			break;
+			
+		case 3:
+			System.out.println("snap - renrehn");
 			break;
 		default:
 			System.out.println("Invalid command!");
