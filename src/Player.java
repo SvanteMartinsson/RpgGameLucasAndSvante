@@ -1,3 +1,4 @@
+import java.util.Scanner;
 
 public class Player extends GameObject{
 
@@ -10,48 +11,65 @@ public class Player extends GameObject{
 	int gold = 0;
 	int xpLeft;
 	
+	int inputVar;
+	
+	boolean loop = true;
+	
+	Scanner scanner = new Scanner(System.in);
+
 
 	public Player(int hp, int dmg, String name, String klass){
 		this.hp = hp;
 		this.dmg = dmg;
 		this.name = name;
 		this.klass = klass;
-		
+
 		xp = 0;
-		
+
 		if(klass.equals("tank")){
 			maxHp = 120;
 		}else if(klass.equals("fighter")){
 			maxHp = 100;
 		}
-		
+
 		hp = maxHp;
-		
+
 	}
-	
+
 	public void incStats(){
-		if(xpLeft == 0){
-			System.out.println("You just increased lvl! choose 1 for increased dmg and 2 for increased hp! ");
-			
-			/*
-			 * antar att man ska scanna in i main classen och där increasa dmg med typ 3 eller hp med 10.
-			 */
+		
+		System.out.println("You just increased lvl! Type '1' for increased dmg and '2' for increased hp! ");
+		
+		while(loop){
+		inputVar = scanner.nextInt();
+		if(inputVar == 1){
+			dmg += 5;
+			System.out.println("Damage increased! New damage: " + dmg);
+			loop = false;
+		}else if(inputVar == 2){
+			hp += 10;
+			System.out.println("Health increased! New health: " + hp);
+			loop = false;
+		}else{
+			System.out.println("Wrong input!");
+		}
 		}
 	}
-	
+
 	public void levelUp(){
-		if(xp == xpReq){
-			lvl++;
+		if(xp >= xpReq){
 			xp = 0;
 			xpReq *= xpReq*1.5;
+			incStats();
+			lvl++;
 		}
 	}
-	
+
 	public void update(){
 		levelUp();
 	}
-	
-	
+
+
 	public void displayStats(){
 		xpLeft = xpReq - xp;
 		System.out.println(dmg + " DMG");
@@ -59,6 +77,6 @@ public class Player extends GameObject{
 		System.out.println(armor + " ARMOR");
 		System.out.println(xp + " XP, " + xpLeft + " XP left to next level");
 	}
-	
+
 
 }

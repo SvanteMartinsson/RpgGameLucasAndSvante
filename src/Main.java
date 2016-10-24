@@ -50,6 +50,8 @@ public class Main {
 		}
 		
 		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
+		
+		player.xp = 95;
 
 	}
 
