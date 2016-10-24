@@ -69,7 +69,7 @@ public class Player extends GameObject{
 	public void levelUp(){
 		if(xp >= xpReq){
 			xp = 0;
-			xpReq *= xpReq*1.5;
+			xpReq *= xpReq*1.00000000000;
 			incStats();
 			lvl++;
 		}

@@ -59,6 +59,7 @@ public class Main {
 		System.out.println("I see that you choose to be a " + klass);
 		player.weaponId = 0;
 		player.initWeaponArray();
+		player.xp = 99;
 		
 
 	}
