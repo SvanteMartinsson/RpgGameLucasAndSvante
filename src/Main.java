@@ -39,7 +39,7 @@ public class Main {
 		name = scanner.nextLine();
 		
 		while(loop){
-		System.out.print("Tell me, do you wish to be a fighter or a tank? ");
+		System.out.print("Tell me " + name + ", do you wish to be a fighter or a tank? ");
 		klass = scanner.nextLine();
 
 
@@ -56,7 +56,7 @@ public class Main {
 		
 		}
 		
-		System.out.println("Hello " + name + ", i see that you choose to be a " + klass);
+		System.out.println("I see that you choose to be a " + klass);
 		player.weaponId = 0;
 		player.initWeaponArray();
 		

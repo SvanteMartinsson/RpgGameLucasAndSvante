@@ -78,7 +78,7 @@ public class Fight {
 		System.out.println("You encounter a " + enemy.name);
 		
 		while(loop){
-
+			loot = 0;
 			System.out.println("HP: " + player.hp);
 			System.out.println("Enemy HP: " + enemy.hp);
 			System.out.println("Power attack(30%): 1");
@@ -102,11 +102,11 @@ public class Fight {
 				enemy.hp = enemy.maxHp;
 				player.xp += enemy.lvl*5;
 				if(enemy.lvl == 1){
-					loot += r.nextInt(7) + 3;
+					loot += r.nextInt(6) + 3;
 					System.out.println("You got " + loot + " gold.");
 					player.gold += loot;
 				}else if(enemy.lvl == 2){
-					loot += r.nextInt(12) + 8;
+					loot += r.nextInt(18) + 14;
 					System.out.println("You got " + loot + " gold.");
 					player.gold += loot;
 				}else if(enemy.lvl == 3){
@@ -114,6 +114,7 @@ public class Fight {
 					System.out.println("You got " + loot + " gold.");
 					player.gold += loot;
 				}
+				
 				loop = false;
 
 			}
