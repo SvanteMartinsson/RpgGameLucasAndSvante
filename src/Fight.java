@@ -4,7 +4,7 @@ import java.util.Scanner;
 public class Fight {
 
 	boolean loop;
-	
+
 	int loot;
 
 	int eChoise = 0;
@@ -74,9 +74,9 @@ public class Fight {
 
 	public void fight(GameObject player, GameObject enemy){
 		loop = true;
-		
+
 		System.out.println("You encounter a " + enemy.name);
-		
+
 		while(loop){
 			loot = 0;
 			System.out.println("HP: " + player.hp);
@@ -94,7 +94,7 @@ public class Fight {
 				System.out.println("You died!");
 				player.hp = player.maxHp;
 				enemy.hp = enemy.maxHp;
-				
+
 				loop = false;
 			}else if(enemy.hp <= 0){
 				System.out.println("You killed the enemy!");
@@ -114,7 +114,7 @@ public class Fight {
 					System.out.println("You got " + loot + " gold.");
 					player.gold += loot;
 				}
-				
+
 				loop = false;
 
 			}

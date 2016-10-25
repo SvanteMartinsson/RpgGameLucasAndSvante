@@ -4,7 +4,7 @@ import java.util.Scanner;
 
 public class Main {
 
-	
+
 	LinkedList<GameObject> enemies = new LinkedList<GameObject>();
 	Scanner scanner = new Scanner(System.in);
 	boolean isRunning = true;
@@ -13,11 +13,11 @@ public class Main {
 	Player player;
 	Fight fight = new Fight();
 	Store store;
-	
+
 	boolean loop = true;
-	
+
 	Random r = new Random();
-	
+
 	int ranE;
 
 	Input input = new Input();
@@ -36,34 +36,34 @@ public class Main {
 		System.out.println("Welcome to svantrenish rpg!");
 
 		System.out.print("Please tell me, what is your name?: ");
-		
+
 		name = scanner.nextLine();
-		
+
 		while(loop){
-		System.out.print("Tell me " + name + ", do you wish to be a fighter or a tank? ");
-		klass = scanner.nextLine();
+			System.out.print("Tell me " + name + ", do you wish to be a fighter or a tank? ");
+			klass = scanner.nextLine();
 
 
-		if(klass.equals("fighter")){
-			player = new Player(100, 15, name, klass);
-			loop = false;
-		}else if(klass.equals("tank")){
-			player = new Player(120, 10, name, klass);
-			loop = false;
-		}else{
-			System.out.println("invalid input!");
-			
+			if(klass.equals("fighter")){
+				player = new Player(100, 15, name, klass);
+				loop = false;
+			}else if(klass.equals("tank")){
+				player = new Player(120, 10, name, klass);
+				loop = false;
+			}else{
+				System.out.println("invalid input!");
+
+			}
+
 		}
-		
-		}
-		
+
 		System.out.println("I see that you choose to be a " + klass);
 		player.weaponId = 0;
 		player.initWeaponArray();
 		player.xp = 99;
 		store = new Store(player);
 		store.initItems();
-		
+
 
 	}
 
@@ -74,15 +74,15 @@ public class Main {
 	}
 
 	public void update(){
-		
-		
+
+
 		enemies.add(new GiantRat());
 		enemies.add(new CaveBear());
 		enemies.add(new Undead());
-		
-		
+
+
 		player.update();
-		
+
 		input.normalInput();
 		switch(input.choise){
 		case 1:
@@ -90,10 +90,10 @@ public class Main {
 			break;
 		case 2:
 			ranE = r.nextInt(2) + 1;
-			
+
 			fight.fight(player, enemies.get(ranE));
 			break;
-			
+
 		case 3:
 			player.displayInv();
 			break;
@@ -103,7 +103,7 @@ public class Main {
 		default:
 			System.out.println("Invalid command!");
 		}
-		
+
 		for(int i = 0; i<enemies.size(); i++){
 			enemies.remove(i);
 		}

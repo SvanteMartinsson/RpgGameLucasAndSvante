@@ -8,15 +8,15 @@ public class Player extends GameObject{
 	int lastSpot = 0;
 	int xpReq = 100;
 	int xpLeft;
-	
+
 	int weaponId;
-	
+
 	String[] weaponArray = new String[5];
-	
+
 	int inputVar;
-	
+
 	boolean loop = true;
-	
+
 	Scanner scanner = new Scanner(System.in);
 
 
@@ -38,7 +38,7 @@ public class Player extends GameObject{
 		hp = maxHp;
 
 	}
-	
+
 	public void initWeaponArray(){
 		weaponArray[0] = "Knife";
 		weaponArray[1] = "Sword";
@@ -48,22 +48,22 @@ public class Player extends GameObject{
 	}
 
 	public void incStats(){
-		
+
 		System.out.println("You just increased lvl! Type '1' for increased dmg and '2' for increased hp! ");
-		
+
 		while(loop){
-		inputVar = scanner.nextInt();
-		if(inputVar == 1){
-			dmg += 5;
-			System.out.println("Damage increased! New damage: " + dmg);
-			loop = false;
-		}else if(inputVar == 2){
-			hp += 10;
-			System.out.println("Health increased! New health: " + hp);
-			loop = false;
-		}else{
-			System.out.println("Wrong input!");
-		}
+			inputVar = scanner.nextInt();
+			if(inputVar == 1){
+				dmg += 5;
+				System.out.println("Damage increased! New damage: " + dmg);
+				loop = false;
+			}else if(inputVar == 2){
+				hp += 10;
+				System.out.println("Health increased! New health: " + hp);
+				loop = false;
+			}else{
+				System.out.println("Wrong input!");
+			}
 		}
 	}
 
@@ -78,16 +78,16 @@ public class Player extends GameObject{
 	}
 
 	public void update(){
-		
+
 		levelUp();
 	}
-	
+
 	public void newWeapon(int id){
 		weaponId = id;
 	}
 
 
-	
+
 	public void displayInv(){
 		System.out.println("Inventory");
 		System.out.println("-------------------");
@@ -95,9 +95,9 @@ public class Player extends GameObject{
 		System.out.println("You have a " + weaponArray[weaponId] + " as a weapon");
 		System.out.println("-------------------");
 		System.out.println();
-		
+
 	}
-	
+
 	public void displayStats(){
 		xpLeft = xpReq - xp;
 		System.out.println(dmg + " DMG");
