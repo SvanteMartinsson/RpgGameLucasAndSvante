@@ -79,6 +79,10 @@ public class Player extends GameObject{
 		
 		levelUp();
 	}
+	
+	public void newWeapon(int id){
+		weaponId = id;
+	}
 
 
 	
