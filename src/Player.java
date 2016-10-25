@@ -11,7 +11,7 @@ public class Player extends GameObject{
 	
 	int weaponId;
 	
-	String[] weaponArray = new String[4];
+	String[] weaponArray = new String[5];
 	
 	int inputVar;
 	
@@ -44,6 +44,7 @@ public class Player extends GameObject{
 		weaponArray[1] = "Sword";
 		weaponArray[2] = "Axe";
 		weaponArray[3] = "Longsword";
+		weaponArray[4] = "Hp potion";
 	}
 
 	public void incStats(){
