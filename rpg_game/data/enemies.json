@@ -6,6 +6,15 @@
     "max_hp": 20,
     "damage": 6,
     "armor": 0,
+    "speed": 8,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "action_ids": ["power", "normal", "quick"],
     "xp_reward": 5,
     "gold_min": 3,
     "gold_max": 8
@@ -17,6 +26,15 @@
     "max_hp": 45,
     "damage": 4,
     "armor": 1,
+    "speed": 6,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 2.0,
+      "poison": 0.0
+    },
+    "action_ids": ["power", "normal", "quick"],
     "xp_reward": 10,
     "gold_min": 14,
     "gold_max": 31
@@ -28,6 +46,15 @@
     "max_hp": 55,
     "damage": 8,
     "armor": 0,
+    "speed": 5,
+    "resistances": {
+      "physical": 0.9,
+      "fire": 1.25,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.25
+    },
+    "action_ids": ["power", "normal", "quick"],
     "xp_reward": 15,
     "gold_min": 18,
     "gold_max": 39

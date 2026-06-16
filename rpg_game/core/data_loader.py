@@ -7,7 +7,9 @@ from typing import Any
 from rpg_game.core.entities import (
     Connection,
     ConsumableItem,
+    CombatAction,
     EnemyTemplate,
+    EffectSpec,
     GameContent,
     Place,
     Position,
@@ -33,10 +35,16 @@ def load_content() -> GameContent:
             max_hp=row["max_hp"],
             base_damage=row["base_damage"],
             armor=row["armor"],
+            max_mana=row["max_mana"],
+            speed=row["speed"],
             starting_weapon_id=row["starting_weapon_id"],
+            starting_skill_ids=tuple(row.get("starting_skill_ids", ())),
         )
         for row in _read_json("classes.json")
     }
+    for player_class in classes.values():
+        if len(player_class.starting_skill_ids) > 4:
+            raise ValueError(f"{player_class.id} has more than 4 equipped skills")
 
     weapons = {
         row["id"]: Weapon(
@@ -44,8 +52,33 @@ def load_content() -> GameContent:
             name=row["name"],
             damage_bonus=row["damage_bonus"],
             price=row["price"],
+            damage_type=row.get("damage_type", "physical"),
         )
         for row in _read_json("weapons.json")
+    }
+
+    actions = {
+        row["id"]: CombatAction(
+            id=row["id"],
+            name=row["name"],
+            kind=row["kind"],
+            hit_chance=row.get("hit_chance", 1.0),
+            mana_cost=row.get("mana_cost", 0),
+            effects=tuple(
+                EffectSpec(
+                    type=effect["type"],
+                    magnitude=effect.get("magnitude", 0),
+                    duration=effect.get("duration", 0),
+                    tick_timing=effect.get("tick_timing", "instant"),
+                    multiplier=effect.get("multiplier", 1.0),
+                    scale=effect.get("scale", "flat"),
+                    damage_type=effect.get("damage_type", "physical"),
+                    status_type=effect.get("status_type", ""),
+                )
+                for effect in row.get("effects", ())
+            ),
+        )
+        for row in _read_json("actions.json")
     }
 
     items = {
@@ -67,6 +100,9 @@ def load_content() -> GameContent:
             max_hp=row["max_hp"],
             damage=row["damage"],
             armor=row["armor"],
+            speed=row["speed"],
+            resistances=row.get("resistances", {}),
+            action_ids=tuple(row.get("action_ids", ("power", "normal", "quick"))),
             xp_reward=row["xp_reward"],
             gold_min=row["gold_min"],
             gold_max=row["gold_max"],
@@ -110,6 +146,7 @@ def load_content() -> GameContent:
         classes=classes,
         weapons=weapons,
         items=items,
+        actions=actions,
         enemies=enemies,
         places=places,
     )

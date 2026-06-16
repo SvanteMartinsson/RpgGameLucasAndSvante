@@ -1,0 +1,78 @@
+[
+  {
+    "id": "power",
+    "name": "Power attack",
+    "kind": "base_attack",
+    "hit_chance": 0.30,
+    "mana_cost": 0,
+    "effects": [
+      {
+        "type": "damage",
+        "scale": "basic_attack",
+        "multiplier": 2.0,
+        "damage_type": "weapon"
+      }
+    ]
+  },
+  {
+    "id": "normal",
+    "name": "Normal attack",
+    "kind": "base_attack",
+    "hit_chance": 0.55,
+    "mana_cost": 0,
+    "effects": [
+      {
+        "type": "damage",
+        "scale": "basic_attack",
+        "multiplier": 1.5,
+        "damage_type": "weapon"
+      }
+    ]
+  },
+  {
+    "id": "quick",
+    "name": "Quick attack",
+    "kind": "base_attack",
+    "hit_chance": 0.75,
+    "mana_cost": 0,
+    "effects": [
+      {
+        "type": "damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "weapon"
+      }
+    ]
+  },
+  {
+    "id": "smite",
+    "name": "Smite",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 5,
+    "effects": [
+      {
+        "type": "damage",
+        "scale": "flat",
+        "magnitude": 12,
+        "damage_type": "holy"
+      }
+    ]
+  },
+  {
+    "id": "poison_sting",
+    "name": "Poison Sting",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 0,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "magnitude": 3,
+        "duration": 3,
+        "tick_timing": "round_end"
+      }
+    ]
+  }
+]

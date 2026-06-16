@@ -82,10 +82,12 @@ def show_stats(engine: GameEngine) -> None:
     print(f"Level: {player.level}")
     print(f"XP: {player.xp}/{player.xp_required}")
     print(f"HP: {player.hp}/{player.max_hp}")
+    print(f"Mana: {player.mana}/{player.max_mana}")
     print(f"Base damage: {player.base_damage}")
     print(f"Weapon: {weapon.name} (+{weapon.damage_bonus})")
     print(f"Total damage: {total_damage}")
     print(f"Armor: {player.armor}")
+    print(f"Speed: {player.speed}")
     print(f"Gold: {player.gold}")
 
 
@@ -140,7 +142,7 @@ def handle_explore(engine: GameEngine) -> None:
         print()
         print(f"Your HP: {engine.player.hp}/{engine.player.max_hp}")
         print(f"{enemy.name} HP: {enemy.hp}/{enemy.max_hp}")
-        attack_id = prompt_attack()
+        attack_id = prompt_combat_action(engine)
         result = engine.run_combat_turn(enemy, attack_id)
         for event in result.events:
             print(event)
@@ -152,13 +154,18 @@ def handle_explore(engine: GameEngine) -> None:
             return
 
 
-def prompt_attack() -> str:
+def prompt_combat_action(engine: GameEngine) -> str:
     options = [
         ("1", "power", f"{ATTACKS['power'].name} (30%, x2.0)"),
         ("2", "normal", f"{ATTACKS['normal'].name} (55%, x1.5)"),
         ("3", "quick", f"{ATTACKS['quick'].name} (75%, x1.0)"),
     ]
-    return prompt_menu("Choose attack:", options)
+    next_index = 4
+    for skill_id in engine.player.equipped_skill_ids:
+        skill = engine.content.actions[skill_id]
+        options.append((str(next_index), skill.id, f"{skill.name} ({skill.mana_cost} mana)"))
+        next_index += 1
+    return prompt_menu("Choose action:", options)
 
 
 def resolve_pending_stat_choices(engine: GameEngine) -> None:

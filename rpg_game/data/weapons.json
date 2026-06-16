@@ -3,24 +3,28 @@
     "id": "knife",
     "name": "Knife",
     "damage_bonus": 0,
-    "price": 0
+    "price": 0,
+    "damage_type": "physical"
   },
   {
     "id": "sword",
     "name": "Sword",
     "damage_bonus": 5,
-    "price": 50
+    "price": 50,
+    "damage_type": "physical"
   },
   {
     "id": "axe",
     "name": "Axe",
     "damage_bonus": 9,
-    "price": 175
+    "price": 175,
+    "damage_type": "physical"
   },
   {
     "id": "longsword",
     "name": "Longsword",
     "damage_bonus": 14,
-    "price": 350
+    "price": 350,
+    "damage_type": "physical"
   }
 ]

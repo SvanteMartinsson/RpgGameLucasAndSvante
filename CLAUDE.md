@@ -67,7 +67,7 @@ Målet är att Pygame senare ska kunna läggas till som ett separat presentation
 - `rpg_game/core/entities.py`: dataclasses för player, fiender, items, platser och game state.
 - `rpg_game/core/data_loader.py`: laddar JSON-innehåll.
 - `rpg_game/core/progression.py`: XP-kurva, `round_half_up()`, level up och statval.
-- `rpg_game/core/combat.py`: attacktyper, träffchans, skadeformler och combat-resultat.
+- `rpg_game/core/combat.py`: action -> effects -> resolver-pipeline, status ticks, damage types, speed order och combat-resultat.
 - `rpg_game/core/game.py`: `GameEngine`, orkestrerar state, world, combat, store och inventory.
 - `rpg_game/core/world.py`: platser, resor och encounters.
 - `rpg_game/core/store.py`: butik och köp.
@@ -79,12 +79,22 @@ Målet är att Pygame senare ska kunna läggas till som ett separat presentation
 Nytt spelinnehåll ska i första hand läggas i JSON-filerna i `rpg_game/data/`.
 
 - `classes.json`: spelarklasser och startstats.
+- `actions.json`: combat-handlingar som producerar effekter, till exempel base attacks och skills.
 - `weapons.json`: vapen, pris och skadebonus.
 - `items.json`: förbrukningsitems, till exempel potions.
 - `enemies.json`: fiendemallar med HP, damage, armor, XP och gold.
 - `world.json`: världens `meta.start_place_id`, platser, resvägar, encounter-listor och framtida kartfält.
 
 Lägg inte nya fiender, vapen eller platser hårdkodat i combat- eller UI-koden.
+
+Combat-handlingar ska gå genom samma pipeline:
+
+```text
+action -> effects -> resolver -> structured result
+```
+
+Det gäller base attacks, skills, items, weapon swap och fienders drag. Lägg
+nya skills som data i `actions.json` när det räcker.
 
 ## Regler som tester låser
 

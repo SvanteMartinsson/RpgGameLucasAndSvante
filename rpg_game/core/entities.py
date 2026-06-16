@@ -10,7 +10,10 @@ class PlayerClass:
     max_hp: int
     base_damage: int
     armor: int
+    max_mana: int
+    speed: int
     starting_weapon_id: str
+    starting_skill_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -19,6 +22,29 @@ class Weapon:
     name: str
     damage_bonus: int
     price: int
+    damage_type: str = "physical"
+
+
+@dataclass(frozen=True)
+class EffectSpec:
+    type: str
+    magnitude: int = 0
+    duration: int = 0
+    tick_timing: str = "instant"
+    multiplier: float = 1.0
+    scale: str = "flat"
+    damage_type: str = "physical"
+    status_type: str = ""
+
+
+@dataclass(frozen=True)
+class CombatAction:
+    id: str
+    name: str
+    kind: str
+    hit_chance: float = 1.0
+    mana_cost: int = 0
+    effects: tuple[EffectSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -38,6 +64,9 @@ class EnemyTemplate:
     max_hp: int
     damage: int
     armor: int
+    speed: int
+    resistances: dict[str, float]
+    action_ids: tuple[str, ...]
     xp_reward: int
     gold_min: int
     gold_max: int
@@ -51,6 +80,9 @@ class EnemyTemplate:
             hp=self.max_hp,
             damage=self.damage,
             armor=self.armor,
+            speed=self.speed,
+            resistances=dict(self.resistances),
+            action_ids=self.action_ids,
             xp_reward=self.xp_reward,
             gold_min=self.gold_min,
             gold_max=self.gold_max,
@@ -66,9 +98,13 @@ class Enemy:
     hp: int
     damage: int
     armor: int
+    speed: int
+    resistances: dict[str, float]
+    action_ids: tuple[str, ...]
     xp_reward: int
     gold_min: int
     gold_max: int
+    active_statuses: list["ActiveStatus"] = field(default_factory=list)
 
     @property
     def is_alive(self) -> bool:
@@ -149,6 +185,12 @@ class Player:
     inventory: Inventory
     current_place_id: str
     respawn_place_id: str
+    mana: int = 0
+    max_mana: int = 0
+    speed: int = 0
+    equipped_skill_ids: tuple[str, ...] = ()
+    resistances: dict[str, float] = field(default_factory=dict)
+    active_statuses: list["ActiveStatus"] = field(default_factory=list)
     pending_stat_choices: int = 0
 
     @property
@@ -162,6 +204,7 @@ class GameContent:
     classes: dict[str, PlayerClass]
     weapons: dict[str, Weapon]
     items: dict[str, ConsumableItem]
+    actions: dict[str, CombatAction]
     enemies: dict[str, EnemyTemplate]
     places: dict[str, Place]
 
@@ -170,3 +213,11 @@ class GameContent:
 class GameState:
     player: Player
     content: GameContent
+
+
+@dataclass
+class ActiveStatus:
+    type: str
+    magnitude: int
+    duration: int
+    tick_timing: str

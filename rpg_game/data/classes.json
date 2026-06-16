@@ -5,7 +5,10 @@
     "max_hp": 100,
     "base_damage": 15,
     "armor": 0,
-    "starting_weapon_id": "knife"
+    "max_mana": 0,
+    "speed": 10,
+    "starting_weapon_id": "knife",
+    "starting_skill_ids": []
   },
   {
     "id": "tank",
@@ -13,6 +16,20 @@
     "max_hp": 120,
     "base_damage": 10,
     "armor": 2,
-    "starting_weapon_id": "knife"
+    "max_mana": 0,
+    "speed": 7,
+    "starting_weapon_id": "knife",
+    "starting_skill_ids": []
+  },
+  {
+    "id": "cleric",
+    "name": "Cleric",
+    "max_hp": 90,
+    "base_damage": 8,
+    "armor": 1,
+    "max_mana": 30,
+    "speed": 8,
+    "starting_weapon_id": "knife",
+    "starting_skill_ids": ["smite"]
   }
 ]
