@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "start_place_id": "town"
+  },
+  "places": [
+    {
+      "id": "town",
+      "name": "Svantrenish Town",
+      "type": "town",
+      "description": "A small town with a store and a safe place to recover.",
+      "has_store": true,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 120,
+        "y": 180
+      },
+      "danger_tier": 0,
+      "encounters": [],
+      "respawn": true,
+      "locked": false,
+      "connections": [
+        {
+          "to": "forest",
+          "travel": "road",
+          "distance_px": 180,
+          "distance_km_approx": 3.2
+        },
+        {
+          "to": "cave",
+          "travel": "trail",
+          "distance_px": 260,
+          "distance_km_approx": 5.8
+        }
+      ],
+      "store_inventory": ["hp_potion", "sword", "axe", "longsword"]
+    },
+    {
+      "id": "forest",
+      "name": "Old Forest",
+      "type": "wilds",
+      "description": "A damp forest where small beasts and restless dead wander.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 280,
+        "y": 140
+      },
+      "danger_tier": 1,
+      "encounters": ["giant_rat", "undead"],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "town",
+          "travel": "road",
+          "distance_px": 180,
+          "distance_km_approx": 3.2
+        },
+        {
+          "to": "cave",
+          "travel": "trail",
+          "distance_px": 150,
+          "distance_km_approx": 2.6
+        }
+      ]
+    },
+    {
+      "id": "cave",
+      "name": "Bear Cave",
+      "type": "dungeon",
+      "description": "A dark cave with stronger creatures deeper inside.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 390,
+        "y": 230
+      },
+      "danger_tier": 2,
+      "encounters": ["cave_bear", "undead"],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "town",
+          "travel": "trail",
+          "distance_px": 260,
+          "distance_km_approx": 5.8
+        },
+        {
+          "to": "forest",
+          "travel": "trail",
+          "distance_px": 150,
+          "distance_km_approx": 2.6
+        }
+      ]
+    }
+  ]
+}

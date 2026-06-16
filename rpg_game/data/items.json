@@ -1,0 +1,9 @@
+[
+  {
+    "id": "hp_potion",
+    "name": "HP Potion",
+    "kind": "consumable",
+    "heal_amount": 50,
+    "price": 65
+  }
+]

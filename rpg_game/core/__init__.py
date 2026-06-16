@@ -1,0 +1,2 @@
+"""Presentation-agnostic game logic."""
+

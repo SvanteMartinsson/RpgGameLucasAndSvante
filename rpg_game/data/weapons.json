@@ -1,0 +1,26 @@
+[
+  {
+    "id": "knife",
+    "name": "Knife",
+    "damage_bonus": 0,
+    "price": 0
+  },
+  {
+    "id": "sword",
+    "name": "Sword",
+    "damage_bonus": 5,
+    "price": 50
+  },
+  {
+    "id": "axe",
+    "name": "Axe",
+    "damage_bonus": 9,
+    "price": 175
+  },
+  {
+    "id": "longsword",
+    "name": "Longsword",
+    "damage_bonus": 14,
+    "price": 350
+  }
+]

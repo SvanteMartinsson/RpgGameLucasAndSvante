@@ -1,0 +1,35 @@
+[
+  {
+    "id": "giant_rat",
+    "name": "Giant Rat",
+    "level": 1,
+    "max_hp": 20,
+    "damage": 6,
+    "armor": 0,
+    "xp_reward": 5,
+    "gold_min": 3,
+    "gold_max": 8
+  },
+  {
+    "id": "undead",
+    "name": "Undead",
+    "level": 2,
+    "max_hp": 45,
+    "damage": 4,
+    "armor": 1,
+    "xp_reward": 10,
+    "gold_min": 14,
+    "gold_max": 31
+  },
+  {
+    "id": "cave_bear",
+    "name": "Cave Bear",
+    "level": 3,
+    "max_hp": 55,
+    "damage": 8,
+    "armor": 0,
+    "xp_reward": 15,
+    "gold_min": 18,
+    "gold_max": 39
+  }
+]

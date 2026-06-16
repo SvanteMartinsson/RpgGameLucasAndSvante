@@ -1,0 +1,9 @@
+[project]
+name = "rpg-game-lucas-and-svante"
+version = "0.1.0"
+description = "A small datadriven text RPG ported from the original Java prototype."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
