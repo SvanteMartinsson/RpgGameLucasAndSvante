@@ -1,19 +1,180 @@
 {
   "meta": {
-    "start_place_id": "town"
+    "source": "Nieia",
+    "azgaar_version": "1.123.1",
+    "region_state_id": 5,
+    "scale_km_per_unit": 5,
+    "map_px": [
+      2560,
+      1328
+    ],
+    "start_place_id": "burg_5",
+    "place_count": 21,
+    "note": "distance_px = sann pixel-längd (auktoritativt för restid). distance_km_approx kalibreras mot skalstrecket vid behov."
   },
   "places": [
     {
-      "id": "town",
-      "name": "Svantrenish Town",
+      "id": "burg_121",
+      "name": "Alherralba",
       "type": "town",
-      "description": "A small town with a store and a safe place to recover.",
+      "description": "Befäst stad med fungerande handel.",
       "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
-        "x": 120,
-        "y": 180
+        "x": 2176.1,
+        "y": 915.2
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_385",
+          "travel": "trail",
+          "distance_px": 15,
+          "distance_km_approx": 7.4
+        },
+        {
+          "to": "burg_149",
+          "travel": "trail",
+          "distance_px": 13,
+          "distance_km_approx": 6.3
+        },
+        {
+          "to": "burg_54",
+          "travel": "trail",
+          "distance_px": 20,
+          "distance_km_approx": 10.2
+        }
+      ]
+    },
+    {
+      "id": "burg_117",
+      "name": "Yeblegali",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2194.2,
+        "y": 877.5
+      },
+      "danger_tier": 0,
+      "encounters": [],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_193",
+          "travel": "road",
+          "distance_px": 12,
+          "distance_km_approx": 6.2
+        },
+        {
+          "to": "burg_5",
+          "travel": "road",
+          "distance_px": 47,
+          "distance_km_approx": 23.4
+        },
+        {
+          "to": "burg_54",
+          "travel": "trail",
+          "distance_px": 22,
+          "distance_km_approx": 11.2
+        },
+        {
+          "to": "poi_42",
+          "travel": "trail",
+          "distance_px": 40,
+          "distance_km_approx": 19.9
+        }
+      ]
+    },
+    {
+      "id": "burg_54",
+      "name": "Guaredama",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2180.7,
+        "y": 895.3
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_117",
+          "travel": "trail",
+          "distance_px": 22,
+          "distance_km_approx": 11.2
+        },
+        {
+          "to": "burg_121",
+          "travel": "trail",
+          "distance_px": 20,
+          "distance_km_approx": 10.2
+        }
+      ]
+    },
+    {
+      "id": "burg_379",
+      "name": "Condillosca",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2020.1,
+        "y": 842.5
+      },
+      "danger_tier": 2,
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_146",
+          "travel": "trail",
+          "distance_px": 14,
+          "distance_km_approx": 7.0
+        },
+        {
+          "to": "burg_235",
+          "travel": "trail",
+          "distance_px": 53,
+          "distance_km_approx": 26.7
+        }
+      ]
+    },
+    {
+      "id": "burg_5",
+      "name": "Hordanita",
+      "type": "city",
+      "description": "Rikets nav och största stad.",
+      "has_store": true,
+      "mana_site": true,
+      "port": false,
+      "position": {
+        "x": 2151.5,
+        "y": 861.5
       },
       "danger_tier": 0,
       "encounters": [],
@@ -21,79 +182,551 @@
       "locked": false,
       "connections": [
         {
-          "to": "forest",
+          "to": "burg_117",
           "travel": "road",
-          "distance_px": 180,
-          "distance_km_approx": 3.2
+          "distance_px": 47,
+          "distance_km_approx": 23.4
         },
         {
-          "to": "cave",
-          "travel": "trail",
-          "distance_px": 260,
-          "distance_km_approx": 5.8
-        }
-      ],
-      "store_inventory": ["hp_potion", "sword", "axe", "longsword"]
-    },
-    {
-      "id": "forest",
-      "name": "Old Forest",
-      "type": "wilds",
-      "description": "A damp forest where small beasts and restless dead wander.",
-      "has_store": false,
-      "mana_site": false,
-      "port": false,
-      "position": {
-        "x": 280,
-        "y": 140
-      },
-      "danger_tier": 1,
-      "encounters": ["giant_rat", "undead"],
-      "respawn": false,
-      "locked": false,
-      "connections": [
-        {
-          "to": "town",
+          "to": "burg_160",
           "travel": "road",
-          "distance_px": 180,
-          "distance_km_approx": 3.2
-        },
-        {
-          "to": "cave",
-          "travel": "trail",
-          "distance_px": 150,
-          "distance_km_approx": 2.6
+          "distance_px": 38,
+          "distance_km_approx": 19.1
         }
       ]
     },
     {
-      "id": "cave",
-      "name": "Bear Cave",
-      "type": "dungeon",
-      "description": "A dark cave with stronger creatures deeper inside.",
-      "has_store": false,
+      "id": "burg_67",
+      "name": "Fongorinos",
+      "type": "town",
+      "description": "Befäst stad med fungerande handel.",
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
-        "x": 390,
-        "y": 230
+        "x": 2149.9,
+        "y": 923.1
       },
       "danger_tier": 2,
-      "encounters": ["cave_bear", "undead"],
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
       "respawn": false,
       "locked": false,
       "connections": [
         {
-          "to": "town",
+          "to": "burg_320",
           "travel": "trail",
-          "distance_px": 260,
-          "distance_km_approx": 5.8
+          "distance_px": 48,
+          "distance_km_approx": 24.0
         },
         {
-          "to": "forest",
+          "to": "burg_149",
           "travel": "trail",
-          "distance_px": 150,
-          "distance_km_approx": 2.6
+          "distance_px": 16,
+          "distance_km_approx": 8.2
+        }
+      ]
+    },
+    {
+      "id": "burg_163",
+      "name": "Herrallo",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2222.2,
+        "y": 910.4
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_292",
+          "travel": "road",
+          "distance_px": 28,
+          "distance_km_approx": 14.2
+        },
+        {
+          "to": "burg_293",
+          "travel": "trail",
+          "distance_px": 20,
+          "distance_km_approx": 9.8
+        }
+      ]
+    },
+    {
+      "id": "burg_160",
+      "name": "Gaste",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2115.0,
+        "y": 871.1
+      },
+      "danger_tier": 0,
+      "encounters": [],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_5",
+          "travel": "road",
+          "distance_px": 38,
+          "distance_km_approx": 19.1
+        },
+        {
+          "to": "burg_235",
+          "travel": "road",
+          "distance_px": 56,
+          "distance_km_approx": 28.1
+        }
+      ]
+    },
+    {
+      "id": "burg_105",
+      "name": "Chuequeroma",
+      "type": "village",
+      "description": "Liten bosättning, hamn vid kusten.",
+      "has_store": false,
+      "mana_site": false,
+      "port": true,
+      "position": {
+        "x": 2209.2,
+        "y": 926.1
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_293",
+          "travel": "trail",
+          "distance_px": 15,
+          "distance_km_approx": 7.5
+        },
+        {
+          "to": "burg_53",
+          "travel": "trail",
+          "distance_px": 12,
+          "distance_km_approx": 6.0
+        }
+      ]
+    },
+    {
+      "id": "burg_385",
+      "name": "Cantida",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2191.0,
+        "y": 914.5
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_121",
+          "travel": "trail",
+          "distance_px": 15,
+          "distance_km_approx": 7.4
+        },
+        {
+          "to": "burg_293",
+          "travel": "trail",
+          "distance_px": 12,
+          "distance_km_approx": 5.9
+        }
+      ]
+    },
+    {
+      "id": "burg_193",
+      "name": "Esple",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2205.5,
+        "y": 882.5
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_117",
+          "travel": "road",
+          "distance_px": 12,
+          "distance_km_approx": 6.2
+        },
+        {
+          "to": "burg_292",
+          "travel": "road",
+          "distance_px": 7,
+          "distance_km_approx": 3.7
+        }
+      ]
+    },
+    {
+      "id": "burg_235",
+      "name": "Jinosa",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2072.8,
+        "y": 837.3
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_160",
+          "travel": "road",
+          "distance_px": 56,
+          "distance_km_approx": 28.1
+        },
+        {
+          "to": "burg_379",
+          "travel": "trail",
+          "distance_px": 53,
+          "distance_km_approx": 26.7
+        }
+      ]
+    },
+    {
+      "id": "burg_200",
+      "name": "Estables",
+      "type": "camp",
+      "description": "Jaktläger i utkanten av vildmarken.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 1993.6,
+        "y": 833.7
+      },
+      "danger_tier": 2,
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_146",
+          "travel": "trail",
+          "distance_px": 14,
+          "distance_km_approx": 7.0
+        }
+      ]
+    },
+    {
+      "id": "burg_149",
+      "name": "Salles",
+      "type": "village",
+      "description": "Liten bosättning, hamn vid kusten.",
+      "has_store": false,
+      "mana_site": false,
+      "port": true,
+      "position": {
+        "x": 2165.9,
+        "y": 922.5
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_67",
+          "travel": "trail",
+          "distance_px": 16,
+          "distance_km_approx": 8.2
+        },
+        {
+          "to": "burg_121",
+          "travel": "trail",
+          "distance_px": 13,
+          "distance_km_approx": 6.3
+        }
+      ]
+    },
+    {
+      "id": "burg_219",
+      "name": "Tierva",
+      "type": "camp",
+      "description": "Jaktläger i utkanten av vildmarken.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2115.4,
+        "y": 888.5
+      },
+      "danger_tier": 2,
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_320",
+          "travel": "trail",
+          "distance_px": 30,
+          "distance_km_approx": 15.2
+        }
+      ]
+    },
+    {
+      "id": "burg_320",
+      "name": "Parguillas",
+      "type": "camp",
+      "description": "Jaktläger i utkanten av vildmarken.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2104.8,
+        "y": 915.2
+      },
+      "danger_tier": 2,
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_219",
+          "travel": "trail",
+          "distance_px": 30,
+          "distance_km_approx": 15.2
+        },
+        {
+          "to": "burg_67",
+          "travel": "trail",
+          "distance_px": 48,
+          "distance_km_approx": 24.0
+        }
+      ]
+    },
+    {
+      "id": "burg_292",
+      "name": "Jadra",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2203.1,
+        "y": 889.5
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_193",
+          "travel": "road",
+          "distance_px": 7,
+          "distance_km_approx": 3.7
+        },
+        {
+          "to": "burg_163",
+          "travel": "road",
+          "distance_px": 28,
+          "distance_km_approx": 14.2
+        },
+        {
+          "to": "burg_293",
+          "travel": "trail",
+          "distance_px": 23,
+          "distance_km_approx": 11.6
+        }
+      ]
+    },
+    {
+      "id": "burg_53",
+      "name": "Barroncami",
+      "type": "village",
+      "description": "Liten bosättning, hamn vid kusten.",
+      "has_store": false,
+      "mana_site": false,
+      "port": true,
+      "position": {
+        "x": 2219.3,
+        "y": 932.7
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_105",
+          "travel": "trail",
+          "distance_px": 12,
+          "distance_km_approx": 6.0
+        }
+      ]
+    },
+    {
+      "id": "burg_293",
+      "name": "Urrequena",
+      "type": "village",
+      "description": "Liten bosättning.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2202.7,
+        "y": 912.7
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_385",
+          "travel": "trail",
+          "distance_px": 12,
+          "distance_km_approx": 5.9
+        },
+        {
+          "to": "burg_163",
+          "travel": "trail",
+          "distance_px": 20,
+          "distance_km_approx": 9.8
+        },
+        {
+          "to": "burg_292",
+          "travel": "trail",
+          "distance_px": 23,
+          "distance_km_approx": 11.6
+        },
+        {
+          "to": "burg_105",
+          "travel": "trail",
+          "distance_px": 15,
+          "distance_km_approx": 7.5
+        }
+      ]
+    },
+    {
+      "id": "burg_146",
+      "name": "Rotequero",
+      "type": "town",
+      "description": "Befäst stad med fungerande handel.",
+      "has_store": true,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2006.8,
+        "y": 838.1
+      },
+      "danger_tier": 2,
+      "encounters": [
+        "undead",
+        "cave_bear"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_200",
+          "travel": "trail",
+          "distance_px": 14,
+          "distance_km_approx": 7.0
+        },
+        {
+          "to": "burg_379",
+          "travel": "trail",
+          "distance_px": 14,
+          "distance_km_approx": 7.0
+        }
+      ]
+    },
+    {
+      "id": "poi_42",
+      "name": "Magikertorn (Yeblegali)",
+      "type": "mage_tower",
+      "description": "Magikertorn nära Yeblegali.",
+      "has_store": false,
+      "mana_site": false,
+      "port": false,
+      "position": {
+        "x": 2208.2,
+        "y": 840.3
+      },
+      "danger_tier": 1,
+      "encounters": [
+        "giant_rat",
+        "undead"
+      ],
+      "respawn": false,
+      "locked": false,
+      "connections": [
+        {
+          "to": "burg_117",
+          "travel": "trail",
+          "distance_px": 40,
+          "distance_km_approx": 19.9
         }
       ]
     }
