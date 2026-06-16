@@ -67,8 +67,9 @@ Målet är att Pygame senare ska kunna läggas till som ett separat presentation
 - `rpg_game/core/entities.py`: dataclasses för player, fiender, items, platser och game state.
 - `rpg_game/core/data_loader.py`: laddar JSON-innehåll.
 - `rpg_game/core/progression.py`: XP-kurva, `round_half_up()`, level up och statval.
-- `rpg_game/core/combat.py`: action -> effects -> resolver-pipeline, status ticks, damage types, speed order och combat-resultat.
+- `rpg_game/core/combat.py`: action -> effects -> resolver-pipeline, status ticks, generic effect vocabulary, damage types, speed order och combat-resultat.
 - `rpg_game/core/game.py`: `GameEngine`, orkestrerar state, world, combat, store och inventory.
+- `rpg_game/core/talents.py`: class talent allocation, linear branch prerequisites, passive application och max 4 equipped skills.
 - `rpg_game/core/world.py`: platser, resor och encounters.
 - `rpg_game/core/store.py`: butik och köp.
 - `rpg_game/core/inventory.py`: användning av consumables.
@@ -80,6 +81,7 @@ Nytt spelinnehåll ska i första hand läggas i JSON-filerna i `rpg_game/data/`.
 
 - `classes.json`: spelarklasser och startstats.
 - `actions.json`: combat-handlingar som producerar effekter, till exempel base attacks och skills.
+- `talents.json`: klassnoder, grenar, prerequisites via order och passiva effekter.
 - `weapons.json`: vapen, pris och skadebonus.
 - `items.json`: förbrukningsitems, till exempel potions.
 - `enemies.json`: fiendemallar med HP, damage, armor, XP och gold.
@@ -95,6 +97,11 @@ action -> effects -> resolver -> structured result
 
 Det gäller base attacks, skills, items, weapon swap och fienders drag. Lägg
 nya skills som data i `actions.json` när det räcker.
+
+Talanger ska ligga i `talents.json`. Kärnan exponerar
+`available_talents()` och `allocate_talent(node_id)` via `GameEngine`; UI:t
+ska fråga spelaren och mata tillbaka valen, på samma sätt som statval efter
+level-up.
 
 ## Regler som tester låser
 

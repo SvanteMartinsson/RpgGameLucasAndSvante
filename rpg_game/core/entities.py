@@ -35,6 +35,12 @@ class EffectSpec:
     scale: str = "flat"
     damage_type: str = "physical"
     status_type: str = ""
+    target: str = "enemy"
+    stat: str = ""
+    ratio: float = 0.0
+    modifies_status_type: str = ""
+    mod_magnitude: int = 0
+    mod_duration: int = 0
 
 
 @dataclass(frozen=True)
@@ -44,6 +50,18 @@ class CombatAction:
     kind: str
     hit_chance: float = 1.0
     mana_cost: int = 0
+    effects: tuple[EffectSpec, ...] = ()
+
+
+@dataclass(frozen=True)
+class TalentNode:
+    id: str
+    class_id: str
+    branch: str
+    order: int
+    name: str
+    node_type: str
+    action_id: str = ""
     effects: tuple[EffectSpec, ...] = ()
 
 
@@ -189,8 +207,12 @@ class Player:
     max_mana: int = 0
     speed: int = 0
     equipped_skill_ids: tuple[str, ...] = ()
+    talent_points: int = 0
+    learned_talent_ids: set[str] = field(default_factory=set)
     resistances: dict[str, float] = field(default_factory=dict)
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
+    stat_bonuses: dict[str, int] = field(default_factory=dict)
+    applied_status_mods: dict[str, dict[str, int]] = field(default_factory=dict)
     pending_stat_choices: int = 0
 
     @property
@@ -205,6 +227,7 @@ class GameContent:
     weapons: dict[str, Weapon]
     items: dict[str, ConsumableItem]
     actions: dict[str, CombatAction]
+    talents: dict[str, TalentNode]
     enemies: dict[str, EnemyTemplate]
     places: dict[str, Place]
 
@@ -221,3 +244,5 @@ class ActiveStatus:
     magnitude: int
     duration: int
     tick_timing: str
+    stat: str = ""
+    applied_delta: int = 0

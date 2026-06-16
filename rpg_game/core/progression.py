@@ -25,6 +25,7 @@ def award_xp(player: Player, amount: int) -> int:
         player.level += 1
         player.xp_required = xp_required_for_level(player.level)
         player.pending_stat_choices += 1
+        player.talent_points += 1
         levels_gained += 1
 
     return levels_gained

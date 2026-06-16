@@ -7,10 +7,11 @@
     "mana_cost": 0,
     "effects": [
       {
-        "type": "damage",
+        "type": "instant_damage",
         "scale": "basic_attack",
         "multiplier": 2.0,
-        "damage_type": "weapon"
+        "damage_type": "weapon",
+        "target": "enemy"
       }
     ]
   },
@@ -22,10 +23,11 @@
     "mana_cost": 0,
     "effects": [
       {
-        "type": "damage",
+        "type": "instant_damage",
         "scale": "basic_attack",
         "multiplier": 1.5,
-        "damage_type": "weapon"
+        "damage_type": "weapon",
+        "target": "enemy"
       }
     ]
   },
@@ -37,10 +39,11 @@
     "mana_cost": 0,
     "effects": [
       {
-        "type": "damage",
+        "type": "instant_damage",
         "scale": "basic_attack",
         "multiplier": 1.0,
-        "damage_type": "weapon"
+        "damage_type": "weapon",
+        "target": "enemy"
       }
     ]
   },
@@ -49,13 +52,97 @@
     "name": "Smite",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 5,
+    "mana_cost": 6,
     "effects": [
       {
-        "type": "damage",
-        "scale": "flat",
-        "magnitude": 12,
-        "damage_type": "holy"
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.5,
+        "damage_type": "holy",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "mend",
+    "name": "Mend",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "instant_heal",
+        "magnitude": 25,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "sanctuary",
+    "name": "Sanctuary",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "regen",
+        "magnitude": 8,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "plague_bolt",
+    "name": "Plague Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "magnitude": 6,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "drain",
+    "name": "Drain",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 9,
+    "effects": [
+      {
+        "type": "drain",
+        "scale": "power",
+        "multiplier": 1.2,
+        "damage_type": "holy",
+        "ratio": 0.5,
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "curse",
+    "name": "Curse",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "power",
+        "magnitude": -4,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "enemy"
       }
     ]
   },
@@ -71,7 +158,8 @@
         "status_type": "poison",
         "magnitude": 3,
         "duration": 3,
-        "tick_timing": "round_end"
+        "tick_timing": "round_end",
+        "target": "enemy"
       }
     ]
   }

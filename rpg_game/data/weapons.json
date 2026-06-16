@@ -26,5 +26,12 @@
     "damage_bonus": 14,
     "price": 350,
     "damage_type": "physical"
+  },
+  {
+    "id": "mace",
+    "name": "Mace",
+    "damage_bonus": 0,
+    "price": 0,
+    "damage_type": "holy"
   }
 ]

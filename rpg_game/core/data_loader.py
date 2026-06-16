@@ -14,6 +14,7 @@ from rpg_game.core.entities import (
     Place,
     Position,
     PlayerClass,
+    TalentNode,
     Weapon,
 )
 
@@ -74,11 +75,49 @@ def load_content() -> GameContent:
                     scale=effect.get("scale", "flat"),
                     damage_type=effect.get("damage_type", "physical"),
                     status_type=effect.get("status_type", ""),
+                    target=effect.get("target", "enemy"),
+                    stat=effect.get("stat", ""),
+                    ratio=effect.get("ratio", 0.0),
+                    modifies_status_type=effect.get("modifies_status_type", ""),
+                    mod_magnitude=effect.get("mod_magnitude", 0),
+                    mod_duration=effect.get("mod_duration", 0),
                 )
                 for effect in row.get("effects", ())
             ),
         )
         for row in _read_json("actions.json")
+    }
+
+    talents = {
+        row["id"]: TalentNode(
+            id=row["id"],
+            class_id=row["class_id"],
+            branch=row["branch"],
+            order=row["order"],
+            name=row["name"],
+            node_type=row["node_type"],
+            action_id=row.get("action_id", ""),
+            effects=tuple(
+                EffectSpec(
+                    type=effect["type"],
+                    magnitude=effect.get("magnitude", 0),
+                    duration=effect.get("duration", 0),
+                    tick_timing=effect.get("tick_timing", "instant"),
+                    multiplier=effect.get("multiplier", 1.0),
+                    scale=effect.get("scale", "flat"),
+                    damage_type=effect.get("damage_type", "physical"),
+                    status_type=effect.get("status_type", ""),
+                    target=effect.get("target", "enemy"),
+                    stat=effect.get("stat", ""),
+                    ratio=effect.get("ratio", 0.0),
+                    modifies_status_type=effect.get("modifies_status_type", ""),
+                    mod_magnitude=effect.get("mod_magnitude", 0),
+                    mod_duration=effect.get("mod_duration", 0),
+                )
+                for effect in row.get("effects", ())
+            ),
+        )
+        for row in _read_json("talents.json")
     }
 
     items = {
@@ -147,6 +186,7 @@ def load_content() -> GameContent:
         weapons=weapons,
         items=items,
         actions=actions,
+        talents=talents,
         enemies=enemies,
         places=places,
     )

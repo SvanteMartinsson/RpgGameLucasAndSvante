@@ -146,6 +146,22 @@ def _basic_attack_base(actor: Actor, weapon: Weapon | None) -> int:
     return actor.damage
 
 
+def get_stat(actor: Actor, stat: str) -> int:
+    if stat == "power":
+        return actor.base_damage if isinstance(actor, Player) else actor.damage
+    return getattr(actor, stat)
+
+
+def set_stat(actor: Actor, stat: str, value: int) -> None:
+    if stat == "power":
+        if isinstance(actor, Player):
+            actor.base_damage = value
+        else:
+            actor.damage = value
+        return
+    setattr(actor, stat, value)
+
+
 def _effect_damage_type(actor: Actor, weapon: Weapon | None, effect: EffectSpec) -> str:
     if effect.damage_type == "weapon":
         return weapon.damage_type if isinstance(actor, Player) and weapon else "physical"
@@ -160,6 +176,8 @@ def calculate_effect_damage(
 ) -> int:
     if effect.scale == "basic_attack":
         raw_damage = round_half_up(_basic_attack_base(actor, weapon) * effect.multiplier)
+    elif effect.scale == "power":
+        raw_damage = round_half_up(get_stat(actor, "power") * effect.multiplier)
     elif effect.scale == "flat":
         raw_damage = round_half_up(effect.magnitude * effect.multiplier)
     else:
@@ -185,7 +203,7 @@ def calculate_player_damage(player: Player, weapon: Weapon, attack: CombatAction
         gold_min=0,
         gold_max=0,
     )
-    damage_effect = next(effect for effect in attack.effects if effect.type == "damage")
+    damage_effect = next(effect for effect in attack.effects if effect.type in {"damage", "instant_damage"})
     return calculate_effect_damage(player, target, weapon, damage_effect)
 
 
@@ -206,7 +224,7 @@ def calculate_enemy_damage(enemy: Enemy, attack: CombatAction, target_armor: int
         current_place_id="",
         respawn_place_id="",
     )
-    damage_effect = next(effect for effect in attack.effects if effect.type == "damage")
+    damage_effect = next(effect for effect in attack.effects if effect.type in {"damage", "instant_damage"})
     return calculate_effect_damage(enemy, target, None, damage_effect)
 
 
@@ -253,27 +271,63 @@ def apply_effect(
     *,
     weapon: Weapon | None,
 ) -> None:
-    if effect.type == "damage":
+    effect_target = actor if effect.target == "self" else target
+
+    if effect.type in {"damage", "instant_damage"}:
         damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(actor, target, weapon, effect)
-        target.hp = max(0, target.hp - damage)
+        damage = calculate_effect_damage(actor, effect_target, weapon, effect)
+        effect_target.hp = max(0, effect_target.hp - damage)
         result.total_damage += damage
         result.events.append(
-            f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(target)}."
+            f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
         )
+        return
+
+    if effect.type == "instant_heal":
+        before = effect_target.hp
+        effect_target.hp = min(effect_target.max_hp, effect_target.hp + effect.magnitude)
+        result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
+        return
+
+    if effect.type == "drain":
+        damage_type = _effect_damage_type(actor, weapon, effect)
+        damage = calculate_effect_damage(actor, effect_target, weapon, effect)
+        effect_target.hp = max(0, effect_target.hp - damage)
+        result.total_damage += damage
+        heal = round_half_up(damage * effect.ratio)
+        before = actor.hp
+        actor.hp = min(actor.max_hp, actor.hp + heal)
+        result.events.append(
+            f"{actor_name(actor)}'s {result.action_name} drained {damage} {damage_type} damage from {actor_name(effect_target)}."
+        )
+        result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
         return
 
     if effect.type == "apply_status":
         status_type = effect.status_type or effect.damage_type
-        target.active_statuses.append(
+        magnitude = effect.magnitude
+        duration = effect.duration
+        if isinstance(actor, Player):
+            status_mod = actor.applied_status_mods.get(status_type, {})
+            magnitude += status_mod.get("magnitude", 0)
+            duration += status_mod.get("duration", 0)
+
+        applied_delta = 0
+        if status_type in {"buff", "debuff"}:
+            applied_delta = magnitude
+            set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) + applied_delta)
+
+        effect_target.active_statuses.append(
             ActiveStatus(
                 type=status_type,
-                magnitude=effect.magnitude,
-                duration=effect.duration,
+                magnitude=magnitude,
+                duration=duration,
                 tick_timing=effect.tick_timing,
+                stat=effect.stat,
+                applied_delta=applied_delta,
             )
         )
-        result.events.append(f"{actor_name(target)} is affected by {status_type}.")
+        result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
         return
 
     if effect.type == "heal":
@@ -289,6 +343,25 @@ def apply_effect(
         result.events.append(f"{actor.name} swapped weapon.")
         return
 
+    if effect.type == "stat_bonus":
+        if not isinstance(actor, Player):
+            raise ValueError("stat bonuses are only supported for players")
+        actor.stat_bonuses[effect.stat] = actor.stat_bonuses.get(effect.stat, 0) + effect.magnitude
+        set_stat(actor, effect.stat, get_stat(actor, effect.stat) + effect.magnitude)
+        if effect.stat == "max_mana":
+            actor.mana = min(actor.max_mana, actor.mana + effect.magnitude)
+        result.events.append(f"{actor.name} gained {effect.magnitude} {effect.stat}.")
+        return
+
+    if effect.type == "applied_status_mod":
+        if not isinstance(actor, Player):
+            raise ValueError("status modifiers are only supported for players")
+        current = actor.applied_status_mods.setdefault(effect.modifies_status_type, {})
+        current["magnitude"] = current.get("magnitude", 0) + effect.mod_magnitude
+        current["duration"] = current.get("duration", 0) + effect.mod_duration
+        result.events.append(f"{actor.name}'s {effect.modifies_status_type} effects improved.")
+        return
+
     raise ValueError(f"unknown effect type: {effect.type}")
 
 
@@ -301,6 +374,9 @@ def tick_statuses(actor: Actor, timing: Literal["round_start", "round_end"]) -> 
             status.duration -= 1
         if status.duration > 0:
             remaining.append(status)
+        elif status.applied_delta:
+            set_stat(actor, status.stat, get_stat(actor, status.stat) - status.applied_delta)
+            events.append(f"{actor_name(actor)}'s {status.type} expired.")
     actor.active_statuses = remaining
     return events
 
@@ -310,6 +386,10 @@ def apply_status_tick(actor: Actor, status: ActiveStatus) -> list[str]:
         damage = apply_damage_mitigation(status.magnitude, actor, status.type)
         actor.hp = max(0, actor.hp - damage)
         return [f"{actor_name(actor)} took {damage} {status.type} damage from {status.type}."]
+    if status.type == "regen":
+        before = actor.hp
+        actor.hp = min(actor.max_hp, actor.hp + status.magnitude)
+        return [f"{actor_name(actor)} regenerated {actor.hp - before} HP."]
     return []
 
 
@@ -318,7 +398,7 @@ def create_item_action(item: ConsumableItem) -> CombatAction:
         id=f"use_{item.id}",
         name=f"Use {item.name}",
         kind="item",
-        effects=(EffectSpec(type="heal", magnitude=item.heal_amount),),
+        effects=(EffectSpec(type="instant_heal", magnitude=item.heal_amount, target="self"),),
     )
 
 

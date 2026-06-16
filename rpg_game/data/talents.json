@@ -1,0 +1,95 @@
+[
+  {
+    "id": "cleric_light_l1_smite",
+    "class_id": "cleric",
+    "branch": "light",
+    "order": 1,
+    "name": "Smite",
+    "node_type": "active",
+    "action_id": "smite",
+    "effects": []
+  },
+  {
+    "id": "cleric_light_l2_mend",
+    "class_id": "cleric",
+    "branch": "light",
+    "order": 2,
+    "name": "Mend",
+    "node_type": "active",
+    "action_id": "mend",
+    "effects": []
+  },
+  {
+    "id": "cleric_light_l3_devotion",
+    "class_id": "cleric",
+    "branch": "light",
+    "order": 3,
+    "name": "Devotion",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "max_mana",
+        "magnitude": 15,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "cleric_light_l4_sanctuary",
+    "class_id": "cleric",
+    "branch": "light",
+    "order": 4,
+    "name": "Sanctuary",
+    "node_type": "active",
+    "action_id": "sanctuary",
+    "effects": []
+  },
+  {
+    "id": "cleric_pest_p1_plague_bolt",
+    "class_id": "cleric",
+    "branch": "pest",
+    "order": 1,
+    "name": "Plague Bolt",
+    "node_type": "active",
+    "action_id": "plague_bolt",
+    "effects": []
+  },
+  {
+    "id": "cleric_pest_p2_drain",
+    "class_id": "cleric",
+    "branch": "pest",
+    "order": 2,
+    "name": "Drain",
+    "node_type": "active",
+    "action_id": "drain",
+    "effects": []
+  },
+  {
+    "id": "cleric_pest_p3_virulence",
+    "class_id": "cleric",
+    "branch": "pest",
+    "order": 3,
+    "name": "Virulence",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "applied_status_mod",
+        "modifies_status_type": "poison",
+        "mod_magnitude": 2,
+        "mod_duration": 1,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "cleric_pest_p4_curse",
+    "class_id": "cleric",
+    "branch": "pest",
+    "order": 4,
+    "name": "Curse",
+    "node_type": "active",
+    "action_id": "curse",
+    "effects": []
+  }
+]

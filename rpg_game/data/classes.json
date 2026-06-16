@@ -25,11 +25,11 @@
     "id": "cleric",
     "name": "Cleric",
     "max_hp": 90,
-    "base_damage": 8,
-    "armor": 1,
+    "base_damage": 10,
+    "armor": 0,
     "max_mana": 30,
-    "speed": 8,
-    "starting_weapon_id": "knife",
+    "speed": 10,
+    "starting_weapon_id": "mace",
     "starting_skill_ids": ["smite"]
   }
 ]

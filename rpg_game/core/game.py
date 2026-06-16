@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from rpg_game.core import combat, inventory, progression, store, world
+from rpg_game.core import combat, inventory, progression, store, talents, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, Player
 
@@ -154,6 +154,12 @@ class GameEngine:
 
     def apply_stat_choice(self, stat: str) -> str:
         return progression.apply_stat_choice(self.player, stat)
+
+    def available_talents(self):
+        return talents.available_talents(self.player, self.content)
+
+    def allocate_talent(self, node_id: str) -> str:
+        return talents.allocate_talent(self.player, self.content, node_id)
 
     def store_entries(self) -> list[store.StoreEntry]:
         return store.get_store_entries(self.content, self.player.current_place_id)
