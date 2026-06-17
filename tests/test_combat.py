@@ -2,6 +2,7 @@ import unittest
 import random
 
 from rpg_game.core.combat import (
+    effective_hit_chance,
     get_attack,
     calculate_player_damage,
     resolve_action,
@@ -61,6 +62,16 @@ class CombatMathTests(unittest.TestCase):
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("power"), 0), 20)
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("normal"), 0), 15)
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("quick"), 0), 10)
+
+    def test_base_attack_hit_chances_power_is_50_normal_55_quick_75(self):
+        self.assertEqual(effective_hit_chance(get_attack("power")), 0.50)
+        self.assertEqual(effective_hit_chance(get_attack("normal")), 0.55)
+        self.assertEqual(effective_hit_chance(get_attack("quick")), 0.75)
+
+        content = GameEngine().content
+        self.assertEqual(effective_hit_chance(content.actions["power"]), 0.50)
+        self.assertEqual(effective_hit_chance(content.actions["normal"]), 0.55)
+        self.assertEqual(effective_hit_chance(content.actions["quick"]), 0.75)
 
     def test_smite_deals_double_damage_to_undead_holy_weakness(self):
         engine = GameEngine(rng=random.Random(1))

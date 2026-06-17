@@ -25,7 +25,7 @@ ATTACKS: dict[str, CombatAction] = {
         id="power",
         name="Power attack",
         kind="base_attack",
-        hit_chance=0.30,
+        hit_chance=0.50,
         effects=(
             EffectSpec(
                 type="damage",

@@ -235,6 +235,7 @@ class Player:
     inventory: Inventory
     current_place_id: str
     respawn_place_id: str
+    owned_weapon_ids: tuple[str, ...] = ()
     mana: int = 0
     max_mana: int = 0
     speed: int = 0

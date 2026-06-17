@@ -3,7 +3,7 @@
     "id": "power",
     "name": "Power attack",
     "kind": "base_attack",
-    "hit_chance": 0.30,
+    "hit_chance": 0.50,
     "mana_cost": 0,
     "effects": [
       {

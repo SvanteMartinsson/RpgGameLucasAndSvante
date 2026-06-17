@@ -157,6 +157,9 @@ def describe_effect(effect) -> str:
         if status in {"buff", "debuff"}:
             sign = "+" if effect.magnitude >= 0 else ""
             return f"{status} {sign}{effect.magnitude} {effect.stat} for {effect.duration} rounds ({where})"
+        if status == "reflect":
+            amount = f"{effect.multiplier}x Power" if effect.scale == "power" else str(effect.magnitude)
+            return f"reflect {amount} {effect.damage_type} for {effect.duration} rounds ({where})"
         return f"apply {status} {effect.magnitude} for {effect.duration} rounds ({where})"
     if kind == "stat_bonus":
         return f"+{effect.magnitude} {effect.stat}"
@@ -354,7 +357,7 @@ def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
 
 def choose_attack(engine: GameEngine) -> str | None:
     options = [
-        ("1", "power", "Power attack (x2.0, 30% hit)"),
+        ("1", "power", "Power attack (x2.0, 50% hit)"),
         ("2", "normal", "Normal attack (x1.5, 55% hit)"),
         ("3", "quick", "Quick attack (x1.0, 75% hit)"),
         ("b", "back", "Back"),
@@ -409,7 +412,7 @@ def choose_combat_item(engine: GameEngine) -> str | None:
 def choose_swap_weapon(engine: GameEngine) -> str | None:
     player = engine.player
     options = []
-    for index, weapon in enumerate(engine.content.weapons.values(), start=1):
+    for index, weapon in enumerate(engine.owned_weapons(), start=1):
         equipped = " (equipped)" if weapon.id == player.equipped_weapon_id else ""
         options.append(
             (str(index), weapon.id, f"{weapon.name} (+{weapon.damage_bonus} {weapon.damage_type}){equipped}")

@@ -67,6 +67,8 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
         if player.gold < weapon.price:
             return PurchaseResult(False, f"Not enough gold. {weapon.name} costs {weapon.price}.")
         player.gold -= weapon.price
+        if weapon.id not in player.owned_weapon_ids:
+            player.owned_weapon_ids = (*player.owned_weapon_ids, weapon.id)
         player.equipped_weapon_id = weapon.id
         return PurchaseResult(True, f"Bought and equipped {weapon.name}.")
 

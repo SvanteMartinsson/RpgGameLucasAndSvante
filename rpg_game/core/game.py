@@ -62,6 +62,7 @@ class GameEngine:
             inventory=Inventory(),
             current_place_id=start_place.id,
             respawn_place_id=start_place.respawn_place_id,
+            owned_weapon_ids=(player_class.starting_weapon_id,),
             equipped_skill_ids=player_class.starting_skill_ids,
         )
         self.state = GameState(player=player, content=self.content)
@@ -247,6 +248,13 @@ class GameEngine:
     def unequip_skill(self, action_id: str) -> str:
         return talents.unequip_skill(self.player, self.content, action_id)
 
+    def owned_weapons(self):
+        return [
+            self.content.weapons[weapon_id]
+            for weapon_id in self.player.owned_weapon_ids
+            if weapon_id in self.content.weapons
+        ]
+
     def store_entries(self) -> list[store.StoreEntry]:
         return store.get_store_entries(self.content, self.player.current_place_id)
 
@@ -271,6 +279,8 @@ class GameEngine:
             weapon_id = normalized.split(":", 1)[1]
             if weapon_id not in self.content.weapons:
                 raise ValueError(f"unknown weapon: {weapon_id}")
+            if weapon_id not in self.player.owned_weapon_ids:
+                raise ValueError(f"weapon not owned: {weapon_id}")
             return combat.create_weapon_swap_action(weapon_id)
         return self.content.actions[normalized]
 
