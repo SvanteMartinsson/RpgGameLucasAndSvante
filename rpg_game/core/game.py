@@ -7,10 +7,11 @@ It returns structured results so UI layers can decide how to present them.
 
 from __future__ import annotations
 
+import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, inventory, progression, store, talents, world
+from rpg_game.core import combat, inventory, persistence, progression, store, talents, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player
 
@@ -74,6 +75,27 @@ class GameEngine:
         )
         self.state = GameState(player=player, content=self.content)
         return self.state
+
+    def save(self, path: str) -> persistence.SaveResult:
+        if self.state is None:
+            raise RuntimeError("game has not been started")
+        data = persistence.serialize_state(self.state)
+        with open(path, "w", encoding="utf-8") as save_file:
+            json.dump(data, save_file, indent=2)
+        return persistence.SaveResult(True, f"Game saved to {path}.")
+
+    def load(self, path: str) -> persistence.LoadResult:
+        try:
+            with open(path, encoding="utf-8") as save_file:
+                data = json.load(save_file)
+        except FileNotFoundError:
+            return persistence.LoadResult(False, "No save file found.")
+        except json.JSONDecodeError:
+            return persistence.LoadResult(False, "Save file is corrupted.")
+        player_data = data.get("player", data)
+        player = persistence.deserialize_player(player_data, self.content.start_place_id)
+        self.state = GameState(player=player, content=self.content)
+        return persistence.LoadResult(True, "Game loaded.")
 
     def current_place(self):
         return world.get_current_place(self.player, self.content)

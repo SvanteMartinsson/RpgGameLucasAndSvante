@@ -4,6 +4,9 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 
 
+SAVE_PATH = "savegame.json"
+
+
 def main() -> None:
     engine = GameEngine()
     print("Welcome to Svantrenish RPG!")
@@ -27,6 +30,8 @@ def main() -> None:
             ("use", "Use item"),
             ("talents", "Talents"),
             ("skills", "Skills"),
+            ("save", "Save game"),
+            ("load", "Load game"),
         ]
         if place.has_store:
             menu.append(("rest", "Rest"))
@@ -49,6 +54,10 @@ def main() -> None:
             handle_talents(engine)
         elif action == "skills":
             handle_skills(engine)
+        elif action == "save":
+            print(engine.save(SAVE_PATH).message)
+        elif action == "load":
+            print(engine.load(SAVE_PATH).message)
         elif action == "rest":
             print(engine.rest().message)
         elif action == "store":
