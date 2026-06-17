@@ -202,11 +202,15 @@ def calculate_effect_damage(
     effect: EffectSpec,
     rng: random.Random | None = None,
     result: ActionResolution | None = None,
+    weapon_scaled: bool = False,
 ) -> int:
     if effect.scale == "basic_attack":
         raw_damage = round_half_up(_basic_attack_base(actor, weapon) * effect.multiplier)
     elif effect.scale == "power":
-        raw_damage = round_half_up(get_stat(actor, "power") * effect.multiplier)
+        base_power = get_stat(actor, "power")
+        if weapon_scaled and weapon is not None:
+            base_power += weapon.damage_bonus
+        raw_damage = round_half_up(base_power * effect.multiplier)
     elif effect.scale == "flat":
         raw_damage = round_half_up(effect.magnitude * effect.multiplier)
     else:
@@ -222,6 +226,10 @@ def calculate_effect_damage(
     damage_type = _effect_damage_type(actor, weapon, effect)
     damage = apply_damage_mitigation_with_armor_pen(raw_damage, target, damage_type, effect.armor_pen)
     return apply_damage_taken_mod(damage, target)
+
+
+def action_uses_weapon_scaling(action: CombatAction) -> bool:
+    return bool(action.requires_weapon_category)
 
 
 def apply_damage_dealt_mod(raw_damage: int, actor: Actor) -> int:
@@ -340,7 +348,7 @@ def resolve_action(
         target_name=actor_name(target),
     )
 
-    blocked_reason = blocked_action_reason(actor, action)
+    blocked_reason = blocked_action_reason(actor, action, weapon=weapon)
     if blocked_reason:
         result.blocked = True
         result.events.append(blocked_reason)
@@ -365,7 +373,15 @@ def resolve_action(
         return result
 
     for effect in action.effects:
-        apply_effect(actor, target, effect, result, weapon=weapon, rng=rng)
+        apply_effect(
+            actor,
+            target,
+            effect,
+            result,
+            weapon=weapon,
+            rng=rng,
+            weapon_scaled=action_uses_weapon_scaling(action),
+        )
 
     if action.cooldown_rounds:
         actor.cooldowns[action.id] = action.cooldown_rounds
@@ -383,21 +399,34 @@ def rolls_evasion(target: Actor, rng: random.Random) -> bool:
     return rng.random() < (target.evasion_chance / 100)
 
 
-def blocked_action_reason(actor: Actor, action: CombatAction) -> str:
+def blocked_action_reason(
+    actor: Actor,
+    action: CombatAction,
+    *,
+    weapon: Weapon | None = None,
+) -> str:
     if actor.mana < action.mana_cost:
         return f"{actor_name(actor)} does not have enough mana for {action.name}."
     if actor.cooldowns.get(action.id, 0) > 0:
         return f"{actor_name(actor)} cannot use {action.name} for {actor.cooldowns[action.id]} more round(s)."
+    if isinstance(actor, Player) and action.requires_weapon_category:
+        if weapon is None or weapon.category != action.requires_weapon_category:
+            return f"{actor_name(actor)} needs a {action.requires_weapon_category} weapon for {action.name}."
     return ""
 
 
-def available_actions(actor: Actor, actions: dict[str, CombatAction]) -> list[CombatAction]:
+def available_actions(
+    actor: Actor,
+    actions: dict[str, CombatAction],
+    *,
+    weapon: Weapon | None = None,
+) -> list[CombatAction]:
     action_ids = actor.equipped_skill_ids if isinstance(actor, Player) else actor.action_ids
     base_ids = ("power", "normal", "quick") if isinstance(actor, Player) else ()
     return [
         actions[action_id]
         for action_id in (*base_ids, *action_ids)
-        if action_id in actions and not blocked_action_reason(actor, actions[action_id])
+        if action_id in actions and not blocked_action_reason(actor, actions[action_id], weapon=weapon)
     ]
 
 
@@ -535,13 +564,22 @@ def apply_effect(
     *,
     weapon: Weapon | None,
     rng: random.Random | None = None,
+    weapon_scaled: bool = False,
 ) -> None:
     effect_target = actor if effect.target == "self" else target
 
     if effect.type in {"damage", "instant_damage"}:
         damage_type = _effect_damage_type(actor, weapon, effect)
         for _ in range(effect.hits):
-            damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
+            damage = calculate_effect_damage(
+                actor,
+                effect_target,
+                weapon,
+                effect,
+                rng=rng,
+                result=result,
+                weapon_scaled=weapon_scaled,
+            )
             deal_damage(actor, effect_target, damage, damage_type, result)
             result.events.append(
                 f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
@@ -556,7 +594,15 @@ def apply_effect(
 
     if effect.type == "drain":
         damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
+        damage = calculate_effect_damage(
+            actor,
+            effect_target,
+            weapon,
+            effect,
+            rng=rng,
+            result=result,
+            weapon_scaled=weapon_scaled,
+        )
         deal_damage(actor, effect_target, damage, damage_type, result)
         heal = round_half_up(damage * effect.ratio)
         before = actor.hp
@@ -600,6 +646,7 @@ def apply_effect(
                         stacks=0,
                         on_event=effect.on_event,
                         base_duration=duration,
+                        weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
                     )
                 )
                 result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
@@ -634,6 +681,7 @@ def apply_effect(
                 stacks=1,
                 on_event=effect.on_event,
                 base_duration=duration,
+                weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
             )
         )
         result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
@@ -730,7 +778,7 @@ def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution, tri
         if status.type != "reflect" or status.trigger != trigger:
             continue
         if status.scale == "power":
-            raw_damage = round_half_up(get_stat(bearer, "power") * status.multiplier)
+            raw_damage = round_half_up((get_stat(bearer, "power") + status.weapon_bonus) * status.multiplier)
         else:
             raw_damage = status.magnitude
         reflected = apply_damage_mitigation(raw_damage, attacker, status.damage_type)

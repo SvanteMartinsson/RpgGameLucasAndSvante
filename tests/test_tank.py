@@ -91,7 +91,13 @@ class TankClassTests(unittest.TestCase):
         enemy = engine.content.enemies["giant_rat"].create_enemy()
         enemy.hp = 30
 
-        combat.resolve_action(engine.player, enemy, engine.content.actions["counter"], engine.rng)
+        combat.resolve_action(
+            engine.player,
+            enemy,
+            engine.content.actions["counter"],
+            engine.rng,
+            weapon=engine.content.weapons["mace"],
+        )
         hit = combat.resolve_action(enemy, engine.player, always_hit_action(), engine.rng)
 
         self.assertEqual(hit.reflected_damage, 8)

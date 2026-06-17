@@ -11,7 +11,13 @@ class FighterClassTests(unittest.TestCase):
         engine.start_new_game("Fighter", "fighter")
         target = make_enemy(hp=100, armor=6)
 
-        result = combat.resolve_action(engine.player, target, engine.content.actions["sunder"], engine.rng)
+        result = combat.resolve_action(
+            engine.player,
+            target,
+            engine.content.actions["sunder"],
+            engine.rng,
+            weapon=engine.content.weapons["knife"],
+        )
 
         self.assertEqual(result.total_damage, 20)
         self.assertEqual(target.hp, 80)
@@ -22,7 +28,13 @@ class FighterClassTests(unittest.TestCase):
         engine.player.crit_chance = 50
         target = make_enemy(hp=100)
 
-        result = combat.resolve_action(engine.player, target, engine.content.actions["combo"], engine.rng)
+        result = combat.resolve_action(
+            engine.player,
+            target,
+            engine.content.actions["combo"],
+            engine.rng,
+            weapon=engine.content.weapons["knife"],
+        )
 
         self.assertEqual(len([event for event in result.events if "dealt" in event]), 2)
         self.assertEqual(result.critical_hits, 1)

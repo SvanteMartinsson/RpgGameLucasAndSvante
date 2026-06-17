@@ -80,8 +80,9 @@ class CombatMathTests(unittest.TestCase):
         dummy = make_enemy("dummy", resistances={"holy": 1.0})
         undead = engine.content.enemies["undead"].create_enemy()
 
-        dummy_result = resolve_action(engine.player, dummy, smite, engine.rng)
-        undead_result = resolve_action(engine.player, undead, smite, engine.rng)
+        weapon = engine.content.weapons["holy_mace"]
+        dummy_result = resolve_action(engine.player, dummy, smite, engine.rng, weapon=weapon)
+        undead_result = resolve_action(engine.player, undead, smite, engine.rng, weapon=weapon)
 
         self.assertEqual(undead_result.total_damage, dummy_result.total_damage * 2)
 

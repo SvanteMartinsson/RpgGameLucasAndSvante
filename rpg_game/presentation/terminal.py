@@ -254,7 +254,7 @@ def handle_skills(engine: GameEngine) -> None:
         options = []
         for index, skill in enumerate(skills, start=1):
             mark = "[x]" if skill.id in equipped else "[ ]"
-            label = f"{mark} {skill.name} - {skill_cost_text(skill)}"
+            label = f"{mark} {skill.name} - {skill_cost_text(skill)}{skill_requirement_text(engine, skill)}"
             options.append((str(index), skill.id, label))
         options.append(("b", "back", "Back"))
 
@@ -378,9 +378,10 @@ def choose_skill(engine: GameEngine) -> str | None:
 
     while True:
         options = []
+        weapon = engine.content.weapons[engine.player.equipped_weapon_id]
         for index, skill in enumerate(skills, start=1):
-            reason = combat.blocked_action_reason(engine.player, skill)
-            label = f"{skill.name} - {skill_cost_text(skill)}"
+            reason = combat.blocked_action_reason(engine.player, skill, weapon=weapon)
+            label = f"{skill.name} - {skill_cost_text(skill)}{skill_requirement_text(engine, skill)}"
             if reason:
                 label += " [NOT READY]"
             options.append((str(index), skill.id, label))
@@ -390,11 +391,21 @@ def choose_skill(engine: GameEngine) -> str | None:
         if choice == "back":
             return None
         action = engine.content.actions[choice]
-        reason = combat.blocked_action_reason(engine.player, action)
+        reason = combat.blocked_action_reason(engine.player, action, weapon=weapon)
         if reason:
             print(reason)
             continue  # reprompt without spending the round
         return choice
+
+
+def skill_requirement_text(engine: GameEngine, action) -> str:
+    if not action.requires_weapon_category:
+        return ""
+    weapon = engine.content.weapons[engine.player.equipped_weapon_id]
+    text = f", requires {action.requires_weapon_category}"
+    if weapon.category != action.requires_weapon_category:
+        text += f" [NO {action.requires_weapon_category.upper()} WEAPON]"
+    return text
 
 
 def choose_combat_item(engine: GameEngine) -> str | None:

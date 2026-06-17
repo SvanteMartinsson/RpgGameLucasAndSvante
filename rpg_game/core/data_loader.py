@@ -56,6 +56,7 @@ def load_content() -> GameContent:
             price=row["price"],
             damage_type=row.get("damage_type", "physical"),
             tier=row.get("tier", 1),
+            category=row.get("category", "melee"),
         )
         for row in _read_json("weapons.json")
     }
@@ -69,6 +70,7 @@ def load_content() -> GameContent:
             mana_cost=row.get("mana_cost", 0),
             cooldown_rounds=row.get("cooldown_rounds", 0),
             telegraph=row.get("telegraph", False),
+            requires_weapon_category=row.get("requires_weapon_category", ""),
             effects=tuple(
                 _effect_from_json(effect)
                 for effect in row.get("effects", ())

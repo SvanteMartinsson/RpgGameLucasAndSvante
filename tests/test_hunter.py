@@ -19,6 +19,7 @@ class HunterClassTests(unittest.TestCase):
             target,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(hunter_hit.total_damage, 28)
 
@@ -37,6 +38,7 @@ class HunterClassTests(unittest.TestCase):
             target,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(normal.total_damage, 22)
 
@@ -45,7 +47,13 @@ class HunterClassTests(unittest.TestCase):
         engine.start_new_game("Hunter", "hunter")
         target = make_enemy(hp=100, armor=8)
 
-        result = combat.resolve_action(engine.player, target, engine.content.actions["piercing_shot"], engine.rng)
+        result = combat.resolve_action(
+            engine.player,
+            target,
+            engine.content.actions["piercing_shot"],
+            engine.rng,
+            weapon=engine.content.weapons["bow"],
+        )
 
         self.assertEqual(result.total_damage, 20)
         self.assertEqual(target.hp, 80)
@@ -64,6 +72,7 @@ class HunterClassTests(unittest.TestCase):
             normal,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(normal_result.total_damage, 22)
 
@@ -73,6 +82,7 @@ class HunterClassTests(unittest.TestCase):
             weak,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(boosted.total_damage, 58)
 
@@ -91,6 +101,7 @@ class HunterClassTests(unittest.TestCase):
             humanoid,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(humanoid_result.total_damage, 22)
 
@@ -100,6 +111,7 @@ class HunterClassTests(unittest.TestCase):
             beast,
             engine.content.actions["aimed_shot"],
             SequenceRng([0.0, 0.99]),
+            weapon=engine.content.weapons["bow"],
         )
         self.assertEqual(beast_result.total_damage, 28)
 

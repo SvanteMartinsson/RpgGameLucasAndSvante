@@ -5,6 +5,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 1
   },
   {
@@ -13,6 +14,7 @@
     "damage_bonus": 5,
     "price": 50,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 1
   },
   {
@@ -21,6 +23,7 @@
     "damage_bonus": 9,
     "price": 175,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 2
   },
   {
@@ -29,6 +32,7 @@
     "damage_bonus": 14,
     "price": 350,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 2
   },
   {
@@ -37,6 +41,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 1
   },
   {
@@ -45,6 +50,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "holy",
+    "category": "magic",
     "tier": 1
   },
   {
@@ -53,6 +59,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 1
   },
   {
@@ -61,6 +68,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "fire",
+    "category": "magic",
     "tier": 1
   },
   {
@@ -69,6 +77,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
+    "category": "ranged",
     "tier": 1
   },
   {
@@ -77,6 +86,7 @@
     "damage_bonus": 18,
     "price": 450,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 3
   },
   {
@@ -85,6 +95,7 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "fire",
+    "category": "magic",
     "tier": 3
   },
   {
@@ -93,6 +104,7 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "frost",
+    "category": "magic",
     "tier": 3
   },
   {
@@ -101,6 +113,7 @@
     "damage_bonus": 24,
     "price": 800,
     "damage_type": "holy",
+    "category": "melee",
     "tier": 4
   },
   {
@@ -109,6 +122,7 @@
     "damage_bonus": 22,
     "price": 760,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 4
   },
   {
@@ -117,6 +131,7 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "fire",
+    "category": "magic",
     "tier": 5
   },
   {
@@ -125,6 +140,7 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "holy",
+    "category": "melee",
     "tier": 5
   },
   {
@@ -133,6 +149,7 @@
     "damage_bonus": 38,
     "price": 2200,
     "damage_type": "physical",
+    "category": "melee",
     "tier": 6
   }
 ]

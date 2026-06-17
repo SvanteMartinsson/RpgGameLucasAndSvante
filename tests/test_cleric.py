@@ -48,7 +48,13 @@ class ClericClassTests(unittest.TestCase):
         target.hp = 100
         engine.player.hp = 80
 
-        result = combat.resolve_action(engine.player, target, engine.content.actions["drain"], engine.rng)
+        result = combat.resolve_action(
+            engine.player,
+            target,
+            engine.content.actions["drain"],
+            engine.rng,
+            weapon=engine.content.weapons["holy_mace"],
+        )
 
         self.assertEqual(result.total_damage, 12)
         self.assertEqual(engine.player.hp, 86)

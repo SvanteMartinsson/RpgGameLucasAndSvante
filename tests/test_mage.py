@@ -41,21 +41,40 @@ class MageClassTests(unittest.TestCase):
         engine.allocate_talent("mage_pyromancer_y3_combustion")
 
         plain = make_enemy(hp=100)
-        plain_result = combat.resolve_action(engine.player, plain, engine.content.actions["firebolt"], ChoiceRng([0.0]))
+        weapon = engine.content.weapons["staff"]
+        plain_result = combat.resolve_action(
+            engine.player,
+            plain,
+            engine.content.actions["firebolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(plain_result.total_damage, 19)
 
         burning = make_enemy(hp=100)
         burning.active_statuses.append(
             ActiveStatus(type="fire", magnitude=8, duration=3, tick_timing="round_end", tag="burn")
         )
-        boosted = combat.resolve_action(engine.player, burning, engine.content.actions["firebolt"], ChoiceRng([0.0]))
+        boosted = combat.resolve_action(
+            engine.player,
+            burning,
+            engine.content.actions["firebolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(boosted.total_damage, 23)
 
         chilled = make_enemy(hp=100)
         chilled.active_statuses.append(
             ActiveStatus(type="debuff", magnitude=-4, duration=2, tick_timing="round_end", stat="speed", tag="chill")
         )
-        frost = combat.resolve_action(engine.player, chilled, engine.content.actions["frostbolt"], ChoiceRng([0.0]))
+        frost = combat.resolve_action(
+            engine.player,
+            chilled,
+            engine.content.actions["frostbolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(frost.total_damage, 17)
 
     def test_frostbite_bonus_applies_only_to_frost_damage_against_frozen_or_chilled_targets(self):
@@ -67,17 +86,36 @@ class MageClassTests(unittest.TestCase):
         engine.allocate_talent("mage_cryomancer_c3_frostbite")
 
         plain = make_enemy(hp=100)
-        plain_result = combat.resolve_action(engine.player, plain, engine.content.actions["frostbolt"], ChoiceRng([0.0]))
+        weapon = engine.content.weapons["staff"]
+        plain_result = combat.resolve_action(
+            engine.player,
+            plain,
+            engine.content.actions["frostbolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(plain_result.total_damage, 17)
 
         chilled = make_enemy(hp=100)
         chilled.active_statuses.append(
             ActiveStatus(type="debuff", magnitude=-4, duration=2, tick_timing="round_end", stat="speed", tag="chill")
         )
-        boosted = combat.resolve_action(engine.player, chilled, engine.content.actions["frostbolt"], ChoiceRng([0.0]))
+        boosted = combat.resolve_action(
+            engine.player,
+            chilled,
+            engine.content.actions["frostbolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(boosted.total_damage, 21)
 
-        fire = combat.resolve_action(engine.player, chilled, engine.content.actions["firebolt"], ChoiceRng([0.0]))
+        fire = combat.resolve_action(
+            engine.player,
+            chilled,
+            engine.content.actions["firebolt"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(fire.total_damage, 19)
 
     def test_ice_lance_doubles_only_against_frozen_target(self):
@@ -85,14 +123,27 @@ class MageClassTests(unittest.TestCase):
         engine.start_new_game("Mage", "mage")
 
         plain = make_enemy(hp=100)
-        plain_result = combat.resolve_action(engine.player, plain, engine.content.actions["ice_lance"], ChoiceRng([0.0]))
+        weapon = engine.content.weapons["staff"]
+        plain_result = combat.resolve_action(
+            engine.player,
+            plain,
+            engine.content.actions["ice_lance"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(plain_result.total_damage, 18)
 
         frozen = make_enemy(hp=100)
         frozen.active_statuses.append(
             ActiveStatus(type="skip_turn", magnitude=0, duration=1, tick_timing="turn", tag="freeze")
         )
-        boosted = combat.resolve_action(engine.player, frozen, engine.content.actions["ice_lance"], ChoiceRng([0.0]))
+        boosted = combat.resolve_action(
+            engine.player,
+            frozen,
+            engine.content.actions["ice_lance"],
+            ChoiceRng([0.0]),
+            weapon=weapon,
+        )
         self.assertEqual(boosted.total_damage, 36)
 
     def test_frostbolt_chill_reduces_speed_for_2_rounds_then_restores(self):
@@ -100,7 +151,13 @@ class MageClassTests(unittest.TestCase):
         engine.start_new_game("Mage", "mage")
         target = make_enemy(hp=100, speed=12)
 
-        combat.resolve_action(engine.player, target, engine.content.actions["frostbolt"], ChoiceRng([0.0]))
+        combat.resolve_action(
+            engine.player,
+            target,
+            engine.content.actions["frostbolt"],
+            ChoiceRng([0.0]),
+            weapon=engine.content.weapons["staff"],
+        )
         self.assertEqual(target.speed, 8)
 
         combat.tick_statuses(target, "round_end")

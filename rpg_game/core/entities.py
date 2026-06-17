@@ -25,6 +25,7 @@ class Weapon:
     price: int
     damage_type: str = "physical"
     tier: int = 1
+    category: str = "melee"
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ class CombatAction:
     mana_cost: int = 0
     cooldown_rounds: int = 0
     telegraph: bool = False
+    requires_weapon_category: str = ""
     effects: tuple[EffectSpec, ...] = ()
 
 
@@ -320,3 +322,4 @@ class ActiveStatus:
     stacks: int = 1
     on_event: str = ""
     base_duration: int = 0
+    weapon_bonus: int = 0

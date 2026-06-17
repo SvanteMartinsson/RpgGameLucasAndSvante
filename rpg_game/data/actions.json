@@ -53,6 +53,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "instant_damage",
@@ -117,6 +118,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 9,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "drain",
@@ -241,6 +243,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 8,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "apply_status",
@@ -260,6 +263,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "instant_damage",
@@ -295,6 +299,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 8,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "instant_damage",
@@ -335,6 +340,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 7,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "apply_status",
@@ -373,6 +379,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "drain",
@@ -417,6 +424,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "instant_damage",
@@ -434,6 +442,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "instant_damage",
@@ -451,6 +460,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 8,
+    "requires_weapon_category": "melee",
     "effects": [
       {
         "type": "instant_damage",
@@ -468,6 +478,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "instant_damage",
@@ -503,6 +514,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 14,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "instant_damage",
@@ -519,6 +531,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 7,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "instant_damage",
@@ -563,6 +576,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 9,
+    "requires_weapon_category": "magic",
     "effects": [
       {
         "type": "instant_damage",
@@ -586,6 +600,7 @@
     "kind": "skill",
     "hit_chance": 0.9,
     "mana_cost": 6,
+    "requires_weapon_category": "ranged",
     "effects": [
       {
         "type": "instant_damage",
@@ -621,6 +636,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 7,
+    "requires_weapon_category": "ranged",
     "effects": [
       {
         "type": "instant_damage",

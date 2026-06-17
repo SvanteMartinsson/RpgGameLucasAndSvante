@@ -16,15 +16,16 @@ class RogueClassTests(unittest.TestCase):
 
         self.assertEqual(combat.effective_crit_chance(engine.player, effect), 35)
 
+        weapon = engine.content.weapons["dagger"]
         engine.player.crit_chance = 100
-        crit = combat.resolve_action(engine.player, target, backstab, random.Random(1))
+        crit = combat.resolve_action(engine.player, target, backstab, random.Random(1), weapon=weapon)
 
         self.assertEqual(crit.total_damage, 42)
         self.assertEqual(crit.critical_hits, 1)
 
         target = make_enemy(hp=100)
         engine.player.crit_chance = 0
-        no_crit = combat.resolve_action(engine.player, target, backstab, random.Random(1))
+        no_crit = combat.resolve_action(engine.player, target, backstab, random.Random(1), weapon=weapon)
 
         self.assertEqual(no_crit.total_damage, 21)
         self.assertEqual(no_crit.critical_hits, 0)
@@ -37,13 +38,25 @@ class RogueClassTests(unittest.TestCase):
 
         healthy = make_enemy(hp=100)
         healthy.hp = 31
-        normal = combat.resolve_action(engine.player, healthy, execute, random.Random(1))
+        normal = combat.resolve_action(
+            engine.player,
+            healthy,
+            execute,
+            random.Random(1),
+            weapon=engine.content.weapons["dagger"],
+        )
 
         self.assertEqual(normal.total_damage, 18)
 
         wounded = make_enemy(hp=100)
         wounded.hp = 30
-        boosted = combat.resolve_action(engine.player, wounded, execute, random.Random(1))
+        boosted = combat.resolve_action(
+            engine.player,
+            wounded,
+            execute,
+            random.Random(1),
+            weapon=engine.content.weapons["dagger"],
+        )
 
         self.assertEqual(boosted.total_damage, 45)
 
@@ -85,7 +98,13 @@ class RogueClassTests(unittest.TestCase):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Rogue", "rogue")
         enemy = make_enemy(hp=50)
-        combat.resolve_action(engine.player, enemy, engine.content.actions["riposte"], engine.rng)
+        combat.resolve_action(
+            engine.player,
+            enemy,
+            engine.content.actions["riposte"],
+            engine.rng,
+            weapon=engine.content.weapons["dagger"],
+        )
         engine.player.evasion_chance = 100
 
         evade = combat.resolve_action(enemy, engine.player, always_hit_action(), random.Random(1))

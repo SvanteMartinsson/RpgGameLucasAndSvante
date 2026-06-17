@@ -163,7 +163,8 @@ class GameEngine:
         player_action = self._build_player_action(attack_id)
         consumable_to_remove = self._consumable_from_action_id(attack_id)
 
-        blocked_reason = combat.blocked_action_reason(player, player_action)
+        equipped_weapon = self.content.weapons[player.equipped_weapon_id]
+        blocked_reason = combat.blocked_action_reason(player, player_action, weapon=equipped_weapon)
         if blocked_reason:
             events.append(blocked_reason)
             return combat.CombatTurnResult(
@@ -268,7 +269,8 @@ class GameEngine:
         return progression.apply_stat_choice(self.player, stat)
 
     def available_actions(self):
-        return combat.available_actions(self.player, self.content.actions)
+        weapon = self.content.weapons[self.player.equipped_weapon_id]
+        return combat.available_actions(self.player, self.content.actions, weapon=weapon)
 
     def available_talents(self):
         return talents.available_talents(self.player, self.content)
