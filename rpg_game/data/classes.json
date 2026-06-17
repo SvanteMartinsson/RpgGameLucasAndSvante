@@ -46,5 +46,17 @@
     "crit_chance": 10,
     "starting_weapon_id": "dagger",
     "starting_skill_ids": []
+  },
+  {
+    "id": "mage",
+    "name": "Mage",
+    "max_hp": 75,
+    "base_damage": 12,
+    "armor": 0,
+    "max_mana": 40,
+    "speed": 9,
+    "crit_chance": 0,
+    "starting_weapon_id": "staff",
+    "starting_skill_ids": []
   }
 ]

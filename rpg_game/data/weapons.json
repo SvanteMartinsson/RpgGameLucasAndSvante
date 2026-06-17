@@ -47,5 +47,12 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical"
+  },
+  {
+    "id": "staff",
+    "name": "Staff",
+    "damage_bonus": 0,
+    "price": 0,
+    "damage_type": "fire"
   }
 ]

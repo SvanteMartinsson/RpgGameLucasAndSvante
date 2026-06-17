@@ -461,5 +461,123 @@
         "hits": 2
       }
     ]
+  },
+  {
+    "id": "firebolt",
+    "name": "Firebolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.6,
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "ignite",
+    "name": "Ignite",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 8,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "fireball",
+    "name": "Fireball",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 14,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 2.4,
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "frostbolt",
+    "name": "Frostbolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.4,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "speed",
+        "magnitude": -4,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "tag": "chill",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "freeze",
+    "name": "Freeze",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 12,
+    "cooldown_rounds": 3,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "skip_turn",
+        "tag": "freeze",
+        "duration": 1,
+        "tick_timing": "turn",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "ice_lance",
+    "name": "Ice Lance",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 9,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.5,
+        "damage_type": "frost",
+        "target": "enemy",
+        "conditional": {
+          "subject": "target",
+          "predicate": "has_status",
+          "status_type": "freeze",
+          "damage_type": "frost",
+          "multiplier": 2.0
+        }
+      }
+    ]
   }
 ]

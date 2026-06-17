@@ -410,5 +410,107 @@
     "node_type": "active",
     "action_id": "combo",
     "effects": []
+  },
+  {
+    "id": "mage_pyromancer_y1_firebolt",
+    "class_id": "mage",
+    "branch": "pyromancer",
+    "order": 1,
+    "name": "Firebolt",
+    "node_type": "active",
+    "action_id": "firebolt",
+    "effects": []
+  },
+  {
+    "id": "mage_pyromancer_y2_ignite",
+    "class_id": "mage",
+    "branch": "pyromancer",
+    "order": 2,
+    "name": "Ignite",
+    "node_type": "active",
+    "action_id": "ignite",
+    "effects": []
+  },
+  {
+    "id": "mage_pyromancer_y3_combustion",
+    "class_id": "mage",
+    "branch": "pyromancer",
+    "order": 3,
+    "name": "Combustion",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "conditional_damage_mod",
+        "conditional": {
+          "subject": "target",
+          "predicate": "has_status",
+          "status_type": "burn",
+          "damage_type": "fire",
+          "multiplier": 1.2
+        },
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "mage_pyromancer_y4_fireball",
+    "class_id": "mage",
+    "branch": "pyromancer",
+    "order": 4,
+    "name": "Fireball",
+    "node_type": "active",
+    "action_id": "fireball",
+    "effects": []
+  },
+  {
+    "id": "mage_cryomancer_c1_frostbolt",
+    "class_id": "mage",
+    "branch": "cryomancer",
+    "order": 1,
+    "name": "Frostbolt",
+    "node_type": "active",
+    "action_id": "frostbolt",
+    "effects": []
+  },
+  {
+    "id": "mage_cryomancer_c2_freeze",
+    "class_id": "mage",
+    "branch": "cryomancer",
+    "order": 2,
+    "name": "Freeze",
+    "node_type": "active",
+    "action_id": "freeze",
+    "effects": []
+  },
+  {
+    "id": "mage_cryomancer_c3_frostbite",
+    "class_id": "mage",
+    "branch": "cryomancer",
+    "order": 3,
+    "name": "Frostbite",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "conditional_damage_mod",
+        "conditional": {
+          "subject": "target",
+          "predicate": "has_status",
+          "status_types": ["freeze", "chill"],
+          "damage_type": "frost",
+          "multiplier": 1.25
+        },
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "mage_cryomancer_c4_ice_lance",
+    "class_id": "mage",
+    "branch": "cryomancer",
+    "order": 4,
+    "name": "Ice Lance",
+    "node_type": "active",
+    "action_id": "ice_lance",
+    "effects": []
   }
 ]

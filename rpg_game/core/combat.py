@@ -255,6 +255,10 @@ def apply_conditional(raw_damage: int, actor: Actor, target: Actor, effect: Effe
 
 
 def condition_matches(actor: Actor, target: Actor, conditional: dict[str, object], damage_type: str = "") -> bool:
+    required_damage_type = conditional.get("damage_type")
+    if required_damage_type and damage_type != required_damage_type:
+        return False
+
     subject_name = str(conditional.get("subject", "target"))
     subject = actor if subject_name == "self" else target
     predicate = conditional.get("predicate")
@@ -265,8 +269,12 @@ def condition_matches(actor: Actor, target: Actor, conditional: dict[str, object
         threshold = float(conditional["threshold"])
         return (subject.hp / subject.max_hp) * 100 >= threshold
     if predicate == "has_status":
-        status_type = str(conditional["status_type"])
-        return any(status.type == status_type or status.tag == status_type for status in subject.active_statuses)
+        status_types = conditional.get("status_types", conditional.get("status_type"))
+        if isinstance(status_types, list):
+            names = {str(status_type) for status_type in status_types}
+        else:
+            names = {str(status_types)}
+        return any(status.type in names or status.tag in names for status in subject.active_statuses)
     if predicate == "damage_type_is_weakness":
         return get_resistance(subject, damage_type) > 1.0
     if predicate == "has_tag":
@@ -398,6 +406,15 @@ def tick_cooldowns(actor: Actor, skip: set[str] | None = None) -> None:
         for action_id, remaining in actor.cooldowns.items()
         if (remaining if action_id in skip else remaining - 1) > 0
     }
+
+
+def consume_skip_turn(actor: Actor) -> list[str]:
+    for index, status in enumerate(actor.active_statuses):
+        if status.type != "skip_turn":
+            continue
+        del actor.active_statuses[index]
+        return [f"{actor_name(actor)} is frozen and loses the turn."]
+    return []
 
 
 def apply_effect(

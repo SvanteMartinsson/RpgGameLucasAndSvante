@@ -118,6 +118,11 @@ class GameEngine:
             if not player.is_alive or not enemy.is_alive:
                 break
 
+            skipped_events = combat.consume_skip_turn(actor)
+            if skipped_events:
+                events.extend(skipped_events)
+                continue
+
             if actor is player:
                 action = player_action
                 target = enemy
