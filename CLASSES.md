@@ -258,7 +258,7 @@ conditional från Rogue.
 | Nod | Typ | Effekt | Mana |
 |---|---|---|---:|
 | B1 Frenzy | aktiv | drain physical 1.5× Power, läk self 30% | 6 |
-| B2 Rage | passiv | vid skada (on_damaged): +3 Power (stacking buff, max 5 stacks) | — |
+| B2 Rage | passiv | vid skada (on_damaged): +3 Power per stack (max 5 = +15). Buff varar 3 rundor; ny stack återställer timern till 3 | — |
 | B3 Bloodlust | passiv | conditional: medan eget hp% ≤ 40 → +30% utdelad skada | — |
 | B4 Reckless | aktiv | status buff self: +50% utdelad skada OCH +25% tagen skada i 3 rundor | 7 |
 
@@ -277,8 +277,10 @@ conditional från Rogue.
   fortfarande igenom).
 - **multi-hit**: Combo producerar exakt 2 skadeinstanser; varje rullar crit
   oberoende.
-- **Rage stacking**: efter 3 träffar +9 Power; capped vid +15 (5 stacks);
-  löper ut korrekt.
+- **Rage stacking**: efter 3 träffar +9 Power; capped vid +15 (5 stacks).
+  Stackarna varar 3 rundor; ny stack återställer timern till 3; alla faller
+  bort samtidigt vid utgång. Efter max, om fienden inte träffar i 3 rundor är
+  bonusen 0 igen.
 - **Bloodlust**: vid eget hp% ≤ 40 är utdelad skada +30%; över 40 normal.
 - **Reckless**: utdelad skada +50% och tagen skada +25% medan aktiv; båda
   upphör vid utgång.
