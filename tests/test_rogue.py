@@ -20,7 +20,8 @@ class RogueClassTests(unittest.TestCase):
         engine.player.crit_chance = 100
         crit = combat.resolve_action(engine.player, target, backstab, random.Random(1), weapon=weapon)
 
-        self.assertEqual(crit.total_damage, 42)
+        # Crit is now an additive range-extension, not a fixed x2: 13 * (1.6 + rolled bonus).
+        self.assertEqual(crit.total_damage, 31)
         self.assertEqual(crit.critical_hits, 1)
 
         target = make_enemy(hp=100)

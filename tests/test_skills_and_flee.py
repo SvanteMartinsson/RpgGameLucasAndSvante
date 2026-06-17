@@ -84,7 +84,7 @@ class FleeTests(unittest.TestCase):
         result = engine.attempt_flee(rat)
 
         self.assertEqual(result.outcome, "ongoing")
-        self.assertEqual(engine.player.hp, 91)  # took the free hit
+        self.assertEqual(engine.player.hp, 92)  # took the free hit (rolled enemy attack)
         self.assertTrue(any("failed to flee" in event for event in result.events))
 
     def test_flee_chance_drops_against_faster_enemy(self):

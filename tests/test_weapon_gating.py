@@ -174,8 +174,9 @@ class WeaponGatingTests(unittest.TestCase):
         self.assertEqual(evade.reflected_damage, 31)
         self.assertEqual(rogue_enemy.hp, 69)
 
-    def test_base_attack_formula_is_unchanged(self):
-        engine = GameEngine(rng=NoCritRng([0.0, 0.99]))
+    def test_base_attack_scales_with_power_plus_weapon_bonus(self):
+        # [hit, multiplier-roll (0.0 -> normal floor 1.1x), no-crit]; worldsplitter +38 is included.
+        engine = GameEngine(rng=NoCritRng([0.0, 0.0, 0.99]))
         engine.start_new_game("Fighter", "fighter")
         target = make_enemy(hp=100)
 
@@ -187,7 +188,8 @@ class WeaponGatingTests(unittest.TestCase):
             weapon=engine.content.weapons["worldsplitter"],
         )
 
-        self.assertEqual(result.total_damage, 80)
+        # (15 power + 38 weapon) * 1.1 = 58.3 -> 58.
+        self.assertEqual(result.total_damage, 58)
 
 
 class NoCritRng:

@@ -42,6 +42,8 @@ class EffectSpec:
     duration: int = 0
     tick_timing: str = "instant"
     multiplier: float = 1.0
+    multiplier_min: float = 0.0
+    multiplier_max: float = 0.0
     scale: str = "flat"
     damage_type: str = "physical"
     status_type: str = ""

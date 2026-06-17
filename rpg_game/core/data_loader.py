@@ -194,6 +194,8 @@ def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:
         duration=effect.get("duration", 0),
         tick_timing=effect.get("tick_timing", "instant"),
         multiplier=effect.get("multiplier", 1.0),
+        multiplier_min=effect.get("multiplier_min", 0.0),
+        multiplier_max=effect.get("multiplier_max", 0.0),
         scale=effect.get("scale", "flat"),
         damage_type=effect.get("damage_type", "physical"),
         status_type=effect.get("status_type", ""),

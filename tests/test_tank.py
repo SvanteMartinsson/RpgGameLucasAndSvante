@@ -79,7 +79,8 @@ class TankClassTests(unittest.TestCase):
         combat.resolve_action(engine.player, enemy, engine.content.actions["taunt"], engine.rng)
 
         self.assertEqual(enemy.accuracy_mod, -20)
-        self.assertEqual(combat.effective_hit_chance(engine.content.actions["normal"], enemy.accuracy_mod), 0.35)
+        # Normal hit% is now 80; -20 accuracy -> 0.60.
+        self.assertEqual(combat.effective_hit_chance(engine.content.actions["normal"], enemy.accuracy_mod), 0.60)
         combat.tick_statuses(enemy, "round_end")
         self.assertEqual(enemy.accuracy_mod, -20)
         combat.tick_statuses(enemy, "round_end")

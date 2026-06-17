@@ -27,18 +27,23 @@ from rpg_game.core.progression import round_half_up
 
 DAMAGE_TYPES = {"physical", "fire", "frost", "holy", "poison"}
 
+CRIT_FLOOR = 0.25
+CRIT_BONUS_MAX = 1.0
+
 
 ATTACKS: dict[str, CombatAction] = {
     "power": CombatAction(
         id="power",
         name="Power attack",
         kind="base_attack",
-        hit_chance=0.50,
+        hit_chance=0.70,
         effects=(
             EffectSpec(
                 type="damage",
                 scale="basic_attack",
-                multiplier=2.0,
+                multiplier=1.25,
+                multiplier_min=1.25,
+                multiplier_max=1.7,
                 damage_type="weapon",
             ),
         ),
@@ -47,12 +52,14 @@ ATTACKS: dict[str, CombatAction] = {
         id="normal",
         name="Normal attack",
         kind="base_attack",
-        hit_chance=0.55,
+        hit_chance=0.80,
         effects=(
             EffectSpec(
                 type="damage",
                 scale="basic_attack",
-                multiplier=1.5,
+                multiplier=1.1,
+                multiplier_min=1.1,
+                multiplier_max=1.4,
                 damage_type="weapon",
             ),
         ),
@@ -61,12 +68,14 @@ ATTACKS: dict[str, CombatAction] = {
         id="quick",
         name="Quick attack",
         kind="base_attack",
-        hit_chance=0.75,
+        hit_chance=0.90,
         effects=(
             EffectSpec(
                 type="damage",
                 scale="basic_attack",
                 multiplier=1.0,
+                multiplier_min=1.0,
+                multiplier_max=1.25,
                 damage_type="weapon",
             ),
         ),
@@ -238,6 +247,23 @@ def _effect_damage_type(actor: Actor, weapon: Weapon | None, effect: EffectSpec)
     return effect.damage_type
 
 
+def roll_multiplier(effect: EffectSpec, rng: random.Random | None) -> float:
+    """Roll a base attack's multiplier within its range, or use the fixed value.
+
+    Skills carry no range (multiplier_max == 0) and keep their fixed multiplier.
+    Without an rng (e.g. damage previews) a ranged attack uses its range floor.
+    """
+    if effect.multiplier_max > effect.multiplier_min and effect.multiplier_max > 0:
+        if rng is None:
+            return effect.multiplier_min
+        return effect.multiplier_min + (effect.multiplier_max - effect.multiplier_min) * rng.random()
+    return effect.multiplier
+
+
+def roll_crit_bonus(rng: random.Random) -> float:
+    return CRIT_FLOOR + (CRIT_BONUS_MAX - CRIT_FLOOR) * rng.random()
+
+
 def effectiveness_label(resist: float) -> str:
     if resist > 1.0:
         return "super effective"
@@ -275,10 +301,10 @@ def compute_damage_components(
     physical); the same rolled+crit multiplier scales every component. Flat
     mitigation applies once to the summed components.
     """
-    multiplier = effect.multiplier
+    multiplier = roll_multiplier(effect, rng)
     crit = rolls_crit(actor, effect, rng)
     if crit:
-        multiplier *= actor.crit_mult
+        multiplier += roll_crit_bonus(rng)
         if result is not None:
             result.critical_hits += 1
 

@@ -33,9 +33,10 @@ class CombatMathTests(unittest.TestCase):
         )
         weapon = Weapon(id="knife", name="Knife", damage_bonus=0, price=0)
 
+        # Unseeded preview uses the range floor (normal min 1.1): 15 * 1.1 = 16.5 -> 17.
         damage = calculate_player_damage(player, weapon, get_attack("normal"), target_armor=0)
 
-        self.assertEqual(damage, 23)
+        self.assertEqual(damage, 17)
 
     def test_victory_returns_pending_stat_choice_after_level_up(self):
         engine = GameEngine(rng=random.Random(1))
@@ -68,22 +69,23 @@ class CombatMathTests(unittest.TestCase):
         fighter = make_player("fighter", base_damage=15)
         tank = make_player("tank", base_damage=10)
 
-        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("power"), 0), 30)
-        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("normal"), 0), 23)
+        # Unseeded previews use each attack's range floor (power 1.25 / normal 1.1 / quick 1.0).
+        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("power"), 0), 19)
+        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("normal"), 0), 17)
         self.assertEqual(calculate_player_damage(fighter, knife, get_attack("quick"), 0), 15)
-        self.assertEqual(calculate_player_damage(tank, knife, get_attack("power"), 0), 20)
-        self.assertEqual(calculate_player_damage(tank, knife, get_attack("normal"), 0), 15)
+        self.assertEqual(calculate_player_damage(tank, knife, get_attack("power"), 0), 13)
+        self.assertEqual(calculate_player_damage(tank, knife, get_attack("normal"), 0), 11)
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("quick"), 0), 10)
 
-    def test_base_attack_hit_chances_power_is_50_normal_55_quick_75(self):
-        self.assertEqual(effective_hit_chance(get_attack("power")), 0.50)
-        self.assertEqual(effective_hit_chance(get_attack("normal")), 0.55)
-        self.assertEqual(effective_hit_chance(get_attack("quick")), 0.75)
+    def test_base_attack_hit_chances_power_70_normal_80_quick_90(self):
+        self.assertEqual(effective_hit_chance(get_attack("power")), 0.70)
+        self.assertEqual(effective_hit_chance(get_attack("normal")), 0.80)
+        self.assertEqual(effective_hit_chance(get_attack("quick")), 0.90)
 
         content = GameEngine().content
-        self.assertEqual(effective_hit_chance(content.actions["power"]), 0.50)
-        self.assertEqual(effective_hit_chance(content.actions["normal"]), 0.55)
-        self.assertEqual(effective_hit_chance(content.actions["quick"]), 0.75)
+        self.assertEqual(effective_hit_chance(content.actions["power"]), 0.70)
+        self.assertEqual(effective_hit_chance(content.actions["normal"]), 0.80)
+        self.assertEqual(effective_hit_chance(content.actions["quick"]), 0.90)
 
     def test_smite_deals_double_damage_to_undead_holy_weakness(self):
         engine = GameEngine(rng=random.Random(1))

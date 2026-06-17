@@ -3,13 +3,15 @@
     "id": "power",
     "name": "Power attack",
     "kind": "base_attack",
-    "hit_chance": 0.50,
+    "hit_chance": 0.70,
     "mana_cost": 0,
     "effects": [
       {
         "type": "instant_damage",
         "scale": "basic_attack",
-        "multiplier": 2.0,
+        "multiplier": 1.25,
+        "multiplier_min": 1.25,
+        "multiplier_max": 1.7,
         "damage_type": "weapon",
         "target": "enemy"
       }
@@ -19,13 +21,15 @@
     "id": "normal",
     "name": "Normal attack",
     "kind": "base_attack",
-    "hit_chance": 0.55,
+    "hit_chance": 0.80,
     "mana_cost": 0,
     "effects": [
       {
         "type": "instant_damage",
         "scale": "basic_attack",
-        "multiplier": 1.5,
+        "multiplier": 1.1,
+        "multiplier_min": 1.1,
+        "multiplier_max": 1.4,
         "damage_type": "weapon",
         "target": "enemy"
       }
@@ -35,13 +39,15 @@
     "id": "quick",
     "name": "Quick attack",
     "kind": "base_attack",
-    "hit_chance": 0.75,
+    "hit_chance": 0.90,
     "mana_cost": 0,
     "effects": [
       {
         "type": "instant_damage",
         "scale": "basic_attack",
         "multiplier": 1.0,
+        "multiplier_min": 1.0,
+        "multiplier_max": 1.25,
         "damage_type": "weapon",
         "target": "enemy"
       }

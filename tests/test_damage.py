@@ -42,17 +42,18 @@ class MultiComponentTests(unittest.TestCase):
         power = engine.content.actions["power"].effects[0]  # x2.0 basic attack
         target = _enemy(resistances={"holy": 2.0, "physical": 1.0}, armor=3)
 
+        # Unseeded -> power range floor 1.25x applies to every component.
         components, total, _crit = combat.compute_damage_components(
             engine.player, target, weapon, power
         )
 
         by_type = {c.damage_type: c for c in components}
         self.assertEqual(set(by_type), {"physical", "holy"})
-        self.assertEqual(by_type["physical"].amount, 17)  # 10*2=20, -3 armor
-        self.assertEqual(by_type["holy"].amount, 16)      # 4*2=8, *2.0 weakness, no armor
+        self.assertEqual(by_type["physical"].amount, 10)  # round_half_up(10*1.25)=13, -3 armor
+        self.assertEqual(by_type["holy"].amount, 10)      # round_half_up(4*1.25)=5, *2.0 weakness, no armor
         self.assertEqual(by_type["holy"].effectiveness, "super effective")
         self.assertEqual(by_type["physical"].effectiveness, "")
-        self.assertEqual(total, 33)
+        self.assertEqual(total, 20)
 
     def test_total_is_floored_at_one(self):
         engine = GameEngine()

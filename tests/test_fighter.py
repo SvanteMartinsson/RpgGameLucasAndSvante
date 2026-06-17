@@ -23,7 +23,9 @@ class FighterClassTests(unittest.TestCase):
         self.assertEqual(target.hp, 80)
 
     def test_combo_produces_2_hits_and_each_rolls_crit_independently(self):
-        engine = GameEngine(rng=SequenceRng([0.0, 0.0, 0.99]))
+        # hit, then per hit: [crit-check, crit-bonus]. Hit 1 crits (bonus floor 0.25),
+        # hit 2 does not. Combo is a skill (fixed 0.8x, no range roll consumed).
+        engine = GameEngine(rng=SequenceRng([0.0, 0.0, 0.0, 0.99]))
         engine.start_new_game("Fighter", "fighter")
         engine.player.crit_chance = 50
         target = make_enemy(hp=100)
@@ -38,7 +40,8 @@ class FighterClassTests(unittest.TestCase):
 
         self.assertEqual(len([event for event in result.events if "dealt" in event]), 2)
         self.assertEqual(result.critical_hits, 1)
-        self.assertEqual(result.total_damage, 36)
+        # hit 1: 15 * (0.8 + 0.25) = 15.75 -> 16; hit 2: 15 * 0.8 = 12.
+        self.assertEqual(result.total_damage, 28)
 
     def test_rage_stacks_refresh_together_cap_and_expire_after_3_missed_rounds(self):
         engine = GameEngine(rng=SequenceRng([0.0]))
@@ -71,12 +74,13 @@ class FighterClassTests(unittest.TestCase):
         engine.allocate_talent("fighter_berserker_b3_bloodlust")
         target = make_enemy(hp=100)
 
+        # SequenceRng: [hit, multiplier-roll (0.0 -> floor 1.0x), crit-check].
         engine.player.hp = 41
         normal = combat.resolve_action(
             engine.player,
             target,
             engine.content.actions["quick"],
-            SequenceRng([0.0, 0.99]),
+            SequenceRng([0.0, 0.0, 0.99]),
             weapon=engine.content.weapons["knife"],
         )
         self.assertEqual(normal.total_damage, 15)
@@ -87,7 +91,7 @@ class FighterClassTests(unittest.TestCase):
             engine.player,
             target,
             engine.content.actions["quick"],
-            SequenceRng([0.0, 0.99]),
+            SequenceRng([0.0, 0.0, 0.99]),
             weapon=engine.content.weapons["knife"],
         )
         self.assertEqual(boosted.total_damage, 20)
@@ -103,7 +107,7 @@ class FighterClassTests(unittest.TestCase):
             engine.player,
             target,
             engine.content.actions["quick"],
-            SequenceRng([0.0, 0.99]),
+            SequenceRng([0.0, 0.0, 0.99]),  # hit, multiplier floor 1.0x, no crit
             weapon=engine.content.weapons["knife"],
         )
         self.assertEqual(dealt.total_damage, 23)
