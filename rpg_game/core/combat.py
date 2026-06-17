@@ -902,6 +902,13 @@ def apply_effect(
         result.events.append(f"{actor.name} gained a conditional damage modifier.")
         return
 
+    if effect.type == "elemental_attack_mod":
+        if not isinstance(actor, Player):
+            raise ValueError("elemental attack modifiers are only supported for players")
+        actor.elemental_attack_mods.append({"damage_type": effect.damage_type, "mod_value": effect.magnitude})
+        result.events.append(f"{actor.name}'s basic attacks now deal extra {effect.damage_type} damage.")
+        return
+
     raise ValueError(f"unknown effect type: {effect.type}")
 
 

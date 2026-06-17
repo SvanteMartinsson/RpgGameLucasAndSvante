@@ -617,5 +617,56 @@
         "target": "self"
       }
     ]
+  },
+  {
+    "id": "cleric_sanctified_strikes",
+    "class_id": "cleric",
+    "branch": "sanctified",
+    "order": 1,
+    "name": "Sanctified Strikes",
+    "node_type": "passive",
+    "requires": "cleric_light_l1_smite",
+    "effects": [
+      {
+        "type": "elemental_attack_mod",
+        "damage_type": "holy",
+        "magnitude": 4,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "mage_flametongue",
+    "class_id": "mage",
+    "branch": "flametongue",
+    "order": 1,
+    "name": "Flametongue",
+    "node_type": "passive",
+    "requires": "mage_pyromancer_y1_firebolt",
+    "effects": [
+      {
+        "type": "elemental_attack_mod",
+        "damage_type": "fire",
+        "magnitude": 4,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "mage_rimeblade",
+    "class_id": "mage",
+    "branch": "rimeblade",
+    "order": 1,
+    "name": "Rimeblade",
+    "node_type": "passive",
+    "requires": "mage_cryomancer_c1_frostbolt",
+    "effects": [
+      {
+        "type": "elemental_attack_mod",
+        "damage_type": "frost",
+        "magnitude": 4,
+        "target": "self"
+      }
+    ]
   }
 ]

@@ -93,6 +93,8 @@ def allocate_talent(player: Player, content: GameContent, node_id: str) -> str:
 
 
 def _prerequisite_met(player: Player, content: GameContent, talent: TalentNode) -> bool:
+    if talent.requires:
+        return talent.requires in player.learned_talent_ids
     if talent.order <= 1:
         return True
     previous = _previous_talent(content, talent)

@@ -95,6 +95,7 @@ def load_content() -> GameContent:
             name=row["name"],
             node_type=row["node_type"],
             action_id=row.get("action_id", ""),
+            requires=row.get("requires", ""),
             effects=tuple(
                 _effect_from_json(effect)
                 for effect in row.get("effects", ())

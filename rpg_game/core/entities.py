@@ -85,6 +85,7 @@ class TalentNode:
     name: str
     node_type: str
     action_id: str = ""
+    requires: str = ""
     effects: tuple[EffectSpec, ...] = ()
 
 
