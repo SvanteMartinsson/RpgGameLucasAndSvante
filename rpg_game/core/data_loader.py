@@ -65,23 +65,9 @@ def load_content() -> GameContent:
             kind=row["kind"],
             hit_chance=row.get("hit_chance", 1.0),
             mana_cost=row.get("mana_cost", 0),
+            cooldown_rounds=row.get("cooldown_rounds", 0),
             effects=tuple(
-                EffectSpec(
-                    type=effect["type"],
-                    magnitude=effect.get("magnitude", 0),
-                    duration=effect.get("duration", 0),
-                    tick_timing=effect.get("tick_timing", "instant"),
-                    multiplier=effect.get("multiplier", 1.0),
-                    scale=effect.get("scale", "flat"),
-                    damage_type=effect.get("damage_type", "physical"),
-                    status_type=effect.get("status_type", ""),
-                    target=effect.get("target", "enemy"),
-                    stat=effect.get("stat", ""),
-                    ratio=effect.get("ratio", 0.0),
-                    modifies_status_type=effect.get("modifies_status_type", ""),
-                    mod_magnitude=effect.get("mod_magnitude", 0),
-                    mod_duration=effect.get("mod_duration", 0),
-                )
+                _effect_from_json(effect)
                 for effect in row.get("effects", ())
             ),
         )
@@ -98,22 +84,7 @@ def load_content() -> GameContent:
             node_type=row["node_type"],
             action_id=row.get("action_id", ""),
             effects=tuple(
-                EffectSpec(
-                    type=effect["type"],
-                    magnitude=effect.get("magnitude", 0),
-                    duration=effect.get("duration", 0),
-                    tick_timing=effect.get("tick_timing", "instant"),
-                    multiplier=effect.get("multiplier", 1.0),
-                    scale=effect.get("scale", "flat"),
-                    damage_type=effect.get("damage_type", "physical"),
-                    status_type=effect.get("status_type", ""),
-                    target=effect.get("target", "enemy"),
-                    stat=effect.get("stat", ""),
-                    ratio=effect.get("ratio", 0.0),
-                    modifies_status_type=effect.get("modifies_status_type", ""),
-                    mod_magnitude=effect.get("mod_magnitude", 0),
-                    mod_duration=effect.get("mod_duration", 0),
-                )
+                _effect_from_json(effect)
                 for effect in row.get("effects", ())
             ),
         )
@@ -189,4 +160,24 @@ def load_content() -> GameContent:
         talents=talents,
         enemies=enemies,
         places=places,
+    )
+
+
+def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:
+    return EffectSpec(
+        type=effect["type"],
+        magnitude=effect.get("magnitude", 0),
+        duration=effect.get("duration", 0),
+        tick_timing=effect.get("tick_timing", "instant"),
+        multiplier=effect.get("multiplier", 1.0),
+        scale=effect.get("scale", "flat"),
+        damage_type=effect.get("damage_type", "physical"),
+        status_type=effect.get("status_type", ""),
+        target=effect.get("target", "enemy"),
+        stat=effect.get("stat", ""),
+        ratio=effect.get("ratio", 0.0),
+        modifies_status_type=effect.get("modifies_status_type", ""),
+        mod_magnitude=effect.get("mod_magnitude", 0),
+        mod_duration=effect.get("mod_duration", 0),
+        tag=effect.get("tag", ""),
     )

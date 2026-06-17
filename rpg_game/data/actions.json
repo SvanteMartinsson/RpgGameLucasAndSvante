@@ -162,5 +162,96 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "block",
+    "name": "Block",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 0,
+    "cooldown_rounds": 2,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "mitigation",
+        "magnitude": 8,
+        "duration": 1,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "thorns",
+    "name": "Thorns",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "reflect",
+        "magnitude": 5,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self",
+        "damage_type": "physical"
+      }
+    ]
+  },
+  {
+    "id": "taunt",
+    "name": "Taunt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 0,
+    "cooldown_rounds": 3,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "accuracy_mod",
+        "magnitude": -20,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "iron_stance",
+    "name": "Iron Stance",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "regen",
+        "magnitude": 6,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "counter",
+    "name": "Counter",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "reflect",
+        "scale": "power",
+        "multiplier": 1.0,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "self",
+        "damage_type": "physical"
+      }
+    ]
   }
 ]

@@ -76,6 +76,7 @@ class ActionResolution:
     hit: bool = True
     events: list[str] = field(default_factory=list)
     total_damage: int = 0
+    reflected_damage: int = 0
     mana_spent: int = 0
 
 
@@ -123,15 +124,28 @@ def get_resistance(actor: Actor, damage_type: str) -> float:
     return actor.resistances.get(damage_type, 1.0)
 
 
+def clamp(value: float, minimum: float, maximum: float) -> float:
+    return max(minimum, min(maximum, value))
+
+
 def attack_hits(action: CombatAction, rng: random.Random) -> bool:
-    return rng.random() < action.hit_chance
+    return rng.random() < effective_hit_chance(action, accuracy_mod=0)
+
+
+def effective_hit_chance(action: CombatAction, accuracy_mod: int = 0) -> float:
+    return round(clamp((action.hit_chance * 100) + accuracy_mod, 0, 100) / 100, 10)
 
 
 def apply_damage_mitigation(raw_damage: int, target: Actor, damage_type: str) -> int:
-    mitigated = raw_damage
+    mitigated = round_half_up(raw_damage * get_resistance(target, damage_type))
     if damage_type == "physical":
-        mitigated = max(1, raw_damage - target.armor)
-    return round_half_up(mitigated * get_resistance(target, damage_type))
+        mitigated -= target.armor
+    mitigated -= active_mitigation(target)
+    return max(1, mitigated)
+
+
+def active_mitigation(actor: Actor) -> int:
+    return sum(status.magnitude for status in actor.active_statuses if status.type == "mitigation")
 
 
 def apply_armor(raw_damage: int, armor: int) -> int:
@@ -243,16 +257,17 @@ def resolve_action(
         target_name=actor_name(target),
     )
 
-    if isinstance(actor, Player) and actor.mana < action.mana_cost:
+    blocked_reason = blocked_action_reason(actor, action)
+    if blocked_reason:
         result.blocked = True
-        result.events.append(f"{actor.name} does not have enough mana for {action.name}.")
+        result.events.append(blocked_reason)
         return result
 
     if isinstance(actor, Player) and action.mana_cost:
         actor.mana -= action.mana_cost
         result.mana_spent = action.mana_cost
 
-    if not attack_hits(action, rng):
+    if not (rng.random() < effective_hit_chance(action, actor.accuracy_mod)):
         result.hit = False
         result.events.append(f"{actor_name(actor)}'s {action.name} missed.")
         return result
@@ -260,7 +275,37 @@ def resolve_action(
     for effect in action.effects:
         apply_effect(actor, target, effect, result, weapon=weapon)
 
+    if action.cooldown_rounds:
+        actor.cooldowns[action.id] = action.cooldown_rounds
+
     return result
+
+
+def blocked_action_reason(actor: Actor, action: CombatAction) -> str:
+    if isinstance(actor, Player) and actor.mana < action.mana_cost:
+        return f"{actor.name} does not have enough mana for {action.name}."
+    if actor.cooldowns.get(action.id, 0) > 0:
+        return f"{actor_name(actor)} cannot use {action.name} for {actor.cooldowns[action.id]} more round(s)."
+    return ""
+
+
+def available_actions(actor: Actor, actions: dict[str, CombatAction]) -> list[CombatAction]:
+    action_ids = actor.equipped_skill_ids if isinstance(actor, Player) else actor.action_ids
+    base_ids = ("power", "normal", "quick") if isinstance(actor, Player) else ()
+    return [
+        actions[action_id]
+        for action_id in (*base_ids, *action_ids)
+        if action_id in actions and not blocked_action_reason(actor, actions[action_id])
+    ]
+
+
+def tick_cooldowns(actor: Actor, skip: set[str] | None = None) -> None:
+    skip = skip or set()
+    actor.cooldowns = {
+        action_id: remaining if action_id in skip else remaining - 1
+        for action_id, remaining in actor.cooldowns.items()
+        if (remaining if action_id in skip else remaining - 1) > 0
+    }
 
 
 def apply_effect(
@@ -275,9 +320,9 @@ def apply_effect(
 
     if effect.type in {"damage", "instant_damage"}:
         damage_type = _effect_damage_type(actor, weapon, effect)
+        damage_type = _effect_damage_type(actor, weapon, effect)
         damage = calculate_effect_damage(actor, effect_target, weapon, effect)
-        effect_target.hp = max(0, effect_target.hp - damage)
-        result.total_damage += damage
+        deal_damage(actor, effect_target, damage, damage_type, result)
         result.events.append(
             f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
         )
@@ -292,8 +337,7 @@ def apply_effect(
     if effect.type == "drain":
         damage_type = _effect_damage_type(actor, weapon, effect)
         damage = calculate_effect_damage(actor, effect_target, weapon, effect)
-        effect_target.hp = max(0, effect_target.hp - damage)
-        result.total_damage += damage
+        deal_damage(actor, effect_target, damage, damage_type, result)
         heal = round_half_up(damage * effect.ratio)
         before = actor.hp
         actor.hp = min(actor.max_hp, actor.hp + heal)
@@ -305,6 +349,10 @@ def apply_effect(
 
     if effect.type == "apply_status":
         status_type = effect.status_type or effect.damage_type
+        tag = effect.tag or status_type
+        if is_immune(effect_target, tag):
+            result.events.append(f"{actor_name(effect_target)} is immune to {tag}.")
+            return
         magnitude = effect.magnitude
         duration = effect.duration
         if isinstance(actor, Player):
@@ -325,6 +373,10 @@ def apply_effect(
                 tick_timing=effect.tick_timing,
                 stat=effect.stat,
                 applied_delta=applied_delta,
+                scale=effect.scale,
+                multiplier=effect.multiplier,
+                damage_type=effect.damage_type,
+                tag=tag,
             )
         )
         result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
@@ -350,6 +402,8 @@ def apply_effect(
         set_stat(actor, effect.stat, get_stat(actor, effect.stat) + effect.magnitude)
         if effect.stat == "max_mana":
             actor.mana = min(actor.max_mana, actor.mana + effect.magnitude)
+        if effect.stat == "max_hp":
+            actor.hp = min(actor.max_hp, actor.hp + effect.magnitude)
         result.events.append(f"{actor.name} gained {effect.magnitude} {effect.stat}.")
         return
 
@@ -362,7 +416,48 @@ def apply_effect(
         result.events.append(f"{actor.name}'s {effect.modifies_status_type} effects improved.")
         return
 
+    if effect.type == "immunity":
+        if not isinstance(actor, Player):
+            raise ValueError("immunity passives are only supported for players")
+        actor.immunity_tags.add(effect.tag)
+        result.events.append(f"{actor.name} gained immunity to {effect.tag}.")
+        return
+
     raise ValueError(f"unknown effect type: {effect.type}")
+
+
+def deal_damage(
+    attacker: Actor,
+    target: Actor,
+    damage: int,
+    damage_type: str,
+    result: ActionResolution,
+    *,
+    allow_reflect: bool = True,
+) -> None:
+    target.hp = max(0, target.hp - damage)
+    if allow_reflect:
+        result.total_damage += damage
+    if allow_reflect:
+        apply_reflects(target, attacker, result)
+
+
+def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution) -> None:
+    for status in bearer.active_statuses:
+        if status.type != "reflect":
+            continue
+        if status.scale == "power":
+            raw_damage = round_half_up(get_stat(bearer, "power") * status.multiplier)
+        else:
+            raw_damage = status.magnitude
+        reflected = apply_damage_mitigation(raw_damage, attacker, status.damage_type)
+        attacker.hp = max(0, attacker.hp - reflected)
+        result.reflected_damage += reflected
+        result.events.append(f"{actor_name(bearer)} reflected {reflected} damage to {actor_name(attacker)}.")
+
+
+def is_immune(actor: Actor, tag: str) -> bool:
+    return tag in actor.immunity_tags
 
 
 def tick_statuses(actor: Actor, timing: Literal["round_start", "round_end"]) -> list[str]:

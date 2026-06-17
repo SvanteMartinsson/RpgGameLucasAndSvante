@@ -89,8 +89,9 @@ class GameEngine:
         player_action = self._build_player_action(attack_id)
         consumable_to_remove = self._consumable_from_action_id(attack_id)
 
-        if player.mana < player_action.mana_cost:
-            events.append(f"{player.name} does not have enough mana for {player_action.name}.")
+        blocked_reason = combat.blocked_action_reason(player, player_action)
+        if blocked_reason:
+            events.append(blocked_reason)
             return combat.CombatTurnResult(
                 outcome="blocked",
                 events=events,
@@ -109,6 +110,8 @@ class GameEngine:
             return self._combat_result("defeat", enemy, events)
 
         first, second = combat.ordered_by_speed(player, enemy)
+        player_actions_used: set[str] = set()
+        enemy_actions_used: set[str] = set()
 
         for actor in (first, second):
             if not player.is_alive or not enemy.is_alive:
@@ -119,7 +122,10 @@ class GameEngine:
                 target = enemy
                 weapon = self.content.weapons[player.equipped_weapon_id]
             else:
-                action = self.content.actions[self.rng.choice(enemy.action_ids)]
+                enemy_actions = combat.available_actions(enemy, self.content.actions)
+                if not enemy_actions:
+                    continue
+                action = self.rng.choice(enemy_actions)
                 target = player
                 weapon = None
 
@@ -127,6 +133,11 @@ class GameEngine:
             events.extend(resolution.events)
             if resolution.blocked:
                 return self._combat_result("blocked", enemy, events)
+            if action.cooldown_rounds:
+                if actor is player:
+                    player_actions_used.add(action.id)
+                else:
+                    enemy_actions_used.add(action.id)
             if actor is player and consumable_to_remove:
                 player.inventory.remove_consumable(consumable_to_remove)
                 consumable_to_remove = ""
@@ -141,6 +152,8 @@ class GameEngine:
 
         events.extend(combat.tick_statuses(player, "round_end"))
         events.extend(combat.tick_statuses(enemy, "round_end"))
+        combat.tick_cooldowns(player, skip=player_actions_used)
+        combat.tick_cooldowns(enemy, skip=enemy_actions_used)
 
         if not enemy.is_alive:
             return self._handle_victory(enemy, events)
@@ -154,6 +167,9 @@ class GameEngine:
 
     def apply_stat_choice(self, stat: str) -> str:
         return progression.apply_stat_choice(self.player, stat)
+
+    def available_actions(self):
+        return combat.available_actions(self.player, self.content.actions)
 
     def available_talents(self):
         return talents.available_talents(self.player, self.content)

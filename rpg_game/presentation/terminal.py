@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from rpg_game.core.combat import ATTACKS
 from rpg_game.core.game import GameEngine
 
 
@@ -155,16 +154,14 @@ def handle_explore(engine: GameEngine) -> None:
 
 
 def prompt_combat_action(engine: GameEngine) -> str:
-    options = [
-        ("1", "power", f"{ATTACKS['power'].name} (30%, x2.0)"),
-        ("2", "normal", f"{ATTACKS['normal'].name} (55%, x1.5)"),
-        ("3", "quick", f"{ATTACKS['quick'].name} (75%, x1.0)"),
-    ]
-    next_index = 4
-    for skill_id in engine.player.equipped_skill_ids:
-        skill = engine.content.actions[skill_id]
-        options.append((str(next_index), skill.id, f"{skill.name} ({skill.mana_cost} mana)"))
-        next_index += 1
+    options = []
+    for index, action in enumerate(engine.available_actions(), start=1):
+        label = action.name
+        if action.mana_cost:
+            label += f" ({action.mana_cost} mana)"
+        if action.cooldown_rounds:
+            label += f" (cooldown {action.cooldown_rounds})"
+        options.append((str(index), action.id, label))
     return prompt_menu("Choose action:", options)
 
 

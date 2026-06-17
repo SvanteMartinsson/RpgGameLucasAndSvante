@@ -91,5 +91,119 @@
     "node_type": "active",
     "action_id": "curse",
     "effects": []
+  },
+  {
+    "id": "tank_guardian_g1_block",
+    "class_id": "tank",
+    "branch": "guardian",
+    "order": 1,
+    "name": "Block",
+    "node_type": "active",
+    "action_id": "block",
+    "effects": []
+  },
+  {
+    "id": "tank_guardian_g2_thorns",
+    "class_id": "tank",
+    "branch": "guardian",
+    "order": 2,
+    "name": "Thorns",
+    "node_type": "active",
+    "action_id": "thorns",
+    "effects": []
+  },
+  {
+    "id": "tank_guardian_g3_bulwark",
+    "class_id": "tank",
+    "branch": "guardian",
+    "order": 3,
+    "name": "Bulwark",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "armor",
+        "magnitude": 3,
+        "target": "self"
+      },
+      {
+        "type": "stat_bonus",
+        "stat": "max_hp",
+        "magnitude": 20,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "tank_guardian_g4_taunt",
+    "class_id": "tank",
+    "branch": "guardian",
+    "order": 4,
+    "name": "Taunt",
+    "node_type": "active",
+    "action_id": "taunt",
+    "effects": []
+  },
+  {
+    "id": "tank_sentinel_s1_iron_stance",
+    "class_id": "tank",
+    "branch": "sentinel",
+    "order": 1,
+    "name": "Iron Stance",
+    "node_type": "active",
+    "action_id": "iron_stance",
+    "effects": []
+  },
+  {
+    "id": "tank_sentinel_s2_counter",
+    "class_id": "tank",
+    "branch": "sentinel",
+    "order": 2,
+    "name": "Counter",
+    "node_type": "active",
+    "action_id": "counter",
+    "effects": []
+  },
+  {
+    "id": "tank_sentinel_s3_resolve",
+    "class_id": "tank",
+    "branch": "sentinel",
+    "order": 3,
+    "name": "Resolve",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "immunity",
+        "tag": "debuff",
+        "target": "self"
+      },
+      {
+        "type": "immunity",
+        "tag": "flee_force",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "tank_sentinel_s4_fortitude",
+    "class_id": "tank",
+    "branch": "sentinel",
+    "order": 4,
+    "name": "Fortitude",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "armor",
+        "magnitude": 5,
+        "target": "self"
+      },
+      {
+        "type": "stat_bonus",
+        "stat": "max_hp",
+        "magnitude": 20,
+        "target": "self"
+      }
+    ]
   }
 ]

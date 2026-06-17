@@ -41,6 +41,7 @@ class EffectSpec:
     modifies_status_type: str = ""
     mod_magnitude: int = 0
     mod_duration: int = 0
+    tag: str = ""
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class CombatAction:
     kind: str
     hit_chance: float = 1.0
     mana_cost: int = 0
+    cooldown_rounds: int = 0
     effects: tuple[EffectSpec, ...] = ()
 
 
@@ -123,6 +125,9 @@ class Enemy:
     gold_min: int
     gold_max: int
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
+    cooldowns: dict[str, int] = field(default_factory=dict)
+    accuracy_mod: int = 0
+    immunity_tags: set[str] = field(default_factory=set)
 
     @property
     def is_alive(self) -> bool:
@@ -213,6 +218,9 @@ class Player:
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
     stat_bonuses: dict[str, int] = field(default_factory=dict)
     applied_status_mods: dict[str, dict[str, int]] = field(default_factory=dict)
+    cooldowns: dict[str, int] = field(default_factory=dict)
+    accuracy_mod: int = 0
+    immunity_tags: set[str] = field(default_factory=set)
     pending_stat_choices: int = 0
 
     @property
@@ -246,3 +254,7 @@ class ActiveStatus:
     tick_timing: str
     stat: str = ""
     applied_delta: int = 0
+    scale: str = "flat"
+    multiplier: float = 1.0
+    damage_type: str = "physical"
+    tag: str = ""

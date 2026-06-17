@@ -67,7 +67,7 @@ Målet är att Pygame senare ska kunna läggas till som ett separat presentation
 - `rpg_game/core/entities.py`: dataclasses för player, fiender, items, platser och game state.
 - `rpg_game/core/data_loader.py`: laddar JSON-innehåll.
 - `rpg_game/core/progression.py`: XP-kurva, `round_half_up()`, level up och statval.
-- `rpg_game/core/combat.py`: action -> effects -> resolver-pipeline, status ticks, generic effect vocabulary, damage types, speed order och combat-resultat.
+- `rpg_game/core/combat.py`: action -> effects -> resolver-pipeline, cooldowns, status ticks, generic effect vocabulary, mitigation/reflect, damage types, speed order och combat-resultat.
 - `rpg_game/core/game.py`: `GameEngine`, orkestrerar state, world, combat, store och inventory.
 - `rpg_game/core/talents.py`: class talent allocation, linear branch prerequisites, passive application och max 4 equipped skills.
 - `rpg_game/core/world.py`: platser, resor och encounters.
@@ -102,6 +102,9 @@ Talanger ska ligga i `talents.json`. Kärnan exponerar
 `available_talents()` och `allocate_talent(node_id)` via `GameEngine`; UI:t
 ska fråga spelaren och mata tillbaka valen, på samma sätt som statval efter
 level-up.
+
+Tank- och Cleric-träden är de enda kompletta klass-träden just nu. Bygg inte
+Rogue/Fighter/Mage/Hunter-noder förrän deras slice efterfrågas.
 
 ## Regler som tester låser
 

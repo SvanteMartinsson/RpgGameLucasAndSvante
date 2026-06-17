@@ -4,8 +4,8 @@ Detta dokument innehåller den *konkreta* per-klass-datan: stats, grenar,
 noder, mana-kostnader och effekt-semantik. `COMBAT_DESIGN.md` är ramverket
 (varför och hur motorn fungerar); detta är innehållet som hälls in i den.
 
-Dokumentet växer en klass i taget. Just nu är **Cleric** fullt specificerad
-som mall; övriga fem är stubbar som fylls i kommande slices.
+Dokumentet växer en klass i taget. **Cleric** och **Tank** är fullt
+specificerade; övriga fyra är stubbar som fylls i kommande slices.
 
 Alla tal är startvärden avsedda att tunas i JSON.
 
@@ -42,6 +42,22 @@ resolvern):
 - **stat_bonus** — platt påslag på en stat (t.ex. +max_mana).
 - **applied_status_mod** — ändrar parametrarna på statuseffekter *som denna
   entitet applicerar* (t.ex. +1 duration, +2 magnitude på egna poisons).
+
+Läggs till i Tank-slicen (defensiva motorhakar — återanvänds av fiender/bossar):
+
+- **cooldown-system** — en action kan ha `cooldown_rounds`. Efter användning
+  är den otillgänglig N rundor; räknas ned per runda; `available_actions`
+  speglar det. (Komplement till mana — vissa skills gatas av cooldown, inte
+  resurs.)
+- **status: mitigation** — platt reduktion av *all* inkommande skada under N
+  rundor. Lager: resist → armor (endast physical) → mitigation (all) → `max(1, …)`.
+- **status: reflect** — när bäraren *tar* skada av en angripare delas skada
+  tillbaka (flat för thorns, Power-skalad för counter). Reflekterad skada
+  triggar ALDRIG ny reflect (ingen oändlig loop). Ingen reflect vid miss.
+- **accuracy_mod** (nytt modifierbart fält) — fiendens träffslag använder
+  `clamp(base_chance + accuracy_mod, 0, 100)`. Taunt sätter accuracy_mod via
+  det befintliga debuff-maskineriet (ingen ny effekttyp).
+- **passiv: immunity** — immun mot en tagg (t.ex. `debuff`, `flee_force`).
 
 ## Talang- och upplåsningsregel
 
@@ -108,18 +124,74 @@ ett holy-vapen (mace). Två grenar: **Ljus** (smite, heal, support) och
 - **max 4 utrustade skills** upprätthålls.
 - **Regression**: befintliga Smite + Fighter/Tank-attacker oförändrade.
 
+## Tank
+
+Mitigeringsklassen. Hög överlevnad, låg Power, gör det jobbigt för fienden
+att få igenom skada. Liten mana-pool — lutar sig på cooldowns för sina
+defensiva stances. Två grenar: **Guardian** (aktiv mitigering: block, thorns,
+taunt) och **Sentinel** (sustain, counter, immunitet).
+
+### Basstats (startvärden)
+
+| Stat | Värde |
+|---|---:|
+| HP / Max HP | 130 |
+| Max Mana | 15 |
+| Power | 8 |
+| Armor | 4 |
+| Speed | 7 |
+| Startvapen | Mace (damage_type: physical) |
+
+### Gren: Guardian
+
+| Nod | Typ | Effekt | Kostnad |
+|---|---|---|---|
+| G1 Block | aktiv | status mitigation på self: −8 all inkommande skada i 1 runda | cooldown 2 |
+| G2 Thorns | aktiv | status reflect på self: 3 rundor, reflektera 5 skada till den som träffar | 6 mana |
+| G3 Bulwark | passiv | stat_bonus: +3 armor, +20 max_hp | — |
+| G4 Taunt | aktiv | status debuff på mål: accuracy_mod −20 i 2 rundor | cooldown 3 |
+
+### Gren: Sentinel
+
+| Nod | Typ | Effekt | Kostnad |
+|---|---|---|---|
+| S1 Iron Stance | aktiv | status regen på self: +6 HP/runda i 3 rundor | 6 mana |
+| S2 Counter | aktiv | status reflect på self: 2 rundor, vid träff slå tillbaka 1.0× Power (physical) | 8 mana |
+| S3 Resolve | passiv | immunity mot `debuff` och `flee_force` | — |
+| S4 Fortitude | passiv | stat_bonus: +5 armor, +20 max_hp | — |
+
+### Invarianter att låsa i test (Tank-slicen)
+
+- **Block** reducerar inkommande skada med exakt 8 under 1 runda (min 1 går
+  alltid igenom), och löper ut korrekt.
+- **Block-cooldown**: kan inte användas igen förrän cooldown gått ut;
+  tillgänglig igen efter.
+- **Thorns**: angriparen tar exakt 5 vid träff; reflekterad skada triggar inte
+  ny reflect; ingen reflect vid miss.
+- **Taunt**: målets effektiva träffchans sänks med 20 under 2 rundor och
+  återställs sen.
+- **Counter**: vid träff slår Tank tillbaka `round_half_up(1.0 × Power)`
+  physical; bara medan buffen är aktiv; bara vid faktisk träff.
+- **Iron Stance**: +6 HP/runda i exakt 3 rundor (återanvänder Clerics regen).
+- **Resolve**: en debuff mot Tank avvisas/ger ingen effekt; tvingad flee
+  misslyckas.
+- **Bulwark/Fortitude**: stat_bonus appliceras och kvarstår.
+- **Gating**: både cooldown och mana upprätthålls; avvisad användning muterar
+  inte state.
+- **Regression**: alla tidigare tester (Cleric, Fighter/Tank-attacker,
+  combat-pipelinen) fortfarande gröna.
+
 ## Stubbar (fylls i kommande slices)
 
 Grennamn från `COMBAT_DESIGN.md`; noder definieras när respektive klass byggs.
 
 | Klass | Gren A | Gren B | Mestadels nya effekttyper |
 |---|---|---|---|
-| Fighter | Berserker | Weaponmaster | lifesteal (=drain), buff, conditional dmg |
-| Tank | Guardian | Sentinel | block/mitigation buff, thorns/reflect, taunt |
-| Rogue | Assassin | Duelist | crit, execute (conditional), evasion, counter |
+| Rogue | Assassin | Duelist | crit, execute (conditional), evasion, counter (finns) |
+| Fighter | Berserker | Weaponmaster | lifesteal (=drain), buff (finns), conditional dmg |
 | Mage | Pyromancer | Cryomancer | fire/frost dmg (finns), freeze (skip-turn), burst |
 | Hunter | (def. senare) | (def. senare) | mark-target, traps, type-bonus |
 
-Vald byggordning efter Cleric: **Tank** härnäst (flest motor-nya defensiva
-effekttyper — block, thorns, taunt), sedan Rogue (crit/execute/evasion),
-därefter faller Fighter/Mage/Hunter mest på återanvändning.
+Vald byggordning nu: **Rogue** härnäst (crit/execute/evasion — de offensiva
+varianterna; counter finns redan från Tank), sedan Fighter och Mage som mest
+faller på återanvändning, Hunter sist.

@@ -32,6 +32,13 @@
     "name": "Mace",
     "damage_bonus": 0,
     "price": 0,
+    "damage_type": "physical"
+  },
+  {
+    "id": "holy_mace",
+    "name": "Mace",
+    "damage_bonus": 0,
+    "price": 0,
     "damage_type": "holy"
   }
 ]
