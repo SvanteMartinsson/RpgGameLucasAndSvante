@@ -301,10 +301,36 @@ def print_combat_status(engine: GameEngine, enemy) -> None:
         f"You: HP {player.hp}/{player.max_hp} | Mana {player.mana}/{player.max_mana}"
         f"{status_suffix(engine, player)}"
     )
-    print(
+    for line in enemy_status_lines(engine, enemy):
+        print(line)
+
+
+def enemy_status_lines(engine: GameEngine, enemy) -> list[str]:
+    lines = [
         f"{enemy.name}: HP {enemy.hp}/{enemy.max_hp}"
         f"{status_suffix(engine, enemy, enemy.charging_action_id)}"
-    )
+    ]
+    if enemy.identified:
+        skill_names = [
+            engine.content.actions[action_id].name
+            for action_id in enemy.action_ids
+            if action_id in engine.content.actions
+        ]
+        tags = ", ".join(sorted(enemy.tags)) if enemy.tags else "none"
+        lines.append(f"Level {enemy.level} | Power {enemy.damage} | Armor {enemy.armor} | Speed {enemy.speed}")
+        lines.append(f"Tags: {tags}")
+        lines.append(f"Skills: {', '.join(skill_names) if skill_names else 'none'}")
+    return lines
+
+
+def print_enemy_reveal(reveal) -> None:
+    print("Identify")
+    print(f"{reveal.name} | Level {reveal.level}")
+    print(f"Power {reveal.power} | Armor {reveal.armor} | Speed {reveal.speed}")
+    resistances = ", ".join(f"{key} {value:g}x" for key, value in sorted(reveal.resistances.items()))
+    print(f"Resistances: {resistances if resistances else 'none'}")
+    print(f"Tags: {', '.join(reveal.tags) if reveal.tags else 'none'}")
+    print(f"Skills: {', '.join(reveal.skills) if reveal.skills else 'none'}")
 
 
 def handle_explore(engine: GameEngine) -> None:
@@ -323,6 +349,8 @@ def handle_explore(engine: GameEngine) -> None:
             result = engine.run_combat_turn(enemy, payload)
         for event in result.events:
             print(event)
+        if result.enemy_reveal is not None:
+            print_enemy_reveal(result.enemy_reveal)
         if result.outcome == "fled":
             return
         if result.outcome in {"victory", "defeat"}:
@@ -339,7 +367,8 @@ def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
                 ("2", "skill", "Skill"),
                 ("3", "item", "Item"),
                 ("4", "swap", "Swap weapon"),
-                ("5", "flee", "Flee"),
+                ("5", "identify", "Identify"),
+                ("6", "flee", "Flee"),
             ],
         )
         if command == "attack":
@@ -358,6 +387,8 @@ def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
             weapon_id = choose_swap_weapon(engine)
             if weapon_id:
                 return ("turn", f"swap:{weapon_id}")
+        elif command == "identify":
+            return ("turn", "identify")
         elif command == "flee":
             return ("flee", "")
 

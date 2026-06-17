@@ -83,6 +83,19 @@ class ActionResolution:
     mana_spent: int = 0
 
 
+@dataclass(frozen=True)
+class EnemyReveal:
+    name: str
+    level: int
+    power: int
+    armor: int
+    speed: int
+    resistances: dict[str, float]
+    tags: tuple[str, ...]
+    skill_ids: tuple[str, ...]
+    skills: tuple[str, ...]
+
+
 @dataclass
 class CombatTurnResult:
     outcome: str
@@ -94,6 +107,7 @@ class CombatTurnResult:
     levels_gained: int = 0
     pending_stat_choices: int = 0
     loot_drop: LootDrop | None = None
+    enemy_reveal: EnemyReveal | None = None
 
 
 Actor = Player | Enemy
@@ -104,6 +118,21 @@ def get_attack(attack_id: str) -> CombatAction:
     if normalized not in ATTACKS:
         raise ValueError(f"unknown attack: {attack_id}")
     return ATTACKS[normalized]
+
+
+def identify_enemy(enemy: Enemy, actions: dict[str, CombatAction]) -> EnemyReveal:
+    enemy.identified = True
+    return EnemyReveal(
+        name=enemy.name,
+        level=enemy.level,
+        power=enemy.damage,
+        armor=enemy.armor,
+        speed=enemy.speed,
+        resistances=dict(enemy.resistances),
+        tags=tuple(sorted(enemy.tags)),
+        skill_ids=tuple(enemy.action_ids),
+        skills=tuple(actions[action_id].name for action_id in enemy.action_ids if action_id in actions),
+    )
 
 
 def actor_name(actor: Actor) -> str:

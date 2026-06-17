@@ -167,6 +167,7 @@ class Enemy:
     drop_chance: float = 0.0
     rare_table_access: bool = False
     charging_action_id: str = ""
+    identified: bool = False
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
     cooldowns: dict[str, int] = field(default_factory=dict)
     accuracy_mod: int = 0
