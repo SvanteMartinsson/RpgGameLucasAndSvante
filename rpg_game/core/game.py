@@ -116,7 +116,7 @@ class GameEngine:
         if not pool:
             return None
         entry = self._weighted_choice(pool)
-        return self._make_loot_drop(entry)
+        return self._make_loot_drop(entry, enemy, pool)
 
     def collect_loot(self, drop: LootDrop) -> None:
         player = self.player
@@ -136,15 +136,42 @@ class GameEngine:
                 return entry
         return pool[-1]
 
-    def _make_loot_drop(self, entry: dict[str, object]) -> LootDrop:
+    def _make_loot_drop(
+        self,
+        entry: dict[str, object],
+        enemy: Enemy,
+        pool: list[dict[str, object]],
+    ) -> LootDrop:
         item_id = str(entry["item_id"])
         tier = int(entry.get("rarity_tier", 1))
+        denominator = self.loot_drop_denominator(enemy, entry, pool)
+        rarity = loot_rarity_for_denominator(denominator)
         if item_id in self.content.weapons:
-            return LootDrop(item_id, self.content.weapons[item_id].name, "weapon", tier)
+            return LootDrop(item_id, self.content.weapons[item_id].name, "weapon", tier, rarity, denominator)
         if item_id in self.content.items:
             item = self.content.items[item_id]
-            return LootDrop(item_id, item.name, item.kind, tier)
+            return LootDrop(item_id, item.name, item.kind, tier, rarity, denominator)
         raise ValueError(f"unknown loot item: {item_id}")
+
+    def loot_drop_denominator(
+        self,
+        enemy: Enemy,
+        entry: dict[str, object],
+        pool: list[dict[str, object]] | None = None,
+    ) -> int:
+        """Approximate the selected item's true 1/N drop rate within this fight.
+
+        The player only sees the broad rarity label; the denominator exists so
+        rarity can be derived consistently from the actual weighted chance.
+        """
+        pool = pool or self.loot_pool(enemy)
+        total_weight = sum(float(pool_entry["weight"]) for pool_entry in pool)
+        if enemy.drop_chance <= 0 or total_weight <= 0:
+            return 0
+        probability = enemy.drop_chance * (float(entry["weight"]) / total_weight)
+        if probability <= 0:
+            return 0
+        return max(1, progression.round_half_up(1 / probability))
 
     def run_combat_turn(self, enemy: Enemy, attack_id: str) -> combat.CombatTurnResult:
         player = self.player
@@ -380,7 +407,10 @@ class GameEngine:
         drop = self.roll_loot(enemy)
         if drop is not None:
             self.collect_loot(drop)
-            events.append(f"{enemy.name} dropped: {drop.name} (tier {drop.tier})!")
+            events.append(
+                f"{enemy.name} dropped: {drop.name} "
+                f"[{drop.rarity}] (tier {drop.tier})!"
+            )
 
         return combat.CombatTurnResult(
             outcome="victory",
@@ -410,3 +440,18 @@ class GameEngine:
             pending_stat_choices=self.player.pending_stat_choices,
             enemy_reveal=enemy_reveal,
         )
+
+
+def loot_rarity_for_denominator(denominator: int) -> str:
+    """Map an internal 1/N drop estimate to the label shown to the player."""
+    if denominator <= 0:
+        return "unknown"
+    if denominator <= 20:
+        return "common"
+    if denominator <= 50:
+        return "uncommon"
+    if denominator <= 150:
+        return "rare"
+    if denominator <= 300:
+        return "mega rare"
+    return "legendary"

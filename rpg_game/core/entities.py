@@ -97,6 +97,8 @@ class LootDrop:
     name: str
     kind: str
     tier: int
+    rarity: str = "common"
+    drop_rate_denominator: int = 1
 
 
 @dataclass(frozen=True)

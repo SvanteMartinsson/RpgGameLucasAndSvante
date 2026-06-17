@@ -2,7 +2,7 @@ import random
 import unittest
 
 from rpg_game.core.entities import Enemy, LootDrop
-from rpg_game.core.game import GameEngine
+from rpg_game.core.game import GameEngine, loot_rarity_for_denominator
 
 
 def _engine(seed: int = 0) -> GameEngine:
@@ -51,6 +51,79 @@ class WeightedDrawTests(unittest.TestCase):
         for seed in range(400):
             counts[_engine(seed).roll_loot(_enemy(loot)).item_id] += 1
         self.assertGreater(counts["rat_pelt"], counts["bone_dust"] * 4)
+
+
+class LootRarityTests(unittest.TestCase):
+    def test_rarity_classes_use_drop_rate_denominator_ranges(self):
+        self.assertEqual(loot_rarity_for_denominator(1), "common")
+        self.assertEqual(loot_rarity_for_denominator(20), "common")
+        self.assertEqual(loot_rarity_for_denominator(21), "uncommon")
+        self.assertEqual(loot_rarity_for_denominator(50), "uncommon")
+        self.assertEqual(loot_rarity_for_denominator(51), "rare")
+        self.assertEqual(loot_rarity_for_denominator(70), "rare")
+        self.assertEqual(loot_rarity_for_denominator(100), "rare")
+        self.assertEqual(loot_rarity_for_denominator(150), "rare")
+        self.assertEqual(loot_rarity_for_denominator(151), "mega rare")
+        self.assertEqual(loot_rarity_for_denominator(300), "mega rare")
+        self.assertEqual(loot_rarity_for_denominator(301), "legendary")
+        self.assertEqual(loot_rarity_for_denominator(500), "legendary")
+
+    def test_drop_rarity_is_based_on_actual_weighted_drop_rate(self):
+        engine = GameEngine(rng=SequenceRng([0.0, 0.99]))
+        engine.start_new_game("Hero", "fighter")
+        loot = [
+            {"item_id": "rat_pelt", "weight": 69, "rarity_tier": 1},
+            {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+        ]
+
+        drop = engine.roll_loot(_enemy(loot, drop_chance=1.0))
+
+        self.assertEqual(drop.item_id, "bone_dust")
+        self.assertEqual(drop.drop_rate_denominator, 70)
+        self.assertEqual(drop.rarity, "rare")
+
+    def test_different_drop_rates_inside_same_rarity_class_are_grouped(self):
+        engine = _engine()
+        enemy_70 = _enemy(
+            [
+                {"item_id": "rat_pelt", "weight": 69, "rarity_tier": 1},
+                {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+            ],
+            drop_chance=1.0,
+        )
+        enemy_100 = _enemy(
+            [
+                {"item_id": "rat_pelt", "weight": 99, "rarity_tier": 1},
+                {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+            ],
+            drop_chance=1.0,
+        )
+
+        denominator_70 = engine.loot_drop_denominator(enemy_70, enemy_70.loot_table[1])
+        denominator_100 = engine.loot_drop_denominator(enemy_100, enemy_100.loot_table[1])
+
+        self.assertEqual(denominator_70, 70)
+        self.assertEqual(denominator_100, 100)
+        self.assertEqual(loot_rarity_for_denominator(denominator_70), "rare")
+        self.assertEqual(loot_rarity_for_denominator(denominator_100), "rare")
+
+    def test_drop_event_displays_rarity_without_exact_drop_rate(self):
+        engine = GameEngine(rng=SequenceRng([0.0, 0.99, 0.0, 0.99]))
+        engine.start_new_game("Hero", "fighter")
+        enemy = _enemy(
+            [
+                {"item_id": "rat_pelt", "weight": 69, "rarity_tier": 1},
+                {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+            ],
+            drop_chance=1.0,
+        )
+
+        result = engine.run_combat_turn(enemy, "normal")
+
+        self.assertEqual(result.outcome, "victory")
+        self.assertEqual(result.loot_drop.rarity, "rare")
+        self.assertTrue(any("[rare]" in event for event in result.events))
+        self.assertFalse(any("1/70" in event for event in result.events))
 
 
 class TierGateTests(unittest.TestCase):
@@ -153,6 +226,22 @@ class SellingTests(unittest.TestCase):
         ids = {entry.id for entry in engine.sellable_entries()}
 
         self.assertEqual(ids, {"axe", "rat_pelt"})
+
+
+class SequenceRng:
+    def __init__(self, values):
+        self.values = list(values)
+
+    def random(self):
+        if self.values:
+            return self.values.pop(0)
+        return 0.99
+
+    def randint(self, minimum, _maximum):
+        return minimum
+
+    def choice(self, values):
+        return values[0]
 
 
 if __name__ == "__main__":
