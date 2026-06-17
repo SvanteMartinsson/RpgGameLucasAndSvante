@@ -115,6 +115,16 @@ def prompt_menu(prompt: str, options: list[tuple[str, str, str]], allow_label: b
         print("Invalid input. Please choose one of the listed options.")
 
 
+def prompt_quantity(prompt: str, maximum: int) -> int:
+    while True:
+        answer = input(f"{prompt} (1-{maximum}, default 1): ").strip()
+        if answer == "":
+            return 1
+        if answer.isdigit() and 1 <= int(answer) <= maximum:
+            return int(answer)
+        print(f"Enter a number between 1 and {maximum}.")
+
+
 def show_stats(engine: GameEngine) -> None:
     player = engine.player
     weapon = engine.content.weapons[player.equipped_weapon_id]
@@ -624,8 +634,26 @@ def handle_buy(engine: GameEngine) -> None:
     item_id = prompt_menu("What do you want to buy?", options)
     if item_id == "back":
         return
-    result = engine.buy_item(item_id)
-    print(result.message)
+
+    chosen = next(entry for entry in entries if entry.id == item_id)
+    if chosen.kind == "consumable" and chosen.price > 0:
+        affordable = engine.player.gold // chosen.price
+        if affordable < 1:
+            print(engine.buy_item(item_id).message)  # reports not enough gold
+            return
+        quantity = prompt_quantity("How many?", affordable)
+        bought = 0
+        for _ in range(quantity):
+            result = engine.buy_item(item_id)
+            if not result.success:
+                print(result.message)
+                break
+            bought += 1
+        if bought:
+            print(f"Bought {bought}x {chosen.name}.")
+        return
+
+    print(engine.buy_item(item_id).message)
 
 
 def handle_sell(engine: GameEngine) -> None:
@@ -646,8 +674,23 @@ def handle_sell(engine: GameEngine) -> None:
     item_id = prompt_menu("What do you want to sell?", options, allow_label=False)
     if item_id == "back":
         return
-    result = engine.sell_item(item_id)
-    print(result.message)
+
+    chosen = next(entry for entry in entries if entry.id == item_id)
+    if chosen.kind == "junk" and chosen.count > 1:
+        quantity = prompt_quantity("How many?", chosen.count)
+        gold_before = engine.player.gold
+        sold = 0
+        for _ in range(quantity):
+            result = engine.sell_item(item_id)
+            if not result.success:
+                print(result.message)
+                break
+            sold += 1
+        if sold:
+            print(f"Sold {sold}x {chosen.name} for {engine.player.gold - gold_before} gold.")
+        return
+
+    print(engine.sell_item(item_id).message)
 
 
 def item_effect_text(item) -> str:
