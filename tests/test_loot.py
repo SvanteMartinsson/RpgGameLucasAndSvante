@@ -1,0 +1,159 @@
+import random
+import unittest
+
+from rpg_game.core.entities import Enemy, LootDrop
+from rpg_game.core.game import GameEngine
+
+
+def _engine(seed: int = 0) -> GameEngine:
+    engine = GameEngine(rng=random.Random(seed))
+    engine.start_new_game("Hero", "fighter")  # starts at a has_store city
+    return engine
+
+
+def _enemy(loot, drop_chance=1.0, rare_access=False) -> Enemy:
+    return Enemy(
+        id="t", name="Test", level=1, max_hp=1, hp=1, damage=1, armor=0, speed=1,
+        resistances={}, action_ids=(), xp_reward=0, gold_min=0, gold_max=0,
+        loot_table=tuple(loot), drop_chance=drop_chance, rare_table_access=rare_access,
+    )
+
+
+class DropChanceTests(unittest.TestCase):
+    def test_drop_chance_zero_never_drops(self):
+        loot = [{"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1}]
+        for seed in range(50):
+            engine = _engine(seed)
+            self.assertIsNone(engine.roll_loot(_enemy(loot, drop_chance=0.0)))
+
+    def test_drop_chance_one_always_drops(self):
+        loot = [{"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1}]
+        for seed in range(50):
+            engine = _engine(seed)
+            self.assertIsNotNone(engine.roll_loot(_enemy(loot, drop_chance=1.0)))
+
+
+class WeightedDrawTests(unittest.TestCase):
+    def test_known_seed_yields_known_item(self):
+        loot = [
+            {"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1},
+            {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+        ]
+        self.assertEqual(_engine(0).roll_loot(_enemy(loot)).item_id, "bone_dust")
+        self.assertEqual(_engine(4).roll_loot(_enemy(loot)).item_id, "rat_pelt")
+
+    def test_draw_follows_weights(self):
+        loot = [
+            {"item_id": "rat_pelt", "weight": 9, "rarity_tier": 1},
+            {"item_id": "bone_dust", "weight": 1, "rarity_tier": 1},
+        ]
+        counts = {"rat_pelt": 0, "bone_dust": 0}
+        for seed in range(400):
+            counts[_engine(seed).roll_loot(_enemy(loot)).item_id] += 1
+        self.assertGreater(counts["rat_pelt"], counts["bone_dust"] * 4)
+
+
+class TierGateTests(unittest.TestCase):
+    def test_enemy_without_rare_access_never_drops_tier_4_plus(self):
+        engine = _engine()
+        pool_tiers = [int(e["rarity_tier"]) for e in engine.loot_pool(engine.content.enemies["giant_rat"].create_enemy())]
+        self.assertTrue(all(tier <= 3 for tier in pool_tiers))
+
+        # even with a tier-4 entry injected, the gate filters it out
+        loot = [
+            {"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1},
+            {"item_id": "worldsplitter", "weight": 1, "rarity_tier": 6},
+        ]
+        for seed in range(60):
+            drop = _engine(seed).roll_loot(_enemy(loot, drop_chance=1.0, rare_access=False))
+            self.assertEqual(drop.item_id, "rat_pelt")
+
+    def test_rare_table_reached_only_with_access(self):
+        engine = _engine()
+        grunt_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["giant_rat"].create_enemy())}
+        bear_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["cave_bear"].create_enemy())}
+
+        rare_ids = {str(e["item_id"]) for e in engine.content.rare_loot_table}
+        self.assertFalse(grunt_pool & rare_ids)  # grunt never sees the rare table
+        self.assertTrue(rare_ids <= bear_pool)  # archetype reaches the whole rare table
+
+
+class PickupTests(unittest.TestCase):
+    def test_picked_up_weapon_is_owned_and_equippable(self):
+        engine = _engine(1)
+        drop = LootDrop("steel_greatsword", "Steel Greatsword", "weapon", 3)
+        engine.collect_loot(drop)
+
+        self.assertIn("steel_greatsword", engine.player.owned_weapon_ids)
+        self.assertIn("steel_greatsword", [w.id for w in engine.owned_weapons()])
+
+        enemy = engine.content.enemies["giant_rat"].create_enemy()
+        engine.run_combat_turn(enemy, "swap:steel_greatsword")
+        self.assertEqual(engine.player.equipped_weapon_id, "steel_greatsword")
+
+    def test_duplicate_weapon_pickup_does_not_crash_or_duplicate(self):
+        engine = _engine()
+        drop = LootDrop("steel_greatsword", "Steel Greatsword", "weapon", 3)
+        engine.collect_loot(drop)
+        engine.collect_loot(drop)
+
+        self.assertEqual(engine.player.owned_weapon_ids.count("steel_greatsword"), 1)
+
+    def test_picked_up_consumable_and_junk_stack(self):
+        engine = _engine()
+        engine.collect_loot(LootDrop("hp_potion", "HP Potion", "consumable", 1))
+        engine.collect_loot(LootDrop("hp_potion", "HP Potion", "consumable", 1))
+        engine.collect_loot(LootDrop("rat_pelt", "Rat Pelt", "junk", 1))
+
+        self.assertEqual(engine.player.inventory.count("hp_potion"), 2)
+        self.assertEqual(engine.player.inventory.count("rat_pelt"), 1)
+
+
+class SellingTests(unittest.TestCase):
+    def test_selling_junk_gives_gold_and_removes_it(self):
+        engine = _engine()
+        engine.player.inventory.add_consumable("rat_pelt")
+        engine.player.gold = 0
+
+        result = engine.sell_item("rat_pelt")
+
+        self.assertTrue(result.success)
+        self.assertEqual(engine.player.gold, 3)  # round_half_up(6 * 0.5)
+        self.assertEqual(engine.player.inventory.count("rat_pelt"), 0)
+
+    def test_selling_unequipped_weapon_gives_gold_and_removes_it(self):
+        engine = _engine()
+        engine.player.owned_weapon_ids = ("sword", "axe")
+        engine.player.equipped_weapon_id = "sword"
+        engine.player.gold = 0
+
+        result = engine.sell_item("axe")
+
+        self.assertTrue(result.success)
+        self.assertEqual(engine.player.gold, 88)  # round_half_up(175 * 0.5)
+        self.assertNotIn("axe", engine.player.owned_weapon_ids)
+
+    def test_cannot_sell_equipped_weapon(self):
+        engine = _engine()
+        engine.player.owned_weapon_ids = ("sword",)
+        engine.player.equipped_weapon_id = "sword"
+
+        result = engine.sell_item("sword")
+
+        self.assertFalse(result.success)
+        self.assertIn("sword", engine.player.owned_weapon_ids)
+
+    def test_sellables_lists_junk_and_unequipped_weapons_only(self):
+        engine = _engine()
+        engine.player.owned_weapon_ids = ("sword", "axe")
+        engine.player.equipped_weapon_id = "sword"
+        engine.player.inventory.add_consumable("rat_pelt")
+        engine.player.inventory.add_consumable("hp_potion")  # consumable, not sellable
+
+        ids = {entry.id for entry in engine.sellable_entries()}
+
+        self.assertEqual(ids, {"axe", "rat_pelt"})
+
+
+if __name__ == "__main__":
+    unittest.main()

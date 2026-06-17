@@ -4,6 +4,57 @@
     "name": "HP Potion",
     "kind": "consumable",
     "heal_amount": 50,
-    "price": 65
+    "price": 65,
+    "tier": 1
+  },
+  {
+    "id": "greater_hp_potion",
+    "name": "Greater HP Potion",
+    "kind": "consumable",
+    "heal_amount": 100,
+    "price": 200,
+    "tier": 3
+  },
+  {
+    "id": "mana_potion",
+    "name": "Mana Potion",
+    "kind": "consumable",
+    "heal_amount": 0,
+    "mana_amount": 50,
+    "price": 120,
+    "tier": 2
+  },
+  {
+    "id": "antidote",
+    "name": "Antidote",
+    "kind": "consumable",
+    "heal_amount": 0,
+    "cures": ["poison"],
+    "price": 80,
+    "tier": 2
+  },
+  {
+    "id": "rat_pelt",
+    "name": "Rat Pelt",
+    "kind": "junk",
+    "heal_amount": 0,
+    "price": 6,
+    "tier": 1
+  },
+  {
+    "id": "bone_dust",
+    "name": "Bone Dust",
+    "kind": "junk",
+    "heal_amount": 0,
+    "price": 10,
+    "tier": 1
+  },
+  {
+    "id": "tattered_cloth",
+    "name": "Tattered Cloth",
+    "kind": "junk",
+    "heal_amount": 0,
+    "price": 8,
+    "tier": 1
   }
 ]

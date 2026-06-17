@@ -108,15 +108,19 @@ def show_inventory(engine: GameEngine) -> None:
     print()
     print("Inventory")
     print(f"Equipped weapon: {weapon.name} (+{weapon.damage_bonus} damage)")
+    print("Owned weapons:")
+    for owned in engine.owned_weapons():
+        equipped = " (equipped)" if owned.id == player.equipped_weapon_id else ""
+        print(f"- {owned.name} (+{owned.damage_bonus} {owned.damage_type}, tier {owned.tier}){equipped}")
     print(f"Gold: {player.gold}")
     if not player.inventory.consumables:
-        print("Consumables: none")
+        print("Items: none")
         return
 
-    print("Consumables:")
+    print("Items:")
     for item_id, count in sorted(player.inventory.consumables.items()):
         item = engine.content.items[item_id]
-        print(f"- {item.name}: {count}")
+        print(f"- {item.name} ({item.kind}): {count}")
 
 
 def handle_travel(engine: GameEngine) -> None:
@@ -448,15 +452,34 @@ def resolve_pending_stat_choices(engine: GameEngine) -> None:
 
 
 def handle_store(engine: GameEngine) -> None:
+    while True:
+        print()
+        print(f"Store | Gold: {engine.player.gold}")
+        choice = prompt_menu(
+            "Store:",
+            [
+                ("1", "buy", "Buy"),
+                ("2", "sell", "Sell"),
+                ("b", "back", "Back"),
+            ],
+        )
+        if choice == "buy":
+            handle_buy(engine)
+        elif choice == "sell":
+            handle_sell(engine)
+        else:
+            return
+
+
+def handle_buy(engine: GameEngine) -> None:
     entries = engine.store_entries()
     if not entries:
-        print("There is no store here.")
+        print("There is nothing for sale here.")
         return
 
     options = []
     print()
-    print("Store")
-    print(f"Gold: {engine.player.gold}")
+    print(f"Buy | Gold: {engine.player.gold}")
     for index, entry in enumerate(entries, start=1):
         print(f"{index}: {entry.name} ({entry.kind}) - {entry.price} gold, {entry.description}")
         options.append((str(index), entry.id, entry.name))
@@ -469,18 +492,55 @@ def handle_store(engine: GameEngine) -> None:
     print(result.message)
 
 
+def handle_sell(engine: GameEngine) -> None:
+    entries = engine.sellable_entries()
+    if not entries:
+        print("You have nothing to sell (junk and unequipped weapons only).")
+        return
+
+    options = []
+    print()
+    print(f"Sell | Gold: {engine.player.gold}")
+    for index, entry in enumerate(entries, start=1):
+        count = f" x{entry.count}" if entry.kind == "junk" and entry.count > 1 else ""
+        print(f"{index}: {entry.name} ({entry.kind}){count} - sells for {entry.value} gold")
+        options.append((str(index), entry.id, entry.name))
+    options.append(("b", "back", "Back"))
+
+    item_id = prompt_menu("What do you want to sell?", options, allow_label=False)
+    if item_id == "back":
+        return
+    result = engine.sell_item(item_id)
+    print(result.message)
+
+
+def item_effect_text(item) -> str:
+    bits = []
+    if item.heal_amount:
+        bits.append(f"heals {item.heal_amount} HP")
+    if item.mana_amount:
+        bits.append(f"restores {item.mana_amount} mana")
+    if item.cures:
+        bits.append("cures " + ", ".join(item.cures))
+    return ", ".join(bits) if bits else "no effect"
+
+
 def handle_use_item(engine: GameEngine) -> None:
-    consumables = engine.player.inventory.consumables
-    if not consumables:
-        print("You have no consumables.")
+    usable = [
+        (item_id, count)
+        for item_id, count in sorted(engine.player.inventory.consumables.items())
+        if engine.content.items[item_id].kind == "consumable"
+    ]
+    if not usable:
+        print("You have no usable consumables.")
         return
 
     options = []
     print()
     print("Use item")
-    for index, (item_id, count) in enumerate(sorted(consumables.items()), start=1):
+    for index, (item_id, count) in enumerate(usable, start=1):
         item = engine.content.items[item_id]
-        print(f"{index}: {item.name} x{count} - heals {item.heal_amount} HP")
+        print(f"{index}: {item.name} x{count} - {item_effect_text(item)}")
         options.append((str(index), item.id, item.name))
     options.append(("b", "back", "Back"))
 

@@ -55,6 +55,7 @@ def load_content() -> GameContent:
             damage_bonus=row["damage_bonus"],
             price=row["price"],
             damage_type=row.get("damage_type", "physical"),
+            tier=row.get("tier", 1),
         )
         for row in _read_json("weapons.json")
     }
@@ -98,8 +99,11 @@ def load_content() -> GameContent:
             id=row["id"],
             name=row["name"],
             kind=row["kind"],
-            heal_amount=row["heal_amount"],
+            heal_amount=row.get("heal_amount", 0),
             price=row["price"],
+            tier=row.get("tier", 1),
+            mana_amount=row.get("mana_amount", 0),
+            cures=tuple(row.get("cures", ())),
         )
         for row in _read_json("items.json")
     }
@@ -121,9 +125,14 @@ def load_content() -> GameContent:
             tags=tuple(row.get("tags", ())),
             mana=row.get("mana", 0),
             ai=tuple(row.get("ai", ())),
+            loot_table=tuple(row.get("loot_table", ())),
+            drop_chance=row.get("drop_chance", 0.0),
+            rare_table_access=row.get("rare_table_access", False),
         )
         for row in _read_json("enemies.json")
     }
+
+    rare_loot_table = tuple(_read_json("loot.json").get("rare_table", ()))
 
     world = _read_json("world.json")
     places = {}
@@ -165,6 +174,7 @@ def load_content() -> GameContent:
         talents=talents,
         enemies=enemies,
         places=places,
+        rare_loot_table=rare_loot_table,
     )
 
 

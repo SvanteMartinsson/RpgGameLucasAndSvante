@@ -24,6 +24,7 @@ class Weapon:
     damage_bonus: int
     price: int
     damage_type: str = "physical"
+    tier: int = 1
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,17 @@ class ConsumableItem:
     kind: str
     heal_amount: int
     price: int
+    tier: int = 1
+    mana_amount: int = 0
+    cures: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LootDrop:
+    item_id: str
+    name: str
+    kind: str
+    tier: int
 
 
 @dataclass(frozen=True)
@@ -102,6 +114,9 @@ class EnemyTemplate:
     tags: tuple[str, ...] = ()
     mana: int = 0
     ai: tuple[dict[str, object], ...] = ()
+    loot_table: tuple[dict[str, object], ...] = ()
+    drop_chance: float = 0.0
+    rare_table_access: bool = False
 
     def create_enemy(self) -> "Enemy":
         return Enemy(
@@ -122,6 +137,9 @@ class EnemyTemplate:
             mana=self.mana,
             max_mana=self.mana,
             ai=self.ai,
+            loot_table=self.loot_table,
+            drop_chance=self.drop_chance,
+            rare_table_access=self.rare_table_access,
         )
 
 
@@ -143,6 +161,9 @@ class Enemy:
     mana: int = 0
     max_mana: int = 0
     ai: tuple[dict[str, object], ...] = ()
+    loot_table: tuple[dict[str, object], ...] = ()
+    drop_chance: float = 0.0
+    rare_table_access: bool = False
     charging_action_id: str = ""
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
     cooldowns: dict[str, int] = field(default_factory=dict)
@@ -273,6 +294,7 @@ class GameContent:
     talents: dict[str, TalentNode]
     enemies: dict[str, EnemyTemplate]
     places: dict[str, Place]
+    rare_loot_table: tuple[dict[str, object], ...] = ()
 
 
 @dataclass

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from rpg_game.core import combat, inventory, progression, store, talents, world
 from rpg_game.core.data_loader import load_content
-from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, Player
+from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player
 
 
 @dataclass(frozen=True)
@@ -101,6 +101,50 @@ class GameEngine:
 
     def create_encounter(self) -> Enemy | None:
         return world.create_encounter(self.player, self.content, self.rng)
+
+    def loot_pool(self, enemy: Enemy) -> list[dict[str, object]]:
+        max_tier = 6 if enemy.rare_table_access else 3
+        pool = list(enemy.loot_table)
+        if enemy.rare_table_access:
+            pool += list(self.content.rare_loot_table)
+        return [entry for entry in pool if int(entry.get("rarity_tier", 1)) <= max_tier]
+
+    def roll_loot(self, enemy: Enemy) -> LootDrop | None:
+        if not (self.rng.random() < enemy.drop_chance):
+            return None
+        pool = self.loot_pool(enemy)
+        if not pool:
+            return None
+        entry = self._weighted_choice(pool)
+        return self._make_loot_drop(entry)
+
+    def collect_loot(self, drop: LootDrop) -> None:
+        player = self.player
+        if drop.kind == "weapon":
+            if drop.item_id not in player.owned_weapon_ids:
+                player.owned_weapon_ids = (*player.owned_weapon_ids, drop.item_id)
+        else:
+            player.inventory.add_consumable(drop.item_id)
+
+    def _weighted_choice(self, pool: list[dict[str, object]]) -> dict[str, object]:
+        total = sum(float(entry["weight"]) for entry in pool)
+        roll = self.rng.random() * total
+        upto = 0.0
+        for entry in pool:
+            upto += float(entry["weight"])
+            if roll < upto:
+                return entry
+        return pool[-1]
+
+    def _make_loot_drop(self, entry: dict[str, object]) -> LootDrop:
+        item_id = str(entry["item_id"])
+        tier = int(entry.get("rarity_tier", 1))
+        if item_id in self.content.weapons:
+            return LootDrop(item_id, self.content.weapons[item_id].name, "weapon", tier)
+        if item_id in self.content.items:
+            item = self.content.items[item_id]
+            return LootDrop(item_id, item.name, item.kind, tier)
+        raise ValueError(f"unknown loot item: {item_id}")
 
     def run_combat_turn(self, enemy: Enemy, attack_id: str) -> combat.CombatTurnResult:
         player = self.player
@@ -261,6 +305,12 @@ class GameEngine:
     def buy_item(self, item_id: str) -> store.PurchaseResult:
         return store.buy_item(self.player, self.content, item_id)
 
+    def sellable_entries(self) -> list[store.SellEntry]:
+        return store.get_sellables(self.player, self.content)
+
+    def sell_item(self, item_id: str) -> store.SellResult:
+        return store.sell_item(self.player, self.content, item_id)
+
     def use_consumable(self, item_id: str) -> inventory.UseItemResult:
         return inventory.use_consumable(self.player, self.content, item_id)
 
@@ -309,6 +359,12 @@ class GameEngine:
         events.append(f"Gained {enemy.xp_reward} XP and {gold} gold.")
         if levels_gained:
             events.append(f"Gained {levels_gained} level(s).")
+
+        drop = self.roll_loot(enemy)
+        if drop is not None:
+            self.collect_loot(drop)
+            events.append(f"{enemy.name} dropped: {drop.name} (tier {drop.tier})!")
+
         return combat.CombatTurnResult(
             outcome="victory",
             events=events,
@@ -318,6 +374,7 @@ class GameEngine:
             gold_gained=gold,
             levels_gained=levels_gained,
             pending_stat_choices=player.pending_stat_choices,
+            loot_drop=drop,
         )
 
     def _combat_result(

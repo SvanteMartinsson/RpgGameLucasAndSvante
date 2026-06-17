@@ -18,7 +18,14 @@
     "action_ids": ["power", "normal", "quick"],
     "xp_reward": 5,
     "gold_min": 3,
-    "gold_max": 8
+    "gold_max": 8,
+    "drop_chance": 0.35,
+    "rare_table_access": false,
+    "loot_table": [
+      { "item_id": "rat_pelt", "weight": 70, "rarity_tier": 1 },
+      { "item_id": "hp_potion", "weight": 25, "rarity_tier": 1 },
+      { "item_id": "steel_greatsword", "weight": 5, "rarity_tier": 3 }
+    ]
   },
   {
     "id": "undead",
@@ -39,7 +46,14 @@
     "action_ids": ["power", "normal", "quick"],
     "xp_reward": 10,
     "gold_min": 14,
-    "gold_max": 31
+    "gold_max": 31,
+    "drop_chance": 0.4,
+    "rare_table_access": false,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 70, "rarity_tier": 1 },
+      { "item_id": "hp_potion", "weight": 20, "rarity_tier": 1 },
+      { "item_id": "rimebrand", "weight": 10, "rarity_tier": 3 }
+    ]
   },
   {
     "id": "cave_bear",
@@ -63,7 +77,15 @@
     ],
     "xp_reward": 15,
     "gold_min": 18,
-    "gold_max": 39
+    "gold_max": 39,
+    "drop_chance": 0.6,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 25, "rarity_tier": 3 },
+      { "item_id": "steel_greatsword", "weight": 20, "rarity_tier": 3 },
+      { "item_id": "emberwand", "weight": 15, "rarity_tier": 3 }
+    ]
   },
   {
     "id": "undead_priest",
@@ -89,7 +111,14 @@
     ],
     "xp_reward": 18,
     "gold_min": 16,
-    "gold_max": 34
+    "gold_max": 34,
+    "drop_chance": 0.6,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "mana_potion", "weight": 30, "rarity_tier": 2 },
+      { "item_id": "rimebrand", "weight": 30, "rarity_tier": 3 }
+    ]
   },
   {
     "id": "plague_acolyte",
@@ -115,6 +144,13 @@
     ],
     "xp_reward": 20,
     "gold_min": 18,
-    "gold_max": 40
+    "gold_max": 40,
+    "drop_chance": 0.6,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "tattered_cloth", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "antidote", "weight": 30, "rarity_tier": 2 },
+      { "item_id": "emberwand", "weight": 30, "rarity_tier": 3 }
+    ]
   }
 ]

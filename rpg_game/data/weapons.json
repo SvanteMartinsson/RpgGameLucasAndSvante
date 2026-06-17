@@ -4,62 +4,135 @@
     "name": "Knife",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 1
   },
   {
     "id": "sword",
     "name": "Sword",
     "damage_bonus": 5,
     "price": 50,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 1
   },
   {
     "id": "axe",
     "name": "Axe",
     "damage_bonus": 9,
     "price": 175,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 2
   },
   {
     "id": "longsword",
     "name": "Longsword",
     "damage_bonus": 14,
     "price": 350,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 2
   },
   {
     "id": "mace",
     "name": "Mace",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 1
   },
   {
     "id": "holy_mace",
     "name": "Mace",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "holy"
+    "damage_type": "holy",
+    "tier": 1
   },
   {
     "id": "dagger",
     "name": "Dagger",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 1
   },
   {
     "id": "staff",
     "name": "Staff",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "fire"
+    "damage_type": "fire",
+    "tier": 1
   },
   {
     "id": "bow",
     "name": "Bow",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "physical"
+    "damage_type": "physical",
+    "tier": 1
+  },
+  {
+    "id": "steel_greatsword",
+    "name": "Steel Greatsword",
+    "damage_bonus": 18,
+    "price": 450,
+    "damage_type": "physical",
+    "tier": 3
+  },
+  {
+    "id": "emberwand",
+    "name": "Emberwand",
+    "damage_bonus": 16,
+    "price": 420,
+    "damage_type": "fire",
+    "tier": 3
+  },
+  {
+    "id": "rimebrand",
+    "name": "Rimebrand",
+    "damage_bonus": 16,
+    "price": 420,
+    "damage_type": "frost",
+    "tier": 3
+  },
+  {
+    "id": "consecrated_maul",
+    "name": "Consecrated Maul",
+    "damage_bonus": 24,
+    "price": 800,
+    "damage_type": "holy",
+    "tier": 4
+  },
+  {
+    "id": "venomfang",
+    "name": "Venomfang",
+    "damage_bonus": 22,
+    "price": 760,
+    "damage_type": "physical",
+    "tier": 4
+  },
+  {
+    "id": "pyre_scepter",
+    "name": "Pyre Scepter",
+    "damage_bonus": 28,
+    "price": 1300,
+    "damage_type": "fire",
+    "tier": 5
+  },
+  {
+    "id": "gravewarden_blade",
+    "name": "Gravewarden Blade",
+    "damage_bonus": 28,
+    "price": 1300,
+    "damage_type": "holy",
+    "tier": 5
+  },
+  {
+    "id": "worldsplitter",
+    "name": "Worldsplitter",
+    "damage_bonus": 38,
+    "price": 2200,
+    "damage_type": "physical",
+    "tier": 6
   }
 ]

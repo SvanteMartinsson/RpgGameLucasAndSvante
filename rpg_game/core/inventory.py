@@ -23,8 +23,27 @@ def use_consumable(player: Player, content: GameContent, item_id: str) -> UseIte
     if item.kind != "consumable":
         return UseItemResult(False, "That item cannot be consumed.")
 
-    before = player.hp
-    player.hp = min(player.max_hp, player.hp + item.heal_amount)
+    effects: list[str] = []
+
+    if item.heal_amount:
+        before = player.hp
+        player.hp = min(player.max_hp, player.hp + item.heal_amount)
+        effects.append(f"healed {player.hp - before} HP")
+
+    if item.mana_amount:
+        before_mana = player.mana
+        player.mana = min(player.max_mana, player.mana + item.mana_amount)
+        effects.append(f"restored {player.mana - before_mana} mana")
+
+    for tag in item.cures:
+        if any(status.type == tag or status.tag == tag for status in player.active_statuses):
+            player.active_statuses = [
+                status
+                for status in player.active_statuses
+                if status.type != tag and status.tag != tag
+            ]
+            effects.append(f"cured {tag}")
+
     player.inventory.remove_consumable(normalized)
-    healed = player.hp - before
-    return UseItemResult(True, f"Used {item.name} and healed {healed} HP.")
+    summary = ", ".join(effects) if effects else "no effect"
+    return UseItemResult(True, f"Used {item.name} and {summary}.")

@@ -11,6 +11,7 @@ from rpg_game.core.entities import (
     EffectSpec,
     Enemy,
     Inventory,
+    LootDrop,
     Player,
     Weapon,
 )
@@ -92,6 +93,7 @@ class CombatTurnResult:
     gold_gained: int = 0
     levels_gained: int = 0
     pending_stat_choices: int = 0
+    loot_drop: LootDrop | None = None
 
 
 Actor = Player | Enemy
