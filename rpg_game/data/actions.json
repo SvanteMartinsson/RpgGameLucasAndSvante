@@ -679,5 +679,35 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "priest_heal",
+    "name": "Dark Mending",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "cooldown_rounds": 2,
+    "effects": [
+      {
+        "type": "instant_heal",
+        "magnitude": 18,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "priest_strike",
+    "name": "Withering Touch",
+    "kind": "skill",
+    "hit_chance": 0.85,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "holy",
+        "target": "enemy"
+      }
+    ]
   }
 ]

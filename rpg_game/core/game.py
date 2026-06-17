@@ -124,29 +124,23 @@ class GameEngine:
                 continue
 
             if actor is player:
-                action = player_action
-                target = enemy
                 weapon = self.content.weapons[player.equipped_weapon_id]
+                resolution = combat.resolve_action(player, enemy, player_action, self.rng, weapon=weapon)
+                events.extend(resolution.events)
+                if resolution.blocked:
+                    return self._combat_result("blocked", enemy, events)
+                if player_action.cooldown_rounds:
+                    player_actions_used.add(player_action.id)
+                if consumable_to_remove:
+                    player.inventory.remove_consumable(consumable_to_remove)
+                    consumable_to_remove = ""
             else:
-                enemy_actions = combat.available_actions(enemy, self.content.actions)
-                if not enemy_actions:
-                    continue
-                action = self.rng.choice(enemy_actions)
-                target = player
-                weapon = None
-
-            resolution = combat.resolve_action(actor, target, action, self.rng, weapon=weapon)
-            events.extend(resolution.events)
-            if resolution.blocked:
-                return self._combat_result("blocked", enemy, events)
-            if action.cooldown_rounds:
-                if actor is player:
-                    player_actions_used.add(action.id)
-                else:
-                    enemy_actions_used.add(action.id)
-            if actor is player and consumable_to_remove:
-                player.inventory.remove_consumable(consumable_to_remove)
-                consumable_to_remove = ""
+                resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
+                events.extend(resolution.events)
+                if resolution.blocked:
+                    return self._combat_result("blocked", enemy, events)
+                if resolution.action_id and enemy.cooldowns.get(resolution.action_id, 0) > 0:
+                    enemy_actions_used.add(resolution.action_id)
 
         if not enemy.is_alive:
             return self._handle_victory(enemy, events)

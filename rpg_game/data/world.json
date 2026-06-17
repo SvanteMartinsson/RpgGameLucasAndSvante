@@ -210,7 +210,8 @@
       "danger_tier": 2,
       "encounters": [
         "undead",
-        "cave_bear"
+        "cave_bear",
+        "undead_priest"
       ],
       "respawn": false,
       "locked": false,
@@ -683,7 +684,8 @@
       "danger_tier": 2,
       "encounters": [
         "undead",
-        "cave_bear"
+        "cave_bear",
+        "undead_priest"
       ],
       "respawn": false,
       "locked": false,

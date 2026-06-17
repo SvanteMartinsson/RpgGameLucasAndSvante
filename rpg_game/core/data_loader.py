@@ -67,6 +67,7 @@ def load_content() -> GameContent:
             hit_chance=row.get("hit_chance", 1.0),
             mana_cost=row.get("mana_cost", 0),
             cooldown_rounds=row.get("cooldown_rounds", 0),
+            telegraph=row.get("telegraph", False),
             effects=tuple(
                 _effect_from_json(effect)
                 for effect in row.get("effects", ())
@@ -118,6 +119,8 @@ def load_content() -> GameContent:
             gold_min=row["gold_min"],
             gold_max=row["gold_max"],
             tags=tuple(row.get("tags", ())),
+            mana=row.get("mana", 0),
+            ai=tuple(row.get("ai", ())),
         )
         for row in _read_json("enemies.json")
     }

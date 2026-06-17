@@ -60,6 +60,7 @@ class CombatAction:
     hit_chance: float = 1.0
     mana_cost: int = 0
     cooldown_rounds: int = 0
+    telegraph: bool = False
     effects: tuple[EffectSpec, ...] = ()
 
 
@@ -99,6 +100,8 @@ class EnemyTemplate:
     gold_min: int
     gold_max: int
     tags: tuple[str, ...] = ()
+    mana: int = 0
+    ai: tuple[dict[str, object], ...] = ()
 
     def create_enemy(self) -> "Enemy":
         return Enemy(
@@ -116,6 +119,9 @@ class EnemyTemplate:
             gold_min=self.gold_min,
             gold_max=self.gold_max,
             tags=set(self.tags),
+            mana=self.mana,
+            max_mana=self.mana,
+            ai=self.ai,
         )
 
 
@@ -134,6 +140,10 @@ class Enemy:
     xp_reward: int
     gold_min: int
     gold_max: int
+    mana: int = 0
+    max_mana: int = 0
+    ai: tuple[dict[str, object], ...] = ()
+    charging_action_id: str = ""
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
     cooldowns: dict[str, int] = field(default_factory=dict)
     accuracy_mod: int = 0

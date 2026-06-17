@@ -61,5 +61,31 @@
     "xp_reward": 15,
     "gold_min": 18,
     "gold_max": 39
+  },
+  {
+    "id": "undead_priest",
+    "name": "Undead Priest",
+    "level": 3,
+    "max_hp": 40,
+    "damage": 5,
+    "armor": 0,
+    "speed": 9,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 2.0,
+      "poison": 0.0
+    },
+    "tags": ["undead"],
+    "mana": 30,
+    "action_ids": ["priest_heal", "priest_strike"],
+    "ai": [
+      { "condition": { "self_hp_below": 50 }, "action": "priest_heal" },
+      { "condition": { "always": true }, "action": "priest_strike" }
+    ],
+    "xp_reward": 18,
+    "gold_min": 16,
+    "gold_max": 34
   }
 ]

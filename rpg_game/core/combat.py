@@ -344,7 +344,7 @@ def resolve_action(
         result.events.append(blocked_reason)
         return result
 
-    if isinstance(actor, Player) and action.mana_cost:
+    if action.mana_cost:
         actor.mana -= action.mana_cost
         result.mana_spent = action.mana_cost
 
@@ -382,8 +382,8 @@ def rolls_evasion(target: Actor, rng: random.Random) -> bool:
 
 
 def blocked_action_reason(actor: Actor, action: CombatAction) -> str:
-    if isinstance(actor, Player) and actor.mana < action.mana_cost:
-        return f"{actor.name} does not have enough mana for {action.name}."
+    if actor.mana < action.mana_cost:
+        return f"{actor_name(actor)} does not have enough mana for {action.name}."
     if actor.cooldowns.get(action.id, 0) > 0:
         return f"{actor_name(actor)} cannot use {action.name} for {actor.cooldowns[action.id]} more round(s)."
     return ""
@@ -397,6 +397,114 @@ def available_actions(actor: Actor, actions: dict[str, CombatAction]) -> list[Co
         for action_id in (*base_ids, *action_ids)
         if action_id in actions and not blocked_action_reason(actor, actions[action_id])
     ]
+
+
+def action_is_ready(actor: Actor, action: CombatAction | None) -> bool:
+    return action is not None and not blocked_action_reason(actor, action)
+
+
+def actor_has_status(actor: Actor, tag: str) -> bool:
+    return any(status.type == tag or status.tag == tag for status in actor.active_statuses)
+
+
+def hp_percent(actor: Actor) -> float:
+    if actor.max_hp <= 0:
+        return 0.0
+    return actor.hp / actor.max_hp * 100
+
+
+def ai_condition_met(
+    actor: Enemy,
+    target: Actor,
+    condition: dict[str, object],
+    actions: dict[str, CombatAction],
+) -> bool:
+    """Evaluate a rule condition. Multiple predicates are ANDed together."""
+    for key, value in condition.items():
+        if key == "always":
+            continue
+        if key == "self_hp_below":
+            if not hp_percent(actor) < float(value):
+                return False
+        elif key == "target_hp_below":
+            if not hp_percent(target) < float(value):
+                return False
+        elif key == "skill_ready":
+            if not action_is_ready(actor, actions.get(str(value))):
+                return False
+        elif key == "self_has_status":
+            if not actor_has_status(actor, str(value)):
+                return False
+        elif key == "target_has_status":
+            if not actor_has_status(target, str(value)):
+                return False
+        else:
+            raise ValueError(f"unknown ai condition: {key}")
+    return True
+
+
+def choose_enemy_action(
+    enemy: Enemy,
+    target: Actor,
+    actions: dict[str, CombatAction],
+    rng: random.Random,
+) -> CombatAction | None:
+    """Pick an enemy action via its ordered ai rules.
+
+    Returns the first rule whose condition is true and whose action is ready
+    (off cooldown + enough mana). If no rule matches, uniformly picks a ready
+    non-telegraph action. Never returns an action that is not ready.
+    """
+    ready = available_actions(enemy, actions)
+    ready_by_id = {action.id: action for action in ready}
+    for rule in enemy.ai:
+        action_id = str(rule.get("action", ""))
+        action = ready_by_id.get(action_id)
+        if action is None:
+            continue
+        if ai_condition_met(enemy, target, dict(rule.get("condition", {})), actions):
+            return action
+    fallback = [action for action in ready if not action.telegraph]
+    if not fallback:
+        return None
+    return rng.choice(fallback)
+
+
+def enemy_take_turn(
+    enemy: Enemy,
+    target: Actor,
+    actions: dict[str, CombatAction],
+    rng: random.Random,
+) -> ActionResolution:
+    """Resolve a full enemy turn: release a charged telegraph, or pick + act."""
+    if enemy.charging_action_id:
+        action = actions[enemy.charging_action_id]
+        enemy.charging_action_id = ""
+        return resolve_action(enemy, target, action, rng)
+
+    action = choose_enemy_action(enemy, target, actions, rng)
+    if action is None:
+        result = ActionResolution(
+            action_id="",
+            action_name="",
+            actor_name=actor_name(enemy),
+            target_name=actor_name(target),
+        )
+        result.events.append(f"{actor_name(enemy)} hesitates.")
+        return result
+
+    if action.telegraph:
+        enemy.charging_action_id = action.id
+        result = ActionResolution(
+            action_id=action.id,
+            action_name=action.name,
+            actor_name=actor_name(enemy),
+            target_name=actor_name(target),
+        )
+        result.events.append(f"{actor_name(enemy)} charges {action.name}.")
+        return result
+
+    return resolve_action(enemy, target, action, rng)
 
 
 def tick_cooldowns(actor: Actor, skip: set[str] | None = None) -> None:
