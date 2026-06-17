@@ -165,6 +165,32 @@ class GameEngine:
 
         return self._combat_result("ongoing", enemy, events)
 
+    def flee_chance(self, enemy: Enemy) -> float:
+        diff = (self.player.speed - enemy.speed) + (self.player.level - enemy.level)
+        return combat.clamp(0.5 + 0.05 * diff, 0.10, 0.95)
+
+    def attempt_flee(self, enemy: Enemy) -> combat.CombatTurnResult:
+        player = self.player
+        events: list[str] = []
+        if self.rng.random() < self.flee_chance(enemy):
+            events.append(f"You fled from {enemy.name}.")
+            return combat.CombatTurnResult(
+                outcome="fled",
+                events=events,
+                player_hp=player.hp,
+                enemy_hp=enemy.hp,
+                pending_stat_choices=player.pending_stat_choices,
+            )
+
+        events.append(f"You failed to flee. {enemy.name} gets a free attack.")
+        resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
+        events.extend(resolution.events)
+        if not player.is_alive:
+            self._respawn_player()
+            events.append(f"You died and respawned in {self.current_place().name}.")
+            return self._combat_result("defeat", enemy, events)
+        return self._combat_result("ongoing", enemy, events)
+
     def apply_stat_choice(self, stat: str) -> str:
         return progression.apply_stat_choice(self.player, stat)
 
@@ -176,6 +202,22 @@ class GameEngine:
 
     def allocate_talent(self, node_id: str) -> str:
         return talents.allocate_talent(self.player, self.content, node_id)
+
+    def equippable_skills(self):
+        return talents.equippable_skills(self.player, self.content)
+
+    def equipped_skills(self):
+        return [
+            self.content.actions[skill_id]
+            for skill_id in self.player.equipped_skill_ids
+            if skill_id in self.content.actions
+        ]
+
+    def equip_skill(self, action_id: str) -> str:
+        return talents.equip_skill(self.player, self.content, action_id)
+
+    def unequip_skill(self, action_id: str) -> str:
+        return talents.unequip_skill(self.player, self.content, action_id)
 
     def store_entries(self) -> list[store.StoreEntry]:
         return store.get_store_entries(self.content, self.player.current_place_id)

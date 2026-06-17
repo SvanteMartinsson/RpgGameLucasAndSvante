@@ -1,10 +1,52 @@
 from __future__ import annotations
 
 from rpg_game.core import combat
-from rpg_game.core.entities import GameContent, Player, TalentNode
+from rpg_game.core.entities import CombatAction, GameContent, Player, TalentNode
 
 
 MAX_EQUIPPED_SKILLS = 4
+
+
+def unlocked_skill_ids(player: Player, content: GameContent) -> list[str]:
+    """All active skills the player may equip: class starters + learned actives."""
+    ids: list[str] = []
+    for skill_id in content.classes[player.player_class].starting_skill_ids:
+        if skill_id not in ids:
+            ids.append(skill_id)
+    for talent_id in sorted(player.learned_talent_ids):
+        talent = content.talents.get(talent_id)
+        if (
+            talent is not None
+            and talent.node_type == "active"
+            and talent.action_id
+            and talent.action_id not in ids
+        ):
+            ids.append(talent.action_id)
+    return ids
+
+
+def equippable_skills(player: Player, content: GameContent) -> list[CombatAction]:
+    return [content.actions[skill_id] for skill_id in unlocked_skill_ids(player, content) if skill_id in content.actions]
+
+
+def equip_skill(player: Player, content: GameContent, action_id: str) -> str:
+    if action_id not in unlocked_skill_ids(player, content):
+        raise ValueError("skill is not unlocked")
+    name = content.actions[action_id].name if action_id in content.actions else action_id
+    if action_id in player.equipped_skill_ids:
+        return f"{name} is already equipped."
+    if len(player.equipped_skill_ids) >= MAX_EQUIPPED_SKILLS:
+        raise ValueError("cannot equip more than 4 skills")
+    player.equipped_skill_ids = (*player.equipped_skill_ids, action_id)
+    return f"Equipped {name}."
+
+
+def unequip_skill(player: Player, content: GameContent, action_id: str) -> str:
+    if action_id not in player.equipped_skill_ids:
+        raise ValueError("skill is not equipped")
+    player.equipped_skill_ids = tuple(skill_id for skill_id in player.equipped_skill_ids if skill_id != action_id)
+    name = content.actions[action_id].name if action_id in content.actions else action_id
+    return f"Unequipped {name}."
 
 
 def available_talents(player: Player, content: GameContent) -> list[TalentNode]:

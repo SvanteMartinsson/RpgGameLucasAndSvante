@@ -18,15 +18,18 @@ def main() -> None:
         print(place.description)
         print(f"HP: {engine.player.hp}/{engine.player.max_hp} | Gold: {engine.player.gold}")
 
-        options = [
-            ("1", "stats", "Show stats"),
-            ("2", "inventory", "Show inventory"),
-            ("3", "travel", "Travel"),
-            ("4", "explore", "Explore"),
-            ("5", "use", "Use item"),
+        menu = [
+            ("stats", "Show stats"),
+            ("inventory", "Show inventory"),
+            ("travel", "Travel"),
+            ("explore", "Explore"),
+            ("use", "Use item"),
+            ("talents", "Talents"),
+            ("skills", "Skills"),
         ]
         if place.has_store:
-            options.append(("6", "store", "Store"))
+            menu.append(("store", "Store"))
+        options = [(str(index), value, label) for index, (value, label) in enumerate(menu, start=1)]
         options.append(("q", "quit", "Quit"))
 
         action = prompt_menu("What do you want to do?", options)
@@ -40,6 +43,10 @@ def main() -> None:
             handle_explore(engine)
         elif action == "use":
             handle_use_item(engine)
+        elif action == "talents":
+            handle_talents(engine)
+        elif action == "skills":
+            handle_skills(engine)
         elif action == "store":
             handle_store(engine)
         elif action == "quit":
@@ -87,6 +94,7 @@ def show_stats(engine: GameEngine) -> None:
     print(f"Total damage: {total_damage}")
     print(f"Armor: {player.armor}")
     print(f"Speed: {player.speed}")
+    print(f"Talent points: {player.talent_points}")
     print(f"Gold: {player.gold}")
 
 
@@ -165,7 +173,133 @@ def prompt_combat_action(engine: GameEngine) -> str:
     return prompt_menu("Choose action:", options)
 
 
+# --- Talents -------------------------------------------------------------
+
+
+def describe_effect(effect) -> str:
+    kind = effect.type
+    if kind in {"damage", "instant_damage"}:
+        base = {"power": "Power", "basic_attack": "weapon", "flat": "flat"}.get(effect.scale, effect.scale)
+        hits = f" x{effect.hits} hits" if effect.hits > 1 else ""
+        return f"deal {effect.multiplier}x {base} {effect.damage_type} damage{hits}"
+    if kind in {"instant_heal", "heal"}:
+        return f"heal {effect.magnitude} HP"
+    if kind == "drain":
+        return f"drain {effect.multiplier}x Power {effect.damage_type}, heal {int(effect.ratio * 100)}% of it"
+    if kind == "apply_status":
+        status = effect.status_type or effect.damage_type
+        where = "self" if effect.target == "self" else "enemy"
+        if status in {"buff", "debuff"}:
+            sign = "+" if effect.magnitude >= 0 else ""
+            return f"{status} {sign}{effect.magnitude} {effect.stat} for {effect.duration} rounds ({where})"
+        return f"apply {status} {effect.magnitude} for {effect.duration} rounds ({where})"
+    if kind == "stat_bonus":
+        return f"+{effect.magnitude} {effect.stat}"
+    if kind == "conditional_damage_mod":
+        return "conditional damage bonus"
+    if kind == "applied_status_mod":
+        return f"improve {effect.modifies_status_type} effects"
+    if kind == "immunity":
+        return f"immunity to {effect.tag}"
+    return kind
+
+
+def skill_cost_text(action) -> str:
+    bits = []
+    if action.mana_cost:
+        bits.append(f"{action.mana_cost} mana")
+    if action.cooldown_rounds:
+        bits.append(f"cooldown {action.cooldown_rounds}")
+    return ", ".join(bits) if bits else "free"
+
+
+def describe_talent(engine: GameEngine, node) -> str:
+    if node.node_type == "active" and node.action_id in engine.content.actions:
+        action = engine.content.actions[node.action_id]
+        effects = "; ".join(describe_effect(effect) for effect in action.effects) or "active skill"
+        return f"Active: {effects} ({skill_cost_text(action)})"
+    if node.effects:
+        return "Passive: " + "; ".join(describe_effect(effect) for effect in node.effects)
+    return node.node_type
+
+
+def talent_prereq_text(engine: GameEngine, node) -> str:
+    if node.order <= 1:
+        return " | no prerequisite"
+    for candidate in engine.content.talents.values():
+        if (
+            candidate.class_id == node.class_id
+            and candidate.branch == node.branch
+            and candidate.order == node.order - 1
+        ):
+            return f" | requires {candidate.name}"
+    return ""
+
+
+def handle_talents(engine: GameEngine) -> None:
+    while True:
+        player = engine.player
+        print()
+        print(f"Talents (points: {player.talent_points})")
+        if player.talent_points <= 0:
+            print("You have no talent points to spend.")
+            return
+
+        nodes = engine.available_talents()
+        if not nodes:
+            print("No talents are available to learn right now.")
+            return
+
+        options = []
+        for index, node in enumerate(nodes, start=1):
+            label = f"{node.name} [{node.branch} t{node.order}] - {describe_talent(engine, node)}{talent_prereq_text(engine, node)}"
+            options.append((str(index), node.id, label))
+        options.append(("b", "back", "Back"))
+
+        choice = prompt_menu("Spend a talent point on which node?", options, allow_label=False)
+        if choice == "back":
+            return
+        try:
+            print(engine.allocate_talent(choice))
+        except ValueError as error:
+            print(f"Cannot learn that talent: {error}")
+
+
+# --- Skills (equip max 4) -----------------------------------------------
+
+
+def handle_skills(engine: GameEngine) -> None:
+    while True:
+        player = engine.player
+        equipped = set(player.equipped_skill_ids)
+        skills = engine.equippable_skills()
+        print()
+        print(f"Skills (equipped {len(equipped)}/4)")
+        if not skills:
+            print("You have not unlocked any active skills yet. Learn active talents first.")
+            return
+
+        options = []
+        for index, skill in enumerate(skills, start=1):
+            mark = "[x]" if skill.id in equipped else "[ ]"
+            label = f"{mark} {skill.name} - {skill_cost_text(skill)}"
+            options.append((str(index), skill.id, label))
+        options.append(("b", "back", "Back"))
+
+        choice = prompt_menu("Toggle which skill? (max 4 equipped)", options, allow_label=False)
+        if choice == "back":
+            return
+        try:
+            if choice in equipped:
+                print(engine.unequip_skill(choice))
+            else:
+                print(engine.equip_skill(choice))
+        except ValueError as error:
+            print(f"Cannot change that skill: {error}")
+
+
 def resolve_pending_stat_choices(engine: GameEngine) -> None:
+    leveled = engine.player.pending_stat_choices > 0
     while engine.player.pending_stat_choices > 0:
         print()
         print(f"Level up! You are now level {engine.player.level}.")
@@ -177,6 +311,10 @@ def resolve_pending_stat_choices(engine: GameEngine) -> None:
             ],
         )
         print(engine.apply_stat_choice(choice))
+
+    if leveled and engine.player.talent_points > 0:
+        print(f"You have {engine.player.talent_points} talent point(s) to spend.")
+        handle_talents(engine)
 
 
 def handle_store(engine: GameEngine) -> None:
