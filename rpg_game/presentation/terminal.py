@@ -10,11 +10,36 @@ SAVE_PATH = "savegame.json"
 def main() -> None:
     engine = GameEngine()
     print("Welcome to Svantrenish RPG!")
-    name = input("What is your name? ").strip() or "Hero"
-    class_id = prompt_class(engine)
-    engine.start_new_game(name, class_id)
-    print(f"Welcome, {engine.player.name} the {engine.content.classes[class_id].name}.")
 
+    while True:
+        choice = prompt_menu(
+            "Main menu:",
+            [
+                ("1", "new", "New game"),
+                ("2", "load", "Load game"),
+                ("q", "quit", "Quit"),
+            ],
+        )
+        if choice == "new":
+            name = input("What is your name? ").strip() or "Hero"
+            class_id = prompt_class(engine)
+            engine.start_new_game(name, class_id)
+            print(f"Welcome, {engine.player.name} the {engine.content.classes[class_id].name}.")
+            run_game_loop(engine)
+            return
+        if choice == "load":
+            result = engine.load(SAVE_PATH)
+            print(result.message)
+            if result.success:
+                run_game_loop(engine)
+                return
+            continue  # missing/corrupt file: back to the start menu
+        if choice == "quit":
+            print("Goodbye.")
+            return
+
+
+def run_game_loop(engine: GameEngine) -> None:
     while True:
         place = engine.current_place()
         print()
@@ -31,7 +56,6 @@ def main() -> None:
             ("talents", "Talents"),
             ("skills", "Skills"),
             ("save", "Save game"),
-            ("load", "Load game"),
         ]
         if place.has_store:
             menu.append(("rest", "Rest"))
@@ -56,8 +80,6 @@ def main() -> None:
             handle_skills(engine)
         elif action == "save":
             print(engine.save(SAVE_PATH).message)
-        elif action == "load":
-            print(engine.load(SAVE_PATH).message)
         elif action == "rest":
             print(engine.rest().message)
         elif action == "store":
