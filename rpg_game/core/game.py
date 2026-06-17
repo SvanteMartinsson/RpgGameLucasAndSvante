@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import random
+from dataclasses import dataclass
 
 from rpg_game.core import combat, inventory, progression, store, talents, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, Player
+
+
+@dataclass(frozen=True)
+class RestResult:
+    outcome: str
+    message: str
+    player_hp: int = 0
+    player_mana: int = 0
 
 
 class GameEngine:
@@ -60,6 +69,25 @@ class GameEngine:
 
     def current_place(self):
         return world.get_current_place(self.player, self.content)
+
+    def rest(self) -> RestResult:
+        place = self.current_place()
+        if not place.has_store:
+            return RestResult(
+                outcome="not_allowed",
+                message="You can only rest in a town with services.",
+                player_hp=self.player.hp,
+                player_mana=self.player.mana,
+            )
+        player = self.player
+        player.hp = player.max_hp
+        player.mana = player.max_mana
+        return RestResult(
+            outcome="rested",
+            message=f"You rest at {place.name} and recover to full HP and mana.",
+            player_hp=player.hp,
+            player_mana=player.mana,
+        )
 
     def available_destinations(self):
         return world.available_destinations(self.player, self.content)

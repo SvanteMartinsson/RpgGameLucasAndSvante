@@ -29,6 +29,7 @@ def main() -> None:
             ("skills", "Skills"),
         ]
         if place.has_store:
+            menu.append(("rest", "Rest"))
             menu.append(("store", "Store"))
         options = [(str(index), value, label) for index, (value, label) in enumerate(menu, start=1)]
         options.append(("q", "quit", "Quit"))
@@ -48,6 +49,8 @@ def main() -> None:
             handle_talents(engine)
         elif action == "skills":
             handle_skills(engine)
+        elif action == "rest":
+            print(engine.rest().message)
         elif action == "store":
             handle_store(engine)
         elif action == "quit":
