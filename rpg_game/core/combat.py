@@ -117,6 +117,13 @@ class CombatTurnResult:
     enemy_reveal: EnemyReveal | None = None
 
 
+@dataclass
+class DamageComponent:
+    amount: int
+    damage_type: str
+    effectiveness: str = ""
+
+
 Actor = Player | Enemy
 
 
@@ -231,6 +238,96 @@ def _effect_damage_type(actor: Actor, weapon: Weapon | None, effect: EffectSpec)
     return effect.damage_type
 
 
+def effectiveness_label(resist: float) -> str:
+    if resist > 1.0:
+        return "super effective"
+    if resist < 1.0:
+        return "resisted"
+    return ""
+
+
+def _effect_source_value(actor: Actor, weapon: Weapon | None, effect: EffectSpec, weapon_scaled: bool) -> int:
+    if effect.scale == "basic_attack":
+        return _basic_attack_base(actor, weapon)
+    if effect.scale == "power":
+        base = get_stat(actor, "power")
+        if weapon_scaled and weapon is not None:
+            base += weapon.damage_bonus
+        return base
+    if effect.scale == "flat":
+        return effect.magnitude
+    raise ValueError(f"unknown damage scale: {effect.scale}")
+
+
+def compute_damage_components(
+    actor: Actor,
+    target: Actor,
+    weapon: Weapon | None,
+    effect: EffectSpec,
+    *,
+    rng: random.Random | None = None,
+    result: ActionResolution | None = None,
+    weapon_scaled: bool = False,
+) -> tuple[list[DamageComponent], int, bool]:
+    """Resolve one damage instance into per-type components plus a floored total.
+
+    Each component is mitigated against its own resistance (armor reduces only
+    physical); the same rolled+crit multiplier scales every component. Flat
+    mitigation applies once to the summed components.
+    """
+    multiplier = effect.multiplier
+    crit = rolls_crit(actor, effect, rng)
+    if crit:
+        multiplier *= actor.crit_mult
+        if result is not None:
+            result.critical_hits += 1
+
+    raw_components = _raw_damage_components(actor, target, weapon, effect, multiplier, weapon_scaled)
+
+    components: list[DamageComponent] = []
+    for amount, damage_type in raw_components:
+        resist = get_resistance(target, damage_type)
+        resolved = round_half_up(amount * resist)
+        if damage_type == "physical":
+            resolved -= max(0, target.armor - effect.armor_pen)
+        components.append(DamageComponent(max(0, resolved), damage_type, effectiveness_label(resist)))
+
+    total = _total_after_mitigation(target, components)
+    return components, total, crit
+
+
+def _raw_damage_components(
+    actor: Actor,
+    target: Actor,
+    weapon: Weapon | None,
+    effect: EffectSpec,
+    multiplier: float,
+    weapon_scaled: bool,
+) -> list[tuple[int, str]]:
+    source = _effect_source_value(actor, weapon, effect, weapon_scaled)
+    primary = round_half_up(source * multiplier)
+    primary = apply_conditional(primary, actor, target, effect)
+    primary = apply_damage_dealt_mod(primary, actor)
+    components = [(primary, _effect_damage_type(actor, weapon, effect))]
+    components.extend(_elemental_attack_components(actor, effect, multiplier))
+    return components
+
+
+def _elemental_attack_components(actor: Actor, effect: EffectSpec, multiplier: float) -> list[tuple[int, str]]:
+    if effect.scale != "basic_attack" or not isinstance(actor, Player):
+        return []
+    return [
+        (round_half_up(multiplier * int(mod["mod_value"])), str(mod["damage_type"]))
+        for mod in actor.elemental_attack_mods
+    ]
+
+
+def _total_after_mitigation(target: Actor, components: list[DamageComponent]) -> int:
+    subtotal = sum(component.amount for component in components) - active_mitigation(target)
+    total = max(1, subtotal)
+    return max(1, round_half_up(total * (1 + target.damage_taken_mod / 100)))
+
+
 def calculate_effect_damage(
     actor: Actor,
     target: Actor,
@@ -240,28 +337,18 @@ def calculate_effect_damage(
     result: ActionResolution | None = None,
     weapon_scaled: bool = False,
 ) -> int:
-    if effect.scale == "basic_attack":
-        raw_damage = round_half_up(_basic_attack_base(actor, weapon) * effect.multiplier)
-    elif effect.scale == "power":
-        base_power = get_stat(actor, "power")
-        if weapon_scaled and weapon is not None:
-            base_power += weapon.damage_bonus
-        raw_damage = round_half_up(base_power * effect.multiplier)
-    elif effect.scale == "flat":
-        raw_damage = round_half_up(effect.magnitude * effect.multiplier)
-    else:
-        raise ValueError(f"unknown damage scale: {effect.scale}")
+    _, total, _ = compute_damage_components(
+        actor, target, weapon, effect, rng=rng, result=result, weapon_scaled=weapon_scaled
+    )
+    return total
 
-    raw_damage = apply_conditional(raw_damage, actor, target, effect)
-    raw_damage = apply_damage_dealt_mod(raw_damage, actor)
-    if rolls_crit(actor, effect, rng):
-        raw_damage = round_half_up(raw_damage * actor.crit_mult)
-        if result is not None:
-            result.critical_hits += 1
 
-    damage_type = _effect_damage_type(actor, weapon, effect)
-    damage = apply_damage_mitigation_with_armor_pen(raw_damage, target, damage_type, effect.armor_pen)
-    return apply_damage_taken_mod(damage, target)
+def format_damage_event(actor: Actor, action_name: str, target: Actor, components: list[DamageComponent], crit: bool) -> str:
+    parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
+    flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
+    flag_text = f" ({', '.join(flags)})" if flags else ""
+    crit_text = " critical hit!" if crit else ""
+    return f"{actor_name(actor)}'s {action_name} dealt {parts}{flag_text}{crit_text} to {actor_name(target)}."
 
 
 def action_uses_weapon_scaling(action: CombatAction) -> bool:
@@ -619,9 +706,8 @@ def apply_effect(
     effect_target = actor if effect.target == "self" else target
 
     if effect.type in {"damage", "instant_damage"}:
-        damage_type = _effect_damage_type(actor, weapon, effect)
         for _ in range(effect.hits):
-            damage = calculate_effect_damage(
+            components, total, crit = compute_damage_components(
                 actor,
                 effect_target,
                 weapon,
@@ -630,9 +716,10 @@ def apply_effect(
                 result=result,
                 weapon_scaled=weapon_scaled,
             )
-            deal_damage(actor, effect_target, damage, damage_type, result)
+            primary_type = components[0].damage_type
+            deal_damage(actor, effect_target, total, primary_type, result)
             result.events.append(
-                f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
+                format_damage_event(actor, result.action_name, effect_target, components, crit)
             )
         return
 
@@ -643,8 +730,7 @@ def apply_effect(
         return
 
     if effect.type == "drain":
-        damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(
+        components, total, crit = compute_damage_components(
             actor,
             effect_target,
             weapon,
@@ -653,12 +739,17 @@ def apply_effect(
             result=result,
             weapon_scaled=weapon_scaled,
         )
-        deal_damage(actor, effect_target, damage, damage_type, result)
-        heal = round_half_up(damage * effect.ratio)
+        primary_type = components[0].damage_type
+        deal_damage(actor, effect_target, total, primary_type, result)
+        heal = round_half_up(total * effect.ratio)
         before = actor.hp
         actor.hp = min(actor.max_hp, actor.hp + heal)
+        parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
+        flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
+        flag_text = f" ({', '.join(flags)})" if flags else ""
+        crit_text = " critical hit!" if crit else ""
         result.events.append(
-            f"{actor_name(actor)}'s {result.action_name} drained {damage} {damage_type} damage from {actor_name(effect_target)}."
+            f"{actor_name(actor)}'s {result.action_name} drained {parts}{flag_text}{crit_text} from {actor_name(effect_target)}."
         )
         result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
         return

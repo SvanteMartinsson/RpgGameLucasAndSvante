@@ -289,6 +289,7 @@ class Player:
     immunity_tags: set[str] = field(default_factory=set)
     tags: set[str] = field(default_factory=set)
     conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
+    elemental_attack_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
 
     @property

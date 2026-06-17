@@ -105,6 +105,7 @@ def serialize_player(player: Player) -> dict:
         "immunity_tags": sorted(player.immunity_tags),
         "tags": sorted(player.tags),
         "conditional_damage_mods": [dict(mod) for mod in player.conditional_damage_mods],
+        "elemental_attack_mods": [dict(mod) for mod in player.elemental_attack_mods],
         "pending_stat_choices": player.pending_stat_choices,
         "inventory": {"consumables": dict(player.inventory.consumables)},
     }
@@ -154,6 +155,7 @@ def deserialize_player(data: dict, default_place_id: str = "") -> Player:
         immunity_tags=set(data.get("immunity_tags", ())),
         tags=set(data.get("tags", ())),
         conditional_damage_mods=[dict(mod) for mod in data.get("conditional_damage_mods", ())],
+        elemental_attack_mods=[dict(mod) for mod in data.get("elemental_attack_mods", ())],
         pending_stat_choices=data.get("pending_stat_choices", 0),
     )
 

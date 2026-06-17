@@ -49,7 +49,7 @@
     "name": "Mace",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "holy",
+    "damage_type": "physical",
     "category": "magic",
     "tier": 1
   },
@@ -67,7 +67,7 @@
     "name": "Staff",
     "damage_bonus": 0,
     "price": 0,
-    "damage_type": "fire",
+    "damage_type": "physical",
     "category": "magic",
     "tier": 1
   },
