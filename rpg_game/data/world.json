@@ -145,7 +145,8 @@
       "danger_tier": 2,
       "encounters": [
         "undead",
-        "cave_bear"
+        "cave_bear",
+        "plague_acolyte"
       ],
       "respawn": false,
       "locked": false,
@@ -508,7 +509,8 @@
       "danger_tier": 2,
       "encounters": [
         "undead",
-        "cave_bear"
+        "cave_bear",
+        "plague_acolyte"
       ],
       "respawn": false,
       "locked": false,

@@ -709,5 +709,53 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "bear_maul",
+    "name": "Maul",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.0,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "acolyte_nuke",
+    "name": "Plague Nova",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 3.0,
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "acolyte_bolt",
+    "name": "Sickly Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
   }
 ]

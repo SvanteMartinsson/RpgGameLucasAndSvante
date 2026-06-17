@@ -46,9 +46,9 @@
     "name": "Cave Bear",
     "level": 3,
     "max_hp": 55,
-    "damage": 8,
+    "damage": 10,
     "armor": 0,
-    "speed": 5,
+    "speed": 6,
     "resistances": {
       "physical": 0.9,
       "fire": 1.25,
@@ -57,7 +57,10 @@
       "poison": 1.25
     },
     "tags": ["beast"],
-    "action_ids": ["power", "normal", "quick"],
+    "action_ids": ["bear_maul", "normal"],
+    "ai": [
+      { "condition": { "always": true }, "action": "bear_maul" }
+    ],
     "xp_reward": 15,
     "gold_min": 18,
     "gold_max": 39
@@ -87,5 +90,31 @@
     "xp_reward": 18,
     "gold_min": 16,
     "gold_max": 34
+  },
+  {
+    "id": "plague_acolyte",
+    "name": "Plague Acolyte",
+    "level": 3,
+    "max_hp": 22,
+    "damage": 7,
+    "armor": 0,
+    "speed": 14,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 0.5
+    },
+    "tags": ["cultist"],
+    "mana": 30,
+    "action_ids": ["acolyte_nuke", "acolyte_bolt"],
+    "ai": [
+      { "condition": { "skill_ready": "acolyte_nuke" }, "action": "acolyte_nuke" },
+      { "condition": { "always": true }, "action": "acolyte_bolt" }
+    ],
+    "xp_reward": 20,
+    "gold_min": 18,
+    "gold_max": 40
   }
 ]
