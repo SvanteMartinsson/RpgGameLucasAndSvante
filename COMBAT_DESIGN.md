@@ -170,7 +170,7 @@ Två klasser fullt utskrivna som mall för formen:
 
 Turbaserat, bygger på `DESIGN.md`:s rundordning men med utökade val.
 
-### Stridsmenyn (fem val)
+### Stridsmenyn
 
 1. **Attack** — basattack. Gratis. Skalar från Power + vapnets skadebonus.
 2. **Skill** — välj bland dina **utrustade skills (max 4)**. Kostar mana
@@ -178,7 +178,9 @@ Turbaserat, bygger på `DESIGN.md`:s rundordning men med utökade val.
 3. **Item** — använd en consumable mitt i striden. Tar din runda.
 4. **Swap weapon** — byt aktivt vapen. Tar din runda. Detta är "switch":
    byter du till en holy-vapen mot Undead utnyttjar du svagheten.
-5. **Flee** — chans baserad på speed-/level-skillnad. Misslyckas = fienden
+5. **Identify** — avslöjar level, stats, tags, resistenser och skills för
+   aktuell fiende. Tar din runda.
+6. **Flee** — chans baserad på speed-/level-skillnad. Misslyckas = fienden
    får en gratisträff.
 
 ### Max 4 utrustade skills

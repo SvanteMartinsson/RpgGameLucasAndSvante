@@ -4,7 +4,8 @@ Fiendernas djup. Bygger på `COMBAT_DESIGN.md`:s arketyper och använder samma
 motor och effektvokabulär som klasserna (`CLASSES.md`). Kopplas till
 `world.json`:s encounter-pooler och `danger_tier`.
 
-**Status:** design. Bygg en arketyp i taget; varje har egna invarianter.
+**Status:** byggt och testat. AI-regler, telegraph, healer, bruiser och caster
+finns i Python-porten och konfigureras i `enemies.json`.
 
 ## Princip: fiender är entiteter precis som spelare
 
@@ -14,7 +15,7 @@ samt en lista **skills** ur den befintliga vokabulären. Det enda som skiljer
 en fiende från en spelare är att en **AI väljer dess handling** istället för
 en meny. Inga nya effekttyper behövs — bara ett beslutssystem.
 
-## Nya motorfunktioner denna slice
+## Motorfunktioner
 
 - **AI-regelsystem** — varje fiende har en ordnad `ai`-lista av regler
   `{ condition, action }`. Resolvern utvärderar uppifrån; första regeln vars
@@ -62,7 +63,7 @@ laddningen, välj — tanka den, fly, eller döda castern innan den släpps.
 - Lågt hp; hög speed så laddningen ofta hinner före spelarens drag (men en
   ännu snabbare Rogue kan agera före och avbryta genom att döda).
 
-## Konkreta fiender (denna slice)
+## Konkreta fiender
 
 Återanvänd de tre befintliga där det passar; lägg till två nya för healer och
 caster. Grunts (giant_rat, undead) behåller sin enkla roll — alla fiender
@@ -70,8 +71,8 @@ behöver inte vara arketyper.
 
 | id | Namn | Roll | Speed | Resistances / tags | Notis |
 |---|---|---|---:|---|---|
-| `giant_rat` | Giant Rat | grunt | 12 | `beast` | introfiende, basattack |
-| `undead` | Undead | grunt | 8 | holy ×2.0; poison-tålig; `undead` | finns redan |
+| `giant_rat` | Giant Rat | grunt | 8 | `beast` | introfiende, basattack |
+| `undead` | Undead | grunt | 6 | holy ×2.0; poison-immun; `undead` | tidig undead |
 | `cave_bear` | Cave Bear | **bruiser** | 6 | physical lätt tålig; `beast` | tung attack |
 | `undead_priest` | Undead Priest | **healer** | 9 | holy ×2.0; `undead` | healar sig själv |
 | `plague_acolyte` | Plague Acolyte | **caster** | 14 | poison-tålig | telegraferar nuke |
@@ -100,12 +101,14 @@ tilldela arketyper per tier automatiskt — inte nu.)
 - **Regression**: alla 49 tidigare tester gröna; giant_rat/undead fungerar
   som förut.
 
-## Byggordning (denna slice)
+## Byggordning (historik)
 
 1. Bygg AI-regelsystemet + telegraph (motor). Validera med **Healer** (en
    arketyp som rör båda: regelprioritet + heal). Grön + commit.
 2. Lägg till **Bruiser** och **Caster** som data (+ ev. telegraf-finputs).
    Grön + commit.
+
+Båda stegen är genomförda.
 
 ## Utanför denna slice
 

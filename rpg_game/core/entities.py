@@ -1,3 +1,10 @@
+"""Serializable data structures shared by the game core.
+
+Template classes represent authored JSON content. Runtime classes (`Player`,
+`Enemy`, `GameState`) are mutable because combat, progression and inventory
+systems update them in place.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

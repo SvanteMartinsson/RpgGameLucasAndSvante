@@ -4,7 +4,8 @@ Fyra sammanhängande tillägg som ger djup och mystik. Fiende-level är navet: d
 matar både XP-skalningen och vad Identify avslöjar. Bygger på loot/level-systemen
 som redan finns.
 
-**Status:** design.
+**Status:** byggt och testat för fiende-level, level-skalad XP,
+vapen-level-krav och Identify. Permanent bestiary är fortfarande framtida.
 
 ## 1. Fiende-level
 
@@ -70,8 +71,8 @@ Butiksvapen är tier ≤2 → alltid level 1 → ingen friktion i butiken.
 
 ## 4. Identify (stridsval)
 
-Ett femte… ett nytt val i stridsmenyn: **Identify**. Förbrukar rundan (fienden
-får sin handling) och avslöjar fiendens **level, stats, type/tags och skills**.
+Ett stridsval i menyn: **Identify**. Förbrukar rundan (fienden får sin
+handling) och avslöjar fiendens **level, stats, type/tags och skills**.
 Bygger ett mer mystiskt spel: okänt som standard, men man kan investera en runda
 för att lära sig.
 

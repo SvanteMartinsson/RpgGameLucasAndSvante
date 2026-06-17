@@ -495,9 +495,9 @@ För att möjliggöra det ska kärnan:
 - inte importera terminal- eller Pygame-kod
 - inte anta att en action alltid kommer från tangentbordstext
 
-## Medvetet utanför första implementationen
+## Fortfarande utanför aktuell implementation
 
-Följande byggs inte i första Python-versionen:
+Följande är fortfarande framtida arbete:
 
 - Pygame
 - save/load
@@ -505,9 +505,9 @@ Följande byggs inte i första Python-versionen:
 - bossar
 - dialogsystem
 - utrustningsslots utöver vapen
-- flera ägda vapen
 - inventory-vikt eller maxslots
-- magi eller separat skill-system
 - kartgrafik
+- permanent bestiary
+- flera samtidiga fiender
 
 Strukturen ska däremot inte blockera att detta läggs till senare.

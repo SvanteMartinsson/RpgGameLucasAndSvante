@@ -5,7 +5,9 @@ grovdesign (du valde RuneScape-modellen: slump ur loot-pool + sällsynthetstier)
 och på **vapen-ägandet** som lades in i korrigeringssvepen — utan ett "det här
 äger jag"-begrepp betyder en drop ingenting.
 
-**Status:** design. Bygg en slice i taget; varje har egna invarianter.
+**Status:** slice 1 är byggd och grön: drops, pickup, ägda vapen, sell-läge
+och rarity-labels finns i Python-porten. Save/load och bank/stash är fortfarande
+framtida slices.
 
 **Scope v1:** loot droppar **vapen och consumables** — de itemtyper som redan
 finns. Rustnings-/accessoarslots är en senare expansion (kräver ett helt
@@ -20,7 +22,7 @@ utrustningssystem och tredubblar scopet).
 - **Items är fasta** (RuneScape, inte Diablo): slumpen avgör *vilket* item som
   droppar, inte dess stats. Inga slumpade affixar i v1.
 
-## Sällsynthetstiers
+## Item-tiers
 
 | Tier | Sällsynthet | Källa |
 |---:|---|---|
@@ -32,6 +34,26 @@ utrustningssystem och tredubblar scopet).
 | 6 | Mythic | drop (rare-tabell, sällsynt) |
 
 Butik toppar på tier 2 (hårt tak). Tier 3+ är drop-only.
+
+## Visad loot-rarity
+
+Spelaren ser en rarity-label på droppat loot, men **inte** exakta odds.
+Labeln räknas från faktisk dropchance i den aktuella lootpoolen:
+
+```text
+actual chance = enemy.drop_chance * item_weight / total_pool_weight
+```
+
+| Faktisk chans | Label |
+|---|---|
+| 1/1–1/20 | common |
+| 1/21–1/50 | uncommon |
+| 1/51–1/150 | rare |
+| 1/151–1/300 | mega rare |
+| 1/301+ | legendary |
+
+Exempel: ett drop som matematiskt ligger runt 1/70 och ett som ligger runt
+1/100 visas båda som `rare`.
 
 ## Drop-modell
 
@@ -113,6 +135,8 @@ värdet. Det är så junk-loot blir guld. Ingår i slice 1.
 - Regression: alla tidigare tester gröna.
 
 Commit: "Add loot drops, pickup, and shop selling".
+
+Status: byggd och testad.
 
 ## Slice 2 — Save/load  *(skydda progressen nu när loot är värt något)*
 

@@ -1,3 +1,10 @@
+"""Combat rules and the shared action/effect resolver.
+
+Every combat action should flow through `resolve_action`: base attacks, skills,
+items, weapon swaps and enemy actions. Presentation code should consume the
+structured result objects instead of duplicating combat rules.
+"""
+
 from __future__ import annotations
 
 import random

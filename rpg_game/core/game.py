@@ -1,3 +1,10 @@
+"""High-level game orchestration.
+
+`GameEngine` owns the mutable `GameState` and coordinates the smaller systems:
+world travel, combat, loot, inventory, talents, progression and store actions.
+It returns structured results so UI layers can decide how to present them.
+"""
+
 from __future__ import annotations
 
 import random

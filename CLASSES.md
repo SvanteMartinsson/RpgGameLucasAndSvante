@@ -4,11 +4,10 @@ Detta dokument innehåller den *konkreta* per-klass-datan: stats, grenar,
 noder, kostnader och effekt-semantik. `COMBAT_DESIGN.md` är ramverket (varför
 och hur motorn fungerar); detta är innehållet som hälls in i den.
 
-Alla sex klasser är nu designade. **Cleric** och **Tank** är byggda och
-gröna; **Rogue, Fighter, Mage, Hunter** är fullt specificerade men ännu inte
-byggda. Vi bygger och bekräftar en klass i taget enligt byggordningen nedan —
-varje klass-sektion listar sina egna *nya motorfunktioner* och *invarianter*
-så att slicen kan byggas isolerat.
+Alla sex klasser är byggda och gröna i Python-porten. Klassernas basdata ligger
+i `classes.json`, aktiva handlingar i `actions.json` och talent-noder i
+`talents.json`. Sektionerna nedan fungerar som design- och balansreferens för
+vidare tuning.
 
 Alla tal är startvärden avsedda att tunas i JSON.
 
@@ -18,15 +17,14 @@ Alla tal är startvärden avsedda att tunas i JSON.
 |---|---|
 | Cleric | byggd, grön |
 | Tank | byggd, grön |
-| Rogue | designad — ej byggd |
-| Fighter | designad — ej byggd |
-| Mage | designad — ej byggd |
-| Hunter | designad — ej byggd |
+| Rogue | byggd, grön |
+| Fighter | byggd, grön |
+| Mage | byggd, grön |
+| Hunter | byggd, grön |
 
 ## Effektvokabulär (vad motorn har NU)
 
-Detta är vad som faktiskt finns implementerat efter Cleric- och Tank-slicen.
-Varje kommande klass-slice utökar listan med sina egna "nya motorfunktioner".
+Detta är vad som finns implementerat i motorn efter samtliga klass-slices.
 
 Bas:
 
@@ -59,6 +57,20 @@ Från Tank-slicen:
 - **accuracy_mod** (fält) — träffslag använder `clamp(base + accuracy_mod, 0, 100)`.
 - **passiv: immunity** — immun mot en tagg (`debuff`, `flee_force`).
 
+Från Rogue/Fighter/Mage/Hunter-slicearna:
+
+- **crit/evasion** — crit_chance, crit_mult och evasion_chance.
+- **conditional_damage_mod** — generiska villkor, t.ex. HP-tröskel,
+  statustagg, svaghet eller target-tag.
+- **armor_pen** — reducerar effektiv armor på physical damage.
+- **multi-hit** — en instant_damage-effekt kan skapa flera separata träffar.
+- **stacking buff** — flera stackar delar duration och faller av tillsammans.
+- **skip_turn** — status som konsumerar bärarens nästa handling.
+- **damage_dealt_mod/damage_taken_mod** — procentuella modifiers på utdelad
+  respektive mottagen skada.
+- **weapon-gating och vapenskalning** — vissa skills kräver vapenkategori och
+  skalar med `Power + equipped_weapon.damage_bonus`.
+
 ## Talang- och upplåsningsregel
 
 - **1 talangpoäng per level up**, utöver det befintliga stat-valet.
@@ -75,13 +87,13 @@ inför:
 
 1. **Cleric** ✓ — grundläggande effektvokabulär (heal, drain, dot, buff/debuff).
 2. **Tank** ✓ — defensiva hakar (cooldown, mitigation, reflect, immunity).
-3. **Rogue** — inför **crit**, **conditional** (execute) och **evasion**.
+3. **Rogue** ✓ — inför **crit**, **conditional** (execute) och **evasion**.
    `conditional` blir en generisk byggsten som tre senare klasser återanvänder.
-4. **Fighter** — återanvänder crit + conditional; inför **armor_pen**,
+4. **Fighter** ✓ — återanvänder crit + conditional; inför **armor_pen**,
    **multi-hit** och **stacking buff**.
-5. **Mage** — återanvänder conditional; inför **skip_turn** (freeze).
+5. **Mage** ✓ — återanvänder conditional; inför **skip_turn** (freeze).
    (Oberoende av Rogue/Fighters offensiva tillägg utöver conditional.)
-6. **Hunter** — återanvänder crit (Rogue), armor_pen (Fighter), conditional,
+6. **Hunter** ✓ — återanvänder crit (Rogue), armor_pen (Fighter), conditional,
    dot; inför endast **damage_taken_mod** (vulnerability). Sist eftersom den
    ärver mest.
 
@@ -161,7 +173,7 @@ counter, immunitet).
 
 ---
 
-## Rogue  *(designad — ej byggd)*
+## Rogue  *(byggd, grön)*
 
 Burst- och precisionsklassen. Hög speed (agerar först), bräcklig, lever på
 crit och att avsluta skadade fiender. Grenar: **Assassin** (crit, execute,
@@ -226,7 +238,7 @@ bleed) och **Duelist** (evasion, riposte).
 
 ---
 
-## Fighter  *(designad — ej byggd)*
+## Fighter  *(byggd, grön)*
 
 Råskadeklassen, aggressiv. Grenar: **Berserker** (rage, lifesteal, lågt-HP-
 skalning) och **Weaponmaster** (crit, armor pen, combo). Återanvänder crit och
@@ -288,7 +300,7 @@ conditional från Rogue.
 
 ---
 
-## Mage  *(designad — ej byggd)*
+## Mage  *(byggd, grön)*
 
 Elementär burst- och kontrollklass, mana-tung, bräcklig. Grenar: **Pyromancer**
 (fire, burn-DoT, burst) och **Cryomancer** (frost, freeze, kontroll).
@@ -342,7 +354,7 @@ Elementär burst- och kontrollklass, mana-tung, bräcklig. Grenar: **Pyromancer*
 
 ---
 
-## Hunter  *(designad — ej byggd)*
+## Hunter  *(byggd, grön)*
 
 Svaghetsutnyttjande precisions- och kontrollklass. Grenar: **Marksman**
 (precision, vulnerability, armor pen) och **Trapper** (snaror, gift, svaghets-

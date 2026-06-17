@@ -5,7 +5,8 @@ och struntar i vapnet**, så ett starkt (ofta off-class) vapen gör basattacker
 bättre än hela ens kit — och det fanns ingen vettig koppling mellan vapen och
 skill (Aimed Shot med en klubba). Bygger på vapen-ägandet från LOOT-slicen.
 
-**Status:** design.
+**Status:** byggt och testat. Vapenkategorier, skill-gating,
+vapenskalning och level-krav för equip finns i Python-porten.
 
 ## Modell
 

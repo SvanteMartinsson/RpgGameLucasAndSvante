@@ -1,3 +1,10 @@
+"""Load authored JSON content into typed dataclasses.
+
+This module is the boundary between data files and the runtime game state.
+Keep defaults here when adding optional JSON fields so older data remains
+loadable during development.
+"""
+
 from __future__ import annotations
 
 import json
