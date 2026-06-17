@@ -184,4 +184,8 @@ def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:
         crit_bonus=effect.get("crit_bonus", 0),
         conditional=effect.get("conditional", {}),
         trigger=effect.get("trigger", "on_hit"),
+        armor_pen=effect.get("armor_pen", 0),
+        hits=effect.get("hits", 1),
+        max_stacks=effect.get("max_stacks", 1),
+        on_event=effect.get("on_event", ""),
     )

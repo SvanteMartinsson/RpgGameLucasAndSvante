@@ -139,9 +139,18 @@ def effective_hit_chance(action: CombatAction, accuracy_mod: int = 0) -> float:
 
 
 def apply_damage_mitigation(raw_damage: int, target: Actor, damage_type: str) -> int:
+    return apply_damage_mitigation_with_armor_pen(raw_damage, target, damage_type, armor_pen=0)
+
+
+def apply_damage_mitigation_with_armor_pen(
+    raw_damage: int,
+    target: Actor,
+    damage_type: str,
+    armor_pen: int = 0,
+) -> int:
     mitigated = round_half_up(raw_damage * get_resistance(target, damage_type))
     if damage_type == "physical":
-        mitigated -= target.armor
+        mitigated -= max(0, target.armor - armor_pen)
     mitigated -= active_mitigation(target)
     return max(1, mitigated)
 
@@ -202,13 +211,23 @@ def calculate_effect_damage(
         raise ValueError(f"unknown damage scale: {effect.scale}")
 
     raw_damage = apply_conditional(raw_damage, actor, target, effect)
+    raw_damage = apply_damage_dealt_mod(raw_damage, actor)
     if rolls_crit(actor, effect, rng):
         raw_damage = round_half_up(raw_damage * actor.crit_mult)
         if result is not None:
             result.critical_hits += 1
 
     damage_type = _effect_damage_type(actor, weapon, effect)
-    return apply_damage_mitigation(raw_damage, target, damage_type)
+    damage = apply_damage_mitigation_with_armor_pen(raw_damage, target, damage_type, effect.armor_pen)
+    return apply_damage_taken_mod(damage, target)
+
+
+def apply_damage_dealt_mod(raw_damage: int, actor: Actor) -> int:
+    return round_half_up(raw_damage * (1 + actor.damage_dealt_mod / 100))
+
+
+def apply_damage_taken_mod(damage: int, target: Actor) -> int:
+    return max(1, round_half_up(damage * (1 + target.damage_taken_mod / 100)))
 
 
 def effective_crit_chance(actor: Actor, effect: EffectSpec) -> int:
@@ -226,11 +245,13 @@ def rolls_crit(actor: Actor, effect: EffectSpec, rng: random.Random | None) -> b
 
 def apply_conditional(raw_damage: int, actor: Actor, target: Actor, effect: EffectSpec) -> int:
     conditional = effect.conditional
-    if not conditional:
-        return raw_damage
-    if condition_matches(actor, target, conditional, _effect_damage_type(actor, None, effect)):
-        return round_half_up(raw_damage * float(conditional.get("multiplier", 1.0)))
-    return raw_damage
+    modified = raw_damage
+    if conditional and condition_matches(actor, target, conditional, _effect_damage_type(actor, None, effect)):
+        modified = round_half_up(modified * float(conditional.get("multiplier", 1.0)))
+    for passive in actor.conditional_damage_mods:
+        if condition_matches(actor, target, passive, _effect_damage_type(actor, None, effect)):
+            modified = round_half_up(modified * float(passive.get("multiplier", 1.0)))
+    return modified
 
 
 def condition_matches(actor: Actor, target: Actor, conditional: dict[str, object], damage_type: str = "") -> bool:
@@ -392,11 +413,12 @@ def apply_effect(
 
     if effect.type in {"damage", "instant_damage"}:
         damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
-        deal_damage(actor, effect_target, damage, damage_type, result)
-        result.events.append(
-            f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
-        )
+        for _ in range(effect.hits):
+            damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
+            deal_damage(actor, effect_target, damage, damage_type, result)
+            result.events.append(
+                f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
+            )
         return
 
     if effect.type == "instant_heal":
@@ -433,6 +455,38 @@ def apply_effect(
 
         applied_delta = 0
         if status_type in {"buff", "debuff"}:
+            if effect.on_event:
+                effect_target.active_statuses.append(
+                    ActiveStatus(
+                        type=status_type,
+                        magnitude=magnitude,
+                        duration=duration,
+                        tick_timing=effect.tick_timing,
+                        stat=effect.stat,
+                        applied_delta=0,
+                        scale=effect.scale,
+                        multiplier=effect.multiplier,
+                        damage_type=effect.damage_type,
+                        tag=tag,
+                        trigger=effect.trigger,
+                        max_stacks=effect.max_stacks,
+                        stacks=0,
+                        on_event=effect.on_event,
+                        base_duration=duration,
+                    )
+                )
+                result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
+                return
+            existing = find_stackable_status(effect_target, status_type, effect.stat)
+            if existing and effect.max_stacks > 1:
+                existing.stacks = min(effect.max_stacks, existing.stacks + 1)
+                previous_delta = existing.applied_delta
+                existing.applied_delta = existing.stacks * magnitude
+                set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) - previous_delta + existing.applied_delta)
+                existing.duration = duration
+                existing.max_stacks = effect.max_stacks
+                result.events.append(f"{actor_name(effect_target)}'s {status_type} refreshed.")
+                return
             applied_delta = magnitude
             set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) + applied_delta)
 
@@ -449,6 +503,10 @@ def apply_effect(
                 damage_type=effect.damage_type,
                 tag=tag,
                 trigger=effect.trigger,
+                max_stacks=effect.max_stacks,
+                stacks=1,
+                on_event=effect.on_event,
+                base_duration=duration,
             )
         )
         result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
@@ -495,6 +553,13 @@ def apply_effect(
         result.events.append(f"{actor.name} gained immunity to {effect.tag}.")
         return
 
+    if effect.type == "conditional_damage_mod":
+        if not isinstance(actor, Player):
+            raise ValueError("conditional damage modifiers are only supported for players")
+        actor.conditional_damage_mods.append(effect.conditional)
+        result.events.append(f"{actor.name} gained a conditional damage modifier.")
+        return
+
     raise ValueError(f"unknown effect type: {effect.type}")
 
 
@@ -510,8 +575,27 @@ def deal_damage(
     target.hp = max(0, target.hp - damage)
     if allow_reflect:
         result.total_damage += damage
+        apply_on_damaged_statuses(target)
     if allow_reflect:
         apply_reflects(target, attacker, result)
+
+
+def find_stackable_status(actor: Actor, status_type: str, stat: str) -> ActiveStatus | None:
+    for status in actor.active_statuses:
+        if status.type == status_type and status.stat == stat and status.max_stacks > 1:
+            return status
+    return None
+
+
+def apply_on_damaged_statuses(actor: Actor) -> None:
+    for status in actor.active_statuses:
+        if status.on_event != "on_damaged" or status.type != "buff":
+            continue
+        previous_delta = status.applied_delta
+        status.stacks = min(status.max_stacks, status.stacks + 1)
+        status.applied_delta = status.stacks * status.magnitude
+        set_stat(actor, status.stat, get_stat(actor, status.stat) - previous_delta + status.applied_delta)
+        status.duration = status.base_duration
 
 
 def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution, trigger: str = "on_hit") -> None:
@@ -536,6 +620,9 @@ def tick_statuses(actor: Actor, timing: Literal["round_start", "round_end"]) -> 
     events: list[str] = []
     remaining: list[ActiveStatus] = []
     for status in actor.active_statuses:
+        if status.on_event and status.stacks == 0:
+            remaining.append(status)
+            continue
         if status.tick_timing == timing:
             events.extend(apply_status_tick(actor, status))
             status.duration -= 1

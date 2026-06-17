@@ -46,6 +46,10 @@ class EffectSpec:
     crit_bonus: int = 0
     conditional: dict[str, object] = field(default_factory=dict)
     trigger: str = "on_hit"
+    armor_pen: int = 0
+    hits: int = 1
+    max_stacks: int = 1
+    on_event: str = ""
 
 
 @dataclass(frozen=True)
@@ -135,7 +139,10 @@ class Enemy:
     crit_chance: int = 0
     crit_mult: float = 2.0
     evasion_chance: int = 0
+    damage_dealt_mod: int = 0
+    damage_taken_mod: int = 0
     tags: set[str] = field(default_factory=set)
+    conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
 
     @property
     def is_alive(self) -> bool:
@@ -222,6 +229,8 @@ class Player:
     crit_chance: int = 0
     crit_mult: float = 2.0
     evasion_chance: int = 0
+    damage_dealt_mod: int = 0
+    damage_taken_mod: int = 0
     equipped_skill_ids: tuple[str, ...] = ()
     talent_points: int = 0
     learned_talent_ids: set[str] = field(default_factory=set)
@@ -233,6 +242,7 @@ class Player:
     accuracy_mod: int = 0
     immunity_tags: set[str] = field(default_factory=set)
     tags: set[str] = field(default_factory=set)
+    conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
 
     @property
@@ -271,3 +281,7 @@ class ActiveStatus:
     damage_type: str = "physical"
     tag: str = ""
     trigger: str = "on_hit"
+    max_stacks: int = 1
+    stacks: int = 1
+    on_event: str = ""
+    base_duration: int = 0

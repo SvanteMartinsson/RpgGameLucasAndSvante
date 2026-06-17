@@ -303,5 +303,112 @@
     "node_type": "active",
     "action_id": "deadly_precision",
     "effects": []
+  },
+  {
+    "id": "fighter_berserker_b1_frenzy",
+    "class_id": "fighter",
+    "branch": "berserker",
+    "order": 1,
+    "name": "Frenzy",
+    "node_type": "active",
+    "action_id": "frenzy",
+    "effects": []
+  },
+  {
+    "id": "fighter_berserker_b2_rage",
+    "class_id": "fighter",
+    "branch": "berserker",
+    "order": 2,
+    "name": "Rage",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "buff",
+        "stat": "power",
+        "magnitude": 3,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self",
+        "max_stacks": 5,
+        "on_event": "on_damaged"
+      }
+    ]
+  },
+  {
+    "id": "fighter_berserker_b3_bloodlust",
+    "class_id": "fighter",
+    "branch": "berserker",
+    "order": 3,
+    "name": "Bloodlust",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "conditional_damage_mod",
+        "conditional": {
+          "subject": "self",
+          "predicate": "hp_pct_lte",
+          "threshold": 40,
+          "multiplier": 1.3
+        },
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "fighter_berserker_b4_reckless",
+    "class_id": "fighter",
+    "branch": "berserker",
+    "order": 4,
+    "name": "Reckless",
+    "node_type": "active",
+    "action_id": "reckless",
+    "effects": []
+  },
+  {
+    "id": "fighter_weaponmaster_w1_precision",
+    "class_id": "fighter",
+    "branch": "weaponmaster",
+    "order": 1,
+    "name": "Precision",
+    "node_type": "active",
+    "action_id": "precision",
+    "effects": []
+  },
+  {
+    "id": "fighter_weaponmaster_w2_sunder",
+    "class_id": "fighter",
+    "branch": "weaponmaster",
+    "order": 2,
+    "name": "Sunder",
+    "node_type": "active",
+    "action_id": "sunder",
+    "effects": []
+  },
+  {
+    "id": "fighter_weaponmaster_w3_mastery",
+    "class_id": "fighter",
+    "branch": "weaponmaster",
+    "order": 3,
+    "name": "Mastery",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "power",
+        "magnitude": 6,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "fighter_weaponmaster_w4_combo",
+    "class_id": "fighter",
+    "branch": "weaponmaster",
+    "order": 4,
+    "name": "Combo",
+    "node_type": "active",
+    "action_id": "combo",
+    "effects": []
   }
 ]

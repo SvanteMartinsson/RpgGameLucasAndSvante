@@ -5,10 +5,10 @@
     "max_hp": 100,
     "base_damage": 15,
     "armor": 0,
-    "max_mana": 0,
-    "speed": 10,
-    "crit_chance": 0,
-    "starting_weapon_id": "knife",
+    "max_mana": 20,
+    "speed": 11,
+    "crit_chance": 5,
+    "starting_weapon_id": "sword",
     "starting_skill_ids": []
   },
   {
