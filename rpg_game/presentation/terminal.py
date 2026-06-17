@@ -474,15 +474,19 @@ def skill_requirement_text(engine: GameEngine, action) -> str:
 
 
 def choose_combat_item(engine: GameEngine) -> str | None:
-    consumables = engine.player.inventory.consumables
-    if not consumables:
-        print("You have no consumables.")
+    usable = [
+        (item_id, count)
+        for item_id, count in sorted(engine.player.inventory.consumables.items())
+        if engine.content.items[item_id].kind == "consumable"
+    ]
+    if not usable:
+        print("You have no usable consumables.")
         return None
 
     options = []
-    for index, (item_id, count) in enumerate(sorted(consumables.items()), start=1):
+    for index, (item_id, count) in enumerate(usable, start=1):
         item = engine.content.items[item_id]
-        options.append((str(index), item_id, f"{item.name} x{count} - heals {item.heal_amount} HP"))
+        options.append((str(index), item_id, f"{item.name} x{count} - {item_effect_text(item)}"))
     options.append(("b", "back", "Back"))
 
     choice = prompt_menu("Use which item?", options, allow_label=False)
