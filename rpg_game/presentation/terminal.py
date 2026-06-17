@@ -94,7 +94,7 @@ def show_stats(engine: GameEngine) -> None:
     print(f"HP: {player.hp}/{player.max_hp}")
     print(f"Mana: {player.mana}/{player.max_mana}")
     print(f"Base damage: {player.base_damage}")
-    print(f"Weapon: {weapon.name} (+{weapon.damage_bonus})")
+    print(f"Weapon: {weapon.name} (+{weapon.damage_bonus}, tier {weapon.tier})")
     print(f"Total damage: {total_damage}")
     print(f"Armor: {player.armor}")
     print(f"Speed: {player.speed}")
@@ -111,7 +111,10 @@ def show_inventory(engine: GameEngine) -> None:
     print("Owned weapons:")
     for owned in engine.owned_weapons():
         equipped = " (equipped)" if owned.id == player.equipped_weapon_id else ""
-        print(f"- {owned.name} (+{owned.damage_bonus} {owned.damage_type}, tier {owned.tier}){equipped}")
+        print(
+            f"- {owned.name} (+{owned.damage_bonus} {owned.damage_type}, tier {owned.tier})"
+            f"{weapon_level_requirement_text(engine, owned)}{equipped}"
+        )
     print(f"Gold: {player.gold}")
     if not player.inventory.consumables:
         print("Items: none")
@@ -430,7 +433,12 @@ def choose_swap_weapon(engine: GameEngine) -> str | None:
     for index, weapon in enumerate(engine.owned_weapons(), start=1):
         equipped = " (equipped)" if weapon.id == player.equipped_weapon_id else ""
         options.append(
-            (str(index), weapon.id, f"{weapon.name} (+{weapon.damage_bonus} {weapon.damage_type}){equipped}")
+            (
+                str(index),
+                weapon.id,
+                f"{weapon.name} (+{weapon.damage_bonus} {weapon.damage_type}, tier {weapon.tier})"
+                f"{weapon_level_requirement_text(engine, weapon)}{equipped}",
+            )
         )
     options.append(("b", "back", "Back"))
 
@@ -441,6 +449,14 @@ def choose_swap_weapon(engine: GameEngine) -> str | None:
         print("That weapon is already equipped.")
         return None
     return choice
+
+
+def weapon_level_requirement_text(engine: GameEngine, weapon) -> str:
+    required_level = combat.weapon_required_level(weapon)
+    text = f" - requires level {required_level}"
+    if engine.player.level < required_level:
+        text += " [LEVEL TOO LOW]"
+    return text
 
 
 def resolve_pending_stat_choices(engine: GameEngine) -> None:

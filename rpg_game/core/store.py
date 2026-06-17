@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import combat
 from rpg_game.core.entities import GameContent, Player
 from rpg_game.core.progression import round_half_up
 
@@ -58,7 +59,10 @@ def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
                     name=weapon.name,
                     kind="weapon",
                     price=weapon.price,
-                    description=f"+{weapon.damage_bonus} damage",
+                    description=(
+                        f"+{weapon.damage_bonus} damage, tier {weapon.tier}, "
+                        f"requires level {combat.weapon_required_level(weapon)}"
+                    ),
                 )
             )
         elif item_id in content.items:
@@ -92,6 +96,12 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
         player.gold -= weapon.price
         if weapon.id not in player.owned_weapon_ids:
             player.owned_weapon_ids = (*player.owned_weapon_ids, weapon.id)
+        required_level = combat.weapon_required_level(weapon)
+        if player.level < required_level:
+            return PurchaseResult(
+                True,
+                f"Bought {weapon.name}. Requires level {required_level} to equip.",
+            )
         player.equipped_weapon_id = weapon.id
         return PurchaseResult(True, f"Bought and equipped {weapon.name}.")
 

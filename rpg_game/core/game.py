@@ -333,7 +333,7 @@ class GameEngine:
                 raise ValueError(f"unknown weapon: {weapon_id}")
             if weapon_id not in self.player.owned_weapon_ids:
                 raise ValueError(f"weapon not owned: {weapon_id}")
-            return combat.create_weapon_swap_action(weapon_id)
+            return combat.create_weapon_swap_action(self.content.weapons[weapon_id])
         return self.content.actions[normalized]
 
     def _consumable_from_action_id(self, action_id: str) -> str:

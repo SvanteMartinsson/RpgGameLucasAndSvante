@@ -232,6 +232,10 @@ def action_uses_weapon_scaling(action: CombatAction) -> bool:
     return bool(action.requires_weapon_category)
 
 
+def weapon_required_level(weapon: Weapon) -> int:
+    return max(1, weapon.tier - 2)
+
+
 def apply_damage_dealt_mod(raw_damage: int, actor: Actor) -> int:
     return round_half_up(raw_damage * (1 + actor.damage_dealt_mod / 100))
 
@@ -412,7 +416,17 @@ def blocked_action_reason(
     if isinstance(actor, Player) and action.requires_weapon_category:
         if weapon is None or weapon.category != action.requires_weapon_category:
             return f"{actor_name(actor)} needs a {action.requires_weapon_category} weapon for {action.name}."
+    required_level = action_required_player_level(action)
+    if isinstance(actor, Player) and required_level and actor.level < required_level:
+        return f"{actor_name(actor)} needs level {required_level} for {action.name}."
     return ""
+
+
+def action_required_player_level(action: CombatAction) -> int:
+    for effect in action.effects:
+        if effect.type == "swap_weapon":
+            return effect.magnitude
+    return 0
 
 
 def available_actions(
@@ -832,10 +846,16 @@ def create_item_action(item: ConsumableItem) -> CombatAction:
     )
 
 
-def create_weapon_swap_action(weapon_id: str) -> CombatAction:
+def create_weapon_swap_action(weapon: Weapon) -> CombatAction:
     return CombatAction(
-        id=f"swap_{weapon_id}",
+        id=f"swap_{weapon.id}",
         name="Swap weapon",
         kind="weapon_swap",
-        effects=(EffectSpec(type="swap_weapon", status_type=weapon_id),),
+        effects=(
+            EffectSpec(
+                type="swap_weapon",
+                status_type=weapon.id,
+                magnitude=weapon_required_level(weapon),
+            ),
+        ),
     )
