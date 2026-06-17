@@ -13,6 +13,14 @@ def xp_required_for_level(level: int) -> int:
     return round_half_up(100 * (1.5 ** (level - 1)))
 
 
+def level_scaled_xp(base_xp: int, player_level: int, enemy_level: int) -> int:
+    if base_xp < 0:
+        raise ValueError("base_xp must not be negative")
+    diff = enemy_level - player_level
+    multiplier = max(0.25, min(2.0, 1 + (0.25 * diff)))
+    return max(1, round_half_up(base_xp * multiplier))
+
+
 def award_xp(player: Player, amount: int) -> int:
     if amount < 0:
         raise ValueError("amount must not be negative")

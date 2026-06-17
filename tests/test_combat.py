@@ -51,6 +51,18 @@ class CombatMathTests(unittest.TestCase):
         self.assertEqual(result.pending_stat_choices, 1)
         self.assertEqual(engine.player.pending_stat_choices, 1)
 
+    def test_victory_awards_level_scaled_xp(self):
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Test Fighter", "fighter")
+        enemy = engine.content.enemies["undead"].create_enemy()
+        enemy.hp = 1
+
+        result = engine.run_combat_turn(enemy, "normal")
+
+        self.assertEqual(result.outcome, "victory")
+        self.assertEqual(result.xp_gained, 13)
+        self.assertEqual(engine.player.xp, 13)
+
     def test_fighter_and_tank_attack_damage_regression_after_pipeline_refactor(self):
         knife = Weapon(id="knife", name="Knife", damage_bonus=0, price=0)
         fighter = make_player("fighter", base_damage=15)

@@ -356,9 +356,10 @@ class GameEngine:
         player = self.player
         gold = self.rng.randint(enemy.gold_min, enemy.gold_max)
         player.gold += gold
-        levels_gained = progression.award_xp(player, enemy.xp_reward)
+        xp_gained = progression.level_scaled_xp(enemy.xp_reward, player.level, enemy.level)
+        levels_gained = progression.award_xp(player, xp_gained)
         events.append(f"{enemy.name} was defeated.")
-        events.append(f"Gained {enemy.xp_reward} XP and {gold} gold.")
+        events.append(f"Gained {xp_gained} XP and {gold} gold.")
         if levels_gained:
             events.append(f"Gained {levels_gained} level(s).")
 
@@ -372,7 +373,7 @@ class GameEngine:
             events=events,
             player_hp=player.hp,
             enemy_hp=enemy.hp,
-            xp_gained=enemy.xp_reward,
+            xp_gained=xp_gained,
             gold_gained=gold,
             levels_gained=levels_gained,
             pending_stat_choices=player.pending_stat_choices,
