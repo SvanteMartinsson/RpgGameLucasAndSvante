@@ -260,19 +260,17 @@ def handle_talents(engine: GameEngine) -> None:
         player = engine.player
         print()
         print(f"Talents (points: {player.talent_points})")
+        print_talent_tree(engine)
+
         if player.talent_points <= 0:
             print("You have no talent points to spend.")
             return
-
-        nodes = engine.available_talents()
-        if not nodes:
+        purchasable = engine.available_talents()
+        if not purchasable:
             print("No talents are available to learn right now.")
             return
 
-        options = []
-        for index, node in enumerate(nodes, start=1):
-            label = f"{node.name} [{node.branch} t{node.order}] - {describe_talent(engine, node)}{talent_prereq_text(engine, node)}"
-            options.append((str(index), node.id, label))
+        options = [(str(index), node.id, node.name) for index, node in enumerate(purchasable, start=1)]
         options.append(("b", "back", "Back"))
 
         choice = prompt_menu("Spend a talent point on which node?", options, allow_label=False)
@@ -282,6 +280,31 @@ def handle_talents(engine: GameEngine) -> None:
             print(engine.allocate_talent(choice))
         except ValueError as error:
             print(f"Cannot learn that talent: {error}")
+
+
+def print_talent_tree(engine: GameEngine) -> None:
+    player = engine.player
+    class_nodes = sorted(
+        (node for node in engine.content.talents.values() if node.class_id == player.player_class),
+        key=lambda node: (node.branch, node.order),
+    )
+    available_ids = {node.id for node in engine.available_talents()}
+
+    current_branch = None
+    for node in class_nodes:
+        if node.branch != current_branch:
+            current_branch = node.branch
+            print(f"-- {node.branch} --")
+        if node.id in player.learned_talent_ids:
+            status = "[LEARNED] "
+        elif node.id in available_ids:
+            status = "[CAN LEARN]"
+        else:
+            status = "[LOCKED]  "
+        print(
+            f"  {status} {node.name} [{node.branch} t{node.order}] - "
+            f"{describe_talent(engine, node)}{talent_prereq_text(engine, node)}"
+        )
 
 
 # --- Skills (equip max 4) -----------------------------------------------
