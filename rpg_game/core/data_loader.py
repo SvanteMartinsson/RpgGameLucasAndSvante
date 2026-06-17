@@ -117,6 +117,7 @@ def load_content() -> GameContent:
             xp_reward=row["xp_reward"],
             gold_min=row["gold_min"],
             gold_max=row["gold_max"],
+            tags=tuple(row.get("tags", ())),
         )
         for row in _read_json("enemies.json")
     }

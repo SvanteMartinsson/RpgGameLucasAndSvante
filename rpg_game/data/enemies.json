@@ -14,6 +14,7 @@
       "holy": 1.0,
       "poison": 1.0
     },
+    "tags": ["beast"],
     "action_ids": ["power", "normal", "quick"],
     "xp_reward": 5,
     "gold_min": 3,
@@ -34,6 +35,7 @@
       "holy": 2.0,
       "poison": 0.0
     },
+    "tags": ["undead"],
     "action_ids": ["power", "normal", "quick"],
     "xp_reward": 10,
     "gold_min": 14,
@@ -54,6 +56,7 @@
       "holy": 1.0,
       "poison": 1.25
     },
+    "tags": ["beast"],
     "action_ids": ["power", "normal", "quick"],
     "xp_reward": 15,
     "gold_min": 18,

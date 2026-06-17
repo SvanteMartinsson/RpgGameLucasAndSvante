@@ -579,5 +579,105 @@
         }
       }
     ]
+  },
+  {
+    "id": "aimed_shot",
+    "name": "Aimed Shot",
+    "kind": "skill",
+    "hit_chance": 0.9,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.7,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "hunters_mark",
+    "name": "Hunter's Mark",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "damage_taken_mod",
+        "magnitude": 25,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "tag": "vulnerable",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "piercing_shot",
+    "name": "Piercing Shot",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy",
+        "armor_pen": 8
+      }
+    ]
+  },
+  {
+    "id": "snare",
+    "name": "Snare",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "speed",
+        "magnitude": -6,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "tag": "snare",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "accuracy_mod",
+        "magnitude": -10,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "tag": "snare",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "venom_trap",
+    "name": "Venom Trap",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tag": "poison",
+        "magnitude": 9,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "poison",
+        "target": "enemy"
+      }
+    ]
   }
 ]

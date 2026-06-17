@@ -98,6 +98,7 @@ class EnemyTemplate:
     xp_reward: int
     gold_min: int
     gold_max: int
+    tags: tuple[str, ...] = ()
 
     def create_enemy(self) -> "Enemy":
         return Enemy(
@@ -114,6 +115,7 @@ class EnemyTemplate:
             xp_reward=self.xp_reward,
             gold_min=self.gold_min,
             gold_max=self.gold_max,
+            tags=set(self.tags),
         )
 
 

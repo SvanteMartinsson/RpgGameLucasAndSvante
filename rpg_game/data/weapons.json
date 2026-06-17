@@ -54,5 +54,12 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "fire"
+  },
+  {
+    "id": "bow",
+    "name": "Bow",
+    "damage_bonus": 0,
+    "price": 0,
+    "damage_type": "physical"
   }
 ]

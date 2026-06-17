@@ -58,5 +58,17 @@
     "crit_chance": 0,
     "starting_weapon_id": "staff",
     "starting_skill_ids": []
+  },
+  {
+    "id": "hunter",
+    "name": "Hunter",
+    "max_hp": 85,
+    "base_damage": 13,
+    "armor": 1,
+    "max_mana": 25,
+    "speed": 13,
+    "crit_chance": 8,
+    "starting_weapon_id": "bow",
+    "starting_skill_ids": []
   }
 ]
