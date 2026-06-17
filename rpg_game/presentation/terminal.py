@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 
 
@@ -122,55 +123,16 @@ def handle_travel(engine: GameEngine) -> None:
         return
 
     options = []
-    print()
-    print("Travel")
     for index, connection in enumerate(connections, start=1):
         destination = engine.content.places[connection.to]
-        print(
-            f"{index}: {destination.id} - {destination.name} "
-            f"({connection.travel}, {connection.distance_km_approx} km)"
-        )
-        options.append((str(index), destination.id, destination.id))
+        label = f"{destination.name} ({connection.travel}, {connection.distance_km_approx} km)"
+        options.append((str(index), destination.id, label))
     options.append(("b", "back", "Back"))
-    destination_id = prompt_menu("Where do you want to travel? Choose by number or id.", options, allow_label=False)
+
+    destination_id = prompt_menu("Where do you want to travel?", options, allow_label=False)
     if destination_id == "back":
         return
     print(engine.travel(destination_id))
-
-
-def handle_explore(engine: GameEngine) -> None:
-    enemy = engine.create_encounter()
-    if enemy is None:
-        print("This place is safe. There are no enemies here.")
-        return
-
-    print(f"You encounter a {enemy.name}.")
-    while enemy.is_alive and engine.player.is_alive:
-        print()
-        print(f"Your HP: {engine.player.hp}/{engine.player.max_hp}")
-        print(f"{enemy.name} HP: {enemy.hp}/{enemy.max_hp}")
-        attack_id = prompt_combat_action(engine)
-        result = engine.run_combat_turn(enemy, attack_id)
-        for event in result.events:
-            print(event)
-        if result.outcome == "victory":
-            resolve_pending_stat_choices(engine)
-            return
-        if result.outcome == "defeat":
-            resolve_pending_stat_choices(engine)
-            return
-
-
-def prompt_combat_action(engine: GameEngine) -> str:
-    options = []
-    for index, action in enumerate(engine.available_actions(), start=1):
-        label = action.name
-        if action.mana_cost:
-            label += f" ({action.mana_cost} mana)"
-        if action.cooldown_rounds:
-            label += f" (cooldown {action.cooldown_rounds})"
-        options.append((str(index), action.id, label))
-    return prompt_menu("Choose action:", options)
 
 
 # --- Talents -------------------------------------------------------------
@@ -296,6 +258,168 @@ def handle_skills(engine: GameEngine) -> None:
                 print(engine.equip_skill(choice))
         except ValueError as error:
             print(f"Cannot change that skill: {error}")
+
+
+# --- Combat --------------------------------------------------------------
+
+
+def format_statuses(actor) -> list[str]:
+    labels = []
+    for status in actor.active_statuses:
+        name = status.tag or status.type
+        if status.stacks > 1:
+            name = f"{name} x{status.stacks}"
+        labels.append(name)
+    return labels
+
+
+def status_suffix(engine: GameEngine, actor, charging_action_id: str = "") -> str:
+    labels = format_statuses(actor)
+    if charging_action_id:
+        action = engine.content.actions.get(charging_action_id)
+        labels.append(f"CHARGING {action.name if action else charging_action_id}!")
+    return f" | {', '.join(labels)}" if labels else ""
+
+
+def print_combat_status(engine: GameEngine, enemy) -> None:
+    player = engine.player
+    print()
+    print(
+        f"You: HP {player.hp}/{player.max_hp} | Mana {player.mana}/{player.max_mana}"
+        f"{status_suffix(engine, player)}"
+    )
+    print(
+        f"{enemy.name}: HP {enemy.hp}/{enemy.max_hp}"
+        f"{status_suffix(engine, enemy, enemy.charging_action_id)}"
+    )
+
+
+def handle_explore(engine: GameEngine) -> None:
+    enemy = engine.create_encounter()
+    if enemy is None:
+        print("This place is safe. There are no enemies here.")
+        return
+
+    print(f"You encounter a {enemy.name}.")
+    while enemy.is_alive and engine.player.is_alive:
+        print_combat_status(engine, enemy)
+        kind, payload = choose_combat_command(engine, enemy)
+        if kind == "flee":
+            result = engine.attempt_flee(enemy)
+        else:
+            result = engine.run_combat_turn(enemy, payload)
+        for event in result.events:
+            print(event)
+        if result.outcome == "fled":
+            return
+        if result.outcome in {"victory", "defeat"}:
+            resolve_pending_stat_choices(engine)
+            return
+
+
+def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
+    while True:
+        command = prompt_menu(
+            "Choose action:",
+            [
+                ("1", "attack", "Attack"),
+                ("2", "skill", "Skill"),
+                ("3", "item", "Item"),
+                ("4", "swap", "Swap weapon"),
+                ("5", "flee", "Flee"),
+            ],
+        )
+        if command == "attack":
+            action_id = choose_attack(engine)
+            if action_id:
+                return ("turn", action_id)
+        elif command == "skill":
+            action_id = choose_skill(engine)
+            if action_id:
+                return ("turn", action_id)
+        elif command == "item":
+            item_id = choose_combat_item(engine)
+            if item_id:
+                return ("turn", f"item:{item_id}")
+        elif command == "swap":
+            weapon_id = choose_swap_weapon(engine)
+            if weapon_id:
+                return ("turn", f"swap:{weapon_id}")
+        elif command == "flee":
+            return ("flee", "")
+
+
+def choose_attack(engine: GameEngine) -> str | None:
+    options = [
+        ("1", "power", "Power attack (x2.0, 30% hit)"),
+        ("2", "normal", "Normal attack (x1.5, 55% hit)"),
+        ("3", "quick", "Quick attack (x1.0, 75% hit)"),
+        ("b", "back", "Back"),
+    ]
+    choice = prompt_menu("Attack:", options, allow_label=False)
+    return None if choice == "back" else choice
+
+
+def choose_skill(engine: GameEngine) -> str | None:
+    skills = engine.equipped_skills()
+    if not skills:
+        print("You have no skills equipped. Equip some from the main menu (Skills).")
+        return None
+
+    while True:
+        options = []
+        for index, skill in enumerate(skills, start=1):
+            reason = combat.blocked_action_reason(engine.player, skill)
+            label = f"{skill.name} - {skill_cost_text(skill)}"
+            if reason:
+                label += " [NOT READY]"
+            options.append((str(index), skill.id, label))
+        options.append(("b", "back", "Back"))
+
+        choice = prompt_menu("Use which skill?", options, allow_label=False)
+        if choice == "back":
+            return None
+        action = engine.content.actions[choice]
+        reason = combat.blocked_action_reason(engine.player, action)
+        if reason:
+            print(reason)
+            continue  # reprompt without spending the round
+        return choice
+
+
+def choose_combat_item(engine: GameEngine) -> str | None:
+    consumables = engine.player.inventory.consumables
+    if not consumables:
+        print("You have no consumables.")
+        return None
+
+    options = []
+    for index, (item_id, count) in enumerate(sorted(consumables.items()), start=1):
+        item = engine.content.items[item_id]
+        options.append((str(index), item_id, f"{item.name} x{count} - heals {item.heal_amount} HP"))
+    options.append(("b", "back", "Back"))
+
+    choice = prompt_menu("Use which item?", options, allow_label=False)
+    return None if choice == "back" else choice
+
+
+def choose_swap_weapon(engine: GameEngine) -> str | None:
+    player = engine.player
+    options = []
+    for index, weapon in enumerate(engine.content.weapons.values(), start=1):
+        equipped = " (equipped)" if weapon.id == player.equipped_weapon_id else ""
+        options.append(
+            (str(index), weapon.id, f"{weapon.name} (+{weapon.damage_bonus} {weapon.damage_type}){equipped}")
+        )
+    options.append(("b", "back", "Back"))
+
+    choice = prompt_menu("Swap to which weapon?", options, allow_label=False)
+    if choice == "back":
+        return None
+    if choice == player.equipped_weapon_id:
+        print("That weapon is already equipped.")
+        return None
+    return choice
 
 
 def resolve_pending_stat_choices(engine: GameEngine) -> None:
