@@ -77,6 +77,8 @@ class ActionResolution:
     events: list[str] = field(default_factory=list)
     total_damage: int = 0
     reflected_damage: int = 0
+    critical_hits: int = 0
+    evaded: bool = False
     mana_spent: int = 0
 
 
@@ -187,6 +189,8 @@ def calculate_effect_damage(
     target: Actor,
     weapon: Weapon | None,
     effect: EffectSpec,
+    rng: random.Random | None = None,
+    result: ActionResolution | None = None,
 ) -> int:
     if effect.scale == "basic_attack":
         raw_damage = round_half_up(_basic_attack_base(actor, weapon) * effect.multiplier)
@@ -197,8 +201,56 @@ def calculate_effect_damage(
     else:
         raise ValueError(f"unknown damage scale: {effect.scale}")
 
+    raw_damage = apply_conditional(raw_damage, actor, target, effect)
+    if rolls_crit(actor, effect, rng):
+        raw_damage = round_half_up(raw_damage * actor.crit_mult)
+        if result is not None:
+            result.critical_hits += 1
+
     damage_type = _effect_damage_type(actor, weapon, effect)
     return apply_damage_mitigation(raw_damage, target, damage_type)
+
+
+def effective_crit_chance(actor: Actor, effect: EffectSpec) -> int:
+    return max(0, actor.crit_chance + effect.crit_bonus)
+
+
+def rolls_crit(actor: Actor, effect: EffectSpec, rng: random.Random | None) -> bool:
+    chance = effective_crit_chance(actor, effect)
+    if chance <= 0:
+        return False
+    if rng is None:
+        return False
+    return rng.random() < (chance / 100)
+
+
+def apply_conditional(raw_damage: int, actor: Actor, target: Actor, effect: EffectSpec) -> int:
+    conditional = effect.conditional
+    if not conditional:
+        return raw_damage
+    if condition_matches(actor, target, conditional, _effect_damage_type(actor, None, effect)):
+        return round_half_up(raw_damage * float(conditional.get("multiplier", 1.0)))
+    return raw_damage
+
+
+def condition_matches(actor: Actor, target: Actor, conditional: dict[str, object], damage_type: str = "") -> bool:
+    subject_name = str(conditional.get("subject", "target"))
+    subject = actor if subject_name == "self" else target
+    predicate = conditional.get("predicate")
+    if predicate == "hp_pct_lte":
+        threshold = float(conditional["threshold"])
+        return (subject.hp / subject.max_hp) * 100 <= threshold
+    if predicate == "hp_pct_gte":
+        threshold = float(conditional["threshold"])
+        return (subject.hp / subject.max_hp) * 100 >= threshold
+    if predicate == "has_status":
+        status_type = str(conditional["status_type"])
+        return any(status.type == status_type or status.tag == status_type for status in subject.active_statuses)
+    if predicate == "damage_type_is_weakness":
+        return get_resistance(subject, damage_type) > 1.0
+    if predicate == "has_tag":
+        return str(conditional["tag"]) in subject.tags
+    return False
 
 
 def calculate_player_damage(player: Player, weapon: Weapon, attack: CombatAction, target_armor: int) -> int:
@@ -272,13 +324,32 @@ def resolve_action(
         result.events.append(f"{actor_name(actor)}'s {action.name} missed.")
         return result
 
+    if action_can_be_evaded(action) and rolls_evasion(target, rng):
+        result.hit = False
+        result.evaded = True
+        result.events.append(f"{actor_name(target)} evaded {actor_name(actor)}'s {action.name}.")
+        apply_reflects(target, actor, result, trigger="on_evade")
+        if action.cooldown_rounds:
+            actor.cooldowns[action.id] = action.cooldown_rounds
+        return result
+
     for effect in action.effects:
-        apply_effect(actor, target, effect, result, weapon=weapon)
+        apply_effect(actor, target, effect, result, weapon=weapon, rng=rng)
 
     if action.cooldown_rounds:
         actor.cooldowns[action.id] = action.cooldown_rounds
 
     return result
+
+
+def action_can_be_evaded(action: CombatAction) -> bool:
+    return any(effect.type in {"damage", "instant_damage", "drain"} for effect in action.effects)
+
+
+def rolls_evasion(target: Actor, rng: random.Random) -> bool:
+    if target.evasion_chance <= 0:
+        return False
+    return rng.random() < (target.evasion_chance / 100)
 
 
 def blocked_action_reason(actor: Actor, action: CombatAction) -> str:
@@ -315,13 +386,13 @@ def apply_effect(
     result: ActionResolution,
     *,
     weapon: Weapon | None,
+    rng: random.Random | None = None,
 ) -> None:
     effect_target = actor if effect.target == "self" else target
 
     if effect.type in {"damage", "instant_damage"}:
         damage_type = _effect_damage_type(actor, weapon, effect)
-        damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(actor, effect_target, weapon, effect)
+        damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
         deal_damage(actor, effect_target, damage, damage_type, result)
         result.events.append(
             f"{actor_name(actor)}'s {result.action_name} dealt {damage} {damage_type} damage to {actor_name(effect_target)}."
@@ -336,7 +407,7 @@ def apply_effect(
 
     if effect.type == "drain":
         damage_type = _effect_damage_type(actor, weapon, effect)
-        damage = calculate_effect_damage(actor, effect_target, weapon, effect)
+        damage = calculate_effect_damage(actor, effect_target, weapon, effect, rng=rng, result=result)
         deal_damage(actor, effect_target, damage, damage_type, result)
         heal = round_half_up(damage * effect.ratio)
         before = actor.hp
@@ -377,6 +448,7 @@ def apply_effect(
                 multiplier=effect.multiplier,
                 damage_type=effect.damage_type,
                 tag=tag,
+                trigger=effect.trigger,
             )
         )
         result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
@@ -442,9 +514,9 @@ def deal_damage(
         apply_reflects(target, attacker, result)
 
 
-def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution) -> None:
+def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution, trigger: str = "on_hit") -> None:
     for status in bearer.active_statuses:
-        if status.type != "reflect":
+        if status.type != "reflect" or status.trigger != trigger:
             continue
         if status.scale == "power":
             raw_damage = round_half_up(get_stat(bearer, "power") * status.multiplier)
@@ -477,10 +549,11 @@ def tick_statuses(actor: Actor, timing: Literal["round_start", "round_end"]) -> 
 
 
 def apply_status_tick(actor: Actor, status: ActiveStatus) -> list[str]:
-    if status.type in DAMAGE_TYPES:
-        damage = apply_damage_mitigation(status.magnitude, actor, status.type)
+    if status.type in DAMAGE_TYPES or status.tag in DAMAGE_TYPES:
+        damage_type = status.type if status.type in DAMAGE_TYPES else status.tag
+        damage = apply_damage_mitigation(status.magnitude, actor, damage_type)
         actor.hp = max(0, actor.hp - damage)
-        return [f"{actor_name(actor)} took {damage} {status.type} damage from {status.type}."]
+        return [f"{actor_name(actor)} took {damage} {damage_type} damage from {status.type}."]
     if status.type == "regen":
         before = actor.hp
         actor.hp = min(actor.max_hp, actor.hp + status.magnitude)

@@ -40,5 +40,12 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "holy"
+  },
+  {
+    "id": "dagger",
+    "name": "Dagger",
+    "damage_bonus": 0,
+    "price": 0,
+    "damage_type": "physical"
   }
 ]

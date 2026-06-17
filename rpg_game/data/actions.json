@@ -253,5 +253,118 @@
         "damage_type": "physical"
       }
     ]
+  },
+  {
+    "id": "backstab",
+    "name": "Backstab",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.6,
+        "damage_type": "physical",
+        "target": "enemy",
+        "crit_bonus": 25
+      }
+    ]
+  },
+  {
+    "id": "rupture",
+    "name": "Rupture",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "bleed",
+        "tag": "physical",
+        "magnitude": 7,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "execute",
+    "name": "Execute",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.4,
+        "damage_type": "physical",
+        "target": "enemy",
+        "conditional": {
+          "subject": "target",
+          "predicate": "hp_pct_lte",
+          "threshold": 30,
+          "multiplier": 2.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "evasion",
+    "name": "Evasion",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "buff",
+        "stat": "evasion_chance",
+        "magnitude": 40,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "riposte",
+    "name": "Riposte",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "reflect",
+        "scale": "power",
+        "multiplier": 1.0,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self",
+        "damage_type": "physical",
+        "trigger": "on_evade"
+      }
+    ]
+  },
+  {
+    "id": "deadly_precision",
+    "name": "Deadly Precision",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "buff",
+        "stat": "crit_chance",
+        "magnitude": 30,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
   }
 ]

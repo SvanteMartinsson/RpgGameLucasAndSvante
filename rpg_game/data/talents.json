@@ -205,5 +205,103 @@
         "target": "self"
       }
     ]
+  },
+  {
+    "id": "rogue_assassin_a1_backstab",
+    "class_id": "rogue",
+    "branch": "assassin",
+    "order": 1,
+    "name": "Backstab",
+    "node_type": "active",
+    "action_id": "backstab",
+    "effects": []
+  },
+  {
+    "id": "rogue_assassin_a2_rupture",
+    "class_id": "rogue",
+    "branch": "assassin",
+    "order": 2,
+    "name": "Rupture",
+    "node_type": "active",
+    "action_id": "rupture",
+    "effects": []
+  },
+  {
+    "id": "rogue_assassin_a3_lethality",
+    "class_id": "rogue",
+    "branch": "assassin",
+    "order": 3,
+    "name": "Lethality",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "crit_chance",
+        "magnitude": 15,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "rogue_assassin_a4_execute",
+    "class_id": "rogue",
+    "branch": "assassin",
+    "order": 4,
+    "name": "Execute",
+    "node_type": "active",
+    "action_id": "execute",
+    "effects": []
+  },
+  {
+    "id": "rogue_duelist_d1_evasion",
+    "class_id": "rogue",
+    "branch": "duelist",
+    "order": 1,
+    "name": "Evasion",
+    "node_type": "active",
+    "action_id": "evasion",
+    "effects": []
+  },
+  {
+    "id": "rogue_duelist_d2_riposte",
+    "class_id": "rogue",
+    "branch": "duelist",
+    "order": 2,
+    "name": "Riposte",
+    "node_type": "active",
+    "action_id": "riposte",
+    "effects": []
+  },
+  {
+    "id": "rogue_duelist_d3_finesse",
+    "class_id": "rogue",
+    "branch": "duelist",
+    "order": 3,
+    "name": "Finesse",
+    "node_type": "passive",
+    "effects": [
+      {
+        "type": "stat_bonus",
+        "stat": "power",
+        "magnitude": 4,
+        "target": "self"
+      },
+      {
+        "type": "stat_bonus",
+        "stat": "speed",
+        "magnitude": 2,
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "rogue_duelist_d4_deadly_precision",
+    "class_id": "rogue",
+    "branch": "duelist",
+    "order": 4,
+    "name": "Deadly Precision",
+    "node_type": "active",
+    "action_id": "deadly_precision",
+    "effects": []
   }
 ]

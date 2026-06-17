@@ -47,6 +47,7 @@ class GameEngine:
             base_damage=player_class.base_damage,
             armor=player_class.armor,
             speed=player_class.speed,
+            crit_chance=player_class.crit_chance,
             gold=0,
             equipped_weapon_id=player_class.starting_weapon_id,
             inventory=Inventory(),

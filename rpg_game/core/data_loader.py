@@ -38,6 +38,7 @@ def load_content() -> GameContent:
             armor=row["armor"],
             max_mana=row["max_mana"],
             speed=row["speed"],
+            crit_chance=row.get("crit_chance", 0),
             starting_weapon_id=row["starting_weapon_id"],
             starting_skill_ids=tuple(row.get("starting_skill_ids", ())),
         )
@@ -180,4 +181,7 @@ def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:
         mod_magnitude=effect.get("mod_magnitude", 0),
         mod_duration=effect.get("mod_duration", 0),
         tag=effect.get("tag", ""),
+        crit_bonus=effect.get("crit_bonus", 0),
+        conditional=effect.get("conditional", {}),
+        trigger=effect.get("trigger", "on_hit"),
     )

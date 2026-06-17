@@ -12,6 +12,7 @@ class PlayerClass:
     armor: int
     max_mana: int
     speed: int
+    crit_chance: int
     starting_weapon_id: str
     starting_skill_ids: tuple[str, ...] = ()
 
@@ -42,6 +43,9 @@ class EffectSpec:
     mod_magnitude: int = 0
     mod_duration: int = 0
     tag: str = ""
+    crit_bonus: int = 0
+    conditional: dict[str, object] = field(default_factory=dict)
+    trigger: str = "on_hit"
 
 
 @dataclass(frozen=True)
@@ -128,6 +132,10 @@ class Enemy:
     cooldowns: dict[str, int] = field(default_factory=dict)
     accuracy_mod: int = 0
     immunity_tags: set[str] = field(default_factory=set)
+    crit_chance: int = 0
+    crit_mult: float = 2.0
+    evasion_chance: int = 0
+    tags: set[str] = field(default_factory=set)
 
     @property
     def is_alive(self) -> bool:
@@ -211,6 +219,9 @@ class Player:
     mana: int = 0
     max_mana: int = 0
     speed: int = 0
+    crit_chance: int = 0
+    crit_mult: float = 2.0
+    evasion_chance: int = 0
     equipped_skill_ids: tuple[str, ...] = ()
     talent_points: int = 0
     learned_talent_ids: set[str] = field(default_factory=set)
@@ -221,6 +232,7 @@ class Player:
     cooldowns: dict[str, int] = field(default_factory=dict)
     accuracy_mod: int = 0
     immunity_tags: set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set)
     pending_stat_choices: int = 0
 
     @property
@@ -258,3 +270,4 @@ class ActiveStatus:
     multiplier: float = 1.0
     damage_type: str = "physical"
     tag: str = ""
+    trigger: str = "on_hit"
