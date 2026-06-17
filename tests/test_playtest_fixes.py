@@ -32,5 +32,33 @@ class JunkNotUsableTests(unittest.TestCase):
         self.assertEqual(usable, [])
 
 
+class EquipWeaponOutOfCombatTests(unittest.TestCase):
+    def test_equipping_valid_owned_weapon_succeeds(self):
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Hero", "fighter")
+        engine.player.owned_weapon_ids = ("sword", "axe")
+        engine.player.equipped_weapon_id = "sword"
+
+        weapon = engine.content.weapons["axe"]
+        action = combat.create_weapon_swap_action(weapon)
+        result = combat.resolve_action(engine.player, engine.player, action, engine.rng, weapon=weapon)
+
+        self.assertFalse(result.blocked)
+        self.assertEqual(engine.player.equipped_weapon_id, "axe")
+
+    def test_equipping_weapon_above_level_is_blocked(self):
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Hero", "fighter")  # level 1
+        engine.player.owned_weapon_ids = ("sword", "worldsplitter")  # tier 6 -> needs level 4
+        engine.player.equipped_weapon_id = "sword"
+
+        weapon = engine.content.weapons["worldsplitter"]
+        action = combat.create_weapon_swap_action(weapon)
+        result = combat.resolve_action(engine.player, engine.player, action, engine.rng, weapon=weapon)
+
+        self.assertTrue(result.blocked)
+        self.assertEqual(engine.player.equipped_weapon_id, "sword")  # unchanged
+
+
 if __name__ == "__main__":
     unittest.main()

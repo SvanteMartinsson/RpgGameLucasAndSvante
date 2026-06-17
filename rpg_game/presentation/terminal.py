@@ -53,6 +53,7 @@ def run_game_loop(engine: GameEngine) -> None:
             ("travel", "Travel"),
             ("explore", "Explore"),
             ("use", "Use item"),
+            ("equip", "Equip weapon"),
             ("talents", "Talents"),
             ("skills", "Skills"),
             ("save", "Save game"),
@@ -74,6 +75,8 @@ def run_game_loop(engine: GameEngine) -> None:
             handle_explore(engine)
         elif action == "use":
             handle_use_item(engine)
+        elif action == "equip":
+            handle_equip_weapon(engine)
         elif action == "talents":
             handle_talents(engine)
         elif action == "skills":
@@ -515,6 +518,46 @@ def choose_swap_weapon(engine: GameEngine) -> str | None:
         print("That weapon is already equipped.")
         return None
     return choice
+
+
+def handle_equip_weapon(engine: GameEngine) -> None:
+    player = engine.player
+    weapons = engine.owned_weapons()
+    if not weapons:
+        print("You own no weapons.")
+        return
+
+    options = []
+    print()
+    print(f"Equip weapon (current: {engine.content.weapons[player.equipped_weapon_id].name})")
+    for index, weapon in enumerate(weapons, start=1):
+        equipped = " (equipped)" if weapon.id == player.equipped_weapon_id else ""
+        options.append(
+            (
+                str(index),
+                weapon.id,
+                f"{weapon.name} (+{weapon.damage_bonus} {weapon.damage_type}, tier {weapon.tier})"
+                f"{weapon_level_requirement_text(engine, weapon)}{equipped}",
+            )
+        )
+    options.append(("b", "back", "Back"))
+
+    choice = prompt_menu("Equip which weapon?", options, allow_label=False)
+    if choice == "back":
+        return
+    if choice == player.equipped_weapon_id:
+        print("That weapon is already equipped.")
+        return
+
+    weapon = engine.content.weapons[choice]
+    # Reuse the combat weapon-swap path so level requirements are enforced.
+    action = combat.create_weapon_swap_action(weapon)
+    result = combat.resolve_action(player, player, action, engine.rng, weapon=weapon)
+    if result.blocked:
+        for event in result.events:
+            print(event)
+    else:
+        print(f"Equipped {weapon.name}.")
 
 
 def weapon_level_requirement_text(engine: GameEngine, weapon) -> str:
