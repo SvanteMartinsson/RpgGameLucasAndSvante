@@ -11,8 +11,8 @@
     {"tile": [21, 14], "place_id": "burg_160", "label": "Gaste"}
   ],
   "gates": [
-    {"tile": [14, 0], "message": "Vägen norrut är inte trygg än — mer av världen öppnas senare."},
-    {"tile": [27, 10], "message": "Österut ligger okänt land. Spärrat tills vidare."},
-    {"tile": [13, 19], "message": "Söderut bortom Hordanitas trakter är inte redo än."}
+    {"tile": [14, 0], "message": "The road north isn't safe yet — more of the world opens later."},
+    {"tile": [27, 10], "message": "Unknown lands lie to the east. Blocked for now."},
+    {"tile": [13, 19], "message": "South beyond Hordanita's reaches isn't ready yet."}
   ]
 }
