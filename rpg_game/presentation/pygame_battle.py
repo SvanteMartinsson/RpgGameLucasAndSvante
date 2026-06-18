@@ -118,7 +118,7 @@ class BattleApp:
             return
         self.set_mode("combat")
         self.banner = ""
-        self.push_log(f"A {self.enemy.name} appears!", ACCENT)
+        self.push_log(f"{_article(self.enemy.name).capitalize()} {self.enemy.name} appears!", ACCENT)
 
     # -- logging ------------------------------------------------------------
 
@@ -457,6 +457,10 @@ class BattleApp:
 
 
 # --- formatting helpers ----------------------------------------------------
+
+
+def _article(noun: str) -> str:
+    return "an" if noun[:1].lower() in "aeiou" else "a"
 
 
 def _hp_color(ratio):
