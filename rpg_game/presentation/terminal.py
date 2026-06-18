@@ -439,9 +439,7 @@ def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
             ],
         )
         if command == "attack":
-            action_id = choose_attack(engine)
-            if action_id:
-                return ("turn", action_id)
+            return ("turn", "attack")
         elif command == "skill":
             action_id = choose_skill(engine)
             if action_id:
@@ -458,18 +456,6 @@ def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
             return ("turn", "identify")
         elif command == "flee":
             return ("flee", "")
-
-
-def choose_attack(engine: GameEngine) -> str | None:
-    options = [
-        ("1", "power", "Power attack (x2.0, 50% hit)"),
-        ("2", "normal", "Normal attack (x1.5, 55% hit)"),
-        ("3", "quick", "Quick attack (x1.0, 75% hit)"),
-        ("b", "back", "Back"),
-    ]
-    choice = prompt_menu("Attack:", options, allow_label=False)
-    return None if choice == "back" else choice
-
 
 def choose_skill(engine: GameEngine) -> str | None:
     skills = engine.equipped_skills()

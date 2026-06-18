@@ -1,5 +1,13 @@
 [
   {
+    "id": "attack",
+    "name": "Attack",
+    "kind": "player_attack",
+    "hit_chance": 1.0,
+    "mana_cost": 0,
+    "effects": []
+  },
+  {
     "id": "power",
     "name": "Power attack",
     "kind": "base_attack",

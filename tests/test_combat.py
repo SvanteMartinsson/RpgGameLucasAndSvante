@@ -45,7 +45,7 @@ class CombatMathTests(unittest.TestCase):
         enemy = engine.content.enemies["giant_rat"].create_enemy()
         enemy.hp = 1
 
-        result = engine.run_combat_turn(enemy, "normal")
+        result = engine.run_combat_turn(enemy, "attack")
 
         self.assertEqual(result.outcome, "victory")
         self.assertEqual(result.levels_gained, 1)
@@ -58,7 +58,7 @@ class CombatMathTests(unittest.TestCase):
         enemy = engine.content.enemies["undead"].create_enemy()
         enemy.hp = 1
 
-        result = engine.run_combat_turn(enemy, "normal")
+        result = engine.run_combat_turn(enemy, "attack")
 
         self.assertEqual(result.outcome, "victory")
         self.assertEqual(result.xp_gained, 13)
@@ -86,6 +86,18 @@ class CombatMathTests(unittest.TestCase):
         self.assertEqual(effective_hit_chance(content.actions["power"]), 0.70)
         self.assertEqual(effective_hit_chance(content.actions["normal"]), 0.80)
         self.assertEqual(effective_hit_chance(content.actions["quick"]), 0.90)
+
+    def test_player_cannot_choose_specific_attack_style(self):
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Test Fighter", "fighter")
+        enemy = engine.content.enemies["giant_rat"].create_enemy()
+        before = (engine.player.hp, enemy.hp)
+
+        result = engine.run_combat_turn(enemy, "quick")
+
+        self.assertEqual(result.outcome, "blocked")
+        self.assertEqual((engine.player.hp, enemy.hp), before)
+        self.assertTrue(any("Choose Attack" in event for event in result.events))
 
     def test_smite_deals_double_damage_to_undead_holy_weakness(self):
         engine = GameEngine(rng=random.Random(1))
@@ -142,7 +154,7 @@ class CombatMathTests(unittest.TestCase):
         enemy.speed = 99
         enemy.action_ids = ("quick",)
 
-        result = engine.run_combat_turn(enemy, "quick")
+        result = engine.run_combat_turn(enemy, "attack")
 
         self.assertTrue(result.events[0].startswith("Giant Rat's"))
 

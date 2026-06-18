@@ -208,6 +208,15 @@ class GameEngine:
         enemy_reveal: combat.EnemyReveal | None = None
         normalized_action = attack_id.strip().lower()
         is_identify = normalized_action == "identify"
+        if normalized_action in combat.PLAYER_ATTACK_STYLE_IDS:
+            events.append("Choose Attack instead of a specific attack style.")
+            return combat.CombatTurnResult(
+                outcome="blocked",
+                events=events,
+                player_hp=player.hp,
+                enemy_hp=enemy.hp,
+                pending_stat_choices=player.pending_stat_choices,
+            )
         missing_consumable = self._missing_consumable_from_action_id(attack_id)
         if missing_consumable:
             events.append(f"{player.name} does not have {missing_consumable}.")
@@ -399,6 +408,8 @@ class GameEngine:
             if weapon_id not in self.player.owned_weapon_ids:
                 raise ValueError(f"weapon not owned: {weapon_id}")
             return combat.create_weapon_swap_action(self.content.weapons[weapon_id])
+        if normalized == combat.PLAYER_ATTACK_ID:
+            return combat.player_attack_action()
         return self.content.actions[normalized]
 
     def _consumable_from_action_id(self, action_id: str) -> str:

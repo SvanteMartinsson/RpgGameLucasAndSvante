@@ -60,6 +60,54 @@ class AttackRangeTests(unittest.TestCase):
         )
         self.assertEqual(total, 18)
 
+    def test_player_attack_rolls_known_style(self):
+        engine = GameEngine()
+        engine.start_new_game("Fighter", "fighter")
+        engine.player.crit_chance = 0
+        enemy = _dummy()
+        attack = engine.content.actions["attack"]
+        weapon = engine.content.weapons["knife"]
+
+        result = combat.resolve_action(
+            engine.player, enemy, attack, SeqRng([0.85, 0.0, 0.0]), weapon=weapon
+        )
+
+        self.assertEqual(result.action_id, "attack")
+        self.assertEqual(result.rolled_style_id, "power")
+        self.assertEqual(result.rolled_style_name, "Power attack")
+        self.assertTrue(any("Power attack" in event for event in result.events))
+
+    def test_player_attack_uses_rolled_styles_hit_chance(self):
+        engine = GameEngine()
+        engine.start_new_game("Fighter", "fighter")
+        engine.player.crit_chance = 0
+        enemy = _dummy()
+        attack = engine.content.actions["attack"]
+        weapon = engine.content.weapons["knife"]
+
+        result = combat.resolve_action(
+            engine.player, enemy, attack, SeqRng([0.85, 0.75]), weapon=weapon
+        )
+
+        self.assertEqual(result.rolled_style_id, "power")
+        self.assertFalse(result.hit)
+        self.assertEqual(result.total_damage, 0)
+
+    def test_player_attack_uses_rolled_styles_damage_range(self):
+        engine = GameEngine()
+        engine.start_new_game("Fighter", "fighter")
+        engine.player.crit_chance = 0
+        enemy = _dummy()
+        attack = engine.content.actions["attack"]
+        weapon = engine.content.weapons["knife"]
+
+        result = combat.resolve_action(
+            engine.player, enemy, attack, SeqRng([0.85, 0.0, 0.0]), weapon=weapon
+        )
+
+        self.assertEqual(result.rolled_style_id, "power")
+        self.assertEqual(result.total_damage, round_half_up(15 * 1.25))
+
 
 class CritRangeTests(unittest.TestCase):
     def test_crit_extends_multiplier_additively_to_quick_ceiling(self):

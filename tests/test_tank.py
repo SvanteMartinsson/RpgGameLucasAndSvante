@@ -37,11 +37,11 @@ class TankClassTests(unittest.TestCase):
         self.assertEqual(blocked.outcome, "blocked")
         self.assertEqual((engine.player.hp, engine.player.mana, dict(engine.player.cooldowns), list(engine.player.active_statuses)), before)
 
-        engine.run_combat_turn(enemy, "quick")
+        engine.run_combat_turn(enemy, "attack")
 
         self.assertNotIn("block", [action.id for action in engine.available_actions()])
 
-        engine.run_combat_turn(enemy, "quick")
+        engine.run_combat_turn(enemy, "attack")
 
         self.assertIn("block", [action.id for action in engine.available_actions()])
 

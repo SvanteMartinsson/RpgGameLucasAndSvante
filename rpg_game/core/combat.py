@@ -29,6 +29,13 @@ DAMAGE_TYPES = {"physical", "fire", "frost", "holy", "poison"}
 
 CRIT_FLOOR = 0.25
 CRIT_BONUS_MAX = 1.0
+PLAYER_ATTACK_ID = "attack"
+PLAYER_ATTACK_STYLE_WEIGHTS: tuple[tuple[str, int], ...] = (
+    ("quick", 50),
+    ("normal", 30),
+    ("power", 20),
+)
+PLAYER_ATTACK_STYLE_IDS = frozenset(style_id for style_id, _weight in PLAYER_ATTACK_STYLE_WEIGHTS)
 
 
 ATTACKS: dict[str, CombatAction] = {
@@ -97,6 +104,8 @@ class ActionResolution:
     critical_hits: int = 0
     evaded: bool = False
     mana_spent: int = 0
+    rolled_style_id: str = ""
+    rolled_style_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -141,6 +150,21 @@ def get_attack(attack_id: str) -> CombatAction:
     if normalized not in ATTACKS:
         raise ValueError(f"unknown attack: {attack_id}")
     return ATTACKS[normalized]
+
+
+def player_attack_action() -> CombatAction:
+    return CombatAction(id=PLAYER_ATTACK_ID, name="Attack", kind="player_attack")
+
+
+def roll_player_attack_style(rng: random.Random) -> CombatAction:
+    total_weight = sum(weight for _style_id, weight in PLAYER_ATTACK_STYLE_WEIGHTS)
+    roll = rng.random() * total_weight
+    cumulative = 0.0
+    for style_id, weight in PLAYER_ATTACK_STYLE_WEIGHTS:
+        cumulative += weight
+        if roll < cumulative:
+            return get_attack(style_id)
+    return get_attack(PLAYER_ATTACK_STYLE_WEIGHTS[-1][0])
 
 
 def identify_enemy(enemy: Enemy, actions: dict[str, CombatAction]) -> EnemyReveal:
@@ -494,11 +518,18 @@ def resolve_action(
     *,
     weapon: Weapon | None = None,
 ) -> ActionResolution:
+    rolled_style: CombatAction | None = None
+    if isinstance(actor, Player) and action.id == PLAYER_ATTACK_ID:
+        rolled_style = roll_player_attack_style(rng)
+        action = rolled_style
+
     result = ActionResolution(
-        action_id=action.id,
+        action_id=PLAYER_ATTACK_ID if rolled_style is not None else action.id,
         action_name=action.name,
         actor_name=actor_name(actor),
         target_name=actor_name(target),
+        rolled_style_id=rolled_style.id if rolled_style is not None else "",
+        rolled_style_name=rolled_style.name if rolled_style is not None else "",
     )
 
     blocked_reason = blocked_action_reason(actor, action, weapon=weapon)
@@ -585,7 +616,7 @@ def available_actions(
     weapon: Weapon | None = None,
 ) -> list[CombatAction]:
     action_ids = actor.equipped_skill_ids if isinstance(actor, Player) else actor.action_ids
-    base_ids = ("power", "normal", "quick") if isinstance(actor, Player) else ()
+    base_ids = (PLAYER_ATTACK_ID,) if isinstance(actor, Player) else ()
     return [
         actions[action_id]
         for action_id in (*base_ids, *action_ids)

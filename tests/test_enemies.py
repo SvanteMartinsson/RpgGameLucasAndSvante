@@ -136,7 +136,7 @@ class BruiserArchetypeTests(unittest.TestCase):
         engine = _engine()
         bear = engine.content.enemies["cave_bear"].create_enemy()
 
-        result = engine.run_combat_turn(bear, "quick")
+        result = engine.run_combat_turn(bear, "attack")
 
         # Player (speed 11) acts first, then the bear mauls for 20 (hit_chance 1.0).
         self.assertEqual(engine.player.hp, 80)

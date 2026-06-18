@@ -108,7 +108,7 @@ class LootRarityTests(unittest.TestCase):
         self.assertEqual(loot_rarity_for_denominator(denominator_100), "rare")
 
     def test_drop_event_displays_rarity_without_exact_drop_rate(self):
-        engine = GameEngine(rng=SequenceRng([0.0, 0.99, 0.0, 0.99]))
+        engine = GameEngine(rng=SequenceRng([0.0, 0.0, 0.0, 0.0, 0.99]))
         engine.start_new_game("Hero", "fighter")
         enemy = _enemy(
             [
@@ -118,7 +118,7 @@ class LootRarityTests(unittest.TestCase):
             drop_chance=1.0,
         )
 
-        result = engine.run_combat_turn(enemy, "normal")
+        result = engine.run_combat_turn(enemy, "attack")
 
         self.assertEqual(result.outcome, "victory")
         self.assertEqual(result.loot_drop.rarity, "rare")
