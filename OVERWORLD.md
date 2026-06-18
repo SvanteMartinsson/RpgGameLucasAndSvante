@@ -1,97 +1,108 @@
-# OVERWORLD: rörelse och tile-kartor
+# OVERWORLD: fri gång och tile-kartor
 
 Hur man rör sig i världen. `world.json` (se `DESIGN.md`) äger all logik;
 detta dokument beskriver det promenerbara lagret ovanpå.
 
-**Status:** design, Pygame-era. Inget av detta byggs förrän klasser, loot och
-fiender står. Kontraktet kan förfinas när det faktiskt implementeras.
+**Status:** byggt (Pygame). En spelbar kärnzon runt Hordanita finns; resten av
+världen är gated som framtida expansion. Kontraktet kan förfinas vidare.
+
+## Modell: fri gång (Modell B)
+
+Spelaren går fritt med WASD/piltangenter över en sammanhängande, promenerbar
+karta — inte nod-för-nod längs en graf. Tile-kartan är rörelselagret;
+`world.json` är fortfarande logiken.
+
+Tidigare designidé (kant-/vägkartor mellan platser, med restid härledd ur
+avstånd) är **pensionerad för rörelse**. Vi reser inte längre via `travel()` och
+`distance_km_approx` i overworld; man går dit man går. Grafens connections och
+avstånd finns kvar i datan och kan användas av annat (t.ex. framtida fast-travel
+eller kartlogik), men de styr inte fri gång.
 
 ## Princip: grafen är logiken, tiles är rörelsen
 
-`world.json` fortsätter äga vad som finns och hur det hänger ihop — platser,
-connections, `danger_tier`, encounters, butiker. Tiled-kartorna är bara de
-promenerbara rummen. Inget i `world.json` ersätts; tiles är ett rent
-presentations- och rörelselager.
+`world.json` fortsätter äga vad som finns och dess egenskaper — platser,
+`danger_tier`, encounters, butiker, respawn. Inget i `world.json` ersätts. Det
+promenerbara lagret pratar bara med motorn via befintliga `GameEngine`-metoder
+och `build_snapshot()` (se `PRESENTATION_API.md`); det duplicerar inga
+spelregler.
 
-## Två sorters kartor (direkt ur grafen)
+## Platser = lokationer man går in i
 
-Grafen beskriver redan Pokémons två platstyper:
+Platser ligger som markerade tiles på den gångbara kartan. När spelaren går in
+på en stadstile sätter presentationen motorns lokation till den platsen.
 
-| Graf | Tile-karta | Man går där | Encounters |
-|---|---|---|---|
-| Nod (plats) | stadskarta | ja | normalt nej (trygg) |
-| Kant (connection) | vägkarta mellan två platser | ja | ja |
+Fri gång innebär godtycklig ankomst (det finns ingen "från"-plats att validera
+mot), så motorn fick en minimal additiv metod:
 
-## Kopplingskontrakt (Tiled custom properties)
+- `GameEngine.enter_place(place_id)` — sätter `current_place_id` och respawn
+  direkt, utan adjacens-gaten. Speglar `travel()` i övrigt; låsta platser nekas
+  fortfarande. `travel()` finns kvar oförändrad för adjacens-baserad resa.
 
-Samma princip som `world.json`:s fältkontrakt. Tile-kartan bär *placering och
-rörelse*; grafen bär *logik och egenskaper*; ett id syr ihop dem.
+I en stad öppnar Enter location-menyn i Pygame: stats, inventory, equip, skills,
+store (om platsen har butik), talents, rest, save — allt via `build_snapshot()`
++ engine-metoderna. Vildmark har ingen stadsmeny.
 
-Karta-nivå:
+## Encounters i vildmark
 
-- `place_id` (stadskarta) eller `route_id` = `"burg_5__burg_117"` (vägkarta,
-  de två ändpunkterna).
+Faran bor mellan städerna. Stadstiles är trygga; vildmarkstiles kan trigga en
+strid.
 
-Objekttyper i Tiled:
+- En **chans per steg** (per ny tile man går in på i vildmark) rullas mot en
+  tunbar frekvens (`encounter_rate_per_step` i zon-configen).
+- Vid träff genererar motorns befintliga `create_encounter()` en fiende ur den
+  aktuella regionens pool. Vildmarken pekar på en **region-plats** vars
+  `encounters` definierar fienderna (`wild_region_place_id` i configen).
 
-- `spawn` — spelarens startpunkt. Vägkartor har två (en per ände; du dyker upp
-  vid den ände du kom ifrån).
-- `exit` / `warp` — leder till grannkarta. Stadens exits → vägkartorna för dess
-  connections; vägens ändar → stadskartorna. Drivs av grafens connections.
-- `encounter_zone` — tiles som slumpar en fiende när man går på dem (vägkartor).
-- `store` — öppnar butiken om platsens `has_store` är sann.
-- `npc` / `interaction` — dialog/handling.
+## Loop: overworld ↔ battle
 
-Lager:
+1. Steg i vildmark → eventuell encounter.
+2. Striden körs i battle-skalet (samma `GameEngine`-combat, ingen duplicerad
+   stridslogik).
+3. **Seger/flykt:** tillbaka till overworld på samma position.
+4. **Förlust:** motorns respawn (Hordanita); spelar-spriten flyttas till hubbens
+   stadstile.
 
-- ett **collision-lager** (blockerat vs promenerbart).
+## Gate: spelbar kärnzon nu, resten gated
 
-## Encounters på vägar (ny datakonsekvens)
+Hela 21-platsersvärlden är *tänkt* men inte spelbar än. Den spelbara kärnan är
+Hordanita (hub, `burg_5`) plus ett par närliggande platser, på placeholder-tiles
+(grönt fält + grå block).
 
-Idag bor encounters per *plats*. Vägarna behöver nu egna pooler.
+Vägarna ut mot resten av världen är **gated** — ej gångbara tiles vid kanterna,
+var och en med en rad text som förklarar varför ("Vägen norrut är inte trygg
+än …"). En spärr utan förklaring läses som en bugg; en med en rad text läses som
+"mer att komma".
 
-**Vald enkel lösning:** härled vägens encounter-pool och frekvens ur de två
-ändpunkternas `danger_tier` (t.ex. den högre av de två) — ingen ny
-författning. Det blir nya fält på connections i `world.json`
-(`encounters`, `encounter_rate`), som läggs till i `derive_world.py` när det
-blir dags. `danger_tier` styr alltså både *vilka* fiender och *hur ofta*.
+Gaten är **data, inte spridd logik**, och är avsedd att **FLYTTAS utåt** (öppna
+fler tiles/städer) när en ny zon byggs — inte tas bort. Allt zon-specifikt
+(town-tiles, gate-tiles + text, encounter-frekvens, region-pool, respawn) ligger
+i `rpg_game/data/maps/core_zone.json`. Kärnzonens karta är
+`rpg_game/data/maps/overworld.tmx`.
 
-Stadskartor är normalt trygga (platsens `encounters` ofta tom). Faran bor på
-vägen — vilket är exakt friktionen vi designade: lämna den trygga staden,
-riskera vägen.
+## Kollision
 
-## Stub-generator (framtida verktyg)
+Ett **walls-lager** i TMX markerar blockerade tiles. Blockerat = walls-lagrets
+tiles plus gate-tiles. Rörelsen löses per axel så att en vägg på ena axeln inte
+dödar rörelse på den andra.
 
-Eftersom grafen redan finns kan en `world.json` → Tiled-stub-generator spotta
-ut tomma, förkopplade kartor: en per plats och en per connection, taggade med
-rätt `place_id`/`route_id`, spawns, exits till grannarna och encounter-zoner
-dimensionerade efter `danger_tier`. Du målar bara terräng — aldrig wira logik
-för hand. Det är det som gör ~21 städer + ~30 vägar hanterbart att författa,
-och det återanvänder grafen fullt ut.
-
-## Konst-implikation
+## Konst-implikation (framtid)
 
 - **Tilesets** (sömlös terräng) — använd ett befintligt pixel-art-tileset-pack,
-  INTE magenta-AI-pipelinen; AI är dålig på sömlösa, kaklande tiles.
-- **Top-down spelar-sprite** med 4-riktnings-gångcykel — animation, en ny sak
-  jämfört med dina statiska sidovy-stridssprites.
-- Striden använder fortfarande sidovy-sprites; overworld är top-down. Två vyer.
+  INTE magenta-AI-pipelinen; AI är dålig på sömlösa, kaklande tiles. Nu körs
+  enkla placeholder-tiles (grönt fält + grå block).
+- **Top-down spelar-sprite** med 4-riktnings-gångcykel — en framtida sak;
+  just nu en enkel markör.
+- Striden använder sidovy; overworld är top-down. Två vyer.
 
 ## Teknik
 
-Tiled (mapeditor.org) för författning → JSON/TMX. `pytmx` laddar kartorna i
-Pygame inklusive collision och custom properties; `pyscroll` för scrollande
-rendering. Spelet laddar samma filer som Tiled skriver — ingen mellanhand.
+Tiled (mapeditor.org) för författning → TMX. `pytmx` laddar kartorna i Pygame
+inklusive collision-lager och custom properties. Vi **blittar tiles direkt** för
+små, fasta kartor — `pyscroll` används medvetet inte (inaktivt, och onödigt utan
+stora scrollande kartor). En enkel centrerad kamera med clamp räcker.
 
 ## Fasning
 
-Tilea startklustret först (några få städer + deras vägar), väx utåt. Du
-författar inte alla kartor innan något är spelbart — samma princip som den
-kurerade startvärlden.
-
-## Utanför denna fas
-
-Pygame-era, efter klasser/loot/fiender. Framåtblickande data som läggs till
-när det byggs: `connection.encounters` + `encounter_rate` och
-`place.tilemap` / `connection.tilemap`-referenser i `derive_world.py`. Inget
-av detta byggs nu.
+Kärnklustret runt Hordanita först; väx utåt genom att flytta gaten och lägga
+till town-/gate-tiles i configen samt mer karta i TMX. Du författar inte alla
+kartor innan något är spelbart.
