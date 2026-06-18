@@ -142,6 +142,7 @@ def show_stats(engine: GameEngine) -> None:
     print(f"Total damage: {total_damage}")
     print(f"Armor: {player.armor}")
     print(f"Speed: {player.speed}")
+    print(f"Crit chance: {player.crit_chance}%")
     print(f"Talent points: {player.talent_points}")
     print(f"Gold: {player.gold}")
 

@@ -1,8 +1,11 @@
+import contextlib
+import io
 import random
 import unittest
 
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
+from rpg_game.presentation import terminal
 
 
 class JunkNotUsableTests(unittest.TestCase):
@@ -58,6 +61,18 @@ class EquipWeaponOutOfCombatTests(unittest.TestCase):
 
         self.assertTrue(result.blocked)
         self.assertEqual(engine.player.equipped_weapon_id, "sword")  # unchanged
+
+
+class StatsScreenTests(unittest.TestCase):
+    def test_stats_screen_shows_crit_chance(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "rogue")
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            terminal.show_stats(engine)
+
+        self.assertIn("Crit chance: 10%", output.getvalue())
 
 
 if __name__ == "__main__":
