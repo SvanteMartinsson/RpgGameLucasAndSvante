@@ -26,6 +26,7 @@ import pygame
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import ui_text as T
 
 # --- Layout ----------------------------------------------------------------
 
@@ -97,7 +98,7 @@ class BattleApp:
 
     def __post_init__(self) -> None:
         pygame.init()
-        pygame.display.set_caption("Svantrenish RPG — Battle")
+        pygame.display.set_caption(T.CAPTION_BATTLE)
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
@@ -106,7 +107,7 @@ class BattleApp:
         if self.enemy is not None:
             # Single battle against a supplied enemy (e.g. a wild encounter).
             self.set_mode("combat")
-            self.push_log(f"{_article(self.enemy.name).capitalize()} {self.enemy.name} appears!", ACCENT)
+            self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
         elif self.standalone:
             self._ensure_dangerous_place()
             self.next_encounter()
@@ -129,12 +130,12 @@ class BattleApp:
         self.enemy = self.engine.create_encounter()
         if self.enemy is None:
             self.set_mode("game_over")
-            self.banner = "No enemies here."
+            self.banner = T.NO_ENEMIES
             self.banner_color = TEXT_DIM
             return
         self.set_mode("combat")
         self.banner = ""
-        self.push_log(f"{_article(self.enemy.name).capitalize()} {self.enemy.name} appears!", ACCENT)
+        self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
 
     # -- logging ------------------------------------------------------------
 
@@ -172,33 +173,33 @@ class BattleApp:
         if result.outcome == "fled":
             self.enemy = None
             if self.standalone:
-                self.banner = "You fled the battle."
+                self.banner = T.FLED_BANNER
                 self.banner_color = WARN
                 self.set_mode("victory_idle")
             else:
                 self._finish("fled")
             return
         if result.outcome == "victory":
-            self.push_log("Victory!", GOOD)
+            self.push_log(T.VICTORY_LOG, GOOD)
             if result.xp_gained:
-                self.push_log(f"+{result.xp_gained} XP", XP_COL)
+                self.push_log(T.xp_gain(result.xp_gained), XP_COL)
             if result.gold_gained:
-                self.push_log(f"+{result.gold_gained} gold", WARN)
+                self.push_log(T.gold_gain(result.gold_gained), WARN)
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning
             elif self.standalone:
-                self.banner = "Victory! Click to fight the next enemy."
+                self.banner = T.VICTORY_NEXT
                 self.banner_color = GOOD
                 self.set_mode("victory_idle")
             else:
                 self._finish("victory")
             return
         if result.outcome == "defeat":
-            self.push_log("You have been defeated.", BAD)
+            self.push_log(T.DEFEATED_LOG, BAD)
             self.enemy = None
             if self.standalone:
-                self.banner = "Defeat. Press Esc to quit."
+                self.banner = T.DEFEAT_BANNER
                 self.banner_color = BAD
                 self.set_mode("game_over")
             else:
@@ -211,7 +212,7 @@ class BattleApp:
         self.push_log(message, XP_COL)
         if self.engine.player.pending_stat_choices <= 0:
             if self.standalone:
-                self.banner = "Level up resolved. Click to fight the next enemy."
+                self.banner = T.LEVELUP_RESOLVED
                 self.banner_color = GOOD
                 self.set_mode("victory_idle")
             else:
@@ -305,7 +306,7 @@ class BattleApp:
         self.screen.blit(label_surf, label_surf.get_rect(center=rect.center))
 
     def _draw_enemy_panel(self):
-        self._panel(ENEMY_PANEL, "ENEMY")
+        self._panel(ENEMY_PANEL, T.PANEL_ENEMY)
         enemy = self.enemy
         if enemy is None:
             self._text("—", (ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 34), self.font_lg, TEXT_DIM)
@@ -326,10 +327,10 @@ class BattleApp:
             line = f"Lvl {enemy.level} | Power {enemy.damage} | Armor {enemy.armor} | Speed {enemy.speed}"
             self._text(line, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
         else:
-            self._text("Unidentified — use Identify to reveal stats", (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
+            self._text(T.UNIDENTIFIED, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
 
     def _draw_log_panel(self):
-        self._panel(LOG_PANEL, "COMBAT LOG")
+        self._panel(LOG_PANEL, T.PANEL_LOG)
         line_h = 18
         top = LOG_PANEL.y + 28
         max_lines = (LOG_PANEL.height - 36) // line_h
@@ -338,7 +339,7 @@ class BattleApp:
             self._text(text[:120], (LOG_PANEL.x + 12, top + i * line_h), self.font_sm, color)
 
     def _draw_player_panel(self, snapshot):
-        self._panel(PLAYER_PANEL, "YOU")
+        self._panel(PLAYER_PANEL, T.PANEL_PLAYER)
         p = snapshot.player
         x = PLAYER_PANEL.x + 12
         self._text(f"{p.name} — {p.class_name} (Lvl {p.level})", (x, PLAYER_PANEL.y + 28), self.font, TEXT)
@@ -370,20 +371,20 @@ class BattleApp:
         return rects
 
     def _build_action_buttons(self, snapshot):
-        self._panel(ACTION_PANEL, "ACTIONS")
+        self._panel(ACTION_PANEL, T.PANEL_ACTIONS)
         if self.mode != "combat" or self.enemy is None:
             if self.mode == "victory_idle":
-                self._text("Click / Space → next enemy", (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, GOOD)
+                self._text(T.NEXT_ENEMY_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, GOOD)
             elif self.mode == "game_over":
-                self._text("Press Esc to quit", (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, BAD)
+                self._text(T.QUIT_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, BAD)
             return
         specs = [
-            ("Attack", "a", lambda: self.issue_turn("attack"), True),
-            ("Skill", "s", lambda: self.open_submenu("skill"), bool(snapshot.skills)),
-            ("Item", "i", lambda: self.open_submenu("item"), self._has_consumables()),
-            ("Swap", "w", lambda: self.open_submenu("swap"), self._has_swappable(snapshot)),
-            ("Identify", "d", lambda: self.issue_turn("identify"), not getattr(self.enemy, "identified", False)),
-            ("Flee", "f", self.issue_flee, True),
+            (*T.ACTION_ATTACK, lambda: self.issue_turn("attack"), True),
+            (*T.ACTION_SKILL, lambda: self.open_submenu("skill"), bool(snapshot.skills)),
+            (*T.ACTION_ITEM, lambda: self.open_submenu("item"), self._has_consumables()),
+            (*T.ACTION_SWAP, lambda: self.open_submenu("swap"), self._has_swappable(snapshot)),
+            (*T.ACTION_IDENTIFY, lambda: self.issue_turn("identify"), not getattr(self.enemy, "identified", False)),
+            (*T.ACTION_FLEE, self.issue_flee, True),
         ]
         for rect, (label, hotkey, cb, enabled) in zip(self._action_rects(len(specs)), specs):
             self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey))
@@ -392,7 +393,7 @@ class BattleApp:
         self._panel(ACTION_PANEL, f"{self.submenu_kind.upper()}  (Esc to back)")
         options = self._submenu_options(snapshot)
         if not options:
-            self._text("Nothing available.", (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, TEXT_DIM)
+            self._text(T.NOTHING_AVAILABLE, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, TEXT_DIM)
         rects = self._action_rects(len(options) + 1)
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
             self.buttons.append(Button(rect, label, (lambda a=action_id: self.issue_turn(a)), enabled, sublabel=sub))
@@ -401,7 +402,7 @@ class BattleApp:
 
     def _build_stat_buttons(self):
         self._panel(ACTION_PANEL, "LEVEL UP — choose a bonus")
-        specs = [("+5 base damage", "damage"), ("+10 max HP", "hp")]
+        specs = T.STAT_CHOICES
         for rect, (label, stat) in zip(self._action_rects(len(specs)), specs):
             self.buttons.append(Button(rect, label, (lambda s=stat: self.apply_stat(s)), True))
 
@@ -556,7 +557,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
     """
     classes = list(engine.content.classes.values())
     pygame.init()
-    pygame.display.set_caption("Svantrenish RPG — Create character")
+    pygame.display.set_caption(T.CAPTION_CREATE)
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     font = pygame.font.SysFont("menlo,consolas,monospace", 17)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
@@ -607,11 +608,11 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
             cursor_ticks = 0
 
         screen.fill(BG)
-        title = font_lg.render("Create your character", True, ACCENT)
+        title = font_lg.render(T.CREATE_TITLE, True, ACCENT)
         screen.blit(title, title.get_rect(center=(WIDTH // 2, 50)))
 
         # Name field
-        screen.blit(font.render("Name:", True, TEXT), (PAD, 106))
+        screen.blit(font.render(T.CREATE_NAME_LABEL, True, TEXT), (PAD, 106))
         pygame.draw.rect(screen, PANEL, name_box, border_radius=6)
         pygame.draw.rect(screen, ACCENT, name_box, width=2, border_radius=6)
         shown = name if name else "Hero"
@@ -619,7 +620,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
         name_surf = font.render(shown + ("|" if cursor_on else ""), True, name_color)
         screen.blit(name_surf, name_surf.get_rect(midleft=(name_box.x + 12, name_box.centery)))
 
-        screen.blit(font_sm.render("Pick a class:", True, TEXT_DIM), (PAD, 176))
+        screen.blit(font_sm.render(T.CREATE_PICK_CLASS, True, TEXT_DIM), (PAD, 176))
         mouse = pygame.mouse.get_pos()
         for i, (cls, rect) in enumerate(zip(classes, list_rects)):
             if i == selected:
@@ -646,7 +647,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
         color = BTN_HOVER if start_rect.collidepoint(mouse) else BTN
         pygame.draw.rect(screen, color, start_rect, border_radius=8)
         pygame.draw.rect(screen, GOOD, start_rect, width=2, border_radius=8)
-        start_label = font.render("Start  (Enter)", True, TEXT)
+        start_label = font.render(T.CREATE_START, True, TEXT)
         screen.blit(start_label, start_label.get_rect(center=start_rect.center))
 
         pygame.display.flip()
@@ -660,7 +661,7 @@ def main(argv: list[str] | None = None) -> None:
     if class_id:
         if class_id not in engine.content.classes:
             valid = ", ".join(engine.content.classes)
-            raise SystemExit(f"Unknown class '{class_id}'. Choose one of: {valid}")
+            raise SystemExit(T.unknown_class(class_id, valid))
         name = "Hero"
     else:
         name, class_id = character_creation(engine)

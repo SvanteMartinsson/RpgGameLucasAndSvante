@@ -1,0 +1,179 @@
+"""Single source of truth for player-facing UI text (Pygame presentation).
+
+All translatable copy — messages, banners, hints, menu/button labels, panel
+titles, section headers and the overworld gate messages — lives here so the
+game's language can be checked and changed in one place instead of being
+scattered across data files and screen code.
+
+Out of scope on purpose:
+- Pure numeric formatting (HP/mana/XP bars, stat-table numbers) stays in the
+  renderers; it carries no translatable prose.
+- Engine-produced messages (rest/save/store/combat events) stay in core; the
+  presentation just displays them.
+
+Gate messages are referenced from rpg_game/data/maps/core_zone.json by
+``message_key`` and resolved via ``GATE_MESSAGES`` / ``gate_message()``.
+"""
+
+from __future__ import annotations
+
+# --- window captions -------------------------------------------------------
+
+CAPTION_OVERWORLD = "Svantrenish RPG — Overworld"
+CAPTION_BATTLE = "Svantrenish RPG — Battle"
+CAPTION_CREATE = "Svantrenish RPG — Create character"
+
+# --- overworld gates (referenced by core_zone.json message_key) ------------
+
+GATE_MESSAGES = {
+    "gate_north": "The road north isn't safe yet — more of the world opens later.",
+    "gate_east": "Unknown lands lie to the east. Blocked for now.",
+    "gate_south": "South beyond Hordanita's reaches isn't ready yet.",
+}
+
+
+def gate_message(key: str) -> str:
+    """Resolve a gate message key; fall back to the key itself if unknown."""
+    return GATE_MESSAGES.get(key, key)
+
+
+# --- overworld: HUD + hints ------------------------------------------------
+
+HINT_TOWN = "Enter: town menu"
+HINT_WALK = "WASD/arrows to move"
+BACK_TO_MAP = "Esc / Enter: back to map"
+BACK = "Back (Esc)"
+
+
+def wilds_near(place_name: str) -> str:
+    return f"Wilds near {place_name}"
+
+
+# --- overworld: town menu --------------------------------------------------
+
+# (action id, button label) — labels are player-facing.
+TOWN_ACTIONS = [
+    ("stats", "Stats"),
+    ("inventory", "Inventory"),
+    ("equip", "Equip weapon"),
+    ("skills", "Skills"),
+    ("store", "Store"),
+    ("talents", "Talents"),
+    ("rest", "Rest"),
+    ("save", "Save"),
+]
+
+SCREEN_TITLES = {
+    "stats": "Stats",
+    "inventory": "Inventory",
+    "equip": "Equip weapon",
+    "skills": "Skills",
+    "store": "Store",
+    "talents": "Talents",
+}
+
+# --- overworld: toasts -----------------------------------------------------
+
+NO_STORE = "No store in this town."
+ALREADY_EQUIPPED = "Already equipped."
+CANNOT_EQUIP = "Cannot equip that."
+
+
+def equipped_weapon(name: str) -> str:
+    return f"Equipped {name}."
+
+
+def defeat_respawn(place_name: str) -> str:
+    return f"Defeated — respawned at {place_name}."
+
+
+def victory_over(enemy_name: str) -> str:
+    return f"You defeated the {enemy_name}."
+
+
+def fled_from(enemy_name: str) -> str:
+    return f"You fled from the {enemy_name}."
+
+
+# --- overworld: sub-screen copy -------------------------------------------
+
+INV_HEADER_CONSUMABLES = "Consumables:"
+INV_HEADER_WEAPONS = "Weapons:"
+INV_NONE = "  (none)"
+EQUIP_HINT = "Click a weapon to equip (level permitting)."
+NO_SKILLS = "No skills unlocked yet — learn talents first."
+STORE_BUY = "Buy"
+STORE_SELL = "Sell"
+NO_TALENTS = "No talents available to learn right now."
+
+
+def skills_hint(equipped_count: int) -> str:
+    return f"Equipped {equipped_count}/4 — click to equip/unequip."
+
+
+def store_hint(gold: int) -> str:
+    return f"Gold: {gold}    (click to buy / sell one)"
+
+
+def talents_hint(points: int) -> str:
+    return f"Talent points: {points} — click to learn."
+
+
+# --- battle: panels --------------------------------------------------------
+
+PANEL_ENEMY = "ENEMY"
+PANEL_PLAYER = "YOU"
+PANEL_LOG = "COMBAT LOG"
+PANEL_ACTIONS = "ACTIONS"
+
+UNIDENTIFIED = "Unidentified — use Identify to reveal stats"
+NOTHING_AVAILABLE = "Nothing available."
+NEXT_ENEMY_HINT = "Click / Space → next enemy"
+QUIT_HINT = "Press Esc to quit"
+
+# (label, hotkey) for the combat action bar.
+ACTION_ATTACK = ("Attack", "a")
+ACTION_SKILL = ("Skill", "s")
+ACTION_ITEM = ("Item", "i")
+ACTION_SWAP = ("Swap", "w")
+ACTION_IDENTIFY = ("Identify", "d")
+ACTION_FLEE = ("Flee", "f")
+
+# --- battle: banners + log -------------------------------------------------
+
+NO_ENEMIES = "No enemies here."
+FLED_BANNER = "You fled the battle."
+VICTORY_LOG = "Victory!"
+VICTORY_NEXT = "Victory! Click to fight the next enemy."
+DEFEATED_LOG = "You have been defeated."
+DEFEAT_BANNER = "Defeat. Press Esc to quit."
+LEVELUP_RESOLVED = "Level up resolved. Click to fight the next enemy."
+
+# --- battle: level-up choice ----------------------------------------------
+
+LEVELUP_TITLE = "LEVEL UP — choose a bonus"
+STAT_CHOICES = [("+5 base damage", "damage"), ("+10 max HP", "hp")]
+
+
+def appears(article: str, enemy_name: str) -> str:
+    return f"{article.capitalize()} {enemy_name} appears!"
+
+
+def xp_gain(amount: int) -> str:
+    return f"+{amount} XP"
+
+
+def gold_gain(amount: int) -> str:
+    return f"+{amount} gold"
+
+
+# --- character creation ----------------------------------------------------
+
+CREATE_TITLE = "Create your character"
+CREATE_NAME_LABEL = "Name:"
+CREATE_PICK_CLASS = "Pick a class:"
+CREATE_START = "Start  (Enter)"
+
+
+def unknown_class(class_id: str, valid: str) -> str:
+    return f"Unknown class '{class_id}'. Choose one of: {valid}"

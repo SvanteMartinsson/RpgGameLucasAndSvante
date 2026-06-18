@@ -34,6 +34,7 @@ from pytmx.util_pygame import load_pygame
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.pygame_battle import BattleApp
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
@@ -87,7 +88,12 @@ class ZoneConfig:
             data = json.load(handle)
         towns = {tuple(t["tile"]): t["place_id"] for t in data.get("towns", [])}
         labels = {tuple(t["tile"]): t.get("label", t["place_id"]) for t in data.get("towns", [])}
-        gates = {tuple(g["tile"]): g["message"] for g in data.get("gates", [])}
+        # Gate copy lives in ui_text; JSON references it by message_key (inline
+        # "message" still honored as a fallback).
+        gates = {
+            tuple(g["tile"]): g["message"] if "message" in g else T.gate_message(g.get("message_key", ""))
+            for g in data.get("gates", [])
+        }
         return ZoneConfig(
             map_path=os.path.join(MAPS_DIR, data["map"]),
             start_tile=tuple(data.get("start_tile", [1, 1])),
@@ -200,20 +206,9 @@ class Button:
 
 
 class OverworldApp:
-    TOWN_ACTIONS = [
-        ("stats", "Stats"),
-        ("inventory", "Inventory"),
-        ("equip", "Equip weapon"),
-        ("skills", "Skills"),
-        ("store", "Store"),
-        ("talents", "Talents"),
-        ("rest", "Rest"),
-        ("save", "Save"),
-    ]
-
     def __init__(self, engine: GameEngine | None = None, zone: ZoneConfig | None = None) -> None:
         pygame.init()
-        pygame.display.set_caption("Svantrenish RPG — Overworld")
+        pygame.display.set_caption(T.CAPTION_OVERWORLD)
         pygame.display.set_mode((1, 1))  # video mode for tile .convert() during load
         self.zone = zone or ZoneConfig.load()
         self.engine = engine or self._new_engine()
@@ -273,7 +268,7 @@ class OverworldApp:
         """Hand off to the battle shell, then return to the overworld."""
         outcome = BattleApp(engine=self.engine, enemy=enemy, standalone=False).run()
         # The battle resized the window; restore the overworld view.
-        pygame.display.set_caption("Svantrenish RPG — Overworld")
+        pygame.display.set_caption(T.CAPTION_OVERWORLD)
         self.screen = pygame.display.set_mode(self.view_size)
         self.resolve_battle_outcome(outcome, enemy)
 
@@ -285,12 +280,14 @@ class OverworldApp:
             if tile is not None:
                 self.world.set_tile(*tile)
             self.sync_location()
-            self.set_toast(f"Defeated — respawned at {self.engine.current_place().name}.", BAD)
+            self.set_toast(T.defeat_respawn(self.engine.current_place().name), BAD)
         else:
             # Victory or flee: stay where we are; location is still the wilds.
             self.sync_location()
-            verb = "fled from" if outcome == "fled" else "defeated"
-            self.set_toast(f"You {verb} the {enemy.name}.", GOOD if outcome == "victory" else WARN)
+            if outcome == "fled":
+                self.set_toast(T.fled_from(enemy.name), WARN)
+            else:
+                self.set_toast(T.victory_over(enemy.name), GOOD)
         self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------
@@ -310,7 +307,7 @@ class OverworldApp:
             if self.engine.current_place().has_store:
                 self.mode = "store"
             else:
-                self.set_toast("No store in this town.", TEXT_DIM)
+                self.set_toast(T.NO_STORE, TEXT_DIM)
         elif action == "rest":
             result = self.engine.rest()
             self.set_toast(result.message, GOOD if result.outcome == "rested" else TEXT_DIM)
@@ -321,15 +318,15 @@ class OverworldApp:
     def equip_weapon(self, weapon_id: str) -> None:
         player = self.engine.player
         if weapon_id == player.equipped_weapon_id:
-            self.set_toast("Already equipped.", TEXT_DIM)
+            self.set_toast(T.ALREADY_EQUIPPED, TEXT_DIM)
             return
         weapon = self.engine.content.weapons[weapon_id]
         action = combat.create_weapon_swap_action(weapon)
         result = combat.resolve_action(player, player, action, self.engine.rng, weapon=weapon)
         if result.blocked:
-            self.set_toast(" ".join(result.events) or "Cannot equip that.", BAD)
+            self.set_toast(" ".join(result.events) or T.CANNOT_EQUIP, BAD)
         else:
-            self.set_toast(f"Equipped {weapon.name}.", GOOD)
+            self.set_toast(T.equipped_weapon(weapon.name), GOOD)
 
     def toggle_skill(self, action_id: str, equipped: bool) -> None:
         message = self.engine.unequip_skill(action_id) if equipped else self.engine.equip_skill(action_id)
@@ -447,13 +444,13 @@ class OverworldApp:
         overlay = pygame.Surface(bar.size, pygame.SRCALPHA)
         overlay.fill((10, 12, 18, 200))
         self.screen.blit(overlay, (0, 0))
-        where = place.name if in_town else f"Wilds near {place.name}"
+        where = place.name if in_town else T.wilds_near(place.name)
         left = f"{snap.player.name}  Lv{snap.player.level}  HP {snap.player.hp}/{snap.player.max_hp}  Gold {snap.player.gold}"
         self.screen.blit(self.font_sm.render(left, True, TEXT), (8, 6))
         right = self.font_sm.render(where, True, ACCENT if in_town else TEXT_DIM)
         self.screen.blit(right, right.get_rect(topright=(self.screen.get_width() - 8, 6)))
         if self.mode == "walk":
-            hint = "Enter: town menu" if in_town else "WASD/arrows to move"
+            hint = T.HINT_TOWN if in_town else T.HINT_WALK
             hsurf = self.font_sm.render(hint, True, TEXT_DIM)
             self.screen.blit(hsurf, hsurf.get_rect(midbottom=(self.screen.get_width() // 2, self.screen.get_height() - 6)))
 
@@ -489,21 +486,21 @@ class OverworldApp:
         panel = self._overlay_panel(self.engine.current_place().name)
         has_store = self.engine.current_place().has_store
         col_w = (panel.width - 60) // 2
-        for i, (action, label) in enumerate(self.TOWN_ACTIONS):
+        for i, (action, label) in enumerate(T.TOWN_ACTIONS):
             col, row = i % 2, i // 2
             rect = pygame.Rect(panel.x + 20 + col * (col_w + 20), panel.y + 70 + row * 56, col_w, 44)
             enabled = not (action == "store" and not has_store)
             self._add_button(rect, label, (lambda a=action: self.do_action(a)), enabled)
-        self.screen.blit(self.font_sm.render("Esc / Enter: back to map", True, TEXT_DIM),
+        self.screen.blit(self.font_sm.render(T.BACK_TO_MAP, True, TEXT_DIM),
                          (panel.x + 20, panel.bottom - 30))
         self._draw_buttons()
 
     def _draw_subscreen(self) -> None:
-        panel = self._overlay_panel(self.mode.capitalize())
+        panel = self._overlay_panel(T.SCREEN_TITLES.get(self.mode, self.mode.capitalize()))
         renderer = getattr(self, f"_screen_{self.mode}")
         renderer(panel)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
-        self._add_button(back, "Back (Esc)", lambda: setattr(self, "mode", "townmenu"))
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
         self._draw_buttons()
 
     def _lines(self, panel, lines, color=TEXT, start=64, step=24) -> int:
@@ -524,18 +521,18 @@ class OverworldApp:
 
     def _screen_inventory(self, panel) -> None:
         eng = self.engine
-        lines = ["Consumables:"]
+        lines = [T.INV_HEADER_CONSUMABLES]
         consumables = [(i, c) for i, c in sorted(eng.player.inventory.consumables.items()) if c > 0]
-        lines += [f"  {eng.content.items[i].name} x{c}" for i, c in consumables] or ["  (none)"]
+        lines += [f"  {eng.content.items[i].name} x{c}" for i, c in consumables] or [T.INV_NONE]
         lines.append("")
-        lines.append("Weapons:")
+        lines.append(T.INV_HEADER_WEAPONS)
         for w in build_snapshot(eng).weapons:
             mark = " (equipped)" if w.equipped else ""
             lines.append(f"  {w.name} +{w.damage_bonus} {w.damage_type}{mark}")
         self._lines(panel, lines, step=22)
 
     def _screen_equip(self, panel) -> None:
-        self.screen.blit(self.font_sm.render("Click a weapon to equip (level permitting).", True, TEXT_DIM),
+        self.screen.blit(self.font_sm.render(T.EQUIP_HINT, True, TEXT_DIM),
                          (panel.x + 20, panel.y + 56))
         for i, w in enumerate(build_snapshot(self.engine).weapons):
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 42, panel.width - 40, 36)
@@ -546,11 +543,11 @@ class OverworldApp:
     def _screen_skills(self, panel) -> None:
         eng = self.engine
         equipped_ids = set(eng.player.equipped_skill_ids)
-        self.screen.blit(self.font_sm.render(f"Equipped {len(equipped_ids)}/4 — click to equip/unequip.", True, TEXT_DIM),
+        self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
                          (panel.x + 20, panel.y + 56))
         skills = eng.equippable_skills()
         if not skills:
-            self._lines(panel, ["No skills unlocked yet — learn talents first."], TEXT_DIM, start=88)
+            self._lines(panel, [T.NO_SKILLS], TEXT_DIM, start=88)
             return
         for i, skill in enumerate(skills):
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
@@ -562,14 +559,14 @@ class OverworldApp:
     def _screen_store(self, panel) -> None:
         eng = self.engine
         gold = build_snapshot(eng).player.gold
-        self.screen.blit(self.font_sm.render(f"Gold: {gold}    (click to buy / sell one)", True, WARN),
+        self.screen.blit(self.font_sm.render(T.store_hint(gold), True, WARN),
                          (panel.x + 20, panel.y + 56))
         col_w = (panel.width - 60) // 2
-        self.screen.blit(self.font.render("Buy", True, TEXT), (panel.x + 20, panel.y + 80))
+        self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
         for i, entry in enumerate(eng.store_entries()[:6]):
             rect = pygame.Rect(panel.x + 20, panel.y + 106 + i * 38, col_w, 32)
             self._add_button(rect, f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
-        self.screen.blit(self.font.render("Sell", True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
+        self.screen.blit(self.font.render(T.STORE_SELL, True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
         for i, entry in enumerate(eng.sellable_entries()[:6]):
             rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * 38, col_w, 32)
             self._add_button(rect, f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
@@ -577,11 +574,11 @@ class OverworldApp:
     def _screen_talents(self, panel) -> None:
         eng = self.engine
         points = build_snapshot(eng).player.talent_points
-        self.screen.blit(self.font_sm.render(f"Talent points: {points} — click to learn.", True, WARN),
+        self.screen.blit(self.font_sm.render(T.talents_hint(points), True, WARN),
                          (panel.x + 20, panel.y + 56))
         nodes = eng.available_talents()
         if not nodes:
-            self._lines(panel, ["No talents available to learn right now."], TEXT_DIM, start=88)
+            self._lines(panel, [T.NO_TALENTS], TEXT_DIM, start=88)
             return
         for i, node in enumerate(nodes[:8]):
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
