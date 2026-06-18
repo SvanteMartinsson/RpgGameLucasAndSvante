@@ -115,6 +115,8 @@ class OverworldApp:
     def __init__(self, map_path: str = DEFAULT_MAP) -> None:
         pygame.init()
         pygame.display.set_caption("Svantrenish RPG — Overworld")
+        # A video mode must exist before pytmx calls Surface.convert() on tiles.
+        pygame.display.set_mode((1, 1))
         self.world = Overworld(map_path)
         view_w = min(self.world.map_px_w, 960)
         view_h = min(self.world.map_px_h, 640)
