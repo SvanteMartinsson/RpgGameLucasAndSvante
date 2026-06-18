@@ -22,7 +22,7 @@ from rpg_game.core.entities import (
     Player,
     Weapon,
 )
-from rpg_game.core.progression import round_half_up
+from rpg_game.core.progression import RespawnResult, round_half_up
 
 
 DAMAGE_TYPES = {"physical", "fire", "frost", "holy", "poison"}
@@ -133,6 +133,7 @@ class CombatTurnResult:
     pending_stat_choices: int = 0
     loot_drop: LootDrop | None = None
     enemy_reveal: EnemyReveal | None = None
+    respawn: RespawnResult | None = None
 
 
 @dataclass

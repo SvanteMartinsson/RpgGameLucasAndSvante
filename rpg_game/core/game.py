@@ -267,9 +267,7 @@ class GameEngine:
         if not enemy.is_alive:
             return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal)
         if not player.is_alive:
-            self._respawn_player()
-            events.append(f"You died and respawned in {self.current_place().name}.")
-            return self._combat_result("defeat", enemy, events)
+            return self._defeat(enemy, events)
 
         first, second = combat.ordered_by_speed(player, enemy)
         player_actions_used: set[str] = set()
@@ -311,9 +309,7 @@ class GameEngine:
             return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal)
 
         if not player.is_alive:
-            self._respawn_player()
-            events.append(f"You died and respawned in {self.current_place().name}.")
-            return self._combat_result("defeat", enemy, events)
+            return self._defeat(enemy, events)
 
         events.extend(combat.tick_statuses(player, "round_end"))
         events.extend(combat.tick_statuses(enemy, "round_end"))
@@ -324,9 +320,7 @@ class GameEngine:
             return self._handle_victory(enemy, events)
 
         if not player.is_alive:
-            self._respawn_player()
-            events.append(f"You died and respawned in {self.current_place().name}.")
-            return self._combat_result("defeat", enemy, events, enemy_reveal=enemy_reveal)
+            return self._defeat(enemy, events, enemy_reveal=enemy_reveal)
 
         return self._combat_result("ongoing", enemy, events, enemy_reveal=enemy_reveal)
 
@@ -351,9 +345,7 @@ class GameEngine:
         resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
         events.extend(resolution.events)
         if not player.is_alive:
-            self._respawn_player()
-            events.append(f"You died and respawned in {self.current_place().name}.")
-            return self._combat_result("defeat", enemy, events)
+            return self._defeat(enemy, events)
         return self._combat_result("ongoing", enemy, events)
 
     def apply_stat_choice(self, stat: str) -> str:
@@ -407,11 +399,18 @@ class GameEngine:
     def use_consumable(self, item_id: str) -> inventory.UseItemResult:
         return inventory.use_consumable(self.player, self.content, item_id)
 
-    def _respawn_player(self) -> None:
+    def _respawn_player(self) -> progression.RespawnResult:
         player = self.player
         player.current_place_id = player.respawn_place_id
-        player.hp = player.max_hp
-        player.mana = player.max_mana
+        return progression.apply_death_penalty(player)
+
+    def _defeat(self, enemy: Enemy, events: list[str], enemy_reveal: combat.EnemyReveal | None = None) -> combat.CombatTurnResult:
+        penalty = self._respawn_player()
+        events.append(
+            f"You died and respawned in {self.current_place().name}. "
+            f"Lost {penalty.xp_lost} XP and {penalty.gold_lost} gold."
+        )
+        return self._combat_result("defeat", enemy, events, enemy_reveal=enemy_reveal, respawn=penalty)
 
     def _build_player_action(self, action_id: str) -> combat.CombatAction:
         normalized = action_id.strip().lower()
@@ -488,6 +487,7 @@ class GameEngine:
         enemy: Enemy,
         events: list[str],
         enemy_reveal: combat.EnemyReveal | None = None,
+        respawn: progression.RespawnResult | None = None,
     ) -> combat.CombatTurnResult:
         return combat.CombatTurnResult(
             outcome=outcome,
@@ -496,6 +496,7 @@ class GameEngine:
             enemy_hp=enemy.hp,
             pending_stat_choices=self.player.pending_stat_choices,
             enemy_reveal=enemy_reveal,
+            respawn=respawn,
         )
 
 

@@ -1,10 +1,43 @@
 import math
+from dataclasses import dataclass
 
 from rpg_game.core.entities import Player
+
+# Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
+GOLD_LOSS_PER_LEVEL = 25
 
 
 def round_half_up(value: float) -> int:
     return math.floor(value + 0.5)
+
+
+@dataclass(frozen=True)
+class RespawnResult:
+    """What the on-death penalty cost the player (for presentation)."""
+
+    hp: int
+    mana: int
+    xp_lost: int
+    gold_lost: int
+
+
+def apply_death_penalty(player: Player) -> RespawnResult:
+    """Apply the on-death penalty in place and report what was lost.
+
+    - HP and mana drop to half of max (round_half_up).
+    - Within-level XP progress resets to the level floor; the level is never
+      reduced.
+    - Gold drops by level * GOLD_LOSS_PER_LEVEL, clamped to [0, current gold].
+    """
+    new_hp = round_half_up(player.max_hp / 2)
+    new_mana = round_half_up(player.max_mana / 2)
+    xp_lost = player.xp
+    gold_lost = min(player.gold, player.level * GOLD_LOSS_PER_LEVEL)
+    player.hp = new_hp
+    player.mana = new_mana
+    player.xp = 0
+    player.gold -= gold_lost
+    return RespawnResult(hp=new_hp, mana=new_mana, xp_lost=xp_lost, gold_lost=gold_lost)
 
 
 def xp_required_for_level(level: int) -> int:
