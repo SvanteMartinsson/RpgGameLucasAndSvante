@@ -91,6 +91,36 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertFalse(hasattr(battle, "overlay"))
         self.assertEqual(battle.mode, "combat")
 
+    def test_skills_panel_toggle_skill_goes_through_engine(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        app = OverworldApp(engine=engine)
+
+        app.toggle_skill("smite", equipped=True)
+        self.assertNotIn("smite", app.engine.player.equipped_skill_ids)
+
+        app.toggle_skill("smite", equipped=False)
+        self.assertIn("smite", app.engine.player.equipped_skill_ids)
+
+    def test_skills_panel_allocate_talent_goes_through_engine(self):
+        self.app.engine.player.talent_points = 1
+        node = self.app.engine.available_talents()[0]
+
+        self.app.learn_talent(node.id)
+
+        self.assertIn(node.id, self.app.engine.player.learned_talent_ids)
+        self.assertEqual(self.app.engine.player.talent_points, 0)
+
+    def test_skills_panel_draws_talent_lock_states(self):
+        self.app.engine.player.talent_points = 1
+        self.app.overlay = "skills_talents"
+
+        self.app.draw()
+        labels = [button.label for button in self.app.buttons]
+
+        self.assertTrue(any("[CAN LEARN]" in label for label in labels))
+        self.assertTrue(any("[LOCKED]" in label for label in labels))
+
 
 if __name__ == "__main__":
     unittest.main()

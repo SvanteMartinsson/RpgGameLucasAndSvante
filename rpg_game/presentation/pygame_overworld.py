@@ -337,8 +337,11 @@ class OverworldApp:
         self.set_toast(result.message, GOOD if result.success else BAD)
 
     def toggle_skill(self, action_id: str, equipped: bool) -> None:
-        message = self.engine.unequip_skill(action_id) if equipped else self.engine.equip_skill(action_id)
-        self.set_toast(message, GOOD)
+        try:
+            message = self.engine.unequip_skill(action_id) if equipped else self.engine.equip_skill(action_id)
+            self.set_toast(message, GOOD)
+        except ValueError as error:
+            self.set_toast(str(error), BAD)
 
     def buy(self, item_id: str) -> None:
         result = self.engine.buy_item(item_id)
@@ -349,8 +352,11 @@ class OverworldApp:
         self.set_toast(result.message, GOOD if result.success else BAD)
 
     def learn_talent(self, node_id: str) -> None:
-        message = self.engine.allocate_talent(node_id)
-        self.set_toast(message, GOOD)
+        try:
+            message = self.engine.allocate_talent(node_id)
+            self.set_toast(message, GOOD)
+        except ValueError as error:
+            self.set_toast(str(error), BAD)
 
     # -- input --------------------------------------------------------------
 
@@ -592,18 +598,41 @@ class OverworldApp:
     def _overlay_skills_talents(self, panel) -> None:
         eng = self.engine
         equipped_ids = set(eng.player.equipped_skill_ids)
+        left = pygame.Rect(panel.x + 20, panel.y + 56, (panel.width - 60) // 2, panel.height - 126)
+        right = pygame.Rect(left.right + 20, panel.y + 56, (panel.width - 60) // 2, panel.height - 126)
+
         self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
-                         (panel.x + 20, panel.y + 56))
+                         (left.x, left.y))
         skills = eng.equippable_skills()
         if not skills:
-            self._lines(panel, [T.NO_SKILLS], TEXT_DIM, start=88)
-            return
-        for i, skill in enumerate(skills):
-            rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
+            self.screen.blit(self.font.render(T.NO_SKILLS, True, TEXT_DIM), (left.x, left.y + 30))
+        for i, skill in enumerate(skills[:8]):
+            rect = pygame.Rect(left.x, left.y + 30 + i * 34, left.width, 28)
             is_eq = skill.id in equipped_ids
-            label = f"{'[E] ' if is_eq else ''}{skill.name}"
+            label = f"{'[E] ' if is_eq else '[ ]'} {skill.name}"
             enabled = is_eq or len(equipped_ids) < 4
             self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled)
+
+        self.screen.blit(self.font_sm.render(T.talents_hint(eng.player.talent_points), True, WARN),
+                         (right.x, right.y))
+        class_nodes = sorted(
+            (node for node in eng.content.talents.values() if node.class_id == eng.player.player_class),
+            key=lambda node: (node.branch, node.order),
+        )
+        available_ids = {node.id for node in eng.available_talents()}
+        for i, node in enumerate(class_nodes[:10]):
+            if node.id in eng.player.learned_talent_ids:
+                status = "[LEARNED]"
+                enabled = False
+            elif node.id in available_ids:
+                status = "[CAN LEARN]"
+                enabled = eng.player.talent_points > 0
+            else:
+                status = "[LOCKED]"
+                enabled = False
+            rect = pygame.Rect(right.x, right.y + 30 + i * 32, right.width, 26)
+            label = f"{status} {node.name} ({node.branch} t{node.order})"
+            self._add_button(rect, label, (lambda nid=node.id: self.learn_talent(nid)), enabled)
 
     def _screen_store(self, panel) -> None:
         eng = self.engine
