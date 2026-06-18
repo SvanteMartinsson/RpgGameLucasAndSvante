@@ -79,6 +79,11 @@ class BattleApp:
     font_lg: pygame.font.Font = field(init=False)
 
     enemy: object | None = None
+    # standalone=True: demo mode (bootstrap a fight, spawn endless encounters,
+    # own the pygame lifecycle). standalone=False: run a single battle against
+    # the given enemy on a shared engine, then return control via self.outcome
+    # without quitting pygame — used by the overworld loop.
+    standalone: bool = True
     log: list[tuple[str, tuple[int, int, int]]] = field(default_factory=list)
     mode: str = "combat"  # combat | submenu | stat_choice | game_over | victory_idle
     submenu_kind: str = ""
@@ -86,6 +91,7 @@ class BattleApp:
     banner: str = ""
     banner_color: tuple[int, int, int] = TEXT
     running: bool = True
+    outcome: str = ""  # set when a non-standalone battle resolves
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -97,8 +103,18 @@ class BattleApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
-        self._ensure_dangerous_place()
-        self.next_encounter()
+        if self.enemy is not None:
+            # Single battle against a supplied enemy (e.g. a wild encounter).
+            self.set_mode("combat")
+            self.push_log(f"{_article(self.enemy.name).capitalize()} {self.enemy.name} appears!", ACCENT)
+        elif self.standalone:
+            self._ensure_dangerous_place()
+            self.next_encounter()
+
+    def _finish(self, outcome: str) -> None:
+        """End a single (non-standalone) battle, handing control back."""
+        self.outcome = outcome
+        self.running = False
 
     def _ensure_dangerous_place(self) -> None:
         """Move the demo character to somewhere encounters can spawn."""
@@ -154,10 +170,13 @@ class BattleApp:
         if result.outcome == "blocked":
             return
         if result.outcome == "fled":
-            self.banner = "You fled the battle."
-            self.banner_color = WARN
             self.enemy = None
-            self.set_mode("victory_idle")
+            if self.standalone:
+                self.banner = "You fled the battle."
+                self.banner_color = WARN
+                self.set_mode("victory_idle")
+            else:
+                self._finish("fled")
             return
         if result.outcome == "victory":
             self.push_log("Victory!", GOOD)
@@ -167,18 +186,23 @@ class BattleApp:
                 self.push_log(f"+{result.gold_gained} gold", WARN)
             self.enemy = None
             if result.pending_stat_choices > 0:
-                self.set_mode("stat_choice")
-            else:
+                self.set_mode("stat_choice")  # resolve choices before returning
+            elif self.standalone:
                 self.banner = "Victory! Click to fight the next enemy."
                 self.banner_color = GOOD
                 self.set_mode("victory_idle")
+            else:
+                self._finish("victory")
             return
         if result.outcome == "defeat":
             self.push_log("You have been defeated.", BAD)
-            self.banner = "Defeat. Press Esc to quit."
-            self.banner_color = BAD
             self.enemy = None
-            self.set_mode("game_over")
+            if self.standalone:
+                self.banner = "Defeat. Press Esc to quit."
+                self.banner_color = BAD
+                self.set_mode("game_over")
+            else:
+                self._finish("defeat")
 
     def apply_stat(self, stat: str) -> None:
         if self.engine.player.pending_stat_choices <= 0:
@@ -186,9 +210,12 @@ class BattleApp:
         message = self.engine.apply_stat_choice(stat)
         self.push_log(message, XP_COL)
         if self.engine.player.pending_stat_choices <= 0:
-            self.banner = "Level up resolved. Click to fight the next enemy."
-            self.banner_color = GOOD
-            self.set_mode("victory_idle")
+            if self.standalone:
+                self.banner = "Level up resolved. Click to fight the next enemy."
+                self.banner_color = GOOD
+                self.set_mode("victory_idle")
+            else:
+                self._finish("victory")  # stat choice only follows a victory
 
     # -- mode / submenu -----------------------------------------------------
 
@@ -447,13 +474,15 @@ class BattleApp:
 
     # -- main loop ----------------------------------------------------------
 
-    def run(self) -> None:
+    def run(self) -> str:
         while self.running:
             for event in pygame.event.get():
                 self.handle_event(event)
             self.draw()
             self.clock.tick(FPS)
-        pygame.quit()
+        if self.standalone:
+            pygame.quit()
+        return self.outcome
 
 
 # --- formatting helpers ----------------------------------------------------

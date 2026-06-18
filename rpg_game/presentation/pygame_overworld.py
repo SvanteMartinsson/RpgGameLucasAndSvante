@@ -34,6 +34,7 @@ from pytmx.util_pygame import load_pygame
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation.pygame_battle import BattleApp
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -219,10 +220,12 @@ class OverworldApp:
         self.world = Overworld(self.zone.map_path, dict(self.zone.gates), dict(self.zone.towns))
         self.world.set_tile(*self.zone.start_tile)
         self.sync_location()
-        view_w = min(self.world.map_px_w, 960)
-        view_h = min(self.world.map_px_h, 640)
-        self.screen = pygame.display.set_mode((view_w, view_h))
+        self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
+        self.screen = pygame.display.set_mode(self.view_size)
         self.clock = pygame.time.Clock()
+        self.encounter_rate = self.zone.encounter_rate_per_step
+        self._last_tile = self.world.current_tile
+        self.town_tile_by_place = {place_id: tile for tile, place_id in self.zone.towns.items()}
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
@@ -251,6 +254,44 @@ class OverworldApp:
         self.toast = message
         self.toast_color = color
         self.toast_timer = FPS * 3
+
+    # -- wild encounters + battle loop --------------------------------------
+
+    def maybe_encounter(self):
+        """Roll a per-step wild encounter. Returns an enemy or None.
+
+        Only in wilderness; uses the engine's seeded RNG and its existing
+        encounter generation for the current region (set by sync_location).
+        """
+        if self.world.town_place_id() is not None:
+            return None
+        if self.engine.rng.random() < self.encounter_rate:
+            return self.engine.create_encounter()
+        return None
+
+    def start_battle(self, enemy) -> None:
+        """Hand off to the battle shell, then return to the overworld."""
+        outcome = BattleApp(engine=self.engine, enemy=enemy, standalone=False).run()
+        # The battle resized the window; restore the overworld view.
+        pygame.display.set_caption("Svantrenish RPG — Overworld")
+        self.screen = pygame.display.set_mode(self.view_size)
+        self.resolve_battle_outcome(outcome, enemy)
+
+    def resolve_battle_outcome(self, outcome: str, enemy) -> None:
+        if outcome == "defeat":
+            # Engine already respawned the player; move the sprite to match.
+            respawn_place = self.engine.player.current_place_id
+            tile = self.town_tile_by_place.get(respawn_place)
+            if tile is not None:
+                self.world.set_tile(*tile)
+            self.sync_location()
+            self.set_toast(f"Defeated — respawned at {self.engine.current_place().name}.", BAD)
+        else:
+            # Victory or flee: stay where we are; location is still the wilds.
+            self.sync_location()
+            verb = "fled from" if outcome == "fled" else "defeated"
+            self.set_toast(f"You {verb} the {enemy.name}.", GOOD if outcome == "victory" else WARN)
+        self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------
 
@@ -350,6 +391,12 @@ class OverworldApp:
             if message:
                 self.set_toast(message, WARN)
             self.sync_location()
+            tile = self.world.current_tile
+            if tile != self._last_tile:
+                self._last_tile = tile
+                enemy = self.maybe_encounter()
+                if enemy is not None:
+                    self.start_battle(enemy)
 
     # -- rendering ----------------------------------------------------------
 
