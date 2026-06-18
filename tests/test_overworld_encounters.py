@@ -75,12 +75,15 @@ class OverworldEncounterTest(unittest.TestCase):
         enemy = self.app.engine.create_encounter()
         battle = BattleApp(engine=self.app.engine, enemy=enemy, standalone=False)
         for _ in range(500):
-            if not battle.running:
+            if battle.mode == "result" or not battle.running:
                 break
             if battle.mode == "stat_choice":
                 battle.apply_stat("hp")
             else:
                 battle.issue_turn("attack")
+        # Single battles pause on a result view; pressing continues and finishes.
+        self.assertEqual(battle.mode, "result")
+        battle._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE, unicode=" "))
         self.assertIn(battle.outcome, ("victory", "defeat", "fled"))
         self.assertTrue(pygame.get_init())  # must not pygame.quit() in single mode
 

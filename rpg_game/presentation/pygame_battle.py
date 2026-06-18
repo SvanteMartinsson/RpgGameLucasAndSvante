@@ -93,6 +93,7 @@ class BattleApp:
     banner_color: tuple[int, int, int] = TEXT
     running: bool = True
     outcome: str = ""  # set when a non-standalone battle resolves
+    _pending_outcome: str = ""  # single-battle result awaiting press-to-continue
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -116,6 +117,18 @@ class BattleApp:
         """End a single (non-standalone) battle, handing control back."""
         self.outcome = outcome
         self.running = False
+
+    def _show_result(self, outcome: str) -> None:
+        """Single-battle: pause on a result view until the player continues, so
+        fast fights don't vanish before the log can be read."""
+        self._pending_outcome = outcome
+        if outcome == "victory":
+            self.banner, self.banner_color = T.RESULT_VICTORY, GOOD
+        elif outcome == "defeat":
+            self.banner, self.banner_color = T.RESULT_DEFEAT, BAD
+        else:
+            self.banner, self.banner_color = T.RESULT_FLED, WARN
+        self.set_mode("result")
 
     def _ensure_dangerous_place(self) -> None:
         """Move the demo character to somewhere encounters can spawn."""
@@ -177,7 +190,7 @@ class BattleApp:
                 self.banner_color = WARN
                 self.set_mode("victory_idle")
             else:
-                self._finish("fled")
+                self._show_result("fled")
             return
         if result.outcome == "victory":
             self.push_log(T.VICTORY_LOG, GOOD)
@@ -193,7 +206,7 @@ class BattleApp:
                 self.banner_color = GOOD
                 self.set_mode("victory_idle")
             else:
-                self._finish("victory")
+                self._show_result("victory")
             return
         if result.outcome == "defeat":
             self.push_log(T.DEFEATED_LOG, BAD)
@@ -203,7 +216,7 @@ class BattleApp:
                 self.banner_color = BAD
                 self.set_mode("game_over")
             else:
-                self._finish("defeat")
+                self._show_result("defeat")
 
     def apply_stat(self, stat: str) -> None:
         if self.engine.player.pending_stat_choices <= 0:
@@ -216,7 +229,7 @@ class BattleApp:
                 self.banner_color = GOOD
                 self.set_mode("victory_idle")
             else:
-                self._finish("victory")  # stat choice only follows a victory
+                self._show_result("victory")  # stat choice only follows a victory
 
     # -- mode / submenu -----------------------------------------------------
 
@@ -242,11 +255,16 @@ class BattleApp:
                 if button.enabled and button.rect.collidepoint(event.pos):
                     button.on_click()
                     return
-            # Clicking anywhere advances out of idle/victory states.
+            # Clicking anywhere advances out of idle/result states.
             if self.mode == "victory_idle":
                 self.next_encounter()
+            elif self.mode == "result":
+                self._finish(self._pending_outcome)
 
     def _handle_key(self, event: pygame.event.Event) -> None:
+        if self.mode == "result":
+            self._finish(self._pending_outcome)
+            return
         if event.key == pygame.K_ESCAPE:
             if self.mode == "submenu":
                 self.set_mode("combat")
@@ -377,6 +395,8 @@ class BattleApp:
                 self._text(T.NEXT_ENEMY_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, GOOD)
             elif self.mode == "game_over":
                 self._text(T.QUIT_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, BAD)
+            elif self.mode == "result":
+                self._text(T.CONTINUE_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, self.banner_color)
             return
         specs = [
             (*T.ACTION_ATTACK, lambda: self.issue_turn("attack"), True),

@@ -149,6 +149,12 @@ DEFEATED_LOG = "You have been defeated."
 DEFEAT_BANNER = "Defeat. Press Esc to quit."
 LEVELUP_RESOLVED = "Level up resolved. Click to fight the next enemy."
 
+# Single-battle result view (press to continue back to the overworld).
+RESULT_VICTORY = "Victory! Press any key to continue."
+RESULT_DEFEAT = "Defeated. Press any key to continue."
+RESULT_FLED = "Fled. Press any key to continue."
+CONTINUE_HINT = "Press any key / click to continue"
+
 # --- battle: level-up choice ----------------------------------------------
 
 LEVELUP_TITLE = "LEVEL UP — choose a bonus"
