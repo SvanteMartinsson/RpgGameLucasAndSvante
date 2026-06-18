@@ -39,8 +39,8 @@ def gate_message(key: str) -> str:
 
 # --- overworld: HUD + hints ------------------------------------------------
 
-HINT_TOWN = "Enter: town menu"
-HINT_WALK = "WASD/arrows to move"
+HINT_TOWN = "Enter: town menu   C/I/K: panels   Esc: system"
+HINT_WALK = "WASD/arrows to move   C/I/K: panels   Esc: system"
 BACK_TO_MAP = "Esc / Enter: back to map"
 BACK = "Back (Esc)"
 
@@ -53,23 +53,20 @@ def wilds_near(place_name: str) -> str:
 
 # (action id, button label) — labels are player-facing.
 TOWN_ACTIONS = [
-    ("stats", "Stats"),
-    ("inventory", "Inventory"),
-    ("equip", "Equip weapon"),
-    ("skills", "Skills"),
     ("store", "Store"),
-    ("talents", "Talents"),
     ("rest", "Rest"),
-    ("save", "Save"),
+    ("character", "Character"),
+    ("inventory", "Inventory"),
+    ("skills_talents", "Skills & Talents"),
+    ("system", "System"),
 ]
 
 SCREEN_TITLES = {
-    "stats": "Stats",
+    "character": "Character",
     "inventory": "Inventory",
-    "equip": "Equip weapon",
-    "skills": "Skills",
+    "skills_talents": "Skills & Talents",
+    "system": "System",
     "store": "Store",
-    "talents": "Talents",
 }
 
 # --- overworld: toasts -----------------------------------------------------
@@ -98,13 +95,18 @@ def fled_from(enemy_name: str) -> str:
 # --- overworld: sub-screen copy -------------------------------------------
 
 INV_HEADER_CONSUMABLES = "Consumables:"
+INV_HEADER_JUNK = "Junk:"
 INV_HEADER_WEAPONS = "Weapons:"
 INV_NONE = "  (none)"
 EQUIP_HINT = "Click a weapon to equip (level permitting)."
+INVENTORY_HINT = "Click a consumable to use it. Junk is not usable."
 NO_SKILLS = "No skills unlocked yet — learn talents first."
 STORE_BUY = "Buy"
 STORE_SELL = "Sell"
 NO_TALENTS = "No talents available to learn right now."
+SYSTEM_HINT = "Save is available anywhere in the overworld."
+SYSTEM_SAVE = "Save"
+SYSTEM_QUIT = "Quit"
 
 
 def skills_hint(equipped_count: int) -> str:

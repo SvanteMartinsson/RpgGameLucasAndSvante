@@ -6,8 +6,9 @@ contract as the battle and character-creation shells.
 
 Model B = free walk (WASD) over a walkable world. Towns are tiles you step onto;
 entering one sets the engine's current location (`engine.enter_place`). Pressing
-Enter on a town opens the location menu (rest, store, talents, skills, inventory,
-equip, stats, save). Wilderness has no town menu.
+Enter on a town opens the location menu for local services. Character,
+inventory, skills/talents and system actions are overworld overlays opened with
+hotkeys from anywhere outside battle.
 
 The playable core zone (around Hordanita) is data-driven via
 `rpg_game/data/maps/core_zone.json`. The rest of the world is intended but not
@@ -225,7 +226,8 @@ class OverworldApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
-        self.mode = "walk"  # walk | townmenu | stats | inventory | equip | skills | store | talents
+        self.mode = "walk"  # walk | townmenu | store
+        self.overlay = ""  # character | inventory | skills_talents | system
         self.buttons: list[Button] = []
         self.toast = ""
         self.toast_color = TEXT
@@ -294,16 +296,8 @@ class OverworldApp:
     # -- town actions (all go through the engine) ---------------------------
 
     def do_action(self, action: str) -> None:
-        if action == "stats":
-            self.mode = "stats"
-        elif action == "inventory":
-            self.mode = "inventory"
-        elif action == "equip":
-            self.mode = "equip"
-        elif action == "skills":
-            self.mode = "skills"
-        elif action == "talents":
-            self.mode = "talents"
+        if action in {"character", "inventory", "skills_talents", "system"}:
+            self.toggle_overlay(action)
         elif action == "store":
             if self.engine.current_place().has_store:
                 self.mode = "store"
@@ -313,8 +307,17 @@ class OverworldApp:
             result = self.engine.rest()
             self.set_toast(result.message, GOOD if result.outcome == "rested" else TEXT_DIM)
         elif action == "save":
-            result = self.engine.save(SAVE_PATH)
-            self.set_toast(result.message, GOOD if result.success else BAD)
+            self.save_game()
+
+    def toggle_overlay(self, name: str) -> None:
+        self.overlay = "" if self.overlay == name else name
+
+    def save_game(self) -> None:
+        result = self.engine.save(SAVE_PATH)
+        self.set_toast(result.message, GOOD if result.success else BAD)
+
+    def quit_game(self) -> None:
+        self.running = False
 
     def equip_weapon(self, weapon_id: str) -> None:
         player = self.engine.player
@@ -328,6 +331,10 @@ class OverworldApp:
             self.set_toast(" ".join(result.events) or T.CANNOT_EQUIP, BAD)
         else:
             self.set_toast(T.equipped_weapon(weapon.name), GOOD)
+
+    def use_inventory_item(self, item_id: str) -> None:
+        result = self.engine.use_consumable(item_id)
+        self.set_toast(result.message, GOOD if result.success else BAD)
 
     def toggle_skill(self, action_id: str, equipped: bool) -> None:
         message = self.engine.unequip_skill(action_id) if equipped else self.engine.equip_skill(action_id)
@@ -361,12 +368,23 @@ class OverworldApp:
 
     def _handle_key(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_ESCAPE:
-            if self.mode in ("stats", "inventory", "equip", "skills", "store", "talents"):
+            if self.overlay:
+                self.overlay = ""
+            elif self.mode == "store":
                 self.mode = "townmenu"
             elif self.mode == "townmenu":
                 self.mode = "walk"
             else:
-                self.running = False
+                self.overlay = "system"
+            return
+        if event.key == pygame.K_c:
+            self.toggle_overlay("character")
+            return
+        if event.key == pygame.K_i:
+            self.toggle_overlay("inventory")
+            return
+        if event.key == pygame.K_k:
+            self.toggle_overlay("skills_talents")
             return
         if event.key in (pygame.K_RETURN, pygame.K_e):
             if self.mode == "walk" and self.world.town_place_id():
@@ -379,7 +397,7 @@ class OverworldApp:
             self.toast_timer -= 1
             if self.toast_timer == 0:
                 self.toast = ""
-        if self.mode != "walk":
+        if self.overlay or self.mode != "walk":
             return
         keys = pygame.key.get_pressed()
         dx = (keys[pygame.K_RIGHT] or keys[pygame.K_d]) - (keys[pygame.K_LEFT] or keys[pygame.K_a])
@@ -405,8 +423,10 @@ class OverworldApp:
         self._draw_hud()
         if self.mode == "townmenu":
             self._draw_town_menu()
-        elif self.mode in ("stats", "inventory", "equip", "skills", "store", "talents"):
-            self._draw_subscreen()
+        elif self.mode == "store":
+            self._draw_store_screen()
+        if self.overlay:
+            self._draw_overlay_screen()
         if self.toast:
             self._draw_toast()
         pygame.display.flip()
@@ -496,12 +516,12 @@ class OverworldApp:
                          (panel.x + 20, panel.bottom - 30))
         self._draw_buttons()
 
-    def _draw_subscreen(self) -> None:
-        panel = self._overlay_panel(T.SCREEN_TITLES.get(self.mode, self.mode.capitalize()))
-        renderer = getattr(self, f"_screen_{self.mode}")
+    def _draw_overlay_screen(self) -> None:
+        panel = self._overlay_panel(T.SCREEN_TITLES.get(self.overlay, self.overlay.capitalize()))
+        renderer = getattr(self, f"_overlay_{self.overlay}")
         renderer(panel)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
+        self._add_button(back, T.BACK, lambda: setattr(self, "overlay", ""))
         self._draw_buttons()
 
     def _lines(self, panel, lines, color=TEXT, start=64, step=24) -> int:
@@ -509,39 +529,67 @@ class OverworldApp:
             self.screen.blit(self.font.render(line, True, color), (panel.x + 20, panel.y + start + i * step))
         return panel.y + start + len(lines) * step
 
-    def _screen_stats(self, panel) -> None:
-        p = build_snapshot(self.engine).player
-        self._lines(panel, [
+    def _draw_store_screen(self) -> None:
+        panel = self._overlay_panel(T.SCREEN_TITLES["store"])
+        self._screen_store(panel)
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
+        self._draw_buttons()
+
+    def _overlay_character(self, panel) -> None:
+        snap = build_snapshot(self.engine)
+        p = snap.player
+        y = self._lines(panel, [
             f"{p.name} — {p.class_name} (Lv {p.level})",
             f"HP {p.hp}/{p.max_hp}    Mana {p.mana}/{p.max_mana}",
             f"XP {p.xp}/{p.xp_required}    Talent points {p.talent_points}",
             f"Damage {p.total_damage} (base {p.base_damage} + weapon {p.weapon_damage_bonus})",
             f"Armor {p.armor}    Speed {p.speed}    Crit {p.crit_chance}%",
             f"Gold {p.gold}",
-        ])
-
-    def _screen_inventory(self, panel) -> None:
-        eng = self.engine
-        lines = [T.INV_HEADER_CONSUMABLES]
-        consumables = [(i, c) for i, c in sorted(eng.player.inventory.consumables.items()) if c > 0]
-        lines += [f"  {eng.content.items[i].name} x{c}" for i, c in consumables] or [T.INV_NONE]
-        lines.append("")
-        lines.append(T.INV_HEADER_WEAPONS)
-        for w in build_snapshot(eng).weapons:
-            mark = " (equipped)" if w.equipped else ""
-            lines.append(f"  {w.name} +{w.damage_bonus} {w.damage_type}{mark}")
-        self._lines(panel, lines, step=22)
-
-    def _screen_equip(self, panel) -> None:
-        self.screen.blit(self.font_sm.render(T.EQUIP_HINT, True, TEXT_DIM),
-                         (panel.x + 20, panel.y + 56))
-        for i, w in enumerate(build_snapshot(self.engine).weapons):
-            rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 42, panel.width - 40, 36)
+            "",
+            T.EQUIP_HINT,
+        ], step=22)
+        for i, w in enumerate(snap.weapons[:6]):
+            rect = pygame.Rect(panel.x + 20, y + 8 + i * 38, panel.width - 40, 32)
             suffix = " [equipped]" if w.equipped else ("" if w.equippable else f"  needs Lv {w.required_level}")
             self._add_button(rect, f"{w.name} (+{w.damage_bonus} {w.damage_type}, tier {w.tier}){suffix}",
                              (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
 
-    def _screen_skills(self, panel) -> None:
+    def _overlay_inventory(self, panel) -> None:
+        eng = self.engine
+        self.screen.blit(self.font_sm.render(T.INVENTORY_HINT, True, TEXT_DIM),
+                         (panel.x + 20, panel.y + 56))
+        consumables = [
+            (item_id, count)
+            for item_id, count in sorted(eng.player.inventory.consumables.items())
+            if count > 0 and eng.content.items[item_id].kind == "consumable"
+        ]
+        junk = [
+            (item_id, count)
+            for item_id, count in sorted(eng.player.inventory.consumables.items())
+            if count > 0 and eng.content.items[item_id].kind != "consumable"
+        ]
+
+        self.screen.blit(self.font.render(T.INV_HEADER_CONSUMABLES, True, TEXT), (panel.x + 20, panel.y + 86))
+        if consumables:
+            for i, (item_id, count) in enumerate(consumables[:6]):
+                item = eng.content.items[item_id]
+                rect = pygame.Rect(panel.x + 20, panel.y + 114 + i * 36, panel.width - 40, 30)
+                self._add_button(rect, f"{item.name} x{count}", (lambda iid=item_id: self.use_inventory_item(iid)))
+        else:
+            self._lines(panel, [T.INV_NONE], TEXT_DIM, start=114)
+
+        junk_y = panel.y + 114 + max(1, len(consumables[:6])) * 36 + 10
+        self.screen.blit(self.font.render(T.INV_HEADER_JUNK, True, TEXT), (panel.x + 20, junk_y))
+        if junk:
+            for i, (item_id, count) in enumerate(junk[:5]):
+                item = eng.content.items[item_id]
+                rect = pygame.Rect(panel.x + 20, junk_y + 28 + i * 32, panel.width - 40, 28)
+                self._add_button(rect, f"{item.name} x{count} [not usable]", lambda: None, enabled=False)
+        else:
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (panel.x + 20, junk_y + 28))
+
+    def _overlay_skills_talents(self, panel) -> None:
         eng = self.engine
         equipped_ids = set(eng.player.equipped_skill_ids)
         self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
@@ -571,6 +619,14 @@ class OverworldApp:
         for i, entry in enumerate(eng.sellable_entries()[:6]):
             rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * 38, col_w, 32)
             self._add_button(rect, f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
+
+    def _overlay_system(self, panel) -> None:
+        self.screen.blit(self.font_sm.render(T.SYSTEM_HINT, True, TEXT_DIM),
+                         (panel.x + 20, panel.y + 56))
+        self._add_button(pygame.Rect(panel.x + 20, panel.y + 92, panel.width - 40, 42),
+                         T.SYSTEM_SAVE, self.save_game)
+        self._add_button(pygame.Rect(panel.x + 20, panel.y + 144, panel.width - 40, 42),
+                         T.SYSTEM_QUIT, self.quit_game)
 
     def _screen_talents(self, panel) -> None:
         eng = self.engine
