@@ -91,7 +91,11 @@ det kan uttryckas i JSON.
 - Använd `round_half_up()` för skada och XP-formler där halv-avrundning spelar roll.
 - Använd inte Pythons `round()` för spelbalansregler.
 - Armor reducerar bara `physical`; övriga skadetyper använder `resistances`.
-- Damage pipeline: resistance -> armor för physical -> mitigation -> min 1.
+- Skada är en lista skadekomponenter: varje avräknas mot sin egen `resistance`,
+  bara `physical` mot `armor`; summan minus `mitigation` golvas vid 1.
+- Basattacker (quick/normal/power) rullar multiplikatorn i en range; skills har
+  fast multiplikator. Crit är en additiv range-förlängare, inte fast ×2.
+  Inga fasta basattack-skadetal — se `DAMAGE.md` för skademodellen.
 - Fienden attackerar inte om den redan dött tidigare i rundan.
 - Level up får inte anropa `input()` i kärnan. Returnera pending choices.
 - Talangval och statval drivs av presentationen via `GameEngine`.
@@ -147,7 +151,7 @@ Spelaren ser bara labeln, inte exakta odds.
 - Läs `SPEC.md` endast för Java-prototypens historik.
 - Läs `DESIGN.md` för Python-versionens målbild.
 - Läs slice-dokumenten (`CLASSES.md`, `WEAPONS.md`, `PROGRESSION.md`,
-  `LOOT.md`, `ENEMIES.md`) när du ändrar relaterade system.
+  `LOOT.md`, `ENEMIES.md`, `DAMAGE.md`) när du ändrar relaterade system.
 
 ## När Du Ändrar Kod
 
