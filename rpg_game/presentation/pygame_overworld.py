@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import dataclass, field
 
 import pygame
@@ -35,7 +36,7 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
-from rpg_game.presentation.pygame_battle import BattleApp
+from rpg_game.presentation.pygame_battle import BattleApp, character_creation
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -606,7 +607,20 @@ class OverworldApp:
 
 
 def main(argv: list[str] | None = None) -> None:
-    OverworldApp().run()
+    argv = argv if argv is not None else sys.argv[1:]
+    engine = GameEngine()
+    class_id = argv[0] if argv else ""
+    if class_id:
+        # Quick-start a class, skipping creation (same shortcut as the battle shell).
+        if class_id not in engine.content.classes:
+            raise SystemExit(T.unknown_class(class_id, ", ".join(engine.content.classes)))
+        engine.start_new_game("Hero", class_id)
+    else:
+        # No default "Hero": run character creation first, then enter the world
+        # with the created character via the engine's standard New Game path.
+        name, class_id = character_creation(engine)
+        engine.start_new_game(name, class_id)
+    OverworldApp(engine=engine).run()
 
 
 if __name__ == "__main__":
