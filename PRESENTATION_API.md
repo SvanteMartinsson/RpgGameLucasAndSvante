@@ -71,6 +71,22 @@ Tillåtna combat action-id:n från presentation:
 Om `CombatTurnResult.outcome == "blocked"` ska presentationen visa events och
 inte lokalt mutera state.
 
+## Overworld-overlays
+
+Pygame-overworld renderar kartan först och lägger högst en overlay-panel ovanpå.
+Panelerna är tillgängliga i overworld, inte i battle:
+
+- `C` / Character: läser stats och ägda vapen från snapshoten; weapon equip går
+  via samma weapon-swap action/resolver som övrigt out-of-combat equip.
+- `I` / Inventory: visar consumables och junk; consumables använder
+  `GameEngine.use_consumable()`, junk är inte klickbart som användbart item.
+- `K` / Skills & Talents: skill-loadout använder `equip_skill()` /
+  `unequip_skill()`; talent allocation använder `allocate_talent()`.
+- `Esc` / System: `save(path)` och quit. Esc stänger också en öppen overlay.
+
+Stadsmenyn får länka till samma overlays för bekvämlighet, men lokala tjänster
+som store och rest stannar där platsen erbjuder dem.
+
 ## Tournament-kommandon
 
 En turnering är en låst serie strider. Presentationen får erbjuda Back innan

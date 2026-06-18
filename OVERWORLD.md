@@ -38,9 +38,19 @@ mot), så motorn fick en minimal additiv metod:
   direkt, utan adjacens-gaten. Speglar `travel()` i övrigt; låsta platser nekas
   fortfarande. `travel()` finns kvar oförändrad för adjacens-baserad resa.
 
-I en stad öppnar Enter location-menyn i Pygame: stats, inventory, equip, skills,
-store (om platsen har butik), talents, rest, save — allt via `build_snapshot()`
-+ engine-metoderna. Vildmark har ingen stadsmeny.
+I en stad öppnar Enter location-menyn i Pygame. Den menyn är för lokala
+tjänster, framför allt store/rest där platsen stödjer det. Det spelaren bär med
+sig — character, inventory, skills/talents och system/save — ligger som
+overworld-overlays ovanpå kartan:
+
+- `C`: Character, stats och weapon equip.
+- `I`: Inventory, consumables och junk.
+- `K`: Skills & Talents, skill-loadout och hela talent tree.
+- `Esc`: System, save och quit.
+
+Overlays kan öppnas i stad och vildmark, men inte i battle. Samma tangent eller
+Esc stänger aktuell overlay. Allt går via `build_snapshot()` och befintliga
+engine-metoder; presentationen duplicerar inga regler.
 
 ## Encounters i vildmark
 
