@@ -7,3 +7,4 @@ __pycache__/
 .project
 .classpath
 savegame.json
+.aider*
