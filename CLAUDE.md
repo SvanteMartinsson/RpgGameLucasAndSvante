@@ -93,9 +93,10 @@ det kan uttryckas i JSON.
 - Armor reducerar bara `physical`; övriga skadetyper använder `resistances`.
 - Skada är en lista skadekomponenter: varje avräknas mot sin egen `resistance`,
   bara `physical` mot `armor`; summan minus `mitigation` golvas vid 1.
-- Basattacker (quick/normal/power) rullar multiplikatorn i en range; skills har
-  fast multiplikator. Crit är en additiv range-förlängare, inte fast ×2.
-  Inga fasta basattack-skadetal — se `DAMAGE.md` för skademodellen.
+- Spelaren väljer en enda `Attack`-action; kärnan rollar quick/normal/power
+  viktat och använder den rollade profilens hit chance och damage range.
+  Skills har fast multiplikator. Crit är en additiv range-förlängare, inte
+  fast ×2. Inga fasta basattack-skadetal — se `DAMAGE.md` för skademodellen.
 - Fienden attackerar inte om den redan dött tidigare i rundan.
 - Level up får inte anropa `input()` i kärnan. Returnera pending choices.
 - Talangval och statval drivs av presentationen via `GameEngine`.

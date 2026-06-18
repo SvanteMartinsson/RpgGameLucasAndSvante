@@ -7,8 +7,8 @@ startvapnet.** Då följer det med över vapenbyten OCH staplar med vapnets egen
 typ. Bygger på WEAPONS.md — att `category` och `damage_type` är skilda är exakt
 det som gör detta möjligt.
 
-**Status:** design. Detta är det sista stora stridsmekanik-tillägget innan vi
-fryser för Pygame.
+**Status:** implementerat och testat. Detta är det sista stora
+stridsmekanik-tillägget innan vi fryser för Pygame.
 
 ## Modell: en attack är flera skadekomponenter
 
@@ -30,6 +30,9 @@ Basattackerna får högre träff på normal/power (power ska inte längre vara e
 multiplikator, så striderna inte blir statiska. Alla tre överlappar men har
 olika golv/tak. (Alla tal tunas i JSON.)
 
+> Spelaren *väljer* inte längre stil — "Attack" är en action som rollar stilen
+> (se "Attack-action" nedan).
+
 | Attack | Träff% | Skade-range (× (Power+vapen)) | EV (≈) |
 |---|---:|---|---:|
 | Quick | 90% | 1.0–1.25× | 1.01 |
@@ -41,6 +44,30 @@ olika golv/tak. (Alla tal tunas i JSON.)
   för risken + högst tak, quick är det pålitliga golvet, normal mitten.
 - Skills behåller sin **fasta** multiplikator (ingen range) — de är medvetna,
   förutsägbara val. (Range på skills kan komma senare.)
+
+## Attack-action: en knapp, rollad stil
+
+Spelaren väljer inte längre quick/normal/power. **"Attack" är en enda action.**
+När den används rollas vilken stil som sker, viktat (förslag, tunas):
+
+| Stil | Vikt | Profil |
+|---|---:|---|
+| Quick | 50% | 90% / 1.0–1.25× |
+| Normal | 30% | 80% / 1.1–1.4× |
+| Power | 20% | 70% / 1.25–1.7× |
+
+Den rollade stilens **fulla** profil gäller — både träff% och range. En rollad
+power kan därför missa (det är den önskade swingen). Crit och element-talanger
+gäller precis som vanligt. Loggen visar den rollade stilen som flavor
+("Power attack!").
+
+Rollen sker i kärnan (seedbar); presentationen anropar bara "attack" och
+renderar resultatet, som innehåller vilken stil som rollades. Fienderna är
+oförändrade (deras AI väljer redan bland sina attacker).
+
+Varför: ett *val* mellan tre profiler degenererar till "ta den dominanta varje
+gång" (i praktiken alltid quick). Som *roll* blir de tre variation istället för
+en falsk meny — och Pygame-striden blir en enda Attack-knapp.
 
 ## Crit som range-förlängare
 
@@ -167,6 +194,10 @@ Skills: hoppa över steg 2 (fast multiplikator), men crit (steg 3) gäller även
    range-extension".
 3. **Element-talanger**: nya noder (Cleric Sanctified Strikes; Mage Flametongue
    / Rimeblade). Commit: "Add character-bound elemental attack talents".
+4. **Attack-action**: spelaren väljer en enda Attack-action; kärnan rollar
+   quick/normal/power viktat och använder den rollade profilens hit chance och
+   damage range. Commit: "Collapse player attack into single rolled-style
+   action".
 
 ## Utanför denna slice
 
