@@ -3,3 +3,4 @@
 # Kärnan (rpg_game/core) och terminal-UI är beroendefria. Pygame krävs bara
 # för det grafiska presentation-lagret (rpg_game/presentation/pygame_*).
 pygame>=2.6,<3
+pytmx>=3.32,<4
