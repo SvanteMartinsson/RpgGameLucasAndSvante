@@ -37,6 +37,7 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
+from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation.pygame_battle import BattleApp, character_creation
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
@@ -233,6 +234,8 @@ class OverworldApp:
         self.toast_color = TEXT
         self.toast_timer = 0
         self.running = True
+        self.playtest_logger = PlaytestLogger()
+        self.playtest_logger.session_start(build_snapshot(self.engine))
 
     def _new_engine(self) -> GameEngine:
         engine = GameEngine()
@@ -269,7 +272,14 @@ class OverworldApp:
 
     def start_battle(self, enemy) -> None:
         """Hand off to the battle shell, then return to the overworld."""
-        outcome = BattleApp(engine=self.engine, enemy=enemy, standalone=False).run()
+        location_id = self.engine.player.current_place_id
+        outcome = BattleApp(
+            engine=self.engine,
+            enemy=enemy,
+            standalone=False,
+            playtest_logger=self.playtest_logger,
+            location_id=location_id,
+        ).run()
         # The battle resized the window; restore the overworld view.
         pygame.display.set_caption(T.CAPTION_OVERWORLD)
         self.screen = pygame.display.set_mode(self.view_size)

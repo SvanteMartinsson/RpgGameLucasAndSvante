@@ -7,4 +7,5 @@ __pycache__/
 .project
 .classpath
 savegame.json
+playtest_logs/
 .aider*

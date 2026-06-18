@@ -106,6 +106,7 @@ class ActionResolution:
     mana_spent: int = 0
     rolled_style_id: str = ""
     rolled_style_name: str = ""
+    damage_components: list["DamageComponent"] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -134,6 +135,7 @@ class CombatTurnResult:
     loot_drop: LootDrop | None = None
     enemy_reveal: EnemyReveal | None = None
     respawn: RespawnResult | None = None
+    action_resolutions: list[ActionResolution] = field(default_factory=list)
 
 
 @dataclass
@@ -774,6 +776,7 @@ def apply_effect(
                 result=result,
                 weapon_scaled=weapon_scaled,
             )
+            result.damage_components.extend(components)
             primary_type = components[0].damage_type
             deal_damage(actor, effect_target, total, primary_type, result)
             result.events.append(
@@ -797,6 +800,7 @@ def apply_effect(
             result=result,
             weapon_scaled=weapon_scaled,
         )
+        result.damage_components.extend(components)
         primary_type = components[0].damage_type
         deal_damage(actor, effect_target, total, primary_type, result)
         heal = round_half_up(total * effect.ratio)

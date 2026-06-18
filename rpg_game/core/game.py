@@ -222,6 +222,7 @@ class GameEngine:
     def run_combat_turn(self, enemy: Enemy, attack_id: str) -> combat.CombatTurnResult:
         player = self.player
         events: list[str] = []
+        action_resolutions: list[combat.ActionResolution] = []
         enemy_reveal: combat.EnemyReveal | None = None
         normalized_action = attack_id.strip().lower()
         is_identify = normalized_action == "identify"
@@ -265,9 +266,9 @@ class GameEngine:
         events.extend(combat.tick_statuses(player, "round_start"))
         events.extend(combat.tick_statuses(enemy, "round_start"))
         if not enemy.is_alive:
-            return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal)
+            return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions)
         if not player.is_alive:
-            return self._defeat(enemy, events)
+            return self._defeat(enemy, events, action_resolutions=action_resolutions)
 
         first, second = combat.ordered_by_speed(player, enemy)
         player_actions_used: set[str] = set()
@@ -289,9 +290,12 @@ class GameEngine:
                 else:
                     weapon = self.content.weapons[player.equipped_weapon_id]
                     resolution = combat.resolve_action(player, enemy, player_action, self.rng, weapon=weapon)
+                    action_resolutions.append(resolution)
                     events.extend(resolution.events)
                     if resolution.blocked:
-                        return self._combat_result("blocked", enemy, events, enemy_reveal=enemy_reveal)
+                        return self._combat_result(
+                            "blocked", enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions
+                        )
                     if player_action.cooldown_rounds:
                         player_actions_used.add(player_action.id)
                     if consumable_to_remove:
@@ -299,17 +303,20 @@ class GameEngine:
                         consumable_to_remove = ""
             else:
                 resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
+                action_resolutions.append(resolution)
                 events.extend(resolution.events)
                 if resolution.blocked:
-                    return self._combat_result("blocked", enemy, events, enemy_reveal=enemy_reveal)
+                    return self._combat_result(
+                        "blocked", enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions
+                    )
                 if resolution.action_id and enemy.cooldowns.get(resolution.action_id, 0) > 0:
                     enemy_actions_used.add(resolution.action_id)
 
         if not enemy.is_alive:
-            return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal)
+            return self._handle_victory(enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions)
 
         if not player.is_alive:
-            return self._defeat(enemy, events)
+            return self._defeat(enemy, events, action_resolutions=action_resolutions)
 
         events.extend(combat.tick_statuses(player, "round_end"))
         events.extend(combat.tick_statuses(enemy, "round_end"))
@@ -317,12 +324,14 @@ class GameEngine:
         combat.tick_cooldowns(enemy, skip=enemy_actions_used)
 
         if not enemy.is_alive:
-            return self._handle_victory(enemy, events)
+            return self._handle_victory(enemy, events, action_resolutions=action_resolutions)
 
         if not player.is_alive:
-            return self._defeat(enemy, events, enemy_reveal=enemy_reveal)
+            return self._defeat(enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions)
 
-        return self._combat_result("ongoing", enemy, events, enemy_reveal=enemy_reveal)
+        return self._combat_result(
+            "ongoing", enemy, events, enemy_reveal=enemy_reveal, action_resolutions=action_resolutions
+        )
 
     def flee_chance(self, enemy: Enemy) -> float:
         diff = (self.player.speed - enemy.speed) + (self.player.level - enemy.level)
@@ -345,8 +354,8 @@ class GameEngine:
         resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
         events.extend(resolution.events)
         if not player.is_alive:
-            return self._defeat(enemy, events)
-        return self._combat_result("ongoing", enemy, events)
+            return self._defeat(enemy, events, action_resolutions=[resolution])
+        return self._combat_result("ongoing", enemy, events, action_resolutions=[resolution])
 
     def apply_stat_choice(self, stat: str) -> str:
         return progression.apply_stat_choice(self.player, stat)
@@ -404,13 +413,21 @@ class GameEngine:
         player.current_place_id = player.respawn_place_id
         return progression.apply_death_penalty(player)
 
-    def _defeat(self, enemy: Enemy, events: list[str], enemy_reveal: combat.EnemyReveal | None = None) -> combat.CombatTurnResult:
+    def _defeat(
+        self,
+        enemy: Enemy,
+        events: list[str],
+        enemy_reveal: combat.EnemyReveal | None = None,
+        action_resolutions: list[combat.ActionResolution] | None = None,
+    ) -> combat.CombatTurnResult:
         penalty = self._respawn_player()
         events.append(
             f"You died and respawned in {self.current_place().name}. "
             f"Lost {penalty.xp_lost} XP and {penalty.gold_lost} gold."
         )
-        return self._combat_result("defeat", enemy, events, enemy_reveal=enemy_reveal, respawn=penalty)
+        return self._combat_result(
+            "defeat", enemy, events, enemy_reveal=enemy_reveal, respawn=penalty, action_resolutions=action_resolutions
+        )
 
     def _build_player_action(self, action_id: str) -> combat.CombatAction:
         normalized = action_id.strip().lower()
@@ -449,6 +466,7 @@ class GameEngine:
         enemy: Enemy,
         events: list[str],
         enemy_reveal: combat.EnemyReveal | None = None,
+        action_resolutions: list[combat.ActionResolution] | None = None,
     ) -> combat.CombatTurnResult:
         player = self.player
         gold = self.rng.randint(enemy.gold_min, enemy.gold_max)
@@ -479,6 +497,7 @@ class GameEngine:
             pending_stat_choices=player.pending_stat_choices,
             loot_drop=drop,
             enemy_reveal=enemy_reveal,
+            action_resolutions=action_resolutions or [],
         )
 
     def _combat_result(
@@ -488,6 +507,7 @@ class GameEngine:
         events: list[str],
         enemy_reveal: combat.EnemyReveal | None = None,
         respawn: progression.RespawnResult | None = None,
+        action_resolutions: list[combat.ActionResolution] | None = None,
     ) -> combat.CombatTurnResult:
         return combat.CombatTurnResult(
             outcome=outcome,
@@ -497,6 +517,7 @@ class GameEngine:
             pending_stat_choices=self.player.pending_stat_choices,
             enemy_reveal=enemy_reveal,
             respawn=respawn,
+            action_resolutions=action_resolutions or [],
         )
 
 

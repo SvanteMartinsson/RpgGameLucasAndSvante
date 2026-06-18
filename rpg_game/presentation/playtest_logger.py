@@ -1,0 +1,129 @@
+"""Rolling JSONL playtest logger for presentation layers.
+
+The logger records only structured data already returned to presentation code:
+snapshots, enemies and combat turn results. It does not affect game state.
+"""
+
+from __future__ import annotations
+
+import json
+import uuid
+from datetime import UTC, datetime
+from pathlib import Path
+
+from rpg_game.core import combat
+
+
+DEFAULT_LOG_DIR = Path("playtest_logs")
+KEEP_SESSIONS = 5
+
+
+class PlaytestLogger:
+    def __init__(self, log_dir: Path | str = DEFAULT_LOG_DIR, now=None) -> None:
+        self.log_dir = Path(log_dir)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.session_id = uuid.uuid4().hex
+        timestamp = _timestamp(now)
+        safe_timestamp = timestamp.replace(":", "").replace("-", "").replace(".", "")
+        self.path = self.log_dir / f"playtest_log_{safe_timestamp}_{self.session_id[:8]}.jsonl"
+        self.path.touch()
+        self._rotate()
+
+    def session_start(self, snapshot) -> None:
+        self.write(
+            "session_start",
+            player_name=snapshot.player.name,
+            player_class=snapshot.player.class_id,
+            player_level=snapshot.player.level,
+        )
+
+    def encounter_start(self, enemy, snapshot, location: str) -> None:
+        self.write(
+            "encounter_start",
+            enemy_id=enemy.id,
+            enemy_level=enemy.level,
+            player_level=snapshot.player.level,
+            location=location,
+        )
+
+    def combat_result(self, result: combat.CombatTurnResult, enemy, snapshot, location: str) -> None:
+        for resolution in result.action_resolutions:
+            self.attack(resolution, snapshot)
+        if result.loot_drop is not None:
+            self.drop(result.loot_drop, enemy)
+        if result.xp_gained or result.gold_gained:
+            self.reward(result, enemy)
+        if result.levels_gained:
+            for level in range(snapshot.player.level - result.levels_gained + 1, snapshot.player.level + 1):
+                self.level_up(level)
+        if result.respawn is not None:
+            self.death(result.respawn, location)
+
+    def attack(self, resolution: combat.ActionResolution, snapshot) -> None:
+        source = "player" if resolution.actor_name == snapshot.player.name else "enemy"
+        self.write(
+            "attack",
+            source=source,
+            action_id=resolution.action_id,
+            rolled_style=resolution.rolled_style_id or _style_from_action_id(resolution.action_id),
+            hit=bool(resolution.hit and not resolution.blocked and not resolution.evaded),
+            crit=resolution.critical_hits > 0,
+            damage=resolution.total_damage,
+            damage_components=[
+                {"type": component.damage_type, "amount": component.amount}
+                for component in resolution.damage_components
+            ],
+        )
+
+    def drop(self, drop, enemy) -> None:
+        self.write(
+            "drop",
+            item_id=drop.item_id,
+            rarity=drop.rarity,
+            tier=drop.tier,
+            enemy_id=enemy.id,
+        )
+
+    def reward(self, result: combat.CombatTurnResult, enemy) -> None:
+        self.write("reward", xp=result.xp_gained, gold=result.gold_gained, enemy_id=enemy.id)
+
+    def level_up(self, new_level: int) -> None:
+        self.write("level_up", new_level=new_level)
+
+    def death(self, respawn, location: str) -> None:
+        self.write(
+            "death",
+            location=location,
+            lost_xp=respawn.xp_lost,
+            lost_gold=respawn.gold_lost,
+            hp_after=respawn.hp,
+            mana_after=respawn.mana,
+        )
+
+    def write(self, event: str, **fields) -> None:
+        row = {
+            "timestamp": _timestamp(),
+            "session_id": self.session_id,
+            "event": event,
+            **fields,
+        }
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+
+    def _rotate(self) -> None:
+        files = sorted(self.log_dir.glob("playtest_log_*.jsonl"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for old in files[KEEP_SESSIONS:]:
+            old.unlink(missing_ok=True)
+
+
+def _timestamp(now=None) -> str:
+    current = now() if callable(now) else now
+    if current is None:
+        current = datetime.now(UTC)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=UTC)
+    return current.isoformat()
+
+
+def _style_from_action_id(action_id: str) -> str:
+    return action_id if action_id in combat.PLAYER_ATTACK_STYLE_IDS else ""

@@ -26,6 +26,7 @@ import pygame
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import ui_text as T
 
 # --- Layout ----------------------------------------------------------------
@@ -94,6 +95,8 @@ class BattleApp:
     running: bool = True
     outcome: str = ""  # set when a non-standalone battle resolves
     _pending_outcome: str = ""  # single-battle result awaiting press-to-continue
+    playtest_logger: PlaytestLogger | None = None
+    location_id: str = ""
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -105,10 +108,15 @@ class BattleApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
+        if self.playtest_logger is None:
+            self.playtest_logger = PlaytestLogger()
+            self.playtest_logger.session_start(build_snapshot(self.engine))
+        self.location_id = self.location_id or self.engine.player.current_place_id
         if self.enemy is not None:
             # Single battle against a supplied enemy (e.g. a wild encounter).
             self.set_mode("combat")
             self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
+            self.playtest_logger.encounter_start(self.enemy, build_snapshot(self.engine), self.location_id)
         elif self.standalone:
             self._ensure_dangerous_place()
             self.next_encounter()
@@ -149,6 +157,9 @@ class BattleApp:
         self.set_mode("combat")
         self.banner = ""
         self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
+        self.location_id = self.engine.player.current_place_id
+        if self.playtest_logger is not None:
+            self.playtest_logger.encounter_start(self.enemy, build_snapshot(self.engine), self.location_id)
 
     # -- logging ------------------------------------------------------------
 
@@ -171,6 +182,8 @@ class BattleApp:
         self._consume_result(result, fled_action=True)
 
     def _consume_result(self, result: combat.CombatTurnResult, fled_action: bool = False) -> None:
+        if self.playtest_logger is not None and self.enemy is not None:
+            self.playtest_logger.combat_result(result, self.enemy, build_snapshot(self.engine), self.location_id)
         for event in result.events:
             self.push_log(event)
         if result.enemy_reveal is not None:
