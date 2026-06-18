@@ -11,9 +11,9 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, inventory, persistence, progression, store, talents, world
+from rpg_game.core import combat, inventory, persistence, progression, store, talents, tournaments, world
 from rpg_game.core.data_loader import load_content
-from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player
+from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
 
 @dataclass(frozen=True)
@@ -118,6 +118,19 @@ class GameEngine:
             player_hp=player.hp,
             player_mana=player.mana,
         )
+
+    def available_tournaments(self) -> list[Tournament]:
+        return tournaments.available_tournaments(self.player, self.content)
+
+    def start_tournament(self, tournament_id: str) -> tournaments.TournamentStartResult:
+        return tournaments.start_tournament(self.player, self.content, tournament_id)
+
+    def create_tournament_opponent(self, tournament: Tournament, index: int) -> Enemy:
+        enemy_id = tournament.opponent_ids[index]
+        return self.content.enemies[enemy_id].create_enemy()
+
+    def complete_tournament(self, tournament: Tournament) -> tournaments.TournamentRewardResult:
+        return tournaments.complete_tournament(self.player, self.content, tournament)
 
     def available_destinations(self):
         return world.available_destinations(self.player, self.content)

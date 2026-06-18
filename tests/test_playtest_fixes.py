@@ -74,6 +74,16 @@ class StatsScreenTests(unittest.TestCase):
 
         self.assertIn("Crit chance: 10%", output.getvalue())
 
+    def test_skill_readiness_text_includes_reason(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        engine.player.mana = 0
+
+        text = terminal.skill_readiness_text(engine, engine.content.actions["smite"])
+
+        self.assertIn("NOT READY", text)
+        self.assertIn("does not have enough mana", text)
+
 
 if __name__ == "__main__":
     unittest.main()

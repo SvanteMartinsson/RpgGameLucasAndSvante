@@ -1,0 +1,74 @@
+[
+  {
+    "id": "hordanita_novice_cup",
+    "name": "Hordanita Novice Cup",
+    "place_id": "burg_5",
+    "rank": "novice",
+    "description": "A short city arena bracket for new challengers.",
+    "opponent_ids": [
+      "arena_ralla_quickstep",
+      "arena_borin_shieldhand",
+      "arena_tomas_reed"
+    ],
+    "reward": {
+      "gold": 120,
+      "item_ids": []
+    }
+  },
+  {
+    "id": "alherralba_market_trials",
+    "name": "Alherralba Market Trials",
+    "place_id": "burg_121",
+    "rank": "local",
+    "description": "A three-fight settlement tournament held beside the market.",
+    "opponent_ids": [
+      "arena_ralla_quickstep",
+      "arena_mira_candlewick",
+      "arena_selka_bowyer"
+    ],
+    "reward": {
+      "gold": 160,
+      "item_ids": []
+    }
+  },
+  {
+    "id": "fongorinos_iron_ring",
+    "name": "Fongorinos Iron Ring",
+    "place_id": "burg_67",
+    "rank": "veteran",
+    "description": "A harder town bracket where veterans fight for arms and prestige.",
+    "opponent_ids": [
+      "arena_tomas_reed",
+      "arena_selka_bowyer",
+      "arena_ivar_grim",
+      "arena_nalia_frostveil"
+    ],
+    "reward": {
+      "gold": 250,
+      "item_ids": ["steel_greatsword"]
+    }
+  },
+  {
+    "id": "hordanita_imperial_ten",
+    "name": "Hordanita Imperial Ten",
+    "place_id": "burg_5",
+    "rank": "capital",
+    "description": "The capital's full ten-opponent circuit. No rest, no retreat, no second bell.",
+    "opponent_ids": [
+      "arena_ralla_quickstep",
+      "arena_borin_shieldhand",
+      "arena_mira_candlewick",
+      "arena_tomas_reed",
+      "arena_selka_bowyer",
+      "arena_ivar_grim",
+      "arena_nalia_frostveil",
+      "arena_orren_blackbell",
+      "arena_ser_kaela_voss",
+      "arena_lord_maren_dusk"
+    ],
+    "reward": {
+      "gold": 900,
+      "item_ids": ["consecrated_maul"]
+    }
+  }
+]

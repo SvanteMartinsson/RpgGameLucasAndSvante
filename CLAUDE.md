@@ -11,7 +11,8 @@ Projektet innehåller två generationer:
 - `rpg_game/`: aktiv Python-port.
 
 Python-porten är spelbar i terminalen och har tester för strid, klasser,
-talanger, world loading, loot, vapenkrav, progression, enemy AI och Identify.
+talanger, world loading, loot, vapenkrav, progression, enemy AI, Identify,
+save/load, turneringar, presentationssnapshots och tuning-simulering.
 
 ## Körning
 
@@ -35,6 +36,12 @@ python3 -m compileall -q rpg_game tests
 
 Inga externa runtime-dependencies krävs.
 
+Kör attack-only balanssimuleringar:
+
+```sh
+python3 -m rpg_game.tools.simulate_balance --trials 100
+```
+
 ## Arkitekturkontrakt
 
 Spelkärnan ligger i `rpg_game/core/`. Den ska inte använda:
@@ -46,7 +53,8 @@ Spelkärnan ligger i `rpg_game/core/`. Den ska inte använda:
 
 Presentation ligger i `rpg_game/presentation/`. Just nu finns terminal-UI i
 `rpg_game/presentation/terminal.py`. Ett framtida Pygame-lager ska prata med
-samma `GameEngine` och samma strukturerade resultat.
+samma `GameEngine`, `rpg_game.core.view.build_snapshot()` och samma
+strukturerade resultat. Se `PRESENTATION_API.md`.
 
 Strid ska gå genom en enda pipeline:
 
@@ -64,9 +72,12 @@ Bygg inte en parallell damage- eller skill-väg.
 - `rpg_game/core/data_loader.py`: laddar JSON-data till dataclasses.
 - `rpg_game/core/game.py`: `GameEngine`; orkestrerar world, combat, loot, store och progression.
 - `rpg_game/core/combat.py`: action/effect-resolver, skada, statusar, AI och Identify-resultat.
+- `rpg_game/core/view.py`: immutable snapshots för presentation.
+- `rpg_game/core/simulation.py`: seedade combat-simuleringar för tuning.
 - `rpg_game/core/progression.py`: `round_half_up`, XP-krav, level-skalad XP och statval.
 - `rpg_game/core/talents.py`: talent unlock/equip, passiva effekter och max 4 skills.
 - `rpg_game/core/store.py`: köp, sälj och weapon equip-regler i butik.
+- `rpg_game/core/tournaments.py`: platsbundna turneringar, startkontroll och slutrewards.
 - `rpg_game/core/inventory.py`: användning av consumables.
 - `rpg_game/core/world.py`: plats, resa och encounters.
 
@@ -80,6 +91,7 @@ Allt nytt innehåll ska i första hand in i `rpg_game/data/`.
 - `weapons.json`: vapen, tier, kategori, skadetyp, skadebonus och pris.
 - `items.json`: consumables och junk.
 - `enemies.json`: fiendemallar, AI-regler, tags, loot pools och drop chance.
+- `tournaments.json`: turneringar med plats, opponent-serie och slutreward.
 - `loot.json`: delad rare table.
 - `world.json`: karta, platser, connections, stores och encounter pools.
 
@@ -105,6 +117,9 @@ det kan uttryckas i JSON.
 - Gated damage skills skalar med `Power + equipped_weapon.damage_bonus`.
 - Vapen kan ägas oavsett level, men equip/swap kräver `max(1, tier - 2)`.
 - Loot-rarity visas som label, inte exakt dropchance.
+- Turneringar är platsbundna serier utan flee/abort när de startats. Slutreward
+  delas ut först när hela serien klarats; non-repeatable turneringar sparas på
+  spelaren som completed.
 
 ## Klasser
 
@@ -153,6 +168,7 @@ Spelaren ser bara labeln, inte exakta odds.
 - Läs `DESIGN.md` för Python-versionens målbild.
 - Läs slice-dokumenten (`CLASSES.md`, `WEAPONS.md`, `PROGRESSION.md`,
   `LOOT.md`, `ENEMIES.md`, `DAMAGE.md`) när du ändrar relaterade system.
+- Läs `PRESENTATION_API.md` innan du bygger nytt UI-lager.
 
 ## När Du Ändrar Kod
 
@@ -172,7 +188,6 @@ python3 -m compileall -q rpg_game tests
 
 Inte implementerat ännu:
 
-- save/load
 - bank/stash
 - quests
 - dialogsystem

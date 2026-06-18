@@ -58,6 +58,8 @@ def run_game_loop(engine: GameEngine) -> None:
             ("skills", "Skills"),
             ("save", "Save game"),
         ]
+        if engine.available_tournaments():
+            menu.append(("tournaments", "Tournaments"))
         if place.has_store:
             menu.append(("rest", "Rest"))
             menu.append(("store", "Store"))
@@ -81,6 +83,8 @@ def run_game_loop(engine: GameEngine) -> None:
             handle_talents(engine)
         elif action == "skills":
             handle_skills(engine)
+        elif action == "tournaments":
+            handle_tournaments(engine)
         elif action == "save":
             print(engine.save(SAVE_PATH).message)
         elif action == "rest":
@@ -426,12 +430,111 @@ def handle_explore(engine: GameEngine) -> None:
             return
 
 
+def handle_tournaments(engine: GameEngine) -> None:
+    available = engine.available_tournaments()
+    if not available:
+        print("There are no tournaments here.")
+        return
+
+    options = []
+    for index, tournament in enumerate(available, start=1):
+        completed = " [CLEARED]" if tournament.id in engine.player.completed_tournament_ids else ""
+        reward = tournament_reward_text(engine, tournament)
+        options.append(
+            (
+                str(index),
+                tournament.id,
+                f"{tournament.name} ({tournament.rank}, {len(tournament.opponent_ids)} fights) - {reward}{completed}",
+            )
+        )
+    options.append(("b", "back", "Back"))
+
+    choice = prompt_menu("Enter which tournament?", options, allow_label=False)
+    if choice == "back":
+        return
+    start = engine.start_tournament(choice)
+    print(start.message)
+    if not start.success or start.tournament is None:
+        return
+    run_tournament(engine, start.tournament)
+
+
+def tournament_reward_text(engine: GameEngine, tournament) -> str:
+    reward_bits = []
+    if tournament.reward.gold:
+        reward_bits.append(f"{tournament.reward.gold} gold")
+    for item_id in tournament.reward.item_ids:
+        if item_id in engine.content.weapons:
+            reward_bits.append(engine.content.weapons[item_id].name)
+        elif item_id in engine.content.items:
+            reward_bits.append(engine.content.items[item_id].name)
+    return "reward: " + (", ".join(reward_bits) if reward_bits else "none")
+
+
+def run_tournament(engine: GameEngine, tournament) -> None:
+    print(tournament.description)
+    for index, _enemy_id in enumerate(tournament.opponent_ids):
+        enemy = engine.create_tournament_opponent(tournament, index)
+        print()
+        print(f"Round {index + 1}/{len(tournament.opponent_ids)}: {enemy.name}")
+        while enemy.is_alive and engine.player.is_alive:
+            print_combat_status(engine, enemy)
+            payload = choose_tournament_combat_command(engine, enemy)
+            result = engine.run_combat_turn(enemy, payload)
+            for event in result.events:
+                print(event)
+            if result.enemy_reveal is not None:
+                print_enemy_reveal(result.enemy_reveal)
+            if result.outcome == "blocked":
+                continue
+            if result.outcome == "defeat":
+                print(f"You were eliminated from {tournament.name}.")
+                resolve_pending_stat_choices(engine)
+                return
+            if result.outcome == "victory":
+                break
+
+    reward = engine.complete_tournament(tournament)
+    print(reward.message)
+    resolve_pending_stat_choices(engine)
+
+
+def choose_tournament_combat_command(engine: GameEngine, enemy) -> str:
+    while True:
+        command = prompt_menu(
+            "Choose action:",
+            [
+                ("1", "attack", "Attack (rolls style)"),
+                ("2", "skill", "Skill"),
+                ("3", "item", "Item"),
+                ("4", "swap", "Swap weapon"),
+                ("5", "identify", "Identify"),
+            ],
+        )
+        if command == "attack":
+            return "attack"
+        if command == "skill":
+            action_id = choose_skill(engine)
+            if action_id:
+                return action_id
+        if command == "item":
+            item_id = choose_combat_item(engine)
+            if item_id:
+                return f"item:{item_id}"
+        if command == "swap":
+            weapon_id = choose_swap_weapon(engine)
+            if weapon_id:
+                return f"swap:{weapon_id}"
+        if command == "identify":
+            return "identify"
+
+
 def choose_combat_command(engine: GameEngine, enemy) -> tuple[str, str]:
     while True:
         command = prompt_menu(
             "Choose action:",
             [
-                ("1", "attack", "Attack"),
+                ("1", "attack", "Attack (rolls style)"),
                 ("2", "skill", "Skill"),
                 ("3", "item", "Item"),
                 ("4", "swap", "Swap weapon"),
@@ -468,10 +571,10 @@ def choose_skill(engine: GameEngine) -> str | None:
         options = []
         weapon = engine.content.weapons[engine.player.equipped_weapon_id]
         for index, skill in enumerate(skills, start=1):
-            reason = combat.blocked_action_reason(engine.player, skill, weapon=weapon)
-            label = f"{skill.name} - {skill_cost_text(skill)}{skill_requirement_text(engine, skill)}"
-            if reason:
-                label += " [NOT READY]"
+            label = (
+                f"{skill.name} - {skill_cost_text(skill)}"
+                f"{skill_requirement_text(engine, skill)}{skill_readiness_text(engine, skill)}"
+            )
             options.append((str(index), skill.id, label))
         options.append(("b", "back", "Back"))
 
@@ -484,6 +587,12 @@ def choose_skill(engine: GameEngine) -> str | None:
             print(reason)
             continue  # reprompt without spending the round
         return choice
+
+
+def skill_readiness_text(engine: GameEngine, action) -> str:
+    weapon = engine.content.weapons[engine.player.equipped_weapon_id]
+    reason = combat.blocked_action_reason(engine.player, action, weapon=weapon)
+    return f" [NOT READY: {reason}]" if reason else ""
 
 
 def skill_requirement_text(engine: GameEngine, action) -> str:

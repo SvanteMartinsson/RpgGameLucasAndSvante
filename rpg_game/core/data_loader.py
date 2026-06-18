@@ -22,6 +22,8 @@ from rpg_game.core.entities import (
     Position,
     PlayerClass,
     TalentNode,
+    Tournament,
+    TournamentReward,
     Weapon,
 )
 
@@ -104,6 +106,24 @@ def load_content() -> GameContent:
         for row in _read_json("talents.json")
     }
 
+    tournaments = {
+        row["id"]: Tournament(
+            id=row["id"],
+            name=row["name"],
+            place_id=row["place_id"],
+            rank=row["rank"],
+            description=row["description"],
+            opponent_ids=tuple(row["opponent_ids"]),
+            reward=TournamentReward(
+                gold=row.get("reward", {}).get("gold", 0),
+                item_ids=tuple(row.get("reward", {}).get("item_ids", ())),
+            ),
+            entry_fee=row.get("entry_fee", 0),
+            repeatable=row.get("repeatable", False),
+        )
+        for row in _read_json("tournaments.json")
+    }
+
     items = {
         row["id"]: ConsumableItem(
             id=row["id"],
@@ -175,6 +195,8 @@ def load_content() -> GameContent:
             respawn_place_id=row["id"] if row["respawn"] else world["meta"]["start_place_id"],
         )
 
+    _validate_tournaments(tournaments, enemies, places, weapons, items)
+
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
         classes=classes,
@@ -182,10 +204,23 @@ def load_content() -> GameContent:
         items=items,
         actions=actions,
         talents=talents,
+        tournaments=tournaments,
         enemies=enemies,
         places=places,
         rare_loot_table=rare_loot_table,
     )
+
+
+def _validate_tournaments(tournaments, enemies, places, weapons, items) -> None:
+    for tournament in tournaments.values():
+        if tournament.place_id not in places:
+            raise ValueError(f"{tournament.id} references unknown place {tournament.place_id}")
+        for enemy_id in tournament.opponent_ids:
+            if enemy_id not in enemies:
+                raise ValueError(f"{tournament.id} references unknown opponent {enemy_id}")
+        for item_id in tournament.reward.item_ids:
+            if item_id not in weapons and item_id not in items:
+                raise ValueError(f"{tournament.id} references unknown reward {item_id}")
 
 
 def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:

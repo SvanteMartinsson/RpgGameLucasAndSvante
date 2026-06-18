@@ -90,6 +90,25 @@ class TalentNode:
 
 
 @dataclass(frozen=True)
+class TournamentReward:
+    gold: int = 0
+    item_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Tournament:
+    id: str
+    name: str
+    place_id: str
+    rank: str
+    description: str
+    opponent_ids: tuple[str, ...]
+    reward: TournamentReward
+    entry_fee: int = 0
+    repeatable: bool = False
+
+
+@dataclass(frozen=True)
 class ConsumableItem:
     id: str
     name: str
@@ -294,6 +313,7 @@ class Player:
     conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
     elemental_attack_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
+    completed_tournament_ids: set[str] = field(default_factory=set)
 
     @property
     def is_alive(self) -> bool:
@@ -308,6 +328,7 @@ class GameContent:
     items: dict[str, ConsumableItem]
     actions: dict[str, CombatAction]
     talents: dict[str, TalentNode]
+    tournaments: dict[str, Tournament]
     enemies: dict[str, EnemyTemplate]
     places: dict[str, Place]
     rare_loot_table: tuple[dict[str, object], ...] = ()

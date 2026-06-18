@@ -152,5 +152,284 @@
       { "item_id": "antidote", "weight": 30, "rarity_tier": 2 },
       { "item_id": "emberwand", "weight": 30, "rarity_tier": 3 }
     ]
+  },
+  {
+    "id": "arena_ralla_quickstep",
+    "name": "Ralla Quickstep",
+    "level": 1,
+    "max_hp": 24,
+    "damage": 6,
+    "armor": 0,
+    "speed": 13,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "duelist"],
+    "action_ids": ["quick", "normal"],
+    "xp_reward": 4,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_borin_shieldhand",
+    "name": "Borin Shieldhand",
+    "level": 1,
+    "max_hp": 32,
+    "damage": 5,
+    "armor": 2,
+    "speed": 7,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "guard"],
+    "mana": 20,
+    "action_ids": ["block", "normal"],
+    "ai": [
+      { "condition": { "skill_ready": "block" }, "action": "block" },
+      { "condition": { "always": true }, "action": "normal" }
+    ],
+    "xp_reward": 5,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_mira_candlewick",
+    "name": "Mira Candlewick",
+    "level": 2,
+    "max_hp": 26,
+    "damage": 7,
+    "armor": 0,
+    "speed": 10,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 0.8,
+      "frost": 1.25,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "mage"],
+    "mana": 30,
+    "action_ids": ["firebolt", "ignite", "quick"],
+    "ai": [
+      { "condition": { "skill_ready": "ignite" }, "action": "ignite" },
+      { "condition": { "always": true }, "action": "firebolt" }
+    ],
+    "xp_reward": 7,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_tomas_reed",
+    "name": "Tomas Reed",
+    "level": 2,
+    "max_hp": 30,
+    "damage": 7,
+    "armor": 1,
+    "speed": 9,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "swordsman"],
+    "action_ids": ["power", "normal", "quick"],
+    "xp_reward": 6,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_selka_bowyer",
+    "name": "Selka Bowyer",
+    "level": 3,
+    "max_hp": 34,
+    "damage": 8,
+    "armor": 0,
+    "speed": 12,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "archer"],
+    "mana": 25,
+    "action_ids": ["aimed_shot", "quick"],
+    "ai": [
+      { "condition": { "skill_ready": "aimed_shot" }, "action": "aimed_shot" },
+      { "condition": { "always": true }, "action": "quick" }
+    ],
+    "xp_reward": 9,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_ivar_grim",
+    "name": "Ivar Grim",
+    "level": 3,
+    "max_hp": 42,
+    "damage": 9,
+    "armor": 2,
+    "speed": 8,
+    "resistances": {
+      "physical": 0.95,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "veteran"],
+    "mana": 25,
+    "action_ids": ["taunt", "sunder", "normal"],
+    "ai": [
+      { "condition": { "skill_ready": "taunt" }, "action": "taunt" },
+      { "condition": { "always": true }, "action": "sunder" }
+    ],
+    "xp_reward": 10,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_nalia_frostveil",
+    "name": "Nalia Frostveil",
+    "level": 4,
+    "max_hp": 36,
+    "damage": 10,
+    "armor": 0,
+    "speed": 11,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.25,
+      "frost": 0.75,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "mage"],
+    "mana": 40,
+    "action_ids": ["frostbolt", "quick"],
+    "ai": [
+      { "condition": { "always": true }, "action": "frostbolt" }
+    ],
+    "xp_reward": 12,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_orren_blackbell",
+    "name": "Orren Blackbell",
+    "level": 4,
+    "max_hp": 40,
+    "damage": 10,
+    "armor": 1,
+    "speed": 13,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 0.75
+    },
+    "tags": ["human", "rogue"],
+    "mana": 30,
+    "action_ids": ["backstab", "riposte", "quick"],
+    "ai": [
+      { "condition": { "skill_ready": "riposte" }, "action": "riposte" },
+      { "condition": { "always": true }, "action": "backstab" }
+    ],
+    "xp_reward": 13,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_ser_kaela_voss",
+    "name": "Ser Kaela Voss",
+    "level": 5,
+    "max_hp": 52,
+    "damage": 12,
+    "armor": 3,
+    "speed": 10,
+    "resistances": {
+      "physical": 0.9,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "knight"],
+    "mana": 35,
+    "action_ids": ["counter", "sunder", "power"],
+    "ai": [
+      { "condition": { "skill_ready": "counter" }, "action": "counter" },
+      { "condition": { "always": true }, "action": "sunder" }
+    ],
+    "xp_reward": 16,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "arena_lord_maren_dusk",
+    "name": "Lord Maren Dusk",
+    "level": 6,
+    "max_hp": 60,
+    "damage": 14,
+    "armor": 2,
+    "speed": 12,
+    "resistances": {
+      "physical": 0.9,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["human", "champion"],
+    "mana": 45,
+    "action_ids": ["combo", "counter", "normal"],
+    "ai": [
+      { "condition": { "skill_ready": "counter" }, "action": "counter" },
+      { "condition": { "always": true }, "action": "combo" }
+    ],
+    "xp_reward": 20,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
   }
 ]

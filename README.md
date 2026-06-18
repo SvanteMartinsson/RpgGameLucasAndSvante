@@ -33,6 +33,7 @@ rpg_game/
   core/              # spelkärnan: regler, state, combat, progression, world
   data/              # JSON-data för klasser, skills, fiender, loot och värld
   presentation/      # terminal-UI; framtida Pygame-UI ska ligga separat
+  tools/             # utvecklarverktyg för tuning och diagnostik
 tests/               # regressionstester för regler och speldata
 src/                 # ursprunglig Java-prototyp
 bin/                 # kompilerade Java-klasser, historik
@@ -56,6 +57,8 @@ spelregler.
 - `PROGRESSION.md`: enemy levels, XP-skalning, equip-krav och Identify.
 - `LOOT.md`: lootmodell, rare table, pickup och sälj.
 - `ENEMIES.md`: fiendearketyper, AI och telegraph.
+- `DAMAGE.md`: multikomponent-skada, attack-action och crit-range.
+- `PRESENTATION_API.md`: kontraktet mellan core och terminal/Pygame-lager.
 - `OVERWORLD.md`: framtida Pygame-/tilemap-riktning.
 
 ## Spelöversikt
@@ -76,6 +79,20 @@ Nuvarande Python-version innehåller:
 - vapenägande, vapenbyte, vapenkategorier och level-krav för att equippa
 - loot drops med rarity-labels, pickup och sälj i butik
 - level-skalad XP och Identify i strid
+- save/load
+- immutable snapshots för presentationslager
+- platsbundna turneringar med namngivna mänskliga motståndare
+
+## Tuning
+
+Kör attack-only-simuleringar för klass/fiende-matchups:
+
+```sh
+python3 -m rpg_game.tools.simulate_balance --trials 100
+```
+
+Verktyget skriver CSV med win rate, average turns, HP vid seger och timeouts.
+Det är ett underlag för nummer-tuning, inte en ersättning för manuell playtest.
 
 ## Datadrivet innehåll
 
@@ -88,6 +105,7 @@ spelkärnan.
 - `weapons.json`: vapen, tier, kategori, skadetyp, pris och bonus.
 - `items.json`: consumables och junk.
 - `enemies.json`: fiendestats, AI, loot pools och drop chance.
+- `tournaments.json`: platsbundna turneringar, opponent-serier och rewards.
 - `loot.json`: delad rare table.
 - `world.json`: karta, platser, resvägar, encounters och butikslager.
 
@@ -111,6 +129,15 @@ spelkärnan.
 3. Om skillen kräver vapentyp, sätt `requires_weapon_category`.
 4. Lägg ett fokuserat test för regeln.
 
+### Lägga till en turnering
+
+1. Lägg namngivna motståndare i `enemies.json`.
+2. Lägg turneringen i `tournaments.json` med `place_id`, `opponent_ids` och
+   `reward`.
+3. Håll individuella tournament-opponents på låg/ingen loot om slutrewarden ska
+   vara den viktiga belöningen.
+4. Kör testerna.
+
 ## Viktiga regler
 
 - Använd `round_half_up()` för skada och XP-formler där halv-avrundning spelar
@@ -127,7 +154,6 @@ spelkärnan.
 
 Följande är medvetet inte färdigt ännu:
 
-- save/load
 - bank/stash
 - quests och dialogsystem
 - Pygame-presentation
