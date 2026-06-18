@@ -39,6 +39,25 @@ def travel(player: Player, content: GameContent, destination_id: str) -> str:
     return f"Travelled to {new_place.name}."
 
 
+def enter_place(player: Player, content: GameContent, place_id: str) -> str:
+    """Set the player's location directly, without the adjacency gate.
+
+    Free-walk presentation reaches a place by walking onto it, so there is no
+    "from" place to validate against. This mirrors :func:`travel`'s state update
+    (location + respawn point) but skips the connection check. Locked places are
+    still refused, same as travel.
+    """
+    normalized = place_id.strip().lower()
+    if normalized not in content.places:
+        raise ValueError(f"unknown place: {place_id}")
+    new_place = content.places[normalized]
+    if new_place.locked:
+        raise ValueError(f"{new_place.name} is locked.")
+    player.current_place_id = normalized
+    player.respawn_place_id = new_place.respawn_place_id
+    return f"Entered {new_place.name}."
+
+
 def create_encounter(player: Player, content: GameContent, rng: random.Random) -> Enemy | None:
     place = get_current_place(player, content)
     if not place.encounters:

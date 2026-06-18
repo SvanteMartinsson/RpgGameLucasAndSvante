@@ -141,6 +141,10 @@ class GameEngine:
     def travel(self, destination_id: str) -> str:
         return world.travel(self.player, self.content, destination_id)
 
+    def enter_place(self, place_id: str) -> str:
+        """Set location directly for free-walk arrival (no adjacency gate)."""
+        return world.enter_place(self.player, self.content, place_id)
+
     def create_encounter(self) -> Enemy | None:
         return world.create_encounter(self.player, self.content, self.rng)
 

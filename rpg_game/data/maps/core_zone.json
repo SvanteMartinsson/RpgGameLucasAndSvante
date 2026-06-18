@@ -1,0 +1,18 @@
+{
+  "_comment": "Spelbar kärnzon (fri-gång-overworld, Modell B). Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i vildmark. Gates spärrar vägen ut mot resten av den (tänkta men ospelbara) världen — FLYTTA gaten utåt när en ny zon öppnas, ta inte bort den. Allt här är data/tunbart; ingen spridd hårdkodning.",
+  "map": "overworld.tmx",
+  "start_tile": [14, 10],
+  "encounter_rate_per_step": 0.06,
+  "wild_region_place_id": "burg_54",
+  "respawn_place_id": "burg_5",
+  "towns": [
+    {"tile": [14, 10], "place_id": "burg_5", "label": "Hordanita"},
+    {"tile": [6, 6], "place_id": "burg_117", "label": "Yeblegali"},
+    {"tile": [21, 14], "place_id": "burg_160", "label": "Gaste"}
+  ],
+  "gates": [
+    {"tile": [14, 0], "message": "Vägen norrut är inte trygg än — mer av världen öppnas senare."},
+    {"tile": [27, 10], "message": "Österut ligger okänt land. Spärrat tills vidare."},
+    {"tile": [13, 19], "message": "Söderut bortom Hordanitas trakter är inte redo än."}
+  ]
+}
