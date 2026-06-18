@@ -34,7 +34,16 @@ Snabb import-/syntaxkontroll:
 python3 -m compileall -q rpg_game tests
 ```
 
-Inga externa runtime-dependencies krävs.
+Kärnan och terminal-UI är beroendefria. Det grafiska battle-skalet kräver
+pygame (`pip install -r requirements.txt`, helst i en venv):
+
+```sh
+python3 -m rpg_game.presentation.pygame_battle          # väljer klass i fönstret
+python3 -m rpg_game.presentation.pygame_battle fighter  # hoppa direkt in
+```
+
+Pygame-lagret pratar med samma `GameEngine` och `build_snapshot()` och
+duplicerar inga spelregler. Se `PRESENTATION_API.md`.
 
 Kör attack-only balanssimuleringar:
 
