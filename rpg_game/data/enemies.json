@@ -28,6 +28,7 @@
       { "item_id": "hp_potion", "weight": 25, "rarity_tier": 1 },
       { "item_id": "training_cap", "weight": 16, "rarity_tier": 1 },
       { "item_id": "novice_ring", "weight": 10, "rarity_tier": 1 },
+      { "item_id": "worn_shortsword", "weight": 10, "rarity_tier": 1 },
       { "item_id": "steel_greatsword", "weight": 5, "rarity_tier": 3 }
     ]
   },
@@ -60,6 +61,7 @@
       { "item_id": "hp_potion", "weight": 20, "rarity_tier": 1 },
       { "item_id": "padded_vest", "weight": 14, "rarity_tier": 1 },
       { "item_id": "focus_band", "weight": 8, "rarity_tier": 1 },
+      { "item_id": "hunting_bow", "weight": 10, "rarity_tier": 1 },
       { "item_id": "rimebrand", "weight": 10, "rarity_tier": 3 }
     ]
   },
@@ -95,6 +97,7 @@
       { "item_id": "greater_hp_potion", "weight": 25, "rarity_tier": 3 },
       { "item_id": "guard_cap", "weight": 20, "rarity_tier": 2 },
       { "item_id": "reinforced_vest", "weight": 12, "rarity_tier": 2 },
+      { "item_id": "iron_hatchet", "weight": 14, "rarity_tier": 2 },
       { "item_id": "steel_greatsword", "weight": 20, "rarity_tier": 3 },
       { "item_id": "emberwand", "weight": 15, "rarity_tier": 3 }
     ]

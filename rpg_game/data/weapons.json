@@ -151,5 +151,32 @@
     "damage_type": "physical",
     "category": "melee",
     "tier": 6
+  },
+  {
+    "id": "worn_shortsword",
+    "name": "Worn Shortsword",
+    "damage_bonus": 2,
+    "price": 20,
+    "damage_type": "physical",
+    "category": "melee",
+    "tier": 1
+  },
+  {
+    "id": "hunting_bow",
+    "name": "Hunting Bow",
+    "damage_bonus": 3,
+    "price": 30,
+    "damage_type": "physical",
+    "category": "ranged",
+    "tier": 1
+  },
+  {
+    "id": "iron_hatchet",
+    "name": "Iron Hatchet",
+    "damage_bonus": 4,
+    "price": 45,
+    "damage_type": "physical",
+    "category": "melee",
+    "tier": 2
   }
 ]

@@ -27,6 +27,9 @@ class WeaponGatingTests(unittest.TestCase):
             "pyre_scepter": "magic",
             "gravewarden_blade": "melee",
             "worldsplitter": "melee",
+            "worn_shortsword": "melee",
+            "hunting_bow": "ranged",
+            "iron_hatchet": "melee",
         }
         self.assertEqual(
             {weapon_id: weapon.category for weapon_id, weapon in engine.content.weapons.items()},

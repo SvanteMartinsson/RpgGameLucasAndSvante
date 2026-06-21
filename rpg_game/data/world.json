@@ -111,7 +111,9 @@
       "danger_tier": 1,
       "encounters": [
         "giant_rat",
-        "undead"
+        "undead",
+        "cave_bear",
+        "undead_priest"
       ],
       "respawn": false,
       "locked": false,
