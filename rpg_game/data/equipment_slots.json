@@ -1,0 +1,12 @@
+[
+  { "id": "weapon", "name": "Weapon", "slot_type": "weapon", "accepts": "weapon", "order": 0 },
+  { "id": "head", "name": "Head", "slot_type": "head", "accepts": "head", "order": 1 },
+  { "id": "chest", "name": "Chest", "slot_type": "chest", "accepts": "chest", "order": 2 },
+  { "id": "hands", "name": "Hands", "slot_type": "hands", "accepts": "hands", "order": 3 },
+  { "id": "legs", "name": "Legs", "slot_type": "legs", "accepts": "legs", "order": 4 },
+  { "id": "feet", "name": "Feet", "slot_type": "feet", "accepts": "feet", "order": 5 },
+  { "id": "amulet", "name": "Amulet", "slot_type": "amulet", "accepts": "amulet", "order": 6 },
+  { "id": "ring_1", "name": "Ring 1", "slot_type": "ring", "accepts": "ring", "order": 7 },
+  { "id": "ring_2", "name": "Ring 2", "slot_type": "ring", "accepts": "ring", "order": 8 },
+  { "id": "ring_3", "name": "Ring 3", "slot_type": "ring", "accepts": "ring", "order": 9 }
+]

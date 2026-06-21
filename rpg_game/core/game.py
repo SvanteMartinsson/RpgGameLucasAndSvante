@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, inventory, persistence, progression, store, talents, tournaments, world
+from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tournaments, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -71,8 +71,11 @@ class GameEngine:
             current_place_id=start_place.id,
             respawn_place_id=start_place.respawn_place_id,
             owned_weapon_ids=(player_class.starting_weapon_id,),
+            owned_gear_ids=(),
+            equipped_gear={},
             equipped_skill_ids=player_class.starting_skill_ids,
         )
+        equipment.recompute_gear_modifiers(player, self.content)
         self.state = GameState(player=player, content=self.content)
         return self.state
 
@@ -94,6 +97,7 @@ class GameEngine:
             return persistence.LoadResult(False, "Save file is corrupted.")
         player_data = data.get("player", data)
         player = persistence.deserialize_player(player_data, self.content.start_place_id)
+        equipment.recompute_gear_modifiers(player, self.content)
         self.state = GameState(player=player, content=self.content)
         return persistence.LoadResult(True, "Game loaded.")
 
@@ -108,10 +112,10 @@ class GameEngine:
                 message="You can only rest in a town with services.",
                 player_hp=self.player.hp,
                 player_mana=self.player.mana,
-            )
+        )
         player = self.player
-        player.hp = player.max_hp
-        player.mana = player.max_mana
+        player.hp = equipment.effective_stat(player, "max_hp")
+        player.mana = equipment.effective_stat(player, "max_mana")
         return RestResult(
             outcome="rested",
             message=f"You rest at {place.name} and recover to full HP and mana.",
@@ -172,6 +176,9 @@ class GameEngine:
         if drop.kind == "weapon":
             if drop.item_id not in player.owned_weapon_ids:
                 player.owned_weapon_ids = (*player.owned_weapon_ids, drop.item_id)
+        elif drop.kind == "gear":
+            if drop.item_id not in player.owned_gear_ids:
+                player.owned_gear_ids = (*player.owned_gear_ids, drop.item_id)
         else:
             player.inventory.add_consumable(drop.item_id)
 
@@ -197,6 +204,9 @@ class GameEngine:
         rarity = loot_rarity_for_denominator(denominator)
         if item_id in self.content.weapons:
             return LootDrop(item_id, self.content.weapons[item_id].name, "weapon", tier, rarity, denominator)
+        if item_id in self.content.gear_items:
+            gear = self.content.gear_items[item_id]
+            return LootDrop(item_id, gear.name, "gear", gear.tier, rarity, denominator)
         if item_id in self.content.items:
             item = self.content.items[item_id]
             return LootDrop(item_id, item.name, item.kind, tier, rarity, denominator)
@@ -337,7 +347,7 @@ class GameEngine:
         )
 
     def flee_chance(self, enemy: Enemy) -> float:
-        diff = (self.player.speed - enemy.speed) + (self.player.level - enemy.level)
+        diff = (equipment.effective_stat(self.player, "speed") - enemy.speed) + (self.player.level - enemy.level)
         return combat.clamp(0.5 + 0.05 * diff, 0.10, 0.95)
 
     def attempt_flee(self, enemy: Enemy) -> combat.CombatTurnResult:
@@ -395,6 +405,25 @@ class GameEngine:
             for weapon_id in self.player.owned_weapon_ids
             if weapon_id in self.content.weapons
         ]
+
+    def effective_stat(self, stat: str) -> int:
+        return equipment.effective_stat(self.player, stat)
+
+    def gear_modifier_total(self, stat: str) -> int:
+        return equipment.gear_modifier_total(self.player, stat)
+
+    def owned_gear(self):
+        return [
+            self.content.gear_items[gear_id]
+            for gear_id in self.player.owned_gear_ids
+            if gear_id in self.content.gear_items
+        ]
+
+    def equip_gear(self, gear_id: str, slot_id: str = "") -> equipment.EquipmentResult:
+        return equipment.equip_gear(self.player, self.content, gear_id, slot_id)
+
+    def unequip_gear(self, slot_id: str) -> equipment.EquipmentResult:
+        return equipment.unequip_gear(self.player, self.content, slot_id)
 
     def store_entries(self) -> list[store.StoreEntry]:
         return store.get_store_entries(self.content, self.player.current_place_id)

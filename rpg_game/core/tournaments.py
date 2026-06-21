@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import equipment
 from rpg_game.core.entities import GameContent, Player, Tournament
 
 
@@ -91,8 +92,8 @@ def complete_tournament(player: Player, content: GameContent, tournament: Tourna
 
 
 def recover_between_matches(player: Player) -> TournamentIntermissionResult:
-    player.hp = player.max_hp
-    player.mana = player.max_mana
+    player.hp = equipment.effective_stat(player, "max_hp")
+    player.mana = equipment.effective_stat(player, "max_mana")
     return TournamentIntermissionResult(
         "Tournament intermission: recovered to full HP and mana.",
         player_hp=player.hp,

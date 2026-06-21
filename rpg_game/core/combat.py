@@ -11,6 +11,7 @@ import random
 from dataclasses import dataclass, field
 from typing import Literal
 
+from rpg_game.core import equipment
 from rpg_game.core.entities import (
     ActiveStatus,
     CombatAction,
@@ -190,7 +191,7 @@ def actor_name(actor: Actor) -> str:
 
 
 def actor_speed(actor: Actor) -> int:
-    return actor.speed
+    return effective_stat(actor, "speed")
 
 
 def actor_is_alive(actor: Actor) -> bool:
@@ -198,7 +199,7 @@ def actor_is_alive(actor: Actor) -> bool:
 
 
 def ordered_by_speed(player: Player, enemy: Enemy) -> list[Actor]:
-    if player.speed >= enemy.speed:
+    if actor_speed(player) >= actor_speed(enemy):
         return [player, enemy]
     return [enemy, player]
 
@@ -231,7 +232,7 @@ def apply_damage_mitigation_with_armor_pen(
 ) -> int:
     mitigated = round_half_up(raw_damage * get_resistance(target, damage_type))
     if damage_type == "physical":
-        mitigated -= max(0, target.armor - armor_pen)
+        mitigated -= max(0, effective_stat(target, "armor") - armor_pen)
     mitigated -= active_mitigation(target)
     return max(1, mitigated)
 
@@ -248,7 +249,7 @@ def _basic_attack_base(actor: Actor, weapon: Weapon | None) -> int:
     if isinstance(actor, Player):
         if weapon is None:
             raise ValueError("player basic attacks require a weapon")
-        return actor.base_damage + weapon.damage_bonus
+        return effective_stat(actor, "damage") + weapon.damage_bonus
     return actor.damage
 
 
@@ -256,6 +257,24 @@ def get_stat(actor: Actor, stat: str) -> int:
     if stat == "power":
         return actor.base_damage if isinstance(actor, Player) else actor.damage
     return getattr(actor, stat)
+
+
+def effective_stat(actor: Actor, stat: str) -> int:
+    if isinstance(actor, Player):
+        return equipment.effective_stat(actor, stat)
+    if stat == "damage":
+        return actor.damage
+    if stat == "power":
+        return actor.damage
+    return getattr(actor, stat)
+
+
+def effective_max_hp(actor: Actor) -> int:
+    return effective_stat(actor, "max_hp")
+
+
+def effective_max_mana(actor: Actor) -> int:
+    return effective_stat(actor, "max_mana")
 
 
 def set_stat(actor: Actor, stat: str, value: int) -> None:
@@ -303,7 +322,7 @@ def _effect_source_value(actor: Actor, weapon: Weapon | None, effect: EffectSpec
     if effect.scale == "basic_attack":
         return _basic_attack_base(actor, weapon)
     if effect.scale == "power":
-        base = get_stat(actor, "power")
+        base = effective_stat(actor, "damage" if isinstance(actor, Player) else "power")
         if weapon_scaled and weapon is not None:
             base += weapon.damage_bonus
         return base
@@ -342,7 +361,7 @@ def compute_damage_components(
         resist = get_resistance(target, damage_type)
         resolved = round_half_up(amount * resist)
         if damage_type == "physical":
-            resolved -= max(0, target.armor - effect.armor_pen)
+            resolved -= max(0, effective_stat(target, "armor") - effect.armor_pen)
         components.append(DamageComponent(max(0, resolved), damage_type, effectiveness_label(resist)))
 
     total = _total_after_mitigation(target, components)
@@ -421,7 +440,7 @@ def apply_damage_taken_mod(damage: int, target: Actor) -> int:
 
 
 def effective_crit_chance(actor: Actor, effect: EffectSpec) -> int:
-    return max(0, actor.crit_chance + effect.crit_bonus)
+    return max(0, effective_stat(actor, "crit_chance") + effect.crit_bonus)
 
 
 def rolls_crit(actor: Actor, effect: EffectSpec, rng: random.Random | None) -> bool:
@@ -454,10 +473,10 @@ def condition_matches(actor: Actor, target: Actor, conditional: dict[str, object
     predicate = conditional.get("predicate")
     if predicate == "hp_pct_lte":
         threshold = float(conditional["threshold"])
-        return (subject.hp / subject.max_hp) * 100 <= threshold
+        return (subject.hp / effective_max_hp(subject)) * 100 <= threshold
     if predicate == "hp_pct_gte":
         threshold = float(conditional["threshold"])
-        return (subject.hp / subject.max_hp) * 100 >= threshold
+        return (subject.hp / effective_max_hp(subject)) * 100 >= threshold
     if predicate == "has_status":
         status_types = conditional.get("status_types", conditional.get("status_type"))
         if isinstance(status_types, list):
@@ -643,9 +662,10 @@ def actor_has_status(actor: Actor, tag: str) -> bool:
 
 
 def hp_percent(actor: Actor) -> float:
-    if actor.max_hp <= 0:
+    max_hp = effective_max_hp(actor)
+    if max_hp <= 0:
         return 0.0
-    return actor.hp / actor.max_hp * 100
+    return actor.hp / max_hp * 100
 
 
 def ai_condition_met(
@@ -793,7 +813,7 @@ def apply_effect(
 
     if effect.type == "instant_heal":
         before = effect_target.hp
-        effect_target.hp = min(effect_target.max_hp, effect_target.hp + effect.magnitude)
+        effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + effect.magnitude)
         result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
         return
 
@@ -812,7 +832,7 @@ def apply_effect(
         deal_damage(actor, effect_target, total, primary_type, result)
         heal = round_half_up(total * effect.ratio)
         before = actor.hp
-        actor.hp = min(actor.max_hp, actor.hp + heal)
+        actor.hp = min(effective_max_hp(actor), actor.hp + heal)
         parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
         flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
         flag_text = f" ({', '.join(flags)})" if flags else ""
@@ -899,7 +919,7 @@ def apply_effect(
 
     if effect.type == "heal":
         before = actor.hp
-        actor.hp = min(actor.max_hp, actor.hp + effect.magnitude)
+        actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
         result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
         return
 
@@ -916,9 +936,9 @@ def apply_effect(
         actor.stat_bonuses[effect.stat] = actor.stat_bonuses.get(effect.stat, 0) + effect.magnitude
         set_stat(actor, effect.stat, get_stat(actor, effect.stat) + effect.magnitude)
         if effect.stat == "max_mana":
-            actor.mana = min(actor.max_mana, actor.mana + effect.magnitude)
+            actor.mana = min(effective_max_mana(actor), actor.mana + effect.magnitude)
         if effect.stat == "max_hp":
-            actor.hp = min(actor.max_hp, actor.hp + effect.magnitude)
+            actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
         result.events.append(f"{actor.name} gained {effect.magnitude} {effect.stat}.")
         return
 
@@ -995,7 +1015,7 @@ def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution, tri
         if status.type != "reflect" or status.trigger != trigger:
             continue
         if status.scale == "power":
-            raw_damage = round_half_up((get_stat(bearer, "power") + status.weapon_bonus) * status.multiplier)
+            raw_damage = round_half_up((effective_stat(bearer, "damage") + status.weapon_bonus) * status.multiplier)
         else:
             raw_damage = status.magnitude
         reflected = apply_damage_mitigation(raw_damage, attacker, status.damage_type)
@@ -1035,7 +1055,7 @@ def apply_status_tick(actor: Actor, status: ActiveStatus) -> list[str]:
         return [f"{actor_name(actor)} took {damage} {damage_type} damage from {status.type}."]
     if status.type == "regen":
         before = actor.hp
-        actor.hp = min(actor.max_hp, actor.hp + status.magnitude)
+        actor.hp = min(effective_max_hp(actor), actor.hp + status.magnitude)
         return [f"{actor_name(actor)} regenerated {actor.hp - before} HP."]
     return []
 

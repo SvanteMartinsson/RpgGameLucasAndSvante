@@ -1,0 +1,65 @@
+[
+  {
+    "id": "training_cap",
+    "name": "Training Cap",
+    "slot_type": "head",
+    "tier": 1,
+    "rarity": "common",
+    "level_req": 1,
+    "stat_modifiers": { "armor": 1 }
+  },
+  {
+    "id": "padded_vest",
+    "name": "Padded Vest",
+    "slot_type": "chest",
+    "tier": 1,
+    "rarity": "common",
+    "level_req": 1,
+    "stat_modifiers": { "armor": 2, "max_hp": 5 }
+  },
+  {
+    "id": "novice_ring",
+    "name": "Novice Ring",
+    "slot_type": "ring",
+    "tier": 1,
+    "rarity": "common",
+    "level_req": 1,
+    "stat_modifiers": { "damage": 1 }
+  },
+  {
+    "id": "swift_ring",
+    "name": "Swift Ring",
+    "slot_type": "ring",
+    "tier": 1,
+    "rarity": "uncommon",
+    "level_req": 1,
+    "stat_modifiers": { "speed": 2 }
+  },
+  {
+    "id": "focus_band",
+    "name": "Focus Band",
+    "slot_type": "ring",
+    "tier": 1,
+    "rarity": "uncommon",
+    "level_req": 1,
+    "stat_modifiers": { "max_mana": 10 }
+  },
+  {
+    "id": "lucky_loop",
+    "name": "Lucky Loop",
+    "slot_type": "ring",
+    "tier": 1,
+    "rarity": "uncommon",
+    "level_req": 1,
+    "stat_modifiers": { "crit_chance": 3 }
+  },
+  {
+    "id": "veteran_ring",
+    "name": "Veteran Ring",
+    "slot_type": "ring",
+    "tier": 5,
+    "rarity": "rare",
+    "level_req": 3,
+    "stat_modifiers": { "damage": 4, "crit_chance": 4 }
+  }
+]

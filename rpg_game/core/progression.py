@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass
 
+from rpg_game.core import equipment
 from rpg_game.core.entities import Player
 
 # Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
@@ -33,8 +34,8 @@ def apply_death_penalty(player: Player) -> RespawnResult:
       reduced.
     - Gold drops by level * GOLD_LOSS_PER_LEVEL, clamped to [0, current gold].
     """
-    new_hp = round_half_up(player.max_hp / 2)
-    new_mana = round_half_up(player.max_mana / 2)
+    new_hp = round_half_up(equipment.effective_stat(player, "max_hp") / 2)
+    new_mana = round_half_up(equipment.effective_stat(player, "max_mana") / 2)
     xp_lost = player.xp
     gold_lost = min(player.gold, player.level * GOLD_LOSS_PER_LEVEL)
     player.hp = new_hp
@@ -88,7 +89,7 @@ def apply_stat_choice(player: Player, stat: str) -> str:
         message = f"Damage increased to {player.base_damage}."
     elif normalized in {"hp", "health"}:
         player.max_hp += 10
-        player.hp = min(player.max_hp, player.hp + 10)
+        player.hp = min(equipment.effective_stat(player, "max_hp"), player.hp + 10)
         message = f"Max HP increased to {player.max_hp}."
     else:
         raise ValueError("stat must be 'damage' or 'hp'")

@@ -16,8 +16,10 @@ from rpg_game.core.entities import (
     ConsumableItem,
     CombatAction,
     EnemyTemplate,
+    EquipmentSlot,
     EffectSpec,
     GameContent,
+    GearItem,
     Place,
     Position,
     PlayerClass,
@@ -26,6 +28,7 @@ from rpg_game.core.entities import (
     TournamentReward,
     Weapon,
 )
+from rpg_game.core.equipment import ALLOWED_GEAR_STATS
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -68,6 +71,30 @@ def load_content() -> GameContent:
             category=row.get("category", "melee"),
         )
         for row in _read_json("weapons.json")
+    }
+
+    equipment_slots = {
+        row["id"]: EquipmentSlot(
+            id=row["id"],
+            name=row["name"],
+            slot_type=row["slot_type"],
+            accepts=row.get("accepts", row["slot_type"]),
+            order=row.get("order", 0),
+        )
+        for row in _read_json("equipment_slots.json")
+    }
+
+    gear_items = {
+        row["id"]: GearItem(
+            id=row["id"],
+            name=row["name"],
+            slot_type=row["slot_type"],
+            tier=row["tier"],
+            rarity=row["rarity"],
+            level_req=row.get("level_req", max(1, row["tier"] - 2)),
+            stat_modifiers={key: int(value) for key, value in row.get("stat_modifiers", {}).items()},
+        )
+        for row in _read_json("gear.json")
     }
 
     actions = {
@@ -195,12 +222,15 @@ def load_content() -> GameContent:
             respawn_place_id=row["id"] if row["respawn"] else world["meta"]["start_place_id"],
         )
 
+    _validate_gear(equipment_slots, gear_items)
     _validate_tournaments(tournaments, enemies, places, weapons, items)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
         classes=classes,
         weapons=weapons,
+        equipment_slots=equipment_slots,
+        gear_items=gear_items,
         items=items,
         actions=actions,
         talents=talents,
@@ -209,6 +239,16 @@ def load_content() -> GameContent:
         places=places,
         rare_loot_table=rare_loot_table,
     )
+
+
+def _validate_gear(equipment_slots, gear_items) -> None:
+    accepted_types = {slot.accepts for slot in equipment_slots.values() if slot.slot_type != "weapon"}
+    for gear in gear_items.values():
+        if gear.slot_type not in accepted_types:
+            raise ValueError(f"{gear.id} uses unknown slot_type {gear.slot_type}")
+        invalid_stats = set(gear.stat_modifiers) - ALLOWED_GEAR_STATS
+        if invalid_stats:
+            raise ValueError(f"{gear.id} has unsupported stats: {', '.join(sorted(invalid_stats))}")
 
 
 def _validate_tournaments(tournaments, enemies, places, weapons, items) -> None:

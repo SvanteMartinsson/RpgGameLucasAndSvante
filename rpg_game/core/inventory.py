@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import equipment
 from rpg_game.core.entities import GameContent, Player
 
 
@@ -27,12 +28,12 @@ def use_consumable(player: Player, content: GameContent, item_id: str) -> UseIte
 
     if item.heal_amount:
         before = player.hp
-        player.hp = min(player.max_hp, player.hp + item.heal_amount)
+        player.hp = min(equipment.effective_stat(player, "max_hp"), player.hp + item.heal_amount)
         effects.append(f"healed {player.hp - before} HP")
 
     if item.mana_amount:
         before_mana = player.mana
-        player.mana = min(player.max_mana, player.mana + item.mana_amount)
+        player.mana = min(equipment.effective_stat(player, "max_mana"), player.mana + item.mana_amount)
         effects.append(f"restored {player.mana - before_mana} mana")
 
     for tag in item.cures:

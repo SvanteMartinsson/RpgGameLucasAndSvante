@@ -36,6 +36,26 @@ class Weapon:
 
 
 @dataclass(frozen=True)
+class EquipmentSlot:
+    id: str
+    name: str
+    slot_type: str
+    accepts: str
+    order: int = 0
+
+
+@dataclass(frozen=True)
+class GearItem:
+    id: str
+    name: str
+    slot_type: str
+    tier: int
+    rarity: str
+    level_req: int
+    stat_modifiers: dict[str, int]
+
+
+@dataclass(frozen=True)
 class EffectSpec:
     type: str
     magnitude: int = 0
@@ -291,6 +311,9 @@ class Player:
     current_place_id: str
     respawn_place_id: str
     owned_weapon_ids: tuple[str, ...] = ()
+    owned_gear_ids: tuple[str, ...] = ()
+    equipped_gear: dict[str, str] = field(default_factory=dict)
+    gear_stat_modifiers: dict[str, int] = field(default_factory=dict)
     mana: int = 0
     max_mana: int = 0
     speed: int = 0
@@ -319,12 +342,18 @@ class Player:
     def is_alive(self) -> bool:
         return self.hp > 0
 
+    def effective_stat(self, stat: str) -> int:
+        value = getattr(self, "base_damage" if stat == "damage" else stat)
+        return int(value + self.gear_stat_modifiers.get(stat, 0))
+
 
 @dataclass(frozen=True)
 class GameContent:
     start_place_id: str
     classes: dict[str, PlayerClass]
     weapons: dict[str, Weapon]
+    equipment_slots: dict[str, EquipmentSlot]
+    gear_items: dict[str, GearItem]
     items: dict[str, ConsumableItem]
     actions: dict[str, CombatAction]
     talents: dict[str, TalentNode]
