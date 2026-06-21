@@ -37,6 +37,7 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
+from rpg_game.presentation.pygame_canvas import acquire_display, present, to_canvas
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 # WIDTH/HEIGHT are the pre-game window size, shared with the character-creation
 # screen the start menu flows into — one source, no hardcoded duplicate. (The
@@ -231,7 +232,9 @@ class OverworldApp:
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
-        self.screen = pygame.display.set_mode(self.view_size)
+        self.windowed_size = self.view_size
+        self.fullscreen = False
+        self._apply_display_mode()
         self.clock = pygame.time.Clock()
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
@@ -273,6 +276,22 @@ class OverworldApp:
         self.toast_color = color
         self.toast_timer = FPS * 3
 
+    # -- display mode -------------------------------------------------------
+
+    def _apply_display_mode(self) -> None:
+        """(Re)create the display surface for the current windowed/fullscreen
+        state. Borderless desktop fullscreen — matches the desktop resolution,
+        does not change the video mode, and alt-tabs cleanly."""
+        pygame.display.set_caption(T.CAPTION_OVERWORLD)
+        if self.fullscreen:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode(self.windowed_size)
+
+    def toggle_fullscreen(self) -> None:
+        self.fullscreen = not self.fullscreen
+        self._apply_display_mode()
+
     # -- wild encounters + battle loop --------------------------------------
 
     def maybe_encounter(self):
@@ -297,9 +316,8 @@ class OverworldApp:
             playtest_logger=self.playtest_logger,
             location_id=location_id,
         ).run()
-        # The battle resized the window; restore the overworld view.
-        pygame.display.set_caption(T.CAPTION_OVERWORLD)
-        self.screen = pygame.display.set_mode(self.view_size)
+        # Re-assert the overworld display (preserves window/fullscreen state).
+        self._apply_display_mode()
         self.resolve_battle_outcome(outcome, enemy)
 
     def resolve_battle_outcome(self, outcome: str, enemy) -> None:
@@ -492,8 +510,7 @@ class OverworldApp:
             playtest_logger=self.playtest_logger,
             location_id=location_id,
         ).run()
-        pygame.display.set_caption(T.CAPTION_OVERWORLD)
-        self.screen = pygame.display.set_mode(self.view_size)
+        self._apply_display_mode()
         return outcome
 
     def _start_next_tournament_match(self) -> None:
@@ -542,6 +559,9 @@ class OverworldApp:
                         break
 
     def _handle_key(self, event: pygame.event.Event) -> None:
+        if event.key == pygame.K_F11:
+            self.toggle_fullscreen()
+            return
         if self.overlay == "skills_talents":
             if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
                 self.move_talent_selection(1)
@@ -1184,7 +1204,9 @@ def engine_from_start_choice(
 def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     pygame.init()
     pygame.display.set_caption(T.CAPTION_START)
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    display = acquire_display((WIDTH, HEIGHT))
+    screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
+    offset = (0, 0)
     font = pygame.font.SysFont("menlo,consolas,monospace", 20)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
@@ -1207,8 +1229,9 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             if event.type == pygame.QUIT:
                 return "quit"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = to_canvas(event.pos, offset)
                 for button in buttons:
-                    if button.rect.collidepoint(event.pos):
+                    if button.rect.collidepoint(click):
                         return button.on_click
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -1225,7 +1248,7 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             msg = font_sm.render(message, True, BAD)
             screen.blit(msg, msg.get_rect(center=(WIDTH // 2, 198)))
 
-        mouse = pygame.mouse.get_pos()
+        mouse = to_canvas(pygame.mouse.get_pos(), offset)
         for button in buttons:
             color = BTN_HOVER if button.rect.collidepoint(mouse) else BTN
             pygame.draw.rect(screen, color, button.rect, border_radius=8)
@@ -1233,7 +1256,7 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             label = font.render(button.label, True, TEXT)
             screen.blit(label, label.get_rect(center=button.rect.center))
 
-        pygame.display.flip()
+        offset = present(display, screen, BG)
         clock.tick(FPS)
 
 

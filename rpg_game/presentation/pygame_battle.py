@@ -28,6 +28,7 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import ui_text as T
+from rpg_game.presentation.pygame_canvas import acquire_display, present, to_canvas
 
 # --- Layout ----------------------------------------------------------------
 
@@ -74,7 +75,8 @@ class Button:
 @dataclass
 class BattleApp:
     engine: GameEngine
-    screen: pygame.Surface = field(init=False)
+    display: pygame.Surface = field(init=False)  # real window/fullscreen surface
+    screen: pygame.Surface = field(init=False)   # fixed-size canvas drawn to
     clock: pygame.time.Clock = field(init=False)
     font: pygame.font.Font = field(init=False)
     font_sm: pygame.font.Font = field(init=False)
@@ -99,13 +101,17 @@ class BattleApp:
     location_id: str = ""
     allow_flee: bool = True
     allow_swap: bool = True
+    _offset: tuple[int, int] = (0, 0)  # canvas centering offset on the display
 
     # -- lifecycle ----------------------------------------------------------
 
     def __post_init__(self) -> None:
         pygame.init()
         pygame.display.set_caption(T.CAPTION_BATTLE)
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        # Inherit the caller's display (window or fullscreen); draw to a fixed
+        # canvas that present() blits centered onto it.
+        self.display = acquire_display((WIDTH, HEIGHT))
+        self.screen = pygame.Surface((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
@@ -268,8 +274,9 @@ class BattleApp:
             self._handle_key(event)
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            pos = to_canvas(event.pos, self._offset)
             for button in self.buttons:
-                if button.enabled and button.rect.collidepoint(event.pos):
+                if button.enabled and button.rect.collidepoint(pos):
                     button.on_click()
                     return
             # Clicking anywhere advances out of idle/result states.
@@ -315,7 +322,7 @@ class BattleApp:
         self._draw_buttons()
         if self.banner:
             self._draw_banner()
-        pygame.display.flip()
+        self._offset = present(self.display, self.screen, BG)
 
     def _panel(self, rect: pygame.Rect, title: str = "") -> None:
         pygame.draw.rect(self.screen, PANEL, rect, border_radius=8)
@@ -446,7 +453,7 @@ class BattleApp:
             self.buttons.append(Button(rect, label, (lambda s=stat: self.apply_stat(s)), True))
 
     def _draw_buttons(self):
-        mouse = pygame.mouse.get_pos()
+        mouse = to_canvas(pygame.mouse.get_pos(), self._offset)
         for b in self.buttons:
             if not b.enabled:
                 color = BTN_DISABLED
@@ -599,7 +606,9 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
     classes = list(engine.content.classes.values())
     pygame.init()
     pygame.display.set_caption(T.CAPTION_CREATE)
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    display = acquire_display((WIDTH, HEIGHT))
+    screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
+    offset = (0, 0)
     font = pygame.font.SysFont("menlo,consolas,monospace", 17)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 28, bold=True)
@@ -623,10 +632,11 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
                 pygame.quit()
                 sys.exit(0)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = to_canvas(event.pos, offset)
                 for i, rect in enumerate(list_rects):
-                    if rect.collidepoint(event.pos):
+                    if rect.collidepoint(click):
                         selected = i
-                if start_rect.collidepoint(event.pos):
+                if start_rect.collidepoint(click):
                     return finish()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -662,7 +672,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
         screen.blit(name_surf, name_surf.get_rect(midleft=(name_box.x + 12, name_box.centery)))
 
         screen.blit(font_sm.render(T.CREATE_PICK_CLASS, True, TEXT_DIM), (PAD, 176))
-        mouse = pygame.mouse.get_pos()
+        mouse = to_canvas(pygame.mouse.get_pos(), offset)
         for i, (cls, rect) in enumerate(zip(classes, list_rects)):
             if i == selected:
                 color = ACCENT
@@ -691,7 +701,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
         start_label = font.render(T.CREATE_START, True, TEXT)
         screen.blit(start_label, start_label.get_rect(center=start_rect.center))
 
-        pygame.display.flip()
+        offset = present(display, screen, BG)
         clock.tick(FPS)
 
 
