@@ -205,6 +205,13 @@ class Button:
     enabled: bool = True
 
 
+@dataclass
+class TournamentRun:
+    tournament: object
+    next_index: int = 0
+    message: str = ""
+
+
 # --- app -------------------------------------------------------------------
 
 
@@ -227,8 +234,10 @@ class OverworldApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
-        self.mode = "walk"  # walk | townmenu | store
+        self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
+        self.selected_tournament_id = ""
+        self.tournament_run: TournamentRun | None = None
         self.buttons: list[Button] = []
         self.toast = ""
         self.toast_color = TEXT
@@ -316,6 +325,11 @@ class OverworldApp:
         elif action == "rest":
             result = self.engine.rest()
             self.set_toast(result.message, GOOD if result.outcome == "rested" else TEXT_DIM)
+        elif action == "tournaments":
+            if self.engine.available_tournaments():
+                self.mode = "tournaments"
+            else:
+                self.set_toast(T.TOURNAMENT_NONE, TEXT_DIM)
         elif action == "save":
             self.save_game()
 
@@ -368,6 +382,73 @@ class OverworldApp:
         except ValueError as error:
             self.set_toast(str(error), BAD)
 
+    # -- tournament flow ----------------------------------------------------
+
+    def select_tournament(self, tournament_id: str) -> None:
+        self.selected_tournament_id = tournament_id
+        self.mode = "tournament_confirm"
+
+    def start_tournament_series(self, tournament_id: str | None = None) -> None:
+        tournament_id = tournament_id or self.selected_tournament_id
+        start = self.engine.start_tournament(tournament_id)
+        self.set_toast(start.message, GOOD if start.success else BAD)
+        if not start.success or start.tournament is None:
+            return
+        self.tournament_run = TournamentRun(start.tournament)
+        self.overlay = ""
+        self._start_next_tournament_match()
+
+    def continue_tournament(self) -> None:
+        if self.tournament_run is None:
+            self.mode = "townmenu"
+            return
+        self.overlay = ""
+        self._start_next_tournament_match()
+
+    def run_tournament_battle(self, enemy) -> str:
+        location_id = self.engine.player.current_place_id
+        outcome = BattleApp(
+            engine=self.engine,
+            enemy=enemy,
+            standalone=False,
+            allow_flee=False,
+            allow_swap=False,
+            playtest_logger=self.playtest_logger,
+            location_id=location_id,
+        ).run()
+        pygame.display.set_caption(T.CAPTION_OVERWORLD)
+        self.screen = pygame.display.set_mode(self.view_size)
+        return outcome
+
+    def _start_next_tournament_match(self) -> None:
+        run = self.tournament_run
+        if run is None:
+            return
+        enemy = self.engine.create_tournament_opponent(run.tournament, run.next_index)
+        outcome = self.run_tournament_battle(enemy)
+        if outcome != "victory":
+            self.set_toast(f"Eliminated from {run.tournament.name}.", BAD)
+            self._clear_tournament_run()
+            return
+
+        run.next_index += 1
+        if run.next_index >= len(run.tournament.opponent_ids):
+            reward = self.engine.complete_tournament(run.tournament)
+            self.set_toast(reward.message, GOOD if reward.success else BAD)
+            self._clear_tournament_run()
+            return
+
+        recovery = self.engine.recover_between_tournament_matches()
+        next_enemy = self.engine.content.enemies[run.tournament.opponent_ids[run.next_index]].name
+        run.message = f"{recovery.message} Next opponent: {next_enemy}."
+        self.mode = "tournament_intermission"
+
+    def _clear_tournament_run(self) -> None:
+        self.tournament_run = None
+        self.selected_tournament_id = ""
+        self.overlay = ""
+        self.mode = "townmenu" if self.world.town_place_id() else "walk"
+
     # -- input --------------------------------------------------------------
 
     def handle_events(self) -> None:
@@ -388,6 +469,10 @@ class OverworldApp:
                 self.overlay = ""
             elif self.mode == "store":
                 self.mode = "townmenu"
+            elif self.mode in {"tournaments", "tournament_confirm"}:
+                self.mode = "townmenu"
+            elif self.mode == "tournament_intermission":
+                self.overlay = "system"
             elif self.mode == "townmenu":
                 self.mode = "walk"
             else:
@@ -441,6 +526,12 @@ class OverworldApp:
             self._draw_town_menu()
         elif self.mode == "store":
             self._draw_store_screen()
+        elif self.mode == "tournaments":
+            self._draw_tournament_list_screen()
+        elif self.mode == "tournament_confirm":
+            self._draw_tournament_confirm_screen()
+        elif self.mode == "tournament_intermission":
+            self._draw_tournament_intermission_screen()
         if self.overlay:
             self._draw_overlay_screen()
         if self.toast:
@@ -523,13 +614,82 @@ class OverworldApp:
         panel = self._overlay_panel(self.engine.current_place().name)
         has_store = self.engine.current_place().has_store
         col_w = (panel.width - 60) // 2
-        for i, (action, label) in enumerate(T.TOWN_ACTIONS):
+        actions = list(T.TOWN_ACTIONS)
+        if self.engine.available_tournaments():
+            actions.append(("tournaments", T.TOWN_TOURNAMENTS))
+        for i, (action, label) in enumerate(actions):
             col, row = i % 2, i // 2
             rect = pygame.Rect(panel.x + 20 + col * (col_w + 20), panel.y + 70 + row * 56, col_w, 44)
             enabled = not (action == "store" and not has_store)
             self._add_button(rect, label, (lambda a=action: self.do_action(a)), enabled)
         self.screen.blit(self.font_sm.render(T.BACK_TO_MAP, True, TEXT_DIM),
                          (panel.x + 20, panel.bottom - 30))
+        self._draw_buttons()
+
+    def _draw_tournament_list_screen(self) -> None:
+        panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])
+        tournaments = build_snapshot(self.engine).tournaments
+        if not tournaments:
+            self._lines(panel, [T.TOURNAMENT_NONE], TEXT_DIM)
+        for i, tournament in enumerate(tournaments[:8]):
+            reward = _tournament_reward_text(tournament)
+            cleared = " [CLEARED]" if tournament.completed else ""
+            label = f"{tournament.name} ({tournament.opponent_count} fights) - {reward}{cleared}"
+            rect = pygame.Rect(panel.x + 20, panel.y + 70 + i * 44, panel.width - 40, 36)
+            self._add_button(rect, label, (lambda tid=tournament.id: self.select_tournament(tid)), not tournament.completed)
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
+        self._draw_buttons()
+
+    def _draw_tournament_confirm_screen(self) -> None:
+        panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])
+        tournament = self.engine.content.tournaments.get(self.selected_tournament_id)
+        if tournament is None:
+            self._lines(panel, [T.TOURNAMENT_NONE], TEXT_DIM)
+        else:
+            reward = _tournament_reward_text_by_data(self.engine, tournament)
+            lines = [
+                tournament.name,
+                f"{len(tournament.opponent_ids)} fights in a row. Reward: {reward}.",
+                "",
+                *T.TOURNAMENT_SERIES_WARNING_LINES,
+                "",
+                tournament.description,
+            ]
+            self._lines(panel, lines, start=64, step=26)
+            self._add_button(
+                pygame.Rect(panel.x + 20, panel.bottom - 54, 190, 40),
+                T.TOURNAMENT_START,
+                lambda: self.start_tournament_series(tournament.id),
+            )
+        self._add_button(pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40),
+                         T.BACK, lambda: setattr(self, "mode", "tournaments"))
+        self._draw_buttons()
+
+    def _draw_tournament_intermission_screen(self) -> None:
+        panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])
+        run = self.tournament_run
+        if run is None:
+            self._lines(panel, [T.TOURNAMENT_NONE], TEXT_DIM)
+        else:
+            total = len(run.tournament.opponent_ids)
+            lines = [
+                f"{run.tournament.name}: match {run.next_index + 1}/{total}",
+                run.message,
+                "",
+                *T.TOURNAMENT_SERIES_WARNING_LINES,
+            ]
+            self._lines(panel, lines, start=64, step=26)
+            self._add_button(
+                pygame.Rect(panel.x + 20, panel.bottom - 54, 180, 40),
+                T.TOURNAMENT_NEXT,
+                self.continue_tournament,
+            )
+            self._add_button(
+                pygame.Rect(panel.x + 220, panel.bottom - 54, 210, 40),
+                T.TOURNAMENT_EQUIP,
+                lambda: self.toggle_overlay("character"),
+            )
         self._draw_buttons()
 
     def _draw_overlay_screen(self) -> None:
@@ -699,6 +859,26 @@ class OverworldApp:
             self.draw()
             self.clock.tick(FPS)
         pygame.quit()
+
+
+def _tournament_reward_text(tournament) -> str:
+    bits = []
+    if tournament.reward_gold:
+        bits.append(f"{tournament.reward_gold} gold")
+    bits.extend(tournament.reward_item_names)
+    return ", ".join(bits) if bits else T.TOURNAMENT_REWARD_NONE
+
+
+def _tournament_reward_text_by_data(engine: GameEngine, tournament) -> str:
+    bits = []
+    if tournament.reward.gold:
+        bits.append(f"{tournament.reward.gold} gold")
+    for item_id in tournament.reward.item_ids:
+        if item_id in engine.content.weapons:
+            bits.append(engine.content.weapons[item_id].name)
+        elif item_id in engine.content.items:
+            bits.append(engine.content.items[item_id].name)
+    return ", ".join(bits) if bits else T.TOURNAMENT_REWARD_NONE
 
 
 def main(argv: list[str] | None = None) -> None:

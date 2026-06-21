@@ -67,7 +67,24 @@ SCREEN_TITLES = {
     "skills_talents": "Skills & Talents",
     "system": "System",
     "store": "Store",
+    "tournaments": "Tournaments",
 }
+
+TOWN_TOURNAMENTS = "Tournaments"
+TOURNAMENT_SERIES_WARNING = (
+    "Locked series: fights in a row, no flee or weapon swap mid-match, "
+    "full HP/mana and equipment changes between matches, reward only after full victory."
+)
+TOURNAMENT_SERIES_WARNING_LINES = (
+    "Locked series: fights in a row; no flee or weapon swap mid-match.",
+    "Between matches: full HP/mana and equipment changes.",
+    "Reward only after full victory.",
+)
+TOURNAMENT_START = "Start tournament"
+TOURNAMENT_NEXT = "Next match"
+TOURNAMENT_EQUIP = "Change equipment"
+TOURNAMENT_NONE = "No tournaments here."
+TOURNAMENT_REWARD_NONE = "no reward"
 
 # --- overworld: toasts -----------------------------------------------------
 

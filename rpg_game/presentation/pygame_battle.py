@@ -97,6 +97,8 @@ class BattleApp:
     _pending_outcome: str = ""  # single-battle result awaiting press-to-continue
     playtest_logger: PlaytestLogger | None = None
     location_id: str = ""
+    allow_flee: bool = True
+    allow_swap: bool = True
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -176,6 +178,8 @@ class BattleApp:
         self._consume_result(result)
 
     def issue_flee(self) -> None:
+        if not self.allow_flee:
+            return
         if self.enemy is None or self.mode != "combat":
             return
         result = self.engine.attempt_flee(self.enemy)
@@ -415,10 +419,12 @@ class BattleApp:
             (*T.ACTION_ATTACK, lambda: self.issue_turn("attack"), True),
             (*T.ACTION_SKILL, lambda: self.open_submenu("skill"), bool(snapshot.skills)),
             (*T.ACTION_ITEM, lambda: self.open_submenu("item"), self._has_consumables()),
-            (*T.ACTION_SWAP, lambda: self.open_submenu("swap"), self._has_swappable(snapshot)),
             (*T.ACTION_IDENTIFY, lambda: self.issue_turn("identify"), not getattr(self.enemy, "identified", False)),
-            (*T.ACTION_FLEE, self.issue_flee, True),
         ]
+        if self.allow_swap:
+            specs.insert(3, (*T.ACTION_SWAP, lambda: self.open_submenu("swap"), self._has_swappable(snapshot)))
+        if self.allow_flee:
+            specs.append((*T.ACTION_FLEE, self.issue_flee, True))
         for rect, (label, hotkey, cb, enabled) in zip(self._action_rects(len(specs)), specs):
             self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey))
 
@@ -488,6 +494,8 @@ class BattleApp:
                 opts.append((f"{item.name} x{count}", f"item:{item_id}", True, ""))
             return opts
         if self.submenu_kind == "swap":
+            if not self.allow_swap:
+                return []
             opts = []
             for weapon in snapshot.weapons:
                 if weapon.equipped:
