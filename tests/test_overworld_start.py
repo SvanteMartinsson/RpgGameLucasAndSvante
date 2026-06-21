@@ -16,6 +16,7 @@ try:
     from rpg_game.core.game import GameEngine
     from rpg_game.presentation import pygame_overworld
     from rpg_game.presentation.pygame_overworld import (
+        SAVE_PATH,
         OverworldApp,
         engine_from_start_choice,
         start_menu,
@@ -141,6 +142,30 @@ class OverworldStartTest(unittest.TestCase):
         self.assertEqual(menu.call_count, 1)
         app.assert_not_called()
         quit_pygame.assert_called_once()
+
+    def test_default_save_path_is_absolute(self):
+        # CWD-relative paths are why cold start missed an existing save.
+        self.assertTrue(os.path.isabs(SAVE_PATH))
+
+    def test_cold_start_from_other_cwd_shows_load_and_loads(self):
+        # A save on disk must be detected and loaded even when the game is
+        # launched (cold start) from an unrelated working directory.
+        with tempfile.TemporaryDirectory() as save_dir, tempfile.TemporaryDirectory() as other_cwd:
+            save_path = os.path.join(save_dir, "savegame.json")
+            saved = GameEngine()
+            saved.start_new_game("Persisted", "rogue")
+            saved.save(save_path)
+
+            cwd = os.getcwd()
+            os.chdir(other_cwd)  # simulate launching from a different directory
+            try:
+                options = [choice for choice, _label in start_menu_options(save_path)]
+                loaded = engine_from_start_choice("load", save_path=save_path)
+            finally:
+                os.chdir(cwd)
+
+        self.assertIn("load", options)
+        self.assertEqual(loaded.player.name, "Persisted")
 
 
 if __name__ == "__main__":

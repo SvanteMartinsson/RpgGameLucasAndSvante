@@ -17,7 +17,7 @@ try:
     from rpg_game.core.game import GameEngine
     from rpg_game.presentation import terminal
     from rpg_game.presentation.pygame_battle import BattleApp
-    from rpg_game.presentation.pygame_overworld import OverworldApp
+    from rpg_game.presentation.pygame_overworld import SAVE_PATH, OverworldApp
     from rpg_game.presentation.playtest_logger import PlaytestLogger
 
     DEPS_OK = True
@@ -40,8 +40,8 @@ class OverworldOverlayTest(unittest.TestCase):
         self.app = OverworldApp()
 
     def tearDown(self):
-        if os.path.exists("savegame.json"):
-            os.remove("savegame.json")
+        if os.path.exists(SAVE_PATH):
+            os.remove(SAVE_PATH)
 
     def test_hotkeys_toggle_overworld_overlays_anywhere(self):
         self.app.world.set_tile(14, 8)  # wilderness
@@ -63,7 +63,7 @@ class OverworldOverlayTest(unittest.TestCase):
 
         self.app.save_game()
 
-        self.assertTrue(os.path.exists("savegame.json"))
+        self.assertTrue(os.path.exists(SAVE_PATH))
         self.assertIn("saved", self.app.toast.lower())
 
     def test_inventory_overlay_use_consumable_goes_through_engine(self):

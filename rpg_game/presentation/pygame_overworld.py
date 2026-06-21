@@ -48,7 +48,11 @@ from rpg_game.presentation.talent_text import talent_detail, talent_status
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
 ZONE_CONFIG = os.path.join(MAPS_DIR, "core_zone.json")
-SAVE_PATH = "savegame.json"
+# Anchor the save to a stable, absolute location (project root) rather than the
+# process CWD, so the start menu detects and loads it on a cold start regardless
+# of where the game was launched from — not only within the play session.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SAVE_PATH = os.path.join(_PROJECT_ROOT, "savegame.json")
 
 FPS = 60
 PLAYER_SIZE = 20
