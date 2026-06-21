@@ -81,6 +81,42 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertEqual(self.app.engine.player.equipped_weapon_id, "sword")
         self.assertIn("needs level", self.app.toast.lower())
 
+    def test_character_panel_equip_and_unequip_gear_updates_effective_stats(self):
+        self.app.engine.player.owned_gear_ids = ("padded_vest",)
+        self.app.selected_equipment_slot = "chest"
+
+        self.app.equip_gear_to_slot("padded_vest")
+
+        self.assertEqual(self.app.engine.player.equipped_gear["chest"], "padded_vest")
+        self.assertEqual(self.app.engine.effective_stat("armor"), self.app.engine.player.armor + 2)
+
+        self.app.unequip_gear_from_slot("chest")
+
+        self.assertNotIn("chest", self.app.engine.player.equipped_gear)
+        self.assertEqual(self.app.engine.effective_stat("armor"), self.app.engine.player.armor)
+
+    def test_character_panel_blocks_wrong_slot_and_level_gated_gear(self):
+        self.app.engine.player.owned_gear_ids = ("training_cap", "veteran_ring")
+
+        self.app.equip_gear_to_slot("training_cap", "chest")
+        self.assertNotIn("chest", self.app.engine.player.equipped_gear)
+        self.assertIn("cannot be equipped", self.app.toast.lower())
+
+        self.app.equip_gear_to_slot("veteran_ring", "ring_1")
+        self.assertNotIn("ring_1", self.app.engine.player.equipped_gear)
+        self.assertIn("requires level", self.app.toast.lower())
+
+    def test_character_panel_draws_slots_and_stat_breakdown(self):
+        self.app.engine.player.owned_gear_ids = ("padded_vest",)
+        self.app.overlay = "character"
+        self.app.selected_equipment_slot = "chest"
+
+        self.app.draw()
+        labels = [button.label for button in self.app.buttons]
+
+        self.assertTrue(any("Chest: [empty]" in label for label in labels))
+        self.assertTrue(any("Padded Vest" in label for label in labels))
+
     def test_panel_hotkeys_do_not_open_in_battle(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")

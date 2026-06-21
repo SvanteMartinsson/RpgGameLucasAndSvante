@@ -241,6 +241,7 @@ class OverworldApp:
         self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
         self.overlay_return_mode = ""
+        self.selected_equipment_slot = "weapon"
         self.selected_talent_id = ""
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
@@ -376,6 +377,17 @@ class OverworldApp:
             self.set_toast(" ".join(result.events) or T.CANNOT_EQUIP, BAD)
         else:
             self.set_toast(T.equipped_weapon(weapon.name), GOOD)
+
+    def select_equipment_slot(self, slot_id: str) -> None:
+        self.selected_equipment_slot = slot_id
+
+    def equip_gear_to_slot(self, gear_id: str, slot_id: str | None = None) -> None:
+        result = self.engine.equip_gear(gear_id, slot_id or self.selected_equipment_slot)
+        self.set_toast(result.message, GOOD if result.success else BAD)
+
+    def unequip_gear_from_slot(self, slot_id: str | None = None) -> None:
+        result = self.engine.unequip_gear(slot_id or self.selected_equipment_slot)
+        self.set_toast(result.message, GOOD if result.success else BAD)
 
     def use_inventory_item(self, item_id: str) -> None:
         result = self.engine.use_consumable(item_id)
@@ -806,21 +818,76 @@ class OverworldApp:
     def _overlay_character(self, panel) -> None:
         snap = build_snapshot(self.engine)
         p = snap.player
-        y = self._lines(panel, [
+        self._lines(panel, [
             f"{p.name} — {p.class_name} (Lv {p.level})",
             f"HP {p.hp}/{p.max_hp}    Mana {p.mana}/{p.max_mana}",
             f"XP {p.xp}/{p.xp_required}    Talent points {p.talent_points}",
-            f"Damage {p.total_damage} (base {p.base_damage} + weapon {p.weapon_damage_bonus})",
-            f"Armor {p.armor}    Speed {p.speed}    Crit {p.crit_chance}%",
             f"Gold {p.gold}",
-            "",
-            T.EQUIP_HINT,
-        ], step=22)
-        for i, w in enumerate(snap.weapons[:6]):
-            rect = pygame.Rect(panel.x + 20, y + 8 + i * 38, panel.width - 40, 32)
-            suffix = " [equipped]" if w.equipped else ("" if w.equippable else f"  needs Lv {w.required_level}")
-            self._add_button(rect, f"{w.name} (+{w.damage_bonus} {w.damage_type}, tier {w.tier}){suffix}",
-                             (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
+        ], step=20)
+
+        stats_x = panel.x + 20
+        slots_x = panel.x + 275
+        items_x = panel.x + 500
+        top = panel.y + 150
+        self.screen.blit(self.font_sm.render("Stats  base -> +gear -> total", True, TEXT_DIM), (stats_x, top - 24))
+        stat_rows = [
+            ("max_hp", "HP", self.engine.player.max_hp),
+            ("max_mana", "Mana", self.engine.player.max_mana),
+            ("damage", "Damage", self.engine.player.base_damage),
+            ("armor", "Armor", self.engine.player.armor),
+            ("speed", "Speed", self.engine.player.speed),
+            ("crit_chance", "Crit", self.engine.player.crit_chance),
+        ]
+        for i, (stat, label, base) in enumerate(stat_rows):
+            gear_bonus = self.engine.gear_modifier_total(stat)
+            total = self.engine.effective_stat(stat)
+            suffix = f"  (+weapon {p.weapon_damage_bonus})" if stat == "damage" else ""
+            self.screen.blit(
+                self.font_sm.render(f"{label}: {base} -> {gear_bonus:+} -> {total}{suffix}", True, TEXT),
+                (stats_x, top + i * 22),
+            )
+
+        slots = snap.equipment_slots
+        if self.selected_equipment_slot not in {slot.id for slot in slots}:
+            self.selected_equipment_slot = "weapon"
+        self.screen.blit(self.font_sm.render("Slots", True, TEXT_DIM), (slots_x, top - 24))
+        for i, slot in enumerate(slots[:10]):
+            rect = pygame.Rect(slots_x, top + i * 28, 200, 24)
+            selected = slot.id == self.selected_equipment_slot
+            item = slot.equipped_item_name or "[empty]"
+            label = f"{'> ' if selected else '  '}{slot.name}: {item}"
+            self._add_button(rect, label, (lambda sid=slot.id: self.select_equipment_slot(sid)), True)
+
+        selected_slot = next((slot for slot in slots if slot.id == self.selected_equipment_slot), slots[0])
+        self.screen.blit(self.font_sm.render(f"{selected_slot.name} options", True, TEXT_DIM), (items_x, top - 24))
+        if selected_slot.id == "weapon":
+            for i, w in enumerate(snap.weapons[:7]):
+                rect = pygame.Rect(items_x, top + i * 34, panel.right - items_x - 20, 28)
+                suffix = " [equipped]" if w.equipped else ("" if w.equippable else f" needs Lv {w.required_level}")
+                label = f"{w.name} +{w.damage_bonus} {w.damage_type}{suffix}"
+                self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
+            return
+
+        if selected_slot.equipped_item_id:
+            self._add_button(
+                pygame.Rect(items_x, top, panel.right - items_x - 20, 28),
+                f"Unequip {selected_slot.equipped_item_name}",
+                lambda sid=selected_slot.id: self.unequip_gear_from_slot(sid),
+                True,
+            )
+            start_y = top + 38
+        else:
+            start_y = top
+        choices = [
+            gear for gear in snap.gear
+            if gear.slot_type == selected_slot.slot_type and not gear.equipped_slot_id
+        ]
+        for i, gear in enumerate(choices[:7]):
+            rect = pygame.Rect(items_x, start_y + i * 34, panel.right - items_x - 20, 28)
+            mods = ", ".join(f"{stat} {value:+}" for stat, value in gear.stat_modifiers)
+            suffix = "" if gear.equippable else f" needs Lv {gear.required_level}"
+            label = f"{gear.name} [{gear.rarity}] {mods}{suffix}"
+            self._add_button(rect, label, (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)), gear.equippable)
 
     def _overlay_inventory(self, panel) -> None:
         eng = self.engine

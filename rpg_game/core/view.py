@@ -46,6 +46,28 @@ class WeaponSnapshot:
 
 
 @dataclass(frozen=True)
+class EquipmentSlotSnapshot:
+    id: str
+    name: str
+    slot_type: str
+    equipped_item_id: str
+    equipped_item_name: str
+
+
+@dataclass(frozen=True)
+class GearSnapshot:
+    id: str
+    name: str
+    slot_type: str
+    tier: int
+    rarity: str
+    required_level: int
+    stat_modifiers: tuple[tuple[str, int], ...]
+    equipped_slot_id: str
+    equippable: bool
+
+
+@dataclass(frozen=True)
 class SkillSnapshot:
     id: str
     name: str
@@ -109,6 +131,8 @@ class GameSnapshot:
     place: PlaceSnapshot
     connections: tuple[ConnectionSnapshot, ...]
     weapons: tuple[WeaponSnapshot, ...]
+    equipment_slots: tuple[EquipmentSlotSnapshot, ...]
+    gear: tuple[GearSnapshot, ...]
     skills: tuple[SkillSnapshot, ...]
     tournaments: tuple[TournamentSnapshot, ...]
 
@@ -162,6 +186,8 @@ def build_snapshot(engine: "GameEngine") -> GameSnapshot:
             for connection in engine.available_connections()
         ),
         weapons=tuple(_weapon_snapshot(engine, weapon_id) for weapon_id in player.owned_weapon_ids),
+        equipment_slots=tuple(_equipment_slot_snapshot(engine, slot_id) for slot_id in sorted(engine.content.equipment_slots, key=lambda item: engine.content.equipment_slots[item].order)),
+        gear=tuple(_gear_snapshot(engine, gear_id) for gear_id in player.owned_gear_ids),
         skills=tuple(_skill_snapshot(engine, action_id) for action_id in engine.player.equipped_skill_ids),
         tournaments=tuple(_tournament_snapshot(engine, tournament) for tournament in engine.available_tournaments()),
     )
@@ -192,6 +218,38 @@ def _weapon_snapshot(engine: "GameEngine", weapon_id: str) -> WeaponSnapshot:
         required_level=required_level,
         equipped=weapon.id == player.equipped_weapon_id,
         equippable=player.level >= required_level,
+    )
+
+
+def _equipment_slot_snapshot(engine: "GameEngine", slot_id: str) -> EquipmentSlotSnapshot:
+    slot = engine.content.equipment_slots[slot_id]
+    if slot.id == "weapon":
+        weapon = engine.content.weapons[engine.player.equipped_weapon_id]
+        return EquipmentSlotSnapshot(slot.id, slot.name, slot.slot_type, weapon.id, weapon.name)
+    gear_id = engine.player.equipped_gear.get(slot.id, "")
+    gear = engine.content.gear_items.get(gear_id)
+    return EquipmentSlotSnapshot(
+        id=slot.id,
+        name=slot.name,
+        slot_type=slot.slot_type,
+        equipped_item_id=gear.id if gear else "",
+        equipped_item_name=gear.name if gear else "",
+    )
+
+
+def _gear_snapshot(engine: "GameEngine", gear_id: str) -> GearSnapshot:
+    gear = engine.content.gear_items[gear_id]
+    equipped_slot_id = next((slot_id for slot_id, equipped_id in engine.player.equipped_gear.items() if equipped_id == gear.id), "")
+    return GearSnapshot(
+        id=gear.id,
+        name=gear.name,
+        slot_type=gear.slot_type,
+        tier=gear.tier,
+        rarity=gear.rarity,
+        required_level=gear.level_req,
+        stat_modifiers=tuple(sorted(gear.stat_modifiers.items())),
+        equipped_slot_id=equipped_slot_id,
+        equippable=engine.player.level >= gear.level_req,
     )
 
 
