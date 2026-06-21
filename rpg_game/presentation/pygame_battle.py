@@ -101,7 +101,7 @@ class BattleApp:
     location_id: str = ""
     allow_flee: bool = True
     allow_swap: bool = True
-    _offset: tuple[int, int] = (0, 0)  # canvas centering offset on the display
+    _transform: tuple[int, int, float] = (0, 0, 1.0)  # canvas->display offset+scale
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -270,11 +270,14 @@ class BattleApp:
         if event.type == pygame.QUIT:
             self.running = False
             return
+        if event.type == pygame.VIDEORESIZE:
+            self.display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            return
         if event.type == pygame.KEYDOWN:
             self._handle_key(event)
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            pos = to_canvas(event.pos, self._offset)
+            pos = to_canvas(event.pos, self._transform)
             for button in self.buttons:
                 if button.enabled and button.rect.collidepoint(pos):
                     button.on_click()
@@ -322,7 +325,7 @@ class BattleApp:
         self._draw_buttons()
         if self.banner:
             self._draw_banner()
-        self._offset = present(self.display, self.screen, BG)
+        self._transform = present(self.display, self.screen, BG)
 
     def _panel(self, rect: pygame.Rect, title: str = "") -> None:
         pygame.draw.rect(self.screen, PANEL, rect, border_radius=8)
@@ -453,7 +456,7 @@ class BattleApp:
             self.buttons.append(Button(rect, label, (lambda s=stat: self.apply_stat(s)), True))
 
     def _draw_buttons(self):
-        mouse = to_canvas(pygame.mouse.get_pos(), self._offset)
+        mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         for b in self.buttons:
             if not b.enabled:
                 color = BTN_DISABLED
@@ -608,7 +611,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
     pygame.display.set_caption(T.CAPTION_CREATE)
     display = acquire_display((WIDTH, HEIGHT))
     screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
-    offset = (0, 0)
+    offset = (0, 0, 1.0)
     font = pygame.font.SysFont("menlo,consolas,monospace", 17)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 28, bold=True)
@@ -631,6 +634,8 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit(0)
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
                 for i, rect in enumerate(list_rects):

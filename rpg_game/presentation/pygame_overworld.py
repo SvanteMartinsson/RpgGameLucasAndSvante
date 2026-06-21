@@ -37,7 +37,7 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
-from rpg_game.presentation.pygame_canvas import acquire_display, present, to_canvas
+from rpg_game.presentation.pygame_canvas import acquire_display, fit_size, open_window, present, to_canvas
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 # WIDTH/HEIGHT are the pre-game window size, shared with the character-creation
 # screen the start menu flows into — one source, no hardcoded duplicate. (The
@@ -232,7 +232,8 @@ class OverworldApp:
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
-        self.windowed_size = self.view_size
+        # Clamp the initial window so it can never open larger than the desktop.
+        self.windowed_size = fit_size(self.view_size)
         self.fullscreen = False
         self._apply_display_mode()
         self.clock = pygame.time.Clock()
@@ -286,7 +287,10 @@ class OverworldApp:
         if self.fullscreen:
             self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         else:
-            self.screen = pygame.display.set_mode(self.windowed_size)
+            # Normal resizable OS window (Mac green-button / drag-resize work),
+            # clamped so it never exceeds the desktop.
+            self.windowed_size = fit_size(self.windowed_size)
+            self.screen = open_window(self.windowed_size)
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -550,6 +554,10 @@ class OverworldApp:
             if event.type == pygame.QUIT:
                 self.exit_reason = "exit"
                 self.running = False
+            elif event.type == pygame.VIDEORESIZE and not self.fullscreen:
+                # Follow the user's resize / Mac maximize; layout reads get_size().
+                self.windowed_size = (event.w, event.h)
+                self.screen = pygame.display.set_mode(self.windowed_size, pygame.RESIZABLE)
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1206,7 +1214,7 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     pygame.display.set_caption(T.CAPTION_START)
     display = acquire_display((WIDTH, HEIGHT))
     screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
-    offset = (0, 0)
+    offset = (0, 0, 1.0)
     font = pygame.font.SysFont("menlo,consolas,monospace", 20)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
@@ -1228,6 +1236,8 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "quit"
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
                 for button in buttons:
