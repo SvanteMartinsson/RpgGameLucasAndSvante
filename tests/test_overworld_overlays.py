@@ -122,6 +122,50 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertTrue(any("[CAN LEARN]" in label for label in labels))
         self.assertTrue(any("[LOCKED]" in label for label in labels))
 
+    def test_overlay_from_town_menu_pauses_menu_and_restores_it_on_close(self):
+        self.app.world.set_tile(14, 10)
+        self.app.sync_location()
+        self.app.mode = "townmenu"
+
+        self.app.do_action("skills_talents")
+
+        self.assertEqual(self.app.overlay, "skills_talents")
+        self.assertEqual(self.app.mode, "walk")
+        self.assertEqual(self.app.overlay_return_mode, "townmenu")
+
+        self.app.draw()
+        labels = [button.label for button in self.app.buttons]
+        self.assertNotIn("Store", labels)
+        self.assertNotIn("Rest", labels)
+
+        self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+
+        self.assertEqual(self.app.overlay, "")
+        self.assertEqual(self.app.mode, "townmenu")
+
+    def test_overlay_input_from_town_menu_reaches_panel_not_menu_underneath(self):
+        self.app.world.set_tile(14, 10)
+        self.app.sync_location()
+        self.app.mode = "townmenu"
+        self.app.engine.player.inventory.add_consumable("hp_potion")
+        self.app.engine.player.hp = 1
+
+        self.app.do_action("inventory")
+        self.app.draw()
+
+        labels = [button.label for button in self.app.buttons]
+        self.assertNotIn("Store", labels)
+        potion = next(button for button in self.app.buttons if "HP Potion" in button.label)
+        potion.on_click()
+
+        self.assertGreater(self.app.engine.player.hp, 1)
+        self.assertEqual(self.app.mode, "walk")
+        self.assertEqual(self.app.overlay, "inventory")
+
+        back = next(button for button in self.app.buttons if button.label == "Back (Esc)")
+        back.on_click()
+        self.assertEqual(self.app.mode, "townmenu")
+
     def test_talent_detail_lines_match_terminal_description(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "cleric")

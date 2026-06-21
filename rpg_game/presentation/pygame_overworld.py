@@ -237,6 +237,7 @@ class OverworldApp:
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
         self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
+        self.overlay_return_mode = ""
         self.selected_talent_id = ""
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
@@ -336,7 +337,22 @@ class OverworldApp:
             self.save_game()
 
     def toggle_overlay(self, name: str) -> None:
-        self.overlay = "" if self.overlay == name else name
+        if self.overlay == name:
+            self.close_overlay()
+        else:
+            self.open_overlay(name)
+
+    def open_overlay(self, name: str) -> None:
+        if not self.overlay:
+            self.overlay_return_mode = "" if self.mode == "walk" else self.mode
+        self.overlay = name
+        self.mode = "walk"
+
+    def close_overlay(self) -> None:
+        self.overlay = ""
+        if self.overlay_return_mode:
+            self.mode = self.overlay_return_mode
+            self.overlay_return_mode = ""
 
     def save_game(self) -> None:
         result = self.engine.save(SAVE_PATH)
@@ -438,6 +454,7 @@ class OverworldApp:
             return
         self.tournament_run = TournamentRun(start.tournament)
         self.overlay = ""
+        self.overlay_return_mode = ""
         self._start_next_tournament_match()
 
     def continue_tournament(self) -> None:
@@ -489,6 +506,7 @@ class OverworldApp:
         self.tournament_run = None
         self.selected_tournament_id = ""
         self.overlay = ""
+        self.overlay_return_mode = ""
         self.mode = "townmenu" if self.world.town_place_id() else "walk"
 
     # -- input --------------------------------------------------------------
@@ -518,7 +536,7 @@ class OverworldApp:
                 return
         if event.key == pygame.K_ESCAPE:
             if self.overlay:
-                self.overlay = ""
+                self.close_overlay()
             elif self.mode == "store":
                 self.mode = "townmenu"
             elif self.mode in {"tournaments", "tournament_confirm"}:
@@ -751,7 +769,7 @@ class OverworldApp:
         renderer = getattr(self, f"_overlay_{self.overlay}")
         renderer(panel)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "overlay", ""))
+        self._add_button(back, T.BACK, self.close_overlay)
         self._draw_buttons()
 
     def _lines(self, panel, lines, color=TEXT, start=64, step=24) -> int:
