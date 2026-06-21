@@ -22,6 +22,14 @@ from __future__ import annotations
 CAPTION_OVERWORLD = "Svantrenish RPG — Overworld"
 CAPTION_BATTLE = "Svantrenish RPG — Battle"
 CAPTION_CREATE = "Svantrenish RPG — Create character"
+CAPTION_START = "Svantrenish RPG"
+
+# --- start menu ------------------------------------------------------------
+
+START_TITLE = "Svantrenish RPG"
+START_NEW_GAME = "New game"
+START_LOAD_GAME = "Load game"
+START_QUIT = "Quit"
 
 # --- overworld gates (referenced by core_zone.json message_key) ------------
 

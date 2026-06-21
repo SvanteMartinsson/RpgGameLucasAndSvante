@@ -223,14 +223,14 @@ class OverworldApp:
         self.zone = zone or ZoneConfig.load()
         self.engine = engine or self._new_engine()
         self.world = Overworld(self.zone.map_path, dict(self.zone.gates), dict(self.zone.towns))
-        self.world.set_tile(*self.zone.start_tile)
+        self.town_tile_by_place = {place_id: tile for tile, place_id in self.zone.towns.items()}
+        self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
         self.screen = pygame.display.set_mode(self.view_size)
         self.clock = pygame.time.Clock()
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
-        self.town_tile_by_place = {place_id: tile for tile, place_id in self.zone.towns.items()}
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
@@ -881,6 +881,100 @@ def _tournament_reward_text_by_data(engine: GameEngine, tournament) -> str:
     return ", ".join(bits) if bits else T.TOURNAMENT_REWARD_NONE
 
 
+def start_menu_options(save_path: str = SAVE_PATH) -> list[tuple[str, str]]:
+    options = [("new", T.START_NEW_GAME)]
+    if os.path.exists(save_path):
+        options.append(("load", T.START_LOAD_GAME))
+    options.append(("quit", T.START_QUIT))
+    return options
+
+
+def engine_from_start_choice(
+    choice: str,
+    save_path: str = SAVE_PATH,
+    creation_fn=character_creation,
+) -> GameEngine | None:
+    engine = GameEngine()
+    if choice == "new":
+        name, class_id = creation_fn(engine)
+        engine.start_new_game(name, class_id)
+        return engine
+    if choice == "load":
+        result = engine.load(save_path)
+        if not result.success:
+            raise ValueError(result.message)
+        return engine
+    if choice == "quit":
+        return None
+    raise ValueError(f"unknown start menu choice: {choice}")
+
+
+def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
+    pygame.init()
+    pygame.display.set_caption(T.CAPTION_START)
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    font = pygame.font.SysFont("menlo,consolas,monospace", 20)
+    font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
+    font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
+    clock = pygame.time.Clock()
+
+    while True:
+        options = start_menu_options(save_path)
+        button_w, button_h = 320, 48
+        start_y = HEIGHT // 2 - (len(options) * 60) // 2
+        buttons = [
+            Button(
+                pygame.Rect(WIDTH // 2 - button_w // 2, start_y + index * 60, button_w, button_h),
+                label,
+                choice,
+            )
+            for index, (choice, label) in enumerate(options)
+        ]
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "quit"
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for button in buttons:
+                    if button.rect.collidepoint(event.pos):
+                        return button.on_click
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return "quit"
+                key = event.unicode.lower() if event.unicode else ""
+                for choice, label in options:
+                    if key and key == label[0].lower():
+                        return choice
+
+        screen.fill(BG)
+        title = font_lg.render(T.START_TITLE, True, ACCENT)
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 150)))
+        if message:
+            msg = font_sm.render(message, True, BAD)
+            screen.blit(msg, msg.get_rect(center=(WIDTH // 2, 198)))
+
+        mouse = pygame.mouse.get_pos()
+        for button in buttons:
+            color = BTN_HOVER if button.rect.collidepoint(mouse) else BTN
+            pygame.draw.rect(screen, color, button.rect, border_radius=8)
+            pygame.draw.rect(screen, BTN_EDGE, button.rect, width=1, border_radius=8)
+            label = font.render(button.label, True, TEXT)
+            screen.blit(label, label.get_rect(center=button.rect.center))
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def engine_from_start_menu(save_path: str = SAVE_PATH) -> GameEngine | None:
+    message = ""
+    while True:
+        choice = start_menu(save_path, message)
+        try:
+            return engine_from_start_choice(choice, save_path)
+        except ValueError as error:
+            message = str(error)
+
+
 def main(argv: list[str] | None = None) -> None:
     argv = argv if argv is not None else sys.argv[1:]
     engine = GameEngine()
@@ -891,10 +985,11 @@ def main(argv: list[str] | None = None) -> None:
             raise SystemExit(T.unknown_class(class_id, ", ".join(engine.content.classes)))
         engine.start_new_game("Hero", class_id)
     else:
-        # No default "Hero": run character creation first, then enter the world
-        # with the created character via the engine's standard New Game path.
-        name, class_id = character_creation(engine)
-        engine.start_new_game(name, class_id)
+        selected_engine = engine_from_start_menu(SAVE_PATH)
+        if selected_engine is None:
+            pygame.quit()
+            return
+        engine = selected_engine
     OverworldApp(engine=engine).run()
 
 
