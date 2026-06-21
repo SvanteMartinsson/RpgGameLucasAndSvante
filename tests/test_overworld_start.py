@@ -6,6 +6,7 @@ Skips when pygame/pytmx are not installed.
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -13,6 +14,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 try:
     import pygame
     from rpg_game.core.game import GameEngine
+    from rpg_game.presentation import pygame_overworld
     from rpg_game.presentation.pygame_overworld import (
         OverworldApp,
         engine_from_start_choice,
@@ -99,6 +101,46 @@ class OverworldStartTest(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(engine.player.name, "Newbie")
         self.assertEqual(engine.player.player_class, "hunter")
+
+    def test_in_game_quit_returns_menu_outcome_without_process_exit(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        app = OverworldApp(engine=engine)
+
+        app.quit_game()
+
+        self.assertFalse(app.running)
+        self.assertEqual(app.run(), "menu")
+
+    def test_main_returns_to_start_menu_after_in_game_quit(self):
+        first = GameEngine()
+        first.start_new_game("First", "fighter")
+        started = []
+
+        class FakeApp:
+            def __init__(self, engine):
+                started.append(engine.player.name)
+
+            def run(self):
+                return "menu"
+
+        with patch.object(pygame_overworld, "engine_from_start_menu", side_effect=[first, None]) as menu:
+            with patch.object(pygame_overworld, "OverworldApp", FakeApp):
+                with patch.object(pygame_overworld.pygame, "quit"):
+                    pygame_overworld.main([])
+
+        self.assertEqual(started, ["First"])
+        self.assertEqual(menu.call_count, 2)
+
+    def test_start_menu_quit_exits_without_starting_overworld(self):
+        with patch.object(pygame_overworld, "engine_from_start_menu", return_value=None) as menu:
+            with patch.object(pygame_overworld, "OverworldApp") as app:
+                with patch.object(pygame_overworld.pygame, "quit") as quit_pygame:
+                    pygame_overworld.main([])
+
+        self.assertEqual(menu.call_count, 1)
+        app.assert_not_called()
+        quit_pygame.assert_called_once()
 
 
 if __name__ == "__main__":

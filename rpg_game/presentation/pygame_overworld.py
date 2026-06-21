@@ -250,6 +250,7 @@ class OverworldApp:
         self.toast_color = TEXT
         self.toast_timer = 0
         self.running = True
+        self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
         self.playtest_logger.session_start(build_snapshot(self.engine))
 
@@ -363,6 +364,7 @@ class OverworldApp:
         self.set_toast(result.message, GOOD if result.success else BAD)
 
     def quit_game(self) -> None:
+        self.exit_reason = "menu"
         self.running = False
 
     def equip_weapon(self, weapon_id: str) -> None:
@@ -529,6 +531,7 @@ class OverworldApp:
     def handle_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self.exit_reason = "exit"
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
@@ -1024,13 +1027,15 @@ class OverworldApp:
 
     # -- main loop ----------------------------------------------------------
 
-    def run(self) -> None:
+    def run(self) -> str:
         while self.running:
             self.handle_events()
             self.update()
             self.draw()
             self.clock.tick(FPS)
-        pygame.quit()
+        if self.exit_reason == "exit":
+            pygame.quit()
+        return self.exit_reason or "menu"
 
 
 def _tournament_reward_text(tournament) -> str:
@@ -1149,20 +1154,30 @@ def engine_from_start_menu(save_path: str = SAVE_PATH) -> GameEngine | None:
 
 def main(argv: list[str] | None = None) -> None:
     argv = argv if argv is not None else sys.argv[1:]
-    engine = GameEngine()
     class_id = argv[0] if argv else ""
+    quickstart_engine: GameEngine | None = None
     if class_id:
         # Quick-start a class, skipping creation (same shortcut as the battle shell).
-        if class_id not in engine.content.classes:
-            raise SystemExit(T.unknown_class(class_id, ", ".join(engine.content.classes)))
-        engine.start_new_game("Hero", class_id)
-    else:
-        selected_engine = engine_from_start_menu(SAVE_PATH)
-        if selected_engine is None:
+        quickstart_engine = GameEngine()
+        if class_id not in quickstart_engine.content.classes:
+            raise SystemExit(T.unknown_class(class_id, ", ".join(quickstart_engine.content.classes)))
+        quickstart_engine.start_new_game("Hero", class_id)
+
+    while True:
+        if quickstart_engine is not None:
+            engine = quickstart_engine
+            quickstart_engine = None
+        else:
+            selected_engine = engine_from_start_menu(SAVE_PATH)
+            if selected_engine is None:
+                pygame.quit()
+                return
+            engine = selected_engine
+
+        outcome = OverworldApp(engine=engine).run()
+        if outcome == "exit":
             pygame.quit()
             return
-        engine = selected_engine
-    OverworldApp(engine=engine).run()
 
 
 if __name__ == "__main__":
