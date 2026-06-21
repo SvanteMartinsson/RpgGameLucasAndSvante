@@ -1,65 +1,30 @@
 [
-  {
-    "id": "training_cap",
-    "name": "Training Cap",
-    "slot_type": "head",
-    "tier": 1,
-    "rarity": "common",
-    "level_req": 1,
-    "stat_modifiers": { "armor": 1 }
-  },
-  {
-    "id": "padded_vest",
-    "name": "Padded Vest",
-    "slot_type": "chest",
-    "tier": 1,
-    "rarity": "common",
-    "level_req": 1,
-    "stat_modifiers": { "armor": 2, "max_hp": 5 }
-  },
-  {
-    "id": "novice_ring",
-    "name": "Novice Ring",
-    "slot_type": "ring",
-    "tier": 1,
-    "rarity": "common",
-    "level_req": 1,
-    "stat_modifiers": { "damage": 1 }
-  },
-  {
-    "id": "swift_ring",
-    "name": "Swift Ring",
-    "slot_type": "ring",
-    "tier": 1,
-    "rarity": "uncommon",
-    "level_req": 1,
-    "stat_modifiers": { "speed": 2 }
-  },
-  {
-    "id": "focus_band",
-    "name": "Focus Band",
-    "slot_type": "ring",
-    "tier": 1,
-    "rarity": "uncommon",
-    "level_req": 1,
-    "stat_modifiers": { "max_mana": 10 }
-  },
-  {
-    "id": "lucky_loop",
-    "name": "Lucky Loop",
-    "slot_type": "ring",
-    "tier": 1,
-    "rarity": "uncommon",
-    "level_req": 1,
-    "stat_modifiers": { "crit_chance": 3 }
-  },
-  {
-    "id": "veteran_ring",
-    "name": "Veteran Ring",
-    "slot_type": "ring",
-    "tier": 5,
-    "rarity": "rare",
-    "level_req": 3,
-    "stat_modifiers": { "damage": 4, "crit_chance": 4 }
-  }
+  { "id": "training_cap", "name": "Training Cap", "slot_type": "head", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "armor": 1 } },
+  { "id": "padded_vest", "name": "Padded Vest", "slot_type": "chest", "tier": 1, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 2, "max_hp": 5 } },
+  { "id": "threadbare_gloves", "name": "Threadbare Gloves", "slot_type": "hands", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "armor": 1 } },
+  { "id": "patched_trousers", "name": "Patched Trousers", "slot_type": "legs", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "max_hp": 6 } },
+  { "id": "worn_boots", "name": "Worn Boots", "slot_type": "feet", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "speed": 1 } },
+  { "id": "tin_amulet", "name": "Tin Amulet", "slot_type": "amulet", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "max_mana": 5 } },
+  { "id": "novice_ring", "name": "Novice Ring", "slot_type": "ring", "tier": 1, "rarity": "common", "level_req": 1, "stat_modifiers": { "damage": 1 } },
+
+  { "id": "guard_cap", "name": "Guard Cap", "slot_type": "head", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 2, "max_hp": 5 } },
+  { "id": "reinforced_vest", "name": "Reinforced Vest", "slot_type": "chest", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 3, "max_hp": 10 } },
+  { "id": "grip_wraps", "name": "Grip Wraps", "slot_type": "hands", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 1, "damage": 1 } },
+  { "id": "scout_leggings", "name": "Scout Leggings", "slot_type": "legs", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 2, "speed": 1 } },
+  { "id": "runner_boots", "name": "Runner Boots", "slot_type": "feet", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "speed": 2, "armor": 1 } },
+  { "id": "sage_amulet", "name": "Sage Amulet", "slot_type": "amulet", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "max_mana": 12, "crit_chance": 1 } },
+  { "id": "swift_ring", "name": "Swift Ring", "slot_type": "ring", "tier": 1, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "speed": 2 } },
+  { "id": "focus_band", "name": "Focus Band", "slot_type": "ring", "tier": 1, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "max_mana": 10 } },
+  { "id": "lucky_loop", "name": "Lucky Loop", "slot_type": "ring", "tier": 1, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "crit_chance": 3 } },
+
+  { "id": "iron_helm", "name": "Iron Helm", "slot_type": "head", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "armor": 3, "max_hp": 12 } },
+  { "id": "iron_cuirass", "name": "Iron Cuirass", "slot_type": "chest", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "armor": 5, "max_hp": 18 } },
+  { "id": "duelist_gloves", "name": "Duelist Gloves", "slot_type": "hands", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "damage": 2, "crit_chance": 2 } },
+  { "id": "marcher_greaves", "name": "Marcher Greaves", "slot_type": "legs", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "armor": 3, "max_hp": 14, "speed": 1 } },
+  { "id": "windstep_boots", "name": "Windstep Boots", "slot_type": "feet", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "speed": 3, "crit_chance": 2 } },
+  { "id": "battle_amulet", "name": "Battle Amulet", "slot_type": "amulet", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "damage": 2, "max_mana": 12, "crit_chance": 2 } },
+
+  { "id": "veteran_ring", "name": "Veteran Ring", "slot_type": "ring", "tier": 5, "rarity": "rare", "level_req": 3, "stat_modifiers": { "damage": 4, "crit_chance": 4 } },
+  { "id": "haste_circuit", "name": "Haste Circuit", "slot_type": "ring", "tier": 4, "rarity": "rare", "level_req": 2, "stat_modifiers": { "speed": 4, "max_mana": 10 } },
+  { "id": "crimson_signet", "name": "Crimson Signet", "slot_type": "ring", "tier": 4, "rarity": "rare", "level_req": 2, "stat_modifiers": { "damage": 3, "max_hp": 12 } }
 ]

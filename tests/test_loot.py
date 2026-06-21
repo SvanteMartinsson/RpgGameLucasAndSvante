@@ -151,6 +151,48 @@ class TierGateTests(unittest.TestCase):
         self.assertTrue(rare_ids <= bear_pool)  # archetype reaches the whole rare table
 
 
+class GearDropDataTests(unittest.TestCase):
+    def test_authored_gear_pool_covers_slots_tiers_and_rarities(self):
+        content = _engine().content
+        slot_types = {gear.slot_type for gear in content.gear_items.values()}
+        rarities = {gear.rarity for gear in content.gear_items.values()}
+        tiers = {gear.tier for gear in content.gear_items.values()}
+
+        self.assertTrue({"head", "chest", "hands", "legs", "feet", "amulet", "ring"} <= slot_types)
+        self.assertTrue({"common", "uncommon", "rare"} <= rarities)
+        self.assertGreaterEqual(max(tiers), 5)
+        self.assertEqual(content.gear_items["veteran_ring"].level_req, 3)
+
+    def test_low_tier_gear_can_drop_from_early_enemy(self):
+        engine = _engine()
+        pool = engine.loot_pool(engine.content.enemies["giant_rat"].create_enemy())
+        gear_entries = [entry for entry in pool if str(entry["item_id"]) in engine.content.gear_items]
+
+        self.assertTrue(any(engine.content.gear_items[str(entry["item_id"])].tier <= 2 for entry in gear_entries))
+        self.assertIn("training_cap", {str(entry["item_id"]) for entry in gear_entries})
+        steel = next(entry for entry in pool if entry["item_id"] == "steel_greatsword")
+        self.assertEqual(steel["weight"], 5)
+        self.assertEqual(steel["rarity_tier"], 3)
+
+    def test_gear_loot_drop_uses_gear_kind_and_tier(self):
+        engine = GameEngine(rng=SequenceRng([0.0, 0.99]))
+        engine.start_new_game("Hero", "fighter")
+        enemy = _enemy(
+            [
+                {"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1},
+                {"item_id": "training_cap", "weight": 1, "rarity_tier": 1},
+            ],
+            drop_chance=1.0,
+        )
+
+        drop = engine.roll_loot(enemy)
+        engine.collect_loot(drop)
+
+        self.assertEqual(drop.kind, "gear")
+        self.assertEqual(drop.tier, 1)
+        self.assertIn("training_cap", engine.player.owned_gear_ids)
+
+
 class PickupTests(unittest.TestCase):
     def test_picked_up_weapon_is_owned_and_equippable(self):
         engine = _engine(1)
@@ -226,6 +268,27 @@ class SellingTests(unittest.TestCase):
         ids = {entry.id for entry in engine.sellable_entries()}
 
         self.assertEqual(ids, {"axe", "rat_pelt"})
+
+    def test_selling_unequipped_gear_gives_gold_and_removes_it(self):
+        engine = _engine()
+        engine.player.owned_gear_ids = ("training_cap",)
+        engine.player.gold = 0
+
+        result = engine.sell_item("training_cap")
+
+        self.assertTrue(result.success)
+        self.assertGreater(engine.player.gold, 0)
+        self.assertNotIn("training_cap", engine.player.owned_gear_ids)
+
+    def test_cannot_sell_equipped_gear(self):
+        engine = _engine()
+        engine.player.owned_gear_ids = ("training_cap",)
+        engine.equip_gear("training_cap", "head")
+
+        result = engine.sell_item("training_cap")
+
+        self.assertFalse(result.success)
+        self.assertIn("training_cap", engine.player.owned_gear_ids)
 
 
 class SequenceRng:

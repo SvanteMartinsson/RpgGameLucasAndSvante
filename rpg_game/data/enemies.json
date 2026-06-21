@@ -24,6 +24,8 @@
     "loot_table": [
       { "item_id": "rat_pelt", "weight": 70, "rarity_tier": 1 },
       { "item_id": "hp_potion", "weight": 25, "rarity_tier": 1 },
+      { "item_id": "training_cap", "weight": 16, "rarity_tier": 1 },
+      { "item_id": "novice_ring", "weight": 10, "rarity_tier": 1 },
       { "item_id": "steel_greatsword", "weight": 5, "rarity_tier": 3 }
     ]
   },
@@ -52,6 +54,8 @@
     "loot_table": [
       { "item_id": "bone_dust", "weight": 70, "rarity_tier": 1 },
       { "item_id": "hp_potion", "weight": 20, "rarity_tier": 1 },
+      { "item_id": "padded_vest", "weight": 14, "rarity_tier": 1 },
+      { "item_id": "focus_band", "weight": 8, "rarity_tier": 1 },
       { "item_id": "rimebrand", "weight": 10, "rarity_tier": 3 }
     ]
   },
@@ -83,6 +87,8 @@
     "loot_table": [
       { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
       { "item_id": "greater_hp_potion", "weight": 25, "rarity_tier": 3 },
+      { "item_id": "guard_cap", "weight": 20, "rarity_tier": 2 },
+      { "item_id": "reinforced_vest", "weight": 12, "rarity_tier": 2 },
       { "item_id": "steel_greatsword", "weight": 20, "rarity_tier": 3 },
       { "item_id": "emberwand", "weight": 15, "rarity_tier": 3 }
     ]
@@ -117,6 +123,8 @@
     "loot_table": [
       { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
       { "item_id": "mana_potion", "weight": 30, "rarity_tier": 2 },
+      { "item_id": "sage_amulet", "weight": 18, "rarity_tier": 2 },
+      { "item_id": "battle_amulet", "weight": 8, "rarity_tier": 3 },
       { "item_id": "rimebrand", "weight": 30, "rarity_tier": 3 }
     ]
   },
@@ -150,6 +158,8 @@
     "loot_table": [
       { "item_id": "tattered_cloth", "weight": 40, "rarity_tier": 1 },
       { "item_id": "antidote", "weight": 30, "rarity_tier": 2 },
+      { "item_id": "duelist_gloves", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "haste_circuit", "weight": 8, "rarity_tier": 4 },
       { "item_id": "emberwand", "weight": 30, "rarity_tier": 3 }
     ]
   },

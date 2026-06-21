@@ -8,6 +8,13 @@ from rpg_game.core.progression import round_half_up
 
 
 SELL_FRACTION = 0.5
+GEAR_RARITY_VALUE = {
+    "common": 10,
+    "uncommon": 18,
+    "rare": 32,
+    "mega rare": 55,
+    "legendary": 90,
+}
 
 
 @dataclass(frozen=True)
@@ -42,6 +49,10 @@ class SellResult:
 
 def sell_value(price: int) -> int:
     return round_half_up(price * SELL_FRACTION)
+
+
+def gear_sell_value(gear) -> int:
+    return round_half_up((GEAR_RARITY_VALUE.get(gear.rarity, 10) + gear.tier * 8) * SELL_FRACTION)
 
 
 def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
@@ -127,6 +138,12 @@ def get_sellables(player: Player, content: GameContent) -> list[SellEntry]:
             continue
         weapon = content.weapons[weapon_id]
         entries.append(SellEntry(weapon_id, weapon.name, "weapon", sell_value(weapon.price), 1))
+    equipped_gear_ids = set(player.equipped_gear.values())
+    for gear_id in player.owned_gear_ids:
+        if gear_id in equipped_gear_ids:
+            continue
+        gear = content.gear_items[gear_id]
+        entries.append(SellEntry(gear_id, gear.name, "gear", gear_sell_value(gear), 1))
     return entries
 
 
@@ -146,6 +163,15 @@ def sell_item(player: Player, content: GameContent, item_id: str) -> SellResult:
         )
         player.gold += value
         return SellResult(True, f"Sold {weapon.name} for {value} gold.")
+
+    if normalized in content.gear_items and normalized in player.owned_gear_ids:
+        if normalized in set(player.equipped_gear.values()):
+            return SellResult(False, "You cannot sell equipped gear. Unequip it first.")
+        gear = content.gear_items[normalized]
+        value = gear_sell_value(gear)
+        player.owned_gear_ids = tuple(owned_id for owned_id in player.owned_gear_ids if owned_id != normalized)
+        player.gold += value
+        return SellResult(True, f"Sold {gear.name} for {value} gold.")
 
     if player.inventory.count(normalized) > 0:
         item = content.items[normalized]
