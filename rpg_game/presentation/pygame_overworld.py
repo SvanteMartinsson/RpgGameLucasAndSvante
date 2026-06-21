@@ -38,7 +38,10 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.playtest_logger import PlaytestLogger
-from rpg_game.presentation.pygame_battle import BattleApp, character_creation
+# WIDTH/HEIGHT are the pre-game window size, shared with the character-creation
+# screen the start menu flows into — one source, no hardcoded duplicate. (The
+# in-world view sizes itself to the map via OverworldApp.view_size instead.)
+from rpg_game.presentation.pygame_battle import HEIGHT, WIDTH, BattleApp, character_creation
 from rpg_game.presentation.talent_text import talent_detail, talent_status
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")

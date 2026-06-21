@@ -13,7 +13,12 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 try:
     import pygame
     from rpg_game.core.game import GameEngine
-    from rpg_game.presentation.pygame_overworld import OverworldApp, engine_from_start_choice, start_menu_options
+    from rpg_game.presentation.pygame_overworld import (
+        OverworldApp,
+        engine_from_start_choice,
+        start_menu,
+        start_menu_options,
+    )
     from rpg_game.presentation.pygame_battle import character_creation
 
     DEPS_OK = True
@@ -50,6 +55,12 @@ class OverworldStartTest(unittest.TestCase):
         app = OverworldApp(engine=engine)
         self.assertEqual(app.engine.player.name, "Greta")
         self.assertIn(class_id, engine.content.classes)
+
+    def test_start_menu_opens_window_and_returns_choice(self):
+        # Exercises the real set_mode((WIDTH, HEIGHT)) + button-build path that
+        # crashed with NameError; only start_menu_options was covered before.
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=ord("n"), unicode="n"))
+        self.assertEqual(start_menu(save_path="/tmp/no_such_save_file.json"), "new")
 
     def test_start_menu_hides_load_without_save_file(self):
         with tempfile.TemporaryDirectory() as folder:
