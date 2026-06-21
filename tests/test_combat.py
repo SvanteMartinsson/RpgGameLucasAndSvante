@@ -70,11 +70,11 @@ class CombatMathTests(unittest.TestCase):
         fighter = make_player("fighter", base_damage=15)
         tank = make_player("tank", base_damage=10)
 
-        # Unseeded previews use each attack's range floor (power 1.25 / normal 1.1 / quick 1.0).
-        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("power"), 0), 19)
+        # Unseeded previews use each attack's range floor (power 1.5 / normal 1.1 / quick 1.0).
+        self.assertEqual(calculate_player_damage(fighter, knife, get_attack("power"), 0), 23)
         self.assertEqual(calculate_player_damage(fighter, knife, get_attack("normal"), 0), 17)
         self.assertEqual(calculate_player_damage(fighter, knife, get_attack("quick"), 0), 15)
-        self.assertEqual(calculate_player_damage(tank, knife, get_attack("power"), 0), 13)
+        self.assertEqual(calculate_player_damage(tank, knife, get_attack("power"), 0), 15)
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("normal"), 0), 11)
         self.assertEqual(calculate_player_damage(tank, knife, get_attack("quick"), 0), 10)
 

@@ -25,7 +25,7 @@ class SeqRng:
 RANGES = {
     "quick": (1.0, 1.25),
     "normal": (1.1, 1.4),
-    "power": (1.25, 1.7),
+    "power": (1.5, 2.1),
 }
 
 
@@ -46,6 +46,19 @@ class AttackRangeTests(unittest.TestCase):
                 )
                 self.assertGreaterEqual(total, floor, attack_id)
                 self.assertLessEqual(total, ceiling, attack_id)
+
+    def test_power_band_clearly_exceeds_normal(self):
+        # Power floor must sit above normal's ceiling (bands no longer overlap).
+        power = combat.ATTACKS["power"].effects[0]
+        normal = combat.ATTACKS["normal"].effects[0]
+        self.assertEqual((power.multiplier_min, power.multiplier_max), (1.5, 2.1))
+        self.assertGreater(power.multiplier_min, normal.multiplier_max)
+
+    def test_quick_and_normal_bands_unchanged(self):
+        quick = combat.ATTACKS["quick"].effects[0]
+        normal = combat.ATTACKS["normal"].effects[0]
+        self.assertEqual((quick.multiplier_min, quick.multiplier_max), (1.0, 1.25))
+        self.assertEqual((normal.multiplier_min, normal.multiplier_max), (1.1, 1.4))
 
     def test_seed_gives_known_outcome(self):
         engine = GameEngine()
@@ -106,7 +119,7 @@ class AttackRangeTests(unittest.TestCase):
         )
 
         self.assertEqual(result.rolled_style_id, "power")
-        self.assertEqual(result.total_damage, round_half_up(15 * 1.25))
+        self.assertEqual(result.total_damage, round_half_up(15 * 1.5))  # power floor now 1.5x
 
 
 class CritRangeTests(unittest.TestCase):

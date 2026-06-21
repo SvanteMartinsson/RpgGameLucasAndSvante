@@ -48,9 +48,9 @@ ATTACKS: dict[str, CombatAction] = {
             EffectSpec(
                 type="damage",
                 scale="basic_attack",
-                multiplier=1.25,
-                multiplier_min=1.25,
-                multiplier_max=1.7,
+                multiplier=1.5,
+                multiplier_min=1.5,
+                multiplier_max=2.1,
                 damage_type="weapon",
             ),
         ),
