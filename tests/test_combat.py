@@ -41,7 +41,7 @@ class CombatMathTests(unittest.TestCase):
     def test_victory_returns_pending_stat_choice_after_level_up(self):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Test Fighter", "fighter")
-        engine.player.xp = 99
+        engine.player.xp = 9
         enemy = engine.content.enemies["giant_rat"].create_enemy()
         enemy.hp = 1
 
@@ -62,7 +62,8 @@ class CombatMathTests(unittest.TestCase):
 
         self.assertEqual(result.outcome, "victory")
         self.assertEqual(result.xp_gained, 13)
-        self.assertEqual(engine.player.xp, 13)
+        self.assertEqual(engine.player.level, 2)
+        self.assertEqual(engine.player.xp, 3)
 
     def test_fighter_and_tank_attack_damage_regression_after_pipeline_refactor(self):
         knife = Weapon(id="knife", name="Knife", damage_bonus=0, price=0)

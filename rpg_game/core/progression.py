@@ -5,6 +5,10 @@ from rpg_game.core.entities import Player
 
 # Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
 GOLD_LOSS_PER_LEVEL = 25
+EARLY_XP_REQUIREMENTS = {
+    1: 10,
+    2: 30,
+}
 
 
 def round_half_up(value: float) -> int:
@@ -43,6 +47,8 @@ def apply_death_penalty(player: Player) -> RespawnResult:
 def xp_required_for_level(level: int) -> int:
     if level < 1:
         raise ValueError("level must be at least 1")
+    if level in EARLY_XP_REQUIREMENTS:
+        return EARLY_XP_REQUIREMENTS[level]
     return round_half_up(100 * (1.5 ** (level - 1)))
 
 
