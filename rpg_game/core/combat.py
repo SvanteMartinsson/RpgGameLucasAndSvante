@@ -559,6 +559,13 @@ def resolve_action(
             actor.cooldowns[action.id] = action.cooldown_rounds
         return result
 
+    # Name the skill use itself. Damage skills (and basic attacks) are already
+    # named by their damage / miss / evade line, so only skills with no direct
+    # damage need a leading action line — otherwise their effect lines (e.g.
+    # "X is affected by bleed") would appear with no sign the player acted.
+    if action.kind == "skill" and not action_can_be_evaded(action):
+        result.events.append(f"{actor_name(actor)} used {action.name}.")
+
     for effect in action.effects:
         apply_effect(
             actor,

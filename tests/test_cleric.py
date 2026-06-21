@@ -15,13 +15,14 @@ class ClericClassTests(unittest.TestCase):
         result = combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
 
         self.assertEqual(engine.player.hp, 75)
-        self.assertIn("healed 25 HP", result.events[0])
+        self.assertEqual(result.events[0], "Cleric used Mend.")  # action line precedes effect
+        self.assertTrue(any("healed 25 HP" in event for event in result.events))
 
         engine.player.hp = 80
         result = combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
 
         self.assertEqual(engine.player.hp, 90)
-        self.assertIn("healed 10 HP", result.events[0])
+        self.assertTrue(any("healed 10 HP" in event for event in result.events))
 
     def test_sanctuary_regens_8_for_exactly_3_rounds(self):
         engine = GameEngine(rng=random.Random(1))
