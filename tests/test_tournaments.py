@@ -64,6 +64,19 @@ class TournamentProgressionTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertIn("already been cleared", result.message)
 
+    def test_between_tournament_matches_recovers_hp_and_mana(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        engine.player.hp = 1
+        engine.player.mana = 0
+
+        result = engine.recover_between_tournament_matches()
+
+        self.assertEqual(engine.player.hp, engine.player.max_hp)
+        self.assertEqual(engine.player.mana, engine.player.max_mana)
+        self.assertEqual(result.player_hp, engine.player.max_hp)
+        self.assertEqual(result.player_mana, engine.player.max_mana)
+
     def test_tournament_completion_survives_save_load(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")

@@ -493,10 +493,26 @@ def run_tournament(engine: GameEngine, tournament) -> None:
                 return
             if result.outcome == "victory":
                 break
+        if index < len(tournament.opponent_ids) - 1:
+            intermission = engine.recover_between_tournament_matches()
+            print(intermission.message)
+            handle_tournament_intermission(engine)
 
     reward = engine.complete_tournament(tournament)
     print(reward.message)
     resolve_pending_stat_choices(engine)
+
+
+def handle_tournament_intermission(engine: GameEngine) -> None:
+    choice = prompt_menu(
+        "Between matches:",
+        [
+            ("1", "continue", "Continue to next match"),
+            ("2", "equip", "Change weapon"),
+        ],
+    )
+    if choice == "equip":
+        handle_equip_weapon(engine)
 
 
 def choose_tournament_combat_command(engine: GameEngine, enemy) -> str:
@@ -507,8 +523,7 @@ def choose_tournament_combat_command(engine: GameEngine, enemy) -> str:
                 ("1", "attack", "Attack (rolls style)"),
                 ("2", "skill", "Skill"),
                 ("3", "item", "Item"),
-                ("4", "swap", "Swap weapon"),
-                ("5", "identify", "Identify"),
+                ("4", "identify", "Identify"),
             ],
         )
         if command == "attack":
@@ -521,10 +536,6 @@ def choose_tournament_combat_command(engine: GameEngine, enemy) -> str:
             item_id = choose_combat_item(engine)
             if item_id:
                 return f"item:{item_id}"
-        if command == "swap":
-            weapon_id = choose_swap_weapon(engine)
-            if weapon_id:
-                return f"swap:{weapon_id}"
         if command == "identify":
             return "identify"
 

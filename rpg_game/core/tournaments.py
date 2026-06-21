@@ -27,6 +27,13 @@ class TournamentRewardResult:
     item_ids: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class TournamentIntermissionResult:
+    message: str
+    player_hp: int
+    player_mana: int
+
+
 def available_tournaments(player: Player, content: GameContent) -> list[Tournament]:
     return [
         tournament
@@ -80,4 +87,14 @@ def complete_tournament(player: Player, content: GameContent, tournament: Tourna
         f"Cleared {tournament.name}. Reward: {reward_text}.",
         gold_gained=tournament.reward.gold,
         item_ids=tuple(awarded_items),
+    )
+
+
+def recover_between_matches(player: Player) -> TournamentIntermissionResult:
+    player.hp = player.max_hp
+    player.mana = player.max_mana
+    return TournamentIntermissionResult(
+        "Tournament intermission: recovered to full HP and mana.",
+        player_hp=player.hp,
+        player_mana=player.mana,
     )

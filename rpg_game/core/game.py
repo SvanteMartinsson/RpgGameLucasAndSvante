@@ -132,6 +132,9 @@ class GameEngine:
     def complete_tournament(self, tournament: Tournament) -> tournaments.TournamentRewardResult:
         return tournaments.complete_tournament(self.player, self.content, tournament)
 
+    def recover_between_tournament_matches(self) -> tournaments.TournamentIntermissionResult:
+        return tournaments.recover_between_matches(self.player)
+
     def available_destinations(self):
         return world.available_destinations(self.player, self.content)
 
