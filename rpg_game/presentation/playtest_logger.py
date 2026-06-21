@@ -44,7 +44,22 @@ class PlaytestLogger:
             enemy_level=enemy.level,
             player_level=snapshot.player.level,
             location=location,
+            loadout=_loadout(snapshot),
         )
+
+    def equip(self, slot: str, item_id: str, damage_type: str = "", stats=None) -> None:
+        self._equipment_event("equip", slot, item_id, damage_type, stats)
+
+    def unequip(self, slot: str, item_id: str, damage_type: str = "", stats=None) -> None:
+        self._equipment_event("unequip", slot, item_id, damage_type, stats)
+
+    def _equipment_event(self, event: str, slot: str, item_id: str, damage_type: str, stats) -> None:
+        fields = {"slot": slot, "item_id": item_id}
+        if damage_type:
+            fields["damage_type"] = damage_type
+        if stats:
+            fields["stats"] = dict(stats)
+        self.write(event, **fields)
 
     def combat_result(self, result: combat.CombatTurnResult, enemy, snapshot, location: str) -> None:
         for resolution in result.action_resolutions:
@@ -61,8 +76,7 @@ class PlaytestLogger:
 
     def attack(self, resolution: combat.ActionResolution, snapshot) -> None:
         source = "player" if resolution.actor_name == snapshot.player.name else "enemy"
-        self.write(
-            "attack",
+        fields = dict(
             source=source,
             action_id=resolution.action_id,
             rolled_style=resolution.rolled_style_id or _style_from_action_id(resolution.action_id),
@@ -74,6 +88,11 @@ class PlaytestLogger:
                 for component in resolution.damage_components
             ],
         )
+        if source == "player":
+            # Attribute the player's attack to the weapon behind it, so a holy
+            # hit is traceable to the holy weapon without guessing.
+            fields["weapon"] = _equipped_weapon(snapshot)
+        self.write("attack", **fields)
 
     def drop(self, drop, enemy) -> None:
         self.write(
@@ -127,3 +146,22 @@ def _timestamp(now=None) -> str:
 
 def _style_from_action_id(action_id: str) -> str:
     return action_id if action_id in combat.PLAYER_ATTACK_STYLE_IDS else ""
+
+
+def _equipped_weapon(snapshot) -> dict:
+    """Equipped weapon {id, damage_type} from the snapshot's weapon list."""
+    weapon_id = snapshot.player.equipped_weapon_id
+    for weapon in snapshot.weapons:
+        if weapon.id == weapon_id:
+            return {"id": weapon.id, "damage_type": weapon.damage_type}
+    return {"id": weapon_id, "damage_type": ""}
+
+
+def _loadout(snapshot) -> dict:
+    """Compact current loadout: equipped weapon + filled (non-weapon) slots."""
+    gear = {
+        slot.id: slot.equipped_item_id
+        for slot in snapshot.equipment_slots
+        if slot.slot_type != "weapon" and slot.equipped_item_id
+    }
+    return {"weapon": _equipped_weapon(snapshot), "gear": gear}

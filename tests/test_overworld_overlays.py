@@ -3,7 +3,9 @@
 Skips when pygame/pytmx are not installed.
 """
 
+import json
 import os
+import tempfile
 import unittest
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -16,6 +18,7 @@ try:
     from rpg_game.presentation import terminal
     from rpg_game.presentation.pygame_battle import BattleApp
     from rpg_game.presentation.pygame_overworld import OverworldApp
+    from rpg_game.presentation.playtest_logger import PlaytestLogger
 
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard
@@ -94,6 +97,36 @@ class OverworldOverlayTest(unittest.TestCase):
 
         self.assertNotIn("chest", self.app.engine.player.equipped_gear)
         self.assertEqual(self.app.engine.effective_stat("armor"), self.app.engine.player.armor)
+
+    def test_panel_equip_unequip_emit_playtest_events(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.app.playtest_logger = PlaytestLogger(folder)
+            self.app.engine.player.owned_gear_ids = ("padded_vest",)
+            self.app.selected_equipment_slot = "chest"
+
+            self.app.equip_gear_to_slot("padded_vest")
+            self.app.unequip_gear_from_slot("chest")
+
+            rows = [json.loads(line) for line in self.app.playtest_logger.path.read_text().splitlines() if line.strip()]
+
+        equip = next(r for r in rows if r["event"] == "equip")
+        self.assertEqual((equip["slot"], equip["item_id"]), ("chest", "padded_vest"))
+        unequip = next(r for r in rows if r["event"] == "unequip")
+        self.assertEqual((unequip["slot"], unequip["item_id"]), ("chest", "padded_vest"))
+
+    def test_weapon_equip_emits_playtest_event_with_damage_type(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.app.playtest_logger = PlaytestLogger(folder)
+            self.app.engine.player.owned_weapon_ids = ("knife", "sword")
+            self.app.engine.player.equipped_weapon_id = "knife"
+
+            self.app.equip_weapon("sword")
+
+            rows = [json.loads(line) for line in self.app.playtest_logger.path.read_text().splitlines() if line.strip()]
+
+        equip = next(r for r in rows if r["event"] == "equip" and r["slot"] == "weapon")
+        self.assertEqual(equip["item_id"], "sword")
+        self.assertEqual(equip["damage_type"], "physical")
 
     def test_character_panel_blocks_wrong_slot_and_level_gated_gear(self):
         self.app.engine.player.owned_gear_ids = ("training_cap", "veteran_ring")

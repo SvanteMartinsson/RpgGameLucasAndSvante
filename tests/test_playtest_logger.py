@@ -73,6 +73,59 @@ class PlaytestLoggerTests(unittest.TestCase):
         self.assertEqual(death["hp_after"], 50)
         self.assertEqual(death["mana_after"], 10)
 
+    def test_equip_and_unequip_events_are_written(self):
+        with tempfile.TemporaryDirectory() as folder:
+            logger = PlaytestLogger(folder)
+            logger.equip("weapon", "consecrated_maul", damage_type="holy")
+            logger.equip("head", "training_cap", stats={"armor": 1})
+            logger.unequip("ring_1", "novice_ring")
+            rows = _read_jsonl(logger.path)
+
+        weapon = next(r for r in rows if r["event"] == "equip" and r["slot"] == "weapon")
+        self.assertEqual(weapon["item_id"], "consecrated_maul")
+        self.assertEqual(weapon["damage_type"], "holy")  # holy swap is visible
+
+        gear = next(r for r in rows if r["event"] == "equip" and r["slot"] == "head")
+        self.assertEqual((gear["item_id"], gear["stats"]), ("training_cap", {"armor": 1}))
+
+        off = next(r for r in rows if r["event"] == "unequip")
+        self.assertEqual((off["slot"], off["item_id"]), ("ring_1", "novice_ring"))
+
+    def test_encounter_start_records_current_loadout(self):
+        with tempfile.TemporaryDirectory() as folder:
+            engine = GameEngine()
+            engine.start_new_game("Logger", "fighter")
+            engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "consecrated_maul")
+            engine.player.equipped_weapon_id = "consecrated_maul"  # holy weapon
+            engine.player.owned_gear_ids = ("training_cap",)
+            engine.player.level = 5
+            engine.equip_gear("training_cap", "head")
+            enemy = engine.content.enemies["giant_rat"].create_enemy()
+            logger = PlaytestLogger(folder)
+            logger.encounter_start(enemy, build_snapshot(engine), "burg_54")
+            rows = _read_jsonl(logger.path)
+
+        loadout = rows[0]["loadout"]
+        self.assertEqual(loadout["weapon"], {"id": "consecrated_maul", "damage_type": "holy"})
+        self.assertEqual(loadout["gear"]["head"], "training_cap")
+
+    def test_player_attack_row_carries_the_weapon_behind_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            engine = GameEngine(rng=SequenceRng([0.0, 0.0, 0.0, 0.99, 0.0, 0.0]))
+            engine.start_new_game("Logger", "fighter")
+            engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "consecrated_maul")
+            engine.player.equipped_weapon_id = "consecrated_maul"
+            engine.player.level = 5
+            enemy = engine.content.enemies["giant_rat"].create_enemy()
+            enemy.hp = 1
+            logger = PlaytestLogger(folder)
+            result = engine.run_combat_turn(enemy, "attack")
+            logger.combat_result(result, enemy, build_snapshot(engine), "burg_54")
+            rows = _read_jsonl(logger.path)
+
+        attack = next(r for r in rows if r["event"] == "attack" and r["source"] == "player")
+        self.assertEqual(attack["weapon"], {"id": "consecrated_maul", "damage_type": "holy"})
+
     def test_rotation_keeps_latest_five_sessions(self):
         with tempfile.TemporaryDirectory() as folder:
             base = datetime(2026, 1, 1, tzinfo=UTC)

@@ -401,6 +401,7 @@ class OverworldApp:
             self.set_toast(" ".join(result.events) or T.CANNOT_EQUIP, BAD)
         else:
             self.set_toast(T.equipped_weapon(weapon.name), GOOD)
+            self.playtest_logger.equip("weapon", weapon.id, damage_type=weapon.damage_type)
 
     def select_equipment_slot(self, slot_id: str) -> None:
         self.selected_equipment_slot = slot_id
@@ -408,10 +409,15 @@ class OverworldApp:
     def equip_gear_to_slot(self, gear_id: str, slot_id: str | None = None) -> None:
         result = self.engine.equip_gear(gear_id, slot_id or self.selected_equipment_slot)
         self.set_toast(result.message, GOOD if result.success else BAD)
+        if result.success:
+            gear = self.engine.content.gear_items.get(result.gear_id)
+            self.playtest_logger.equip(result.slot_id, result.gear_id, stats=gear.stat_modifiers if gear else None)
 
     def unequip_gear_from_slot(self, slot_id: str | None = None) -> None:
         result = self.engine.unequip_gear(slot_id or self.selected_equipment_slot)
         self.set_toast(result.message, GOOD if result.success else BAD)
+        if result.success:
+            self.playtest_logger.unequip(result.slot_id, result.gear_id)
 
     def use_inventory_item(self, item_id: str) -> None:
         result = self.engine.use_consumable(item_id)
