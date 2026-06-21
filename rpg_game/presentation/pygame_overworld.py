@@ -672,8 +672,8 @@ class OverworldApp:
 
     def _overlay_panel(self, title: str) -> pygame.Rect:
         w, h = self.screen.get_size()
-        panel_w = min(780, w - 40)
-        panel_h = min(500, h - 40)
+        panel_w = min(920, w - 32)
+        panel_h = min(580, h - 32)
         panel = pygame.Rect(w // 2 - panel_w // 2, h // 2 - panel_h // 2, panel_w, panel_h)
         shade = pygame.Surface((w, h), pygame.SRCALPHA)
         shade.fill((6, 8, 12, 180))
@@ -697,7 +697,8 @@ class OverworldApp:
                 color = BTN
             pygame.draw.rect(self.screen, color, b.rect, border_radius=6)
             pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=6)
-            label = self.font.render(b.label, True, TEXT if b.enabled else TEXT_DIM)
+            fitted = self._fit_text(b.label, b.rect.width - 24, self.font)
+            label = self.font.render(fitted, True, TEXT if b.enabled else TEXT_DIM)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
 
     def _draw_town_menu(self) -> None:
@@ -795,18 +796,51 @@ class OverworldApp:
             self.screen.blit(self.font.render(line, True, color), (panel.x + 20, panel.y + start + i * step))
         return panel.y + start + len(lines) * step
 
-    def _wrapped_lines(self, text: str, max_chars: int) -> list[str]:
+    def _content_rect(self, panel: pygame.Rect) -> pygame.Rect:
+        return pygame.Rect(panel.x + 20, panel.y + 56, panel.width - 40, panel.height - 126)
+
+    def _fit_text(self, text: str, max_width: int, font: pygame.font.Font | None = None) -> str:
+        font = font or self.font
+        if max_width <= 0 or font.size(text)[0] <= max_width:
+            return text
+        ellipsis = "..."
+        if font.size(ellipsis)[0] > max_width:
+            return ""
+        fitted = text
+        while fitted and font.size(f"{fitted}{ellipsis}")[0] > max_width:
+            fitted = fitted[:-1]
+        return f"{fitted.rstrip()}{ellipsis}"
+
+    def _wrapped_lines_pixels(self, text: str, max_width: int, font: pygame.font.Font | None = None) -> list[str]:
+        font = font or self.font
+        if max_width <= 0:
+            return [""]
+        if not text:
+            return [""]
         words = text.split()
         lines: list[str] = []
         current = ""
         for word in words:
             candidate = word if not current else f"{current} {word}"
-            if len(candidate) <= max_chars:
+            if font.size(candidate)[0] <= max_width:
                 current = candidate
-            else:
-                if current:
-                    lines.append(current)
+                continue
+            if current:
+                lines.append(current)
+                current = ""
+            if font.size(word)[0] <= max_width:
                 current = word
+            else:
+                chunk = ""
+                for char in word:
+                    candidate = f"{chunk}{char}"
+                    if font.size(candidate)[0] <= max_width:
+                        chunk = candidate
+                    else:
+                        if chunk:
+                            lines.append(chunk)
+                        chunk = char
+                current = chunk
         if current:
             lines.append(current)
         return lines or [""]
@@ -818,21 +852,37 @@ class OverworldApp:
         self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
         self._draw_buttons()
 
+    def _character_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
+        content = self._content_rect(panel)
+        gap = 16
+        if content.width >= 820:
+            stats = pygame.Rect(content.x, content.y + 94, 230, content.height - 94)
+            slots = pygame.Rect(stats.right + gap, stats.y, 220, stats.height)
+            items = pygame.Rect(slots.right + gap, stats.y, content.right - slots.right - gap, stats.height)
+            return stats, slots, items
+        top_h = min(310, max(240, content.height - 130))
+        stats_w = (content.width - gap) // 2
+        stats = pygame.Rect(content.x, content.y + 94, stats_w, top_h - 94)
+        slots = pygame.Rect(stats.right + gap, stats.y, content.right - stats.right - gap, stats.height)
+        items = pygame.Rect(content.x, content.y + top_h + gap, content.width, content.bottom - content.y - top_h - gap)
+        return stats, slots, items
+
     def _overlay_character(self, panel) -> None:
         snap = build_snapshot(self.engine)
         p = snap.player
-        self._lines(panel, [
+        content = self._content_rect(panel)
+        header_lines = [
             f"{p.name} — {p.class_name} (Lv {p.level})",
             f"HP {p.hp}/{p.max_hp}    Mana {p.mana}/{p.max_mana}",
             f"XP {p.xp}/{p.xp_required}    Talent points {p.talent_points}",
             f"Gold {p.gold}",
-        ], step=20)
+        ]
+        for i, line in enumerate(header_lines):
+            self.screen.blit(self.font.render(self._fit_text(line, content.width, self.font), True, TEXT),
+                             (content.x, content.y + i * 20))
 
-        stats_x = panel.x + 20
-        slots_x = panel.x + 275
-        items_x = panel.x + 500
-        top = panel.y + 150
-        self.screen.blit(self.font_sm.render("Stats  base -> +gear -> total", True, TEXT_DIM), (stats_x, top - 24))
+        stats_rect, slots_rect, items_rect = self._character_regions(panel)
+        self.screen.blit(self.font_sm.render("Stats  base -> +gear -> total", True, TEXT_DIM), (stats_rect.x, stats_rect.y - 24))
         stat_rows = [
             ("max_hp", "HP", self.engine.player.max_hp),
             ("max_mana", "Mana", self.engine.player.max_mana),
@@ -846,26 +896,28 @@ class OverworldApp:
             total = self.engine.effective_stat(stat)
             suffix = f"  (+weapon {p.weapon_damage_bonus})" if stat == "damage" else ""
             self.screen.blit(
-                self.font_sm.render(f"{label}: {base} -> {gear_bonus:+} -> {total}{suffix}", True, TEXT),
-                (stats_x, top + i * 22),
+                self.font_sm.render(self._fit_text(f"{label}: {base} -> {gear_bonus:+} -> {total}{suffix}", stats_rect.width, self.font_sm), True, TEXT),
+                (stats_rect.x, stats_rect.y + i * 22),
             )
 
         slots = snap.equipment_slots
         if self.selected_equipment_slot not in {slot.id for slot in slots}:
             self.selected_equipment_slot = "weapon"
-        self.screen.blit(self.font_sm.render("Slots", True, TEXT_DIM), (slots_x, top - 24))
-        for i, slot in enumerate(slots[:10]):
-            rect = pygame.Rect(slots_x, top + i * 28, 200, 24)
+        self.screen.blit(self.font_sm.render("Slots", True, TEXT_DIM), (slots_rect.x, slots_rect.y - 24))
+        max_slots = max(1, min(len(slots), slots_rect.height // 28))
+        for i, slot in enumerate(slots[:max_slots]):
+            rect = pygame.Rect(slots_rect.x, slots_rect.y + i * 28, slots_rect.width, 24)
             selected = slot.id == self.selected_equipment_slot
             item = slot.equipped_item_name or "[empty]"
             label = f"{'> ' if selected else '  '}{slot.name}: {item}"
             self._add_button(rect, label, (lambda sid=slot.id: self.select_equipment_slot(sid)), True)
 
         selected_slot = next((slot for slot in slots if slot.id == self.selected_equipment_slot), slots[0])
-        self.screen.blit(self.font_sm.render(f"{selected_slot.name} options", True, TEXT_DIM), (items_x, top - 24))
+        self.screen.blit(self.font_sm.render(f"{selected_slot.name} options", True, TEXT_DIM), (items_rect.x, items_rect.y - 24))
+        max_items = max(1, items_rect.height // 34)
         if selected_slot.id == "weapon":
-            for i, w in enumerate(snap.weapons[:7]):
-                rect = pygame.Rect(items_x, top + i * 34, panel.right - items_x - 20, 28)
+            for i, w in enumerate(snap.weapons[:max_items]):
+                rect = pygame.Rect(items_rect.x, items_rect.y + i * 34, items_rect.width, 28)
                 suffix = " [equipped]" if w.equipped else ("" if w.equippable else f" needs Lv {w.required_level}")
                 label = f"{w.name} +{w.damage_bonus} {w.damage_type}{suffix}"
                 self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
@@ -873,20 +925,21 @@ class OverworldApp:
 
         if selected_slot.equipped_item_id:
             self._add_button(
-                pygame.Rect(items_x, top, panel.right - items_x - 20, 28),
+                pygame.Rect(items_rect.x, items_rect.y, items_rect.width, 28),
                 f"Unequip {selected_slot.equipped_item_name}",
                 lambda sid=selected_slot.id: self.unequip_gear_from_slot(sid),
                 True,
             )
-            start_y = top + 38
+            start_y = items_rect.y + 38
         else:
-            start_y = top
+            start_y = items_rect.y
         choices = [
             gear for gear in snap.gear
             if gear.slot_type == selected_slot.slot_type and not gear.equipped_slot_id
         ]
-        for i, gear in enumerate(choices[:7]):
-            rect = pygame.Rect(items_x, start_y + i * 34, panel.right - items_x - 20, 28)
+        max_choices = max(1, (items_rect.bottom - start_y) // 34)
+        for i, gear in enumerate(choices[:max_choices]):
+            rect = pygame.Rect(items_rect.x, start_y + i * 34, items_rect.width, 28)
             mods = ", ".join(f"{stat} {value:+}" for stat, value in gear.stat_modifiers)
             suffix = "" if gear.equippable else f" needs Lv {gear.required_level}"
             label = f"{gear.name} [{gear.rarity}] {mods}{suffix}"
@@ -894,8 +947,9 @@ class OverworldApp:
 
     def _overlay_inventory(self, panel) -> None:
         eng = self.engine
+        content = self._content_rect(panel)
         self.screen.blit(self.font_sm.render(T.INVENTORY_HINT, True, TEXT_DIM),
-                         (panel.x + 20, panel.y + 56))
+                         (content.x, content.y))
         consumables = [
             (item_id, count)
             for item_id, count in sorted(eng.player.inventory.consumables.items())
@@ -907,38 +961,72 @@ class OverworldApp:
             if count > 0 and eng.content.items[item_id].kind != "consumable"
         ]
 
-        self.screen.blit(self.font.render(T.INV_HEADER_CONSUMABLES, True, TEXT), (panel.x + 20, panel.y + 86))
+        gap = 20
+        list_top = content.y + 42
+        if content.width >= 560:
+            consumable_rect = pygame.Rect(content.x, list_top, (content.width - gap) // 2, content.bottom - list_top)
+            junk_rect = pygame.Rect(consumable_rect.right + gap, list_top, content.right - consumable_rect.right - gap, consumable_rect.height)
+        else:
+            consumable_h = max(120, (content.bottom - list_top - gap) // 2)
+            consumable_rect = pygame.Rect(content.x, list_top, content.width, consumable_h)
+            junk_rect = pygame.Rect(content.x, consumable_rect.bottom + gap, content.width, content.bottom - consumable_rect.bottom - gap)
+
+        self.screen.blit(self.font.render(T.INV_HEADER_CONSUMABLES, True, TEXT), consumable_rect.topleft)
         if consumables:
-            for i, (item_id, count) in enumerate(consumables[:6]):
+            max_consumables = max(1, (consumable_rect.height - 34) // 36)
+            for i, (item_id, count) in enumerate(consumables[:max_consumables]):
                 item = eng.content.items[item_id]
-                rect = pygame.Rect(panel.x + 20, panel.y + 114 + i * 36, panel.width - 40, 30)
+                rect = pygame.Rect(consumable_rect.x, consumable_rect.y + 28 + i * 36, consumable_rect.width, 30)
                 self._add_button(rect, f"{item.name} x{count}", (lambda iid=item_id: self.use_inventory_item(iid)))
         else:
-            self._lines(panel, [T.INV_NONE], TEXT_DIM, start=114)
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (consumable_rect.x, consumable_rect.y + 28))
 
-        junk_y = panel.y + 114 + max(1, len(consumables[:6])) * 36 + 10
-        self.screen.blit(self.font.render(T.INV_HEADER_JUNK, True, TEXT), (panel.x + 20, junk_y))
+        self.screen.blit(self.font.render(T.INV_HEADER_JUNK, True, TEXT), junk_rect.topleft)
         if junk:
-            for i, (item_id, count) in enumerate(junk[:5]):
+            max_junk = max(1, (junk_rect.height - 34) // 32)
+            for i, (item_id, count) in enumerate(junk[:max_junk]):
                 item = eng.content.items[item_id]
-                rect = pygame.Rect(panel.x + 20, junk_y + 28 + i * 32, panel.width - 40, 28)
+                rect = pygame.Rect(junk_rect.x, junk_rect.y + 28 + i * 32, junk_rect.width, 28)
                 self._add_button(rect, f"{item.name} x{count} [not usable]", lambda: None, enabled=False)
         else:
-            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (panel.x + 20, junk_y + 28))
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (junk_rect.x, junk_rect.y + 28))
+
+    def _skills_talents_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
+        content = self._content_rect(panel)
+        gap = 16
+        if content.width >= 860:
+            skills_w = 220
+            talents_w = 280
+            skills = pygame.Rect(content.x, content.y, skills_w, content.height)
+            talents = pygame.Rect(skills.right + gap, content.y, talents_w, content.height)
+            detail = pygame.Rect(talents.right + gap, content.y, content.right - talents.right - gap, content.height)
+            return skills, talents, detail
+        if content.height >= 380:
+            top_h = min(245, max(190, content.height // 2))
+            skills_w = max(220, (content.width - gap) // 2)
+            talents_w = content.width - skills_w - gap
+            skills = pygame.Rect(content.x, content.y, skills_w, top_h)
+            talents = pygame.Rect(skills.right + gap, content.y, talents_w, top_h)
+            detail = pygame.Rect(content.x, skills.bottom + gap, content.width, content.bottom - skills.bottom - gap)
+            return skills, talents, detail
+        row_h = max(96, (content.height - 2 * gap) // 3)
+        skills = pygame.Rect(content.x, content.y, content.width, row_h)
+        talents = pygame.Rect(content.x, skills.bottom + gap, content.width, row_h)
+        detail = pygame.Rect(content.x, talents.bottom + gap, content.width, content.bottom - talents.bottom - gap)
+        return skills, talents, detail
 
     def _overlay_skills_talents(self, panel) -> None:
         eng = self.engine
         equipped_ids = set(eng.player.equipped_skill_ids)
-        left = pygame.Rect(panel.x + 20, panel.y + 56, 220, panel.height - 126)
-        middle = pygame.Rect(left.right + 16, panel.y + 56, 250, panel.height - 126)
-        right = pygame.Rect(middle.right + 16, panel.y + 56, panel.right - middle.right - 36, panel.height - 126)
+        left, middle, right = self._skills_talents_regions(panel)
 
         self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
                          (left.x, left.y))
         skills = eng.equippable_skills()
         if not skills:
             self.screen.blit(self.font.render(T.NO_SKILLS, True, TEXT_DIM), (left.x, left.y + 30))
-        for i, skill in enumerate(skills[:8]):
+        max_skills = max(1, (left.height - 32) // 34)
+        for i, skill in enumerate(skills[:max_skills]):
             rect = pygame.Rect(left.x, left.y + 30 + i * 34, left.width, 28)
             is_eq = skill.id in equipped_ids
             label = f"{'[E] ' if is_eq else '[ ]'} {skill.name}"
@@ -949,7 +1037,8 @@ class OverworldApp:
                          (middle.x, middle.y))
         class_nodes = self.class_talent_nodes()
         selected = self.selected_talent_node()
-        for i, node in enumerate(class_nodes[:10]):
+        max_nodes = max(1, (middle.height - 32) // 32)
+        for i, node in enumerate(class_nodes[:max_nodes]):
             status = talent_status(eng, node)
             rect = pygame.Rect(middle.x, middle.y + 30 + i * 32, middle.width, 26)
             marker = "> " if selected is not None and node.id == selected.id else "  "
@@ -968,12 +1057,18 @@ class OverworldApp:
 
         lines = []
         for raw in self.talent_detail_lines(node):
-            lines.extend(self._wrapped_lines(raw, 28))
+            lines.extend(self._wrapped_lines_pixels(raw, rect.width - 20, self.font_sm))
         y = rect.y + 36
-        for line in lines[:12]:
+        line_height = self.font_sm.get_linesize() + 3
+        max_y = rect.bottom - 52
+        max_lines = max(1, (max_y - y) // line_height)
+        visible_lines = lines[:max_lines]
+        if len(lines) > max_lines and visible_lines:
+            visible_lines[-1] = self._fit_text(f"{visible_lines[-1]} ...", rect.width - 20, self.font_sm)
+        for line in visible_lines:
             color = ACCENT if y == rect.y + 36 else TEXT
             self.screen.blit(self.font_sm.render(line, True, color), (rect.x + 10, y))
-            y += 18
+            y += line_height
 
         can_learn = talent_status(self.engine, node) == "[CAN LEARN]" and self.engine.player.talent_points > 0
         learn_rect = pygame.Rect(rect.x + 10, rect.bottom - 42, rect.width - 20, 32)

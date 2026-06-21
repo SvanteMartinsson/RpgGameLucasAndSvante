@@ -158,6 +158,40 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertTrue(any("[CAN LEARN]" in label for label in labels))
         self.assertTrue(any("[LOCKED]" in label for label in labels))
 
+    def test_skills_panel_regions_do_not_overlap_on_compact_panel(self):
+        panel = pygame.Rect(16, 16, 608, 560)
+
+        skills, talents, detail = self.app._skills_talents_regions(panel)
+
+        self.assertFalse(skills.colliderect(talents))
+        self.assertFalse(skills.colliderect(detail))
+        self.assertFalse(talents.colliderect(detail))
+        self.assertGreaterEqual(detail.width, talents.width)
+
+    def test_talent_detail_wraps_to_available_pixel_width(self):
+        panel = pygame.Rect(16, 16, 608, 560)
+        _skills, _talents, detail = self.app._skills_talents_regions(panel)
+        long_line = (
+            "Effect: apply a very long named status modifier with several conditions "
+            "and enough descriptive text to require multiple wrapped rows"
+        )
+
+        lines = self.app._wrapped_lines_pixels(long_line, detail.width - 20, self.app.font_sm)
+
+        self.assertGreater(len(lines), 1)
+        self.assertTrue(all(self.app.font_sm.size(line)[0] <= detail.width - 20 for line in lines))
+
+    def test_overlay_panels_render_headless_without_crashing(self):
+        self.app.engine.player.inventory.add_consumable("hp_potion")
+        self.app.engine.player.owned_gear_ids = ("padded_vest",)
+        self.app.engine.player.talent_points = 1
+
+        for overlay in ("character", "inventory", "skills_talents", "system"):
+            with self.subTest(overlay=overlay):
+                self.app.overlay = overlay
+                self.app.draw()
+                self.assertTrue(self.app.buttons)
+
     def test_overlay_from_town_menu_pauses_menu_and_restores_it_on_close(self):
         self.app.world.set_tile(14, 10)
         self.app.sync_location()
