@@ -39,6 +39,7 @@ from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation.pygame_battle import BattleApp, character_creation
+from rpg_game.presentation.talent_text import talent_detail, talent_status
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -236,6 +237,7 @@ class OverworldApp:
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
         self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
+        self.selected_talent_id = ""
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
         self.buttons: list[Button] = []
@@ -382,6 +384,46 @@ class OverworldApp:
         except ValueError as error:
             self.set_toast(str(error), BAD)
 
+    def select_talent(self, node_id: str) -> None:
+        self.selected_talent_id = node_id
+
+    def class_talent_nodes(self):
+        return sorted(
+            (node for node in self.engine.content.talents.values() if node.class_id == self.engine.player.player_class),
+            key=lambda node: (node.branch, node.order),
+        )
+
+    def selected_talent_node(self):
+        nodes = self.class_talent_nodes()
+        if not nodes:
+            return None
+        if self.selected_talent_id not in {node.id for node in nodes}:
+            self.selected_talent_id = nodes[0].id
+        return next(node for node in nodes if node.id == self.selected_talent_id)
+
+    def move_talent_selection(self, delta: int) -> None:
+        nodes = self.class_talent_nodes()
+        if not nodes:
+            return
+        current = self.selected_talent_node()
+        index = nodes.index(current) if current in nodes else 0
+        self.selected_talent_id = nodes[(index + delta) % len(nodes)].id
+
+    def learn_selected_talent(self) -> None:
+        node = self.selected_talent_node()
+        if node is not None:
+            self.learn_talent(node.id)
+
+    def talent_detail_lines(self, node) -> list[str]:
+        detail = talent_detail(self.engine, node)
+        return [
+            detail.name,
+            detail.status,
+            f"Effect: {detail.effect}",
+            f"Cost: {detail.cost}",
+            f"Requires: {detail.prerequisite}",
+        ]
+
     # -- tournament flow ----------------------------------------------------
 
     def select_tournament(self, tournament_id: str) -> None:
@@ -464,6 +506,16 @@ class OverworldApp:
                         break
 
     def _handle_key(self, event: pygame.event.Event) -> None:
+        if self.overlay == "skills_talents":
+            if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
+                self.move_talent_selection(1)
+                return
+            if event.key in (pygame.K_UP, pygame.K_LEFT):
+                self.move_talent_selection(-1)
+                return
+            if event.key == pygame.K_RETURN:
+                self.learn_selected_talent()
+                return
         if event.key == pygame.K_ESCAPE:
             if self.overlay:
                 self.overlay = ""
@@ -584,7 +636,9 @@ class OverworldApp:
 
     def _overlay_panel(self, title: str) -> pygame.Rect:
         w, h = self.screen.get_size()
-        panel = pygame.Rect(w // 2 - 320, h // 2 - 220, 640, 440)
+        panel_w = min(780, w - 40)
+        panel_h = min(500, h - 40)
+        panel = pygame.Rect(w // 2 - panel_w // 2, h // 2 - panel_h // 2, panel_w, panel_h)
         shade = pygame.Surface((w, h), pygame.SRCALPHA)
         shade.fill((6, 8, 12, 180))
         self.screen.blit(shade, (0, 0))
@@ -705,6 +759,22 @@ class OverworldApp:
             self.screen.blit(self.font.render(line, True, color), (panel.x + 20, panel.y + start + i * step))
         return panel.y + start + len(lines) * step
 
+    def _wrapped_lines(self, text: str, max_chars: int) -> list[str]:
+        words = text.split()
+        lines: list[str] = []
+        current = ""
+        for word in words:
+            candidate = word if not current else f"{current} {word}"
+            if len(candidate) <= max_chars:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return lines or [""]
+
     def _draw_store_screen(self) -> None:
         panel = self._overlay_panel(T.SCREEN_TITLES["store"])
         self._screen_store(panel)
@@ -768,8 +838,9 @@ class OverworldApp:
     def _overlay_skills_talents(self, panel) -> None:
         eng = self.engine
         equipped_ids = set(eng.player.equipped_skill_ids)
-        left = pygame.Rect(panel.x + 20, panel.y + 56, (panel.width - 60) // 2, panel.height - 126)
-        right = pygame.Rect(left.right + 20, panel.y + 56, (panel.width - 60) // 2, panel.height - 126)
+        left = pygame.Rect(panel.x + 20, panel.y + 56, 220, panel.height - 126)
+        middle = pygame.Rect(left.right + 16, panel.y + 56, 250, panel.height - 126)
+        right = pygame.Rect(middle.right + 16, panel.y + 56, panel.right - middle.right - 36, panel.height - 126)
 
         self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
                          (left.x, left.y))
@@ -784,25 +855,38 @@ class OverworldApp:
             self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled)
 
         self.screen.blit(self.font_sm.render(T.talents_hint(eng.player.talent_points), True, WARN),
-                         (right.x, right.y))
-        class_nodes = sorted(
-            (node for node in eng.content.talents.values() if node.class_id == eng.player.player_class),
-            key=lambda node: (node.branch, node.order),
-        )
-        available_ids = {node.id for node in eng.available_talents()}
+                         (middle.x, middle.y))
+        class_nodes = self.class_talent_nodes()
+        selected = self.selected_talent_node()
         for i, node in enumerate(class_nodes[:10]):
-            if node.id in eng.player.learned_talent_ids:
-                status = "[LEARNED]"
-                enabled = False
-            elif node.id in available_ids:
-                status = "[CAN LEARN]"
-                enabled = eng.player.talent_points > 0
-            else:
-                status = "[LOCKED]"
-                enabled = False
-            rect = pygame.Rect(right.x, right.y + 30 + i * 32, right.width, 26)
-            label = f"{status} {node.name} ({node.branch} t{node.order})"
-            self._add_button(rect, label, (lambda nid=node.id: self.learn_talent(nid)), enabled)
+            status = talent_status(eng, node)
+            rect = pygame.Rect(middle.x, middle.y + 30 + i * 32, middle.width, 26)
+            marker = "> " if selected is not None and node.id == selected.id else "  "
+            label = f"{marker}{status} {node.name} ({node.branch} t{node.order})"
+            self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True)
+
+        self._draw_talent_detail(right, selected)
+
+    def _draw_talent_detail(self, rect: pygame.Rect, node) -> None:
+        pygame.draw.rect(self.screen, (24, 28, 38), rect, border_radius=6)
+        pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=6)
+        self.screen.blit(self.font_sm.render("Talent detail", True, TEXT_DIM), (rect.x + 10, rect.y + 8))
+        if node is None:
+            self.screen.blit(self.font.render(T.NO_TALENTS, True, TEXT_DIM), (rect.x + 10, rect.y + 38))
+            return
+
+        lines = []
+        for raw in self.talent_detail_lines(node):
+            lines.extend(self._wrapped_lines(raw, 28))
+        y = rect.y + 36
+        for line in lines[:12]:
+            color = ACCENT if y == rect.y + 36 else TEXT
+            self.screen.blit(self.font_sm.render(line, True, color), (rect.x + 10, y))
+            y += 18
+
+        can_learn = talent_status(self.engine, node) == "[CAN LEARN]" and self.engine.player.talent_points > 0
+        learn_rect = pygame.Rect(rect.x + 10, rect.bottom - 42, rect.width - 20, 32)
+        self._add_button(learn_rect, "Learn selected", self.learn_selected_talent, can_learn)
 
     def _screen_store(self, panel) -> None:
         eng = self.engine

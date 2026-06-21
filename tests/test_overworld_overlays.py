@@ -13,6 +13,7 @@ try:
     import pygame
 
     from rpg_game.core.game import GameEngine
+    from rpg_game.presentation import terminal
     from rpg_game.presentation.pygame_battle import BattleApp
     from rpg_game.presentation.pygame_overworld import OverworldApp
 
@@ -120,6 +121,50 @@ class OverworldOverlayTest(unittest.TestCase):
 
         self.assertTrue(any("[CAN LEARN]" in label for label in labels))
         self.assertTrue(any("[LOCKED]" in label for label in labels))
+
+    def test_talent_detail_lines_match_terminal_description(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        engine.player.talent_points = 1
+        app = OverworldApp(engine=engine)
+        node = engine.content.talents["cleric_light_l1_smite"]
+
+        lines = app.talent_detail_lines(node)
+
+        self.assertIn(node.name, lines)
+        self.assertIn("[CAN LEARN]", lines)
+        self.assertIn(f"Effect: {terminal.describe_talent(engine, node)}", lines)
+        self.assertIn("Cost: 6 mana", lines)
+        self.assertIn("Requires: none", lines)
+
+    def test_talent_detail_shows_prerequisite_for_locked_node(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        app = OverworldApp(engine=engine)
+        node = engine.content.talents["cleric_light_l2_mend"]
+
+        lines = app.talent_detail_lines(node)
+
+        self.assertIn("[LOCKED]", lines)
+        self.assertIn("Requires: Smite", lines)
+
+    def test_talent_selection_works_with_keyboard_and_node_buttons(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        app = OverworldApp(engine=engine)
+        app.overlay = "skills_talents"
+
+        first = app.selected_talent_node()
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+        second = app.selected_talent_node()
+
+        self.assertNotEqual(first.id, second.id)
+
+        app.draw()
+        smite_button = next(button for button in app.buttons if "[CAN LEARN] Smite" in button.label)
+        smite_button.on_click()
+
+        self.assertEqual(app.selected_talent_id, "cleric_light_l1_smite")
 
 
 if __name__ == "__main__":
