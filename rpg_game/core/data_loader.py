@@ -185,6 +185,8 @@ def load_content() -> GameContent:
             loot_table=tuple(row.get("loot_table", ())),
             drop_chance=row.get("drop_chance", 0.0),
             rare_table_access=row.get("rare_table_access", False),
+            level_min=row.get("level_min", row["level"]),
+            level_max=row.get("level_max", row["level"]),
         )
         for row in _read_json("enemies.json")
     }

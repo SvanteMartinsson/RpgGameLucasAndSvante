@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import random
 
-from rpg_game.core.entities import Connection, Enemy, GameContent, Place, Player
+from rpg_game.core.entities import Connection, Enemy, EnemyTemplate, GameContent, Place, Player
+from rpg_game.core.progression import round_half_up
+
+# Per-level stat growth for wild spawns, applied relative to the template's base
+# level. Tunable. A level-5 giant rat (base 1) becomes a real threat, not just
+# more XP.
+HP_GROWTH_PER_LEVEL = 0.20
+DAMAGE_GROWTH_PER_LEVEL = 0.12
 
 
 def get_current_place(player: Player, content: GameContent) -> Place:
@@ -58,9 +65,41 @@ def enter_place(player: Player, content: GameContent, place_id: str) -> str:
     return f"Entered {new_place.name}."
 
 
+def roll_enemy_level(template: EnemyTemplate, rng: random.Random) -> int:
+    """Roll a wild spawn level uniformly within the template's range.
+
+    Falls back to the fixed base level when no range is set (level_min/max == 0),
+    so arena/tournament templates never vary.
+    """
+    low = template.level_min or template.level
+    high = template.level_max or template.level
+    if high < low:
+        low, high = high, low
+    return rng.randint(low, high)
+
+
+def scale_enemy_to_level(enemy: Enemy, base_level: int, target_level: int) -> None:
+    """Scale a spawned enemy's combat stats from its base level to the rolled
+    level in place. HP and power grow; level is updated so Identify and the XP
+    multiplier see the rolled level."""
+    enemy.level = target_level
+    delta = target_level - base_level
+    if delta == 0:
+        return
+    enemy.max_hp = max(1, round_half_up(enemy.max_hp * (1 + HP_GROWTH_PER_LEVEL * delta)))
+    enemy.hp = enemy.max_hp
+    enemy.damage = max(1, round_half_up(enemy.damage * (1 + DAMAGE_GROWTH_PER_LEVEL * delta)))
+
+
 def create_encounter(player: Player, content: GameContent, rng: random.Random) -> Enemy | None:
+    """Generate a wild encounter: roll a level in the enemy's range and scale
+    its stats to it. Tournament opponents do NOT use this path (see
+    GameEngine.create_tournament_opponent), so their fixed levels never roll."""
     place = get_current_place(player, content)
     if not place.encounters:
         return None
     enemy_id = rng.choice(place.encounters)
-    return content.enemies[enemy_id].create_enemy()
+    template = content.enemies[enemy_id]
+    enemy = template.create_enemy()
+    scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng))
+    return enemy

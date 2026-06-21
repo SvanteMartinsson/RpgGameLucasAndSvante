@@ -170,6 +170,11 @@ class EnemyTemplate:
     loot_table: tuple[dict[str, object], ...] = ()
     drop_chance: float = 0.0
     rare_table_access: bool = False
+    # Wild spawn level range (0 = use `level`, i.e. no range). Stats are scaled
+    # from the base `level` to the rolled level at spawn. Arena/tournament
+    # opponents leave these at 0 so their hand-built fixed levels never roll.
+    level_min: int = 0
+    level_max: int = 0
 
     def create_enemy(self) -> "Enemy":
         return Enemy(
