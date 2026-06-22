@@ -834,5 +834,53 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "crab_claw",
+    "name": "Crushing Claw",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.6,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "wraith_bolt",
+    "name": "Mire Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "wraith_hex",
+    "name": "Drowning Hex",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 3.0,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
   }
 ]

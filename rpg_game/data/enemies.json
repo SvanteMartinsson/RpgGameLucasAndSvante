@@ -542,5 +542,65 @@
     "drop_chance": 0.0,
     "rare_table_access": false,
     "loot_table": []
+  },
+  {
+    "id": "mutated_mudcrab",
+    "name": "Mutated Mudcrab",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 70,
+    "damage": 10,
+    "armor": 2,
+    "speed": 6,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 0.5,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast"],
+    "action_ids": ["crab_claw", "normal"],
+    "ai": [
+      {"condition": {"always": true}, "action": "crab_claw"}
+    ],
+    "xp_reward": 24,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "bog_wraith",
+    "name": "Bog Wraith",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 28,
+    "damage": 7,
+    "armor": 0,
+    "speed": 14,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 2.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["undead", "spirit"],
+    "mana": 30,
+    "action_ids": ["wraith_hex", "wraith_bolt"],
+    "ai": [
+      {"condition": {"skill_ready": "wraith_hex"}, "action": "wraith_hex"},
+      {"condition": {"always": true}, "action": "wraith_bolt"}
+    ],
+    "xp_reward": 22,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
   }
 ]

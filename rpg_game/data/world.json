@@ -538,11 +538,13 @@
         "y": 915.2
       },
       "danger_tier": 2,
+      "level_min": 5,
+      "level_max": 10,
       "encounters": [
-        "undead",
-        "cave_bear"
+        "mutated_mudcrab",
+        "bog_wraith"
       ],
-      "respawn": false,
+      "respawn": true,
       "locked": false,
       "connections": [
         {

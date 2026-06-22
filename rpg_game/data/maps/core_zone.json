@@ -5,6 +5,7 @@
   "encounter_rate_per_step": 0.06,
   "wild_region_place_id": "burg_54",
   "wild_regions": [
+    {"place_id": "burg_320", "min_tile_x": 41},
     {"place_id": "burg_146", "min_tile_x": 28}
   ],
   "respawn_place_id": "burg_5",
