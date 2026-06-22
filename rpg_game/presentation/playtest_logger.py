@@ -7,6 +7,7 @@ snapshots, enemies and combat turn results. It does not affect game state.
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,6 +18,13 @@ from rpg_game.core.progression import round_half_up
 
 DEFAULT_LOG_DIR = Path("playtest_logs")
 KEEP_SESSIONS = 5
+
+# Status ticks are emitted by core as plain event strings (no structured field on
+# the result), so the logger parses the two known shapes from result.events:
+#   "<actor> took <n> <type> damage from <status>."   (DoT: burn/poison/bleed…)
+#   "<actor> regenerated <n> HP."                      (regen)
+_DOT_DAMAGE_RE = re.compile(r"^(?P<target>.+) took (?P<amount>\d+) (?P<dtype>\w+) damage from (?P<status>\w+)\.$")
+_REGEN_RE = re.compile(r"^(?P<target>.+) regenerated (?P<amount>\d+) HP\.$")
 
 
 class PlaytestLogger:
@@ -67,6 +75,8 @@ class PlaytestLogger:
             self.flee(result.flee_chance, result.outcome == "fled", enemy)
         for resolution in result.action_resolutions:
             self.attack(resolution, snapshot)
+        for event in result.events:
+            self._maybe_log_tick(event)
         if result.loot_drop is not None:
             self.drop(result.loot_drop, enemy)
         if result.xp_gained or result.gold_gained:
@@ -85,6 +95,24 @@ class PlaytestLogger:
             enemy_id=enemy.id,
             enemy_level=enemy.level,
         )
+
+    def _maybe_log_tick(self, event: str) -> None:
+        """Surface a status tick (DoT damage / regen heal) already present as a
+        combat event string as its own structured row."""
+        match = _DOT_DAMAGE_RE.match(event)
+        if match:
+            self.dot_tick(match["target"], match["status"], "damage",
+                          int(match["amount"]), damage_type=match["dtype"])
+            return
+        match = _REGEN_RE.match(event)
+        if match:
+            self.dot_tick(match["target"], "regen", "heal", int(match["amount"]))
+
+    def dot_tick(self, target: str, status: str, kind: str, amount: int, damage_type: str = "") -> None:
+        fields = {"target": target, "status": status, "kind": kind, "amount": amount}
+        if damage_type:
+            fields["damage_type"] = damage_type
+        self.write("dot_tick", **fields)
 
     def attack(self, resolution: combat.ActionResolution, snapshot) -> None:
         source = "player" if resolution.actor_name == snapshot.player.name else "enemy"
