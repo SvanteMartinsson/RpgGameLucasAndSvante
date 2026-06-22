@@ -255,6 +255,11 @@ class OverworldApp:
         # Clamp the initial window so it can never open larger than the desktop.
         self.windowed_size = fit_size(self.view_size)
         self.fullscreen = False
+        # Draw to a fixed canvas; present() blits it centered on the real display,
+        # so the overworld is anchored identically to the menus/battle in any mode.
+        self.screen = pygame.Surface(self.view_size)
+        self._transform = (0, 0, 1.0)
+        self.display = None
         self._apply_display_mode()
         self.clock = pygame.time.Clock()
         self.encounter_rate = self.zone.encounter_rate_per_step
@@ -311,12 +316,12 @@ class OverworldApp:
         does not change the video mode, and alt-tabs cleanly."""
         pygame.display.set_caption(T.CAPTION_OVERWORLD)
         if self.fullscreen:
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         else:
             # Normal resizable OS window (Mac green-button / drag-resize work),
             # clamped so it never exceeds the desktop.
             self.windowed_size = fit_size(self.windowed_size)
-            self.screen = open_window(self.windowed_size)
+            self.display = open_window(self.windowed_size)
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -654,14 +659,15 @@ class OverworldApp:
                 self.exit_reason = "exit"
                 self.running = False
             elif event.type == pygame.VIDEORESIZE and not self.fullscreen:
-                # Follow the user's resize / Mac maximize; layout reads get_size().
+                # Follow the user's resize / Mac maximize; present() re-centers the canvas.
                 self.windowed_size = (event.w, event.h)
-                self.screen = pygame.display.set_mode(self.windowed_size, pygame.RESIZABLE)
+                self.display = pygame.display.set_mode(self.windowed_size, pygame.RESIZABLE)
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                pos = to_canvas(event.pos, self._transform)
                 for button in self.buttons:
-                    if button.enabled and button.rect.collidepoint(event.pos):
+                    if button.enabled and button.rect.collidepoint(pos):
                         button.on_click()
                         break
 
@@ -755,7 +761,7 @@ class OverworldApp:
             self._draw_overlay_screen()
         if self.toast:
             self._draw_toast()
-        pygame.display.flip()
+        self._transform = present(self.display, self.screen, BG)
 
     def _draw_map(self) -> None:
         view_w, view_h = self.screen.get_size()
@@ -822,7 +828,7 @@ class OverworldApp:
         self.buttons.append(Button(rect, label, cb, enabled))
 
     def _draw_buttons(self) -> None:
-        mouse = pygame.mouse.get_pos()
+        mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         for b in self.buttons:
             if not b.enabled:
                 color = BTN_DISABLED
