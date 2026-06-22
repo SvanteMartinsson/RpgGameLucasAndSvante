@@ -478,11 +478,18 @@
       {"condition": {"always": true}, "action": "wolf_bite"}
     ],
     "xp_reward": 20,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 18,
+    "gold_max": 40,
+    "drop_chance": 0.55,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
+      { "item_id": "windstep_boots", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "duelist_gloves", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "crimson_signet", "weight": 6, "rarity_tier": 4 }
+    ]
   },
   {
     "id": "wild_boar",
@@ -508,11 +515,18 @@
       {"condition": {"always": true}, "action": "normal"}
     ],
     "xp_reward": 22,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 18,
+    "gold_max": 40,
+    "drop_chance": 0.55,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
+      { "item_id": "iron_helm", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "marcher_greaves", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "haste_circuit", "weight": 6, "rarity_tier": 4 }
+    ]
   },
   {
     "id": "treant",
@@ -537,11 +551,18 @@
       {"condition": {"always": true}, "action": "treant_slam"}
     ],
     "xp_reward": 26,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 22,
+    "gold_max": 46,
+    "drop_chance": 0.6,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
+      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "iron_helm", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "emberwand", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "crimson_signet", "weight": 6, "rarity_tier": 4 }
+    ]
   },
   {
     "id": "mutated_mudcrab",
@@ -566,11 +587,18 @@
       {"condition": {"always": true}, "action": "crab_claw"}
     ],
     "xp_reward": 24,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 20,
+    "gold_max": 44,
+    "drop_chance": 0.6,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
+      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "marcher_greaves", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "haste_circuit", "weight": 6, "rarity_tier": 4 }
+    ]
   },
   {
     "id": "bog_wraith",
@@ -597,11 +625,18 @@
       {"condition": {"always": true}, "action": "wraith_bolt"}
     ],
     "xp_reward": 22,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 18,
+    "gold_max": 40,
+    "drop_chance": 0.55,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "tattered_cloth", "weight": 40, "rarity_tier": 1 },
+      { "item_id": "mana_potion", "weight": 22, "rarity_tier": 2 },
+      { "item_id": "battle_amulet", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "rimebrand", "weight": 14, "rarity_tier": 3 },
+      { "item_id": "windstep_boots", "weight": 10, "rarity_tier": 3 },
+      { "item_id": "veteran_ring", "weight": 4, "rarity_tier": 5 }
+    ]
   },
   {
     "id": "tar_beast",
@@ -628,11 +663,19 @@
       {"condition": {"always": true}, "action": "tar_maul"}
     ],
     "xp_reward": 30,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 25,
+    "gold_max": 55,
+    "drop_chance": 0.65,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 30, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 22, "rarity_tier": 3 },
+      { "item_id": "iron_cuirass", "weight": 18, "rarity_tier": 3 },
+      { "item_id": "marcher_greaves", "weight": 14, "rarity_tier": 3 },
+      { "item_id": "steel_greatsword", "weight": 14, "rarity_tier": 3 },
+      { "item_id": "crimson_signet", "weight": 8, "rarity_tier": 4 },
+      { "item_id": "veteran_ring", "weight": 4, "rarity_tier": 5 }
+    ]
   },
   {
     "id": "hollow_worg",
@@ -658,10 +701,19 @@
       {"condition": {"always": true}, "action": "worg_bite"}
     ],
     "xp_reward": 60,
-    "gold_min": 0,
-    "gold_max": 0,
-    "drop_chance": 0.0,
-    "rare_table_access": false,
-    "loot_table": []
+    "gold_min": 80,
+    "gold_max": 150,
+    "drop_chance": 0.9,
+    "rare_table_access": true,
+    "loot_table": [
+      { "item_id": "bone_dust", "weight": 8, "rarity_tier": 1 },
+      { "item_id": "greater_hp_potion", "weight": 12, "rarity_tier": 3 },
+      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
+      { "item_id": "battle_amulet", "weight": 14, "rarity_tier": 3 },
+      { "item_id": "crimson_signet", "weight": 12, "rarity_tier": 4 },
+      { "item_id": "veteran_ring", "weight": 14, "rarity_tier": 5 },
+      { "item_id": "gravewarden_blade", "weight": 10, "rarity_tier": 5 },
+      { "item_id": "pyre_scepter", "weight": 8, "rarity_tier": 5 }
+    ]
   }
 ]
