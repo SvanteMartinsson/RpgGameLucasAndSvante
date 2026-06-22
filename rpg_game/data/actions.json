@@ -882,5 +882,56 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "tar_maul",
+    "name": "Tar Slam",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "tar_ensnare",
+    "name": "Tar Snare",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "speed",
+        "magnitude": -4,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "tag": "tar",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "tar_regen",
+    "name": "Seeping Renewal",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "regen",
+        "magnitude": 5,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
   }
 ]

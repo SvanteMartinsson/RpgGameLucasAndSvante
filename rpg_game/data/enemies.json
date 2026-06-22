@@ -602,5 +602,36 @@
     "drop_chance": 0.0,
     "rare_table_access": false,
     "loot_table": []
+  },
+  {
+    "id": "tar_beast",
+    "name": "Tar Beast",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 100,
+    "damage": 11,
+    "armor": 2,
+    "speed": 4,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.5,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast", "ooze"],
+    "action_ids": ["tar_regen", "tar_ensnare", "tar_maul", "normal"],
+    "ai": [
+      {"condition": {"skill_ready": "tar_regen"}, "action": "tar_regen"},
+      {"condition": {"skill_ready": "tar_ensnare"}, "action": "tar_ensnare"},
+      {"condition": {"always": true}, "action": "tar_maul"}
+    ],
+    "xp_reward": 30,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
   }
 ]

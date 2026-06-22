@@ -10,7 +10,7 @@ from rpg_game.core import combat, world
 from rpg_game.core.entities import EffectSpec
 from rpg_game.core.game import GameEngine
 
-SWAMP_ENEMIES = ("mutated_mudcrab", "bog_wraith")
+SWAMP_ENEMIES = ("mutated_mudcrab", "bog_wraith", "tar_beast")
 SWAMP = "burg_320"   # deep-west swamp region (Parguillas)
 FOREST = "burg_146"  # mid-west forest region (Rotequero)
 CORE = "burg_54"     # core wild region

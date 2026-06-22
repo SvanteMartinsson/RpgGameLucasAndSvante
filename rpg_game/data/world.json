@@ -542,7 +542,8 @@
       "level_max": 10,
       "encounters": [
         "mutated_mudcrab",
-        "bog_wraith"
+        "bog_wraith",
+        "tar_beast"
       ],
       "respawn": true,
       "locked": false,
