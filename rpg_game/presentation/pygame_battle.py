@@ -37,10 +37,15 @@ WIDTH, HEIGHT = 1024, 680
 FPS = 60
 
 PAD = 16
-ENEMY_PANEL = pygame.Rect(PAD, PAD, WIDTH - 2 * PAD, 150)
-LOG_PANEL = pygame.Rect(PAD, ENEMY_PANEL.bottom + PAD, WIDTH - 2 * PAD, 300)
-PLAYER_PANEL = pygame.Rect(PAD, LOG_PANEL.bottom + PAD, 600, HEIGHT - LOG_PANEL.bottom - 2 * PAD)
-ACTION_PANEL = pygame.Rect(PLAYER_PANEL.right + PAD, PLAYER_PANEL.top, WIDTH - PLAYER_PANEL.right - 2 * PAD, PLAYER_PANEL.height)
+# Three zones, rebalanced toward the fight: STAGE biggest (~53%), LOG slim
+# (~19%), HUD compact (~19%). Heights sum to 680 with PAD between.
+STAGE = pygame.Rect(PAD, PAD, WIDTH - 2 * PAD, 360)
+LOG_PANEL = pygame.Rect(PAD, STAGE.bottom + PAD, WIDTH - 2 * PAD, 130)
+HUD = pygame.Rect(PAD, LOG_PANEL.bottom + PAD, WIDTH - 2 * PAD, HEIGHT - LOG_PANEL.bottom - 2 * PAD)
+VITALS = pygame.Rect(HUD.x, HUD.y, 600, HUD.height)          # player vitals (left)
+ACTIONS = pygame.Rect(VITALS.right + PAD, HUD.y, HUD.right - VITALS.right - PAD, HUD.height)  # buttons (right)
+GROUND_Y = STAGE.bottom - 28  # shared baseline both combatants stand on
+HERO_BOX = (90, 120, 170)
 
 # --- Colors ----------------------------------------------------------------
 
@@ -83,8 +88,8 @@ ENEMY_SPRITE_TIER = {
     "tar_beast": "large",
     "hollow_worg": "large",  # sized for when its sprite arrives; falls back until then
 }
-TIER_HEIGHT = {"small": 90, "medium": 120, "large": 150}
-ENEMY_SPRITE_ZONE_W = 248  # right portion of the enemy panel reserved for the sprite
+# Bigger on the roomier stage, but with air left in the band (not dominant).
+TIER_HEIGHT = {"small": 150, "medium": 200, "large": 250}
 _DEFAULT_SPRITE_TIER = "medium"
 _sprite_cache: dict[str, "pygame.Surface | None"] = {}
 
@@ -360,9 +365,9 @@ class BattleApp:
     def draw(self) -> None:
         self.screen.fill(BG)
         snapshot = build_snapshot(self.engine)
-        self._draw_enemy_panel()
+        self._draw_stage()
         self._draw_log_panel()
-        self._draw_player_panel(snapshot)
+        self._draw_hud_vitals(snapshot)
         self.buttons = []
         if self.mode == "submenu":
             self._build_submenu(snapshot)
@@ -398,50 +403,67 @@ class BattleApp:
         label_surf = self.font_sm.render(label, True, TEXT)
         self.screen.blit(label_surf, label_surf.get_rect(center=rect.center))
 
-    def _draw_enemy_panel(self):
-        self._panel(ENEMY_PANEL, T.PANEL_ENEMY)
+    def _draw_stage(self):
+        self._panel(STAGE)
+        pygame.draw.line(self.screen, PANEL_EDGE, (STAGE.x + 8, GROUND_Y + 2), (STAGE.right - 8, GROUND_Y + 2), 2)
         enemy = self.enemy
         if enemy is None:
-            self._text("—", (ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 34), self.font_lg, TEXT_DIM)
+            self._draw_hero_sprite()
+            self._text("—", (STAGE.x + 14, STAGE.y + 8), self.font_lg, TEXT_DIM)
             return
+        self._draw_hero_sprite()
         self._draw_enemy_sprite(enemy)
-        self._text(enemy.name, (ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 28), self.font_lg)
-        bar = pygame.Rect(ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 64, ENEMY_PANEL.width - 24 - ENEMY_SPRITE_ZONE_W, 26)
+        # Compact nameplate (not a thick panel): name + HP bar + status/identify.
+        self._text(enemy.name, (STAGE.x + 14, STAGE.y + 8), self.font_lg)
+        bar = pygame.Rect(STAGE.x + 14, STAGE.y + 42, 320, 20)
         hp_ratio = enemy.hp / enemy.max_hp if enemy.max_hp else 0
         self._bar(bar, hp_ratio, _hp_color(hp_ratio), f"HP {enemy.hp}/{enemy.max_hp}")
-        info_y = bar.bottom + 8
+        info_y = bar.bottom + 6
         statuses = _status_text(enemy.active_statuses)
         if getattr(enemy, "charging_action_id", ""):
             action = self.engine.content.actions.get(enemy.charging_action_id)
             statuses = (statuses + " | " if statuses else "") + f"CHARGING {action.name if action else '?'}!"
         if statuses:
-            self._text(statuses, (ENEMY_PANEL.x + 12, info_y), self.font_sm, WARN)
+            self._text(statuses, (STAGE.x + 14, info_y), self.font_sm, WARN)
             info_y += 18
         if getattr(enemy, "identified", False):
             line = f"Lvl {enemy.level} | Power {enemy.damage} | Armor {enemy.armor} | Speed {enemy.speed}"
-            self._text(line, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
+            self._text(line, (STAGE.x + 14, info_y), self.font_sm, TEXT_DIM)
         else:
-            self._text(T.UNIDENTIFIED, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
+            self._text(T.UNIDENTIFIED, (STAGE.x + 14, info_y), self.font_sm, TEXT_DIM)
 
     def _enemy_sprite_rect(self, width: int, height: int) -> pygame.Rect:
-        """Bottom-right anchored in the panel's sprite zone, so every enemy shares
-        the same ground baseline regardless of its size."""
+        """Bottom-RIGHT anchored on the stage groundline (enemy stands right,
+        facing left). Shared baseline regardless of size."""
         rect = pygame.Rect(0, 0, width, height)
-        rect.bottomright = (ENEMY_PANEL.right - 16, ENEMY_PANEL.bottom - 4)
+        rect.bottomright = (STAGE.right - 48, GROUND_Y)
+        return rect
+
+    def _hero_sprite_rect(self, width: int, height: int) -> pygame.Rect:
+        """Bottom-LEFT anchored on the same groundline (hero stands left)."""
+        rect = pygame.Rect(0, 0, width, height)
+        rect.bottomleft = (STAGE.x + 48, GROUND_Y)
         return rect
 
     def _draw_enemy_sprite(self, enemy) -> None:
         sprite = enemy_sprite(enemy.id)
         if sprite is not None:
-            rect = self._enemy_sprite_rect(*sprite.get_size())
-            self.screen.blit(sprite, rect)
+            self.screen.blit(sprite, self._enemy_sprite_rect(*sprite.get_size()))
         else:
-            # No sprite file (e.g. hollow_worg, arena duelists) -> placeholder
-            # block at the enemy's tier size, same baseline. No crash.
+            # No sprite file (hollow_worg, arena duelists) -> placeholder block at
+            # the enemy's tier size, same baseline. No crash.
             height = enemy_sprite_height(enemy.id)
             rect = self._enemy_sprite_rect(int(height * 0.7), height)
             pygame.draw.rect(self.screen, PANEL, rect, border_radius=6)
             pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
+
+    def _draw_hero_sprite(self) -> None:
+        # No side-view hero sprite authored yet -> placeholder block on the left,
+        # same groundline. Drops in when hero art arrives.
+        height = TIER_HEIGHT["medium"]
+        rect = self._hero_sprite_rect(int(height * 0.5), height)
+        pygame.draw.rect(self.screen, HERO_BOX, rect, border_radius=6)
+        pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
 
     def _draw_log_panel(self):
         self._panel(LOG_PANEL, T.PANEL_LOG)
@@ -452,47 +474,54 @@ class BattleApp:
         for i, (text, color) in enumerate(visible):
             self._text(text[:120], (LOG_PANEL.x + 12, top + i * line_h), self.font_sm, color)
 
-    def _draw_player_panel(self, snapshot):
-        self._panel(PLAYER_PANEL, T.PANEL_PLAYER)
+    def _draw_hud_vitals(self, snapshot):
+        # Compact vitals; the YOU name/class header is gone — only a discreet
+        # level label sits by the XP bar.
         p = snapshot.player
-        x = PLAYER_PANEL.x + 12
-        self._text(f"{p.name} — {p.class_name} (Lvl {p.level})", (x, PLAYER_PANEL.y + 28), self.font, TEXT)
-        hp_bar = pygame.Rect(x, PLAYER_PANEL.y + 54, PLAYER_PANEL.width - 24, 22)
+        x = VITALS.x
+        bar_w = VITALS.width - 56  # leave room for the "Lvl N" label beside XP
+        hp_bar = pygame.Rect(x, VITALS.y + 4, bar_w, 16)
         self._bar(hp_bar, p.hp / p.max_hp if p.max_hp else 0, _hp_color(p.hp / p.max_hp if p.max_hp else 0), f"HP {p.hp}/{p.max_hp}")
-        mana_bar = pygame.Rect(x, hp_bar.bottom + 6, PLAYER_PANEL.width - 24, 18)
+        mana_bar = pygame.Rect(x, hp_bar.bottom + 4, bar_w, 14)
         self._bar(mana_bar, p.mana / p.max_mana if p.max_mana else 0, MANA, f"Mana {p.mana}/{p.max_mana}")
-        xp_bar = pygame.Rect(x, mana_bar.bottom + 6, PLAYER_PANEL.width - 24, 14)
+        xp_bar = pygame.Rect(x, mana_bar.bottom + 4, bar_w, 12)
         self._bar(xp_bar, p.xp / p.xp_required if p.xp_required else 0, XP_COL, f"XP {p.xp}/{p.xp_required}")
+        self._text(f"Lvl {p.level}", (xp_bar.right + 8, xp_bar.y - 1), self.font_sm, TEXT_DIM)
         weapon = self.engine.content.weapons[p.equipped_weapon_id]
         line = f"DMG {p.total_damage}  ARM {p.armor}  SPD {p.speed}  CRIT {p.crit_chance}%  GOLD {p.gold}"
-        self._text(line, (x, xp_bar.bottom + 8), self.font_sm, TEXT_DIM)
-        self._text(f"Weapon: {weapon.name}", (x, xp_bar.bottom + 26), self.font_sm, TEXT_DIM)
+        self._text(line, (x, xp_bar.bottom + 6), self.font_sm, TEXT_DIM)
+        info_y = xp_bar.bottom + 24
+        weapon_line = f"Weapon: {weapon.name}"
         statuses = _status_text(p.statuses)
         if statuses:
-            self._text(f"Status: {statuses}", (x, xp_bar.bottom + 44), self.font_sm, WARN)
+            weapon_line += f"   Status: {statuses}"
+        self._text(weapon_line, (x, info_y), self.font_sm, TEXT_DIM)
 
     # -- buttons ------------------------------------------------------------
 
-    def _action_rects(self, count):
+    def _action_rects(self, count, columns=3):
+        # Compact grid packed into the small ACTIONS region; row height shrinks to
+        # fit so more options (submenus) still stay inside the HUD band.
+        gap = 6
+        rows = max(1, (count + columns - 1) // columns)
+        col_w = (ACTIONS.width - (columns + 1) * gap) // columns
+        row_h = min(34, (ACTIONS.height - (rows + 1) * gap) // rows)
         rects = []
-        col_w = (ACTION_PANEL.width - 36) // 2
-        row_h = 44
         for i in range(count):
-            col, row = i % 2, i // 2
-            x = ACTION_PANEL.x + 12 + col * (col_w + 12)
-            y = ACTION_PANEL.y + 28 + row * (row_h + 8)
+            col, row = i % columns, i // columns
+            x = ACTIONS.x + gap + col * (col_w + gap)
+            y = ACTIONS.y + gap + row * (row_h + gap)
             rects.append(pygame.Rect(x, y, col_w, row_h))
         return rects
 
     def _build_action_buttons(self, snapshot):
-        self._panel(ACTION_PANEL, T.PANEL_ACTIONS)
         if self.mode != "combat" or self.enemy is None:
             if self.mode == "victory_idle":
-                self._text(T.NEXT_ENEMY_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, GOOD)
+                self._text(T.NEXT_ENEMY_HINT, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, GOOD)
             elif self.mode == "game_over":
-                self._text(T.QUIT_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, BAD)
+                self._text(T.QUIT_HINT, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, BAD)
             elif self.mode == "result":
-                self._text(T.CONTINUE_HINT, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, self.banner_color)
+                self._text(T.CONTINUE_HINT, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, self.banner_color)
             return
         specs = [
             (*T.ACTION_ATTACK, lambda: self.issue_turn("attack"), True),
@@ -508,18 +537,17 @@ class BattleApp:
             self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey))
 
     def _build_submenu(self, snapshot):
-        self._panel(ACTION_PANEL, f"{self.submenu_kind.upper()}  (Esc to back)")
         options = self._submenu_options(snapshot)
         if not options:
-            self._text(T.NOTHING_AVAILABLE, (ACTION_PANEL.x + 12, ACTION_PANEL.y + 34), self.font_sm, TEXT_DIM)
+            self._text(T.NOTHING_AVAILABLE, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, TEXT_DIM)
         rects = self._action_rects(len(options) + 1)
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
-            self.buttons.append(Button(rect, label, (lambda a=action_id: self.issue_turn(a)), enabled, sublabel=sub))
-        back_rect = rects[len(options)] if len(rects) > len(options) else self._action_rects(len(options) + 1)[-1]
-        self.buttons.append(Button(back_rect, "[Esc] Back", lambda: self.set_mode("combat"), True, "\x1b"))
+            # Inline the sub-detail so each option fits one compact line.
+            text = f"{label} ({sub})" if sub else label
+            self.buttons.append(Button(rect, text, (lambda a=action_id: self.issue_turn(a)), enabled))
+        self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, "\x1b"))
 
     def _build_stat_buttons(self):
-        self._panel(ACTION_PANEL, "LEVEL UP — choose a bonus")
         specs = T.STAT_CHOICES
         for rect, (label, stat) in zip(self._action_rects(len(specs)), specs):
             self.buttons.append(Button(rect, label, (lambda s=stat: self.apply_stat(s)), True))
@@ -533,15 +561,11 @@ class BattleApp:
                 color = BTN_HOVER
             else:
                 color = BTN
-            pygame.draw.rect(self.screen, color, b.rect, border_radius=6)
-            pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=6)
+            pygame.draw.rect(self.screen, color, b.rect, border_radius=5)
+            pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=5)
             label_color = TEXT if b.enabled else TEXT_DIM
-            label = self.font.render(b.label, True, label_color)
-            if b.sublabel:
-                self.screen.blit(label, (b.rect.x + 10, b.rect.y + 6))
-                self._text(b.sublabel, (b.rect.x + 10, b.rect.y + 24), self.font_sm, TEXT_DIM)
-            else:
-                self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
+            label = self.font_sm.render(b.label, True, label_color)  # compact buttons
+            self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 8, b.rect.centery)))
 
     def _draw_banner(self):
         surf = self.font_lg.render(self.banner, True, self.banner_color)
