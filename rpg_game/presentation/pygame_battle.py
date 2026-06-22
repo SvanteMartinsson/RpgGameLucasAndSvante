@@ -17,6 +17,7 @@ Kör:
 
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable
@@ -60,6 +61,53 @@ BTN_EDGE = (90, 100, 130)
 WARN = (235, 180, 90)
 GOOD = (120, 220, 140)
 BAD = (230, 110, 110)
+
+
+# --- enemy battle sprites --------------------------------------------------
+# CWD-safe path anchored to this module (not the process CWD), same lesson as the
+# save-path/tileset fixes.
+SPRITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "sprites", "generated")
+# Data-driven per-enemy size: raw sprites have wildly different pixel sizes, so
+# each maps to a tier whose target height (canvas units) sets the on-screen scale.
+# Sprites share a baseline so they stand on the ground rather than float.
+ENEMY_SPRITE_TIER = {
+    "giant_rat": "small",
+    "undead": "medium",
+    "undead_priest": "medium",
+    "dire_wolf": "medium",
+    "wild_boar": "medium",
+    "mutated_mudcrab": "medium",
+    "bog_wraith": "medium",
+    "cave_bear": "large",
+    "treant": "large",
+    "tar_beast": "large",
+    "hollow_worg": "large",  # sized for when its sprite arrives; falls back until then
+}
+TIER_HEIGHT = {"small": 90, "medium": 120, "large": 150}
+ENEMY_SPRITE_ZONE_W = 248  # right portion of the enemy panel reserved for the sprite
+_DEFAULT_SPRITE_TIER = "medium"
+_sprite_cache: dict[str, "pygame.Surface | None"] = {}
+
+
+def enemy_sprite_height(enemy_id: str) -> int:
+    return TIER_HEIGHT.get(ENEMY_SPRITE_TIER.get(enemy_id, _DEFAULT_SPRITE_TIER), TIER_HEIGHT[_DEFAULT_SPRITE_TIER])
+
+
+def enemy_sprite(enemy_id: str):
+    """Scaled battle sprite for an enemy id, or None if there's no sprite file
+    (the caller draws the box fallback). Cached; nearest-neighbor scaled so pixel
+    edges stay crisp."""
+    if enemy_id in _sprite_cache:
+        return _sprite_cache[enemy_id]
+    path = os.path.join(SPRITE_DIR, f"{enemy_id}.png")
+    surface = None
+    if os.path.exists(path):
+        raw = pygame.image.load(path).convert_alpha()
+        target_h = enemy_sprite_height(enemy_id)
+        width = max(1, round(raw.get_width() * target_h / raw.get_height()))
+        surface = pygame.transform.scale(raw, (width, target_h))  # nearest-neighbor
+    _sprite_cache[enemy_id] = surface
+    return surface
 
 
 @dataclass
@@ -356,8 +404,9 @@ class BattleApp:
         if enemy is None:
             self._text("—", (ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 34), self.font_lg, TEXT_DIM)
             return
+        self._draw_enemy_sprite(enemy)
         self._text(enemy.name, (ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 28), self.font_lg)
-        bar = pygame.Rect(ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 64, ENEMY_PANEL.width - 24, 26)
+        bar = pygame.Rect(ENEMY_PANEL.x + 12, ENEMY_PANEL.y + 64, ENEMY_PANEL.width - 24 - ENEMY_SPRITE_ZONE_W, 26)
         hp_ratio = enemy.hp / enemy.max_hp if enemy.max_hp else 0
         self._bar(bar, hp_ratio, _hp_color(hp_ratio), f"HP {enemy.hp}/{enemy.max_hp}")
         info_y = bar.bottom + 8
@@ -373,6 +422,26 @@ class BattleApp:
             self._text(line, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
         else:
             self._text(T.UNIDENTIFIED, (ENEMY_PANEL.x + 12, info_y), self.font_sm, TEXT_DIM)
+
+    def _enemy_sprite_rect(self, width: int, height: int) -> pygame.Rect:
+        """Bottom-right anchored in the panel's sprite zone, so every enemy shares
+        the same ground baseline regardless of its size."""
+        rect = pygame.Rect(0, 0, width, height)
+        rect.bottomright = (ENEMY_PANEL.right - 16, ENEMY_PANEL.bottom - 4)
+        return rect
+
+    def _draw_enemy_sprite(self, enemy) -> None:
+        sprite = enemy_sprite(enemy.id)
+        if sprite is not None:
+            rect = self._enemy_sprite_rect(*sprite.get_size())
+            self.screen.blit(sprite, rect)
+        else:
+            # No sprite file (e.g. hollow_worg, arena duelists) -> placeholder
+            # block at the enemy's tier size, same baseline. No crash.
+            height = enemy_sprite_height(enemy.id)
+            rect = self._enemy_sprite_rect(int(height * 0.7), height)
+            pygame.draw.rect(self.screen, PANEL, rect, border_radius=6)
+            pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
 
     def _draw_log_panel(self):
         self._panel(LOG_PANEL, T.PANEL_LOG)
