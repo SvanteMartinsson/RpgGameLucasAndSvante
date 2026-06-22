@@ -129,7 +129,20 @@ INV_HEADER_JUNK = "Junk:"
 INV_HEADER_WEAPONS = "Weapons:"
 INV_NONE = "  (none)"
 EQUIP_HINT = "Click a weapon to equip (level permitting)."
-INVENTORY_HINT = "Click a consumable to use it. Junk is not usable."
+INVENTORY_HINT = "Everything you own. Pick a category; click a weapon/gear to equip it in Character."
+INV_EQUIP_HINT = "Click to equip in Character."
+INV_CATEGORY_LABELS = {
+    "consumables": "Consumables",
+    "junk": "Junk",
+    "weapon": "Weapons",
+    "head": "Head",
+    "chest": "Chest",
+    "hands": "Hands",
+    "legs": "Legs",
+    "feet": "Feet",
+    "amulet": "Amulet",
+    "ring": "Ring",
+}
 NO_SKILLS = "No skills unlocked yet — learn talents first."
 STORE_BUY = "Buy"
 STORE_SELL = "Sell"

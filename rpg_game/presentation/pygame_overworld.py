@@ -25,6 +25,7 @@ Run:
 
 from __future__ import annotations
 
+import collections
 import json
 import os
 import sys
@@ -264,6 +265,7 @@ class OverworldApp:
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
         self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
+        self.inventory_category = "consumables"  # selected category in the inventory overlay
         self.overlay_return_mode = ""
         self.selected_equipment_slot = "weapon"
         self.selected_talent_id = ""
@@ -446,6 +448,73 @@ class OverworldApp:
     def use_inventory_item(self, item_id: str) -> None:
         result = self.engine.use_consumable(item_id)
         self.set_toast(result.message, GOOD if result.success else BAD)
+
+    # -- inventory overview (everything owned) ------------------------------
+
+    GEAR_SLOT_TYPES = ("head", "chest", "hands", "legs", "feet", "amulet", "ring")
+
+    def inventory_counts(self) -> dict:
+        """Count of everything owned, per category, from the same source the
+        equip path reads (owned weapons/gear + the consumables bag). Consumables
+        and junk count total quantity; equipment counts owned items."""
+        snap = build_snapshot(self.engine)
+        items = self.engine.content.items
+        bag = self.engine.player.inventory.consumables
+        counts = {
+            "consumables": sum(c for i, c in bag.items() if c > 0 and items[i].kind == "consumable"),
+            "junk": sum(c for i, c in bag.items() if c > 0 and items[i].kind != "consumable"),
+            "weapon": len(snap.weapons),
+        }
+        gear_by_type = collections.Counter(g.slot_type for g in snap.gear)
+        for slot_type in self.GEAR_SLOT_TYPES:
+            counts[slot_type] = gear_by_type.get(slot_type, 0)
+        return counts
+
+    def inventory_category_items(self, category: str):
+        """Items in a category for display: (item_id, label, on_click) tuples.
+        Equippable items hand off to the Character panel; consumables use; junk
+        is inert."""
+        snap = build_snapshot(self.engine)
+        items = self.engine.content.items
+        bag = self.engine.player.inventory.consumables
+        rows = []
+        if category in ("consumables", "junk"):
+            want_consumable = category == "consumables"
+            for item_id, count in sorted(bag.items()):
+                if count <= 0 or (items[item_id].kind == "consumable") != want_consumable:
+                    continue
+                if want_consumable:
+                    rows.append((item_id, f"{items[item_id].name} x{count}",
+                                 (lambda iid=item_id: self.use_inventory_item(iid)), True))
+                else:
+                    rows.append((item_id, f"{items[item_id].name} x{count}", None, False))
+            return rows
+        if category == "weapon":
+            for w in snap.weapons:
+                mark = " [equipped]" if w.equipped else ""
+                rows.append((w.id, f"{w.name} +{w.damage_bonus} {w.damage_type}{mark}",
+                             (lambda: self.inventory_equip_handoff("weapon")), True))
+            return rows
+        for gear in snap.gear:
+            if gear.slot_type != category:
+                continue
+            mark = " [equipped]" if gear.equipped_slot_id else ""
+            rows.append((gear.id, f"{gear.name} [{gear.rarity}]{mark}",
+                         (lambda st=gear.slot_type: self.inventory_equip_handoff(st)), True))
+        return rows
+
+    def open_inventory_category(self, category: str) -> None:
+        self.inventory_category = category
+
+    def inventory_equip_handoff(self, slot_type: str) -> None:
+        """Navigate to the Character panel on the right slot — equip happens
+        there, via the existing engine path. No equip logic in the inventory."""
+        slots = build_snapshot(self.engine).equipment_slots
+        matching = [s for s in slots if s.slot_type == slot_type]
+        target = next((s for s in matching if not s.equipped_item_id), matching[0] if matching else None)
+        if target is not None:
+            self.selected_equipment_slot = target.id
+        self.open_overlay("character")
 
     def toggle_skill(self, action_id: str, equipped: bool) -> None:
         try:
@@ -1008,50 +1077,43 @@ class OverworldApp:
             self._add_button(rect, label, (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)), gear.equippable)
 
     def _overlay_inventory(self, panel) -> None:
-        eng = self.engine
         content = self._content_rect(panel)
-        self.screen.blit(self.font_sm.render(T.INVENTORY_HINT, True, TEXT_DIM),
-                         (content.x, content.y))
-        consumables = [
-            (item_id, count)
-            for item_id, count in sorted(eng.player.inventory.consumables.items())
-            if count > 0 and eng.content.items[item_id].kind == "consumable"
-        ]
-        junk = [
-            (item_id, count)
-            for item_id, count in sorted(eng.player.inventory.consumables.items())
-            if count > 0 and eng.content.items[item_id].kind != "consumable"
-        ]
+        self.screen.blit(self.font_sm.render(T.INVENTORY_HINT, True, TEXT_DIM), (content.x, content.y))
+
+        counts = self.inventory_counts()
+        if self.inventory_category not in counts:
+            self.inventory_category = "consumables"
 
         gap = 20
-        list_top = content.y + 42
-        if content.width >= 560:
-            consumable_rect = pygame.Rect(content.x, list_top, (content.width - gap) // 2, content.bottom - list_top)
-            junk_rect = pygame.Rect(consumable_rect.right + gap, list_top, content.right - consumable_rect.right - gap, consumable_rect.height)
-        else:
-            consumable_h = max(120, (content.bottom - list_top - gap) // 2)
-            consumable_rect = pygame.Rect(content.x, list_top, content.width, consumable_h)
-            junk_rect = pygame.Rect(content.x, consumable_rect.bottom + gap, content.width, content.bottom - consumable_rect.bottom - gap)
+        list_top = content.y + 30
+        overview_w = min(240, content.width // 2)
+        overview = pygame.Rect(content.x, list_top, overview_w, content.bottom - list_top)
+        items_rect = pygame.Rect(overview.right + gap, list_top, content.right - overview.right - gap, overview.height)
 
-        self.screen.blit(self.font.render(T.INV_HEADER_CONSUMABLES, True, TEXT), consumable_rect.topleft)
-        if consumables:
-            max_consumables = max(1, (consumable_rect.height - 34) // 36)
-            for i, (item_id, count) in enumerate(consumables[:max_consumables]):
-                item = eng.content.items[item_id]
-                rect = pygame.Rect(consumable_rect.x, consumable_rect.y + 28 + i * 36, consumable_rect.width, 30)
-                self._add_button(rect, f"{item.name} x{count}", (lambda iid=item_id: self.use_inventory_item(iid)))
-        else:
-            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (consumable_rect.x, consumable_rect.y + 28))
+        # Overview: every category with its count; selecting one expands it.
+        row_h = max(22, min(30, overview.height // max(1, len(T.INV_CATEGORY_LABELS))))
+        for i, (key, label) in enumerate(T.INV_CATEGORY_LABELS.items()):
+            rect = pygame.Rect(overview.x, overview.y + i * row_h, overview.width, row_h - 2)
+            selected = key == self.inventory_category
+            text = f"{'> ' if selected else '  '}{label} ({counts.get(key, 0)})"
+            self._add_button(rect, text, (lambda k=key: self.open_inventory_category(k)), True)
 
-        self.screen.blit(self.font.render(T.INV_HEADER_JUNK, True, TEXT), junk_rect.topleft)
-        if junk:
-            max_junk = max(1, (junk_rect.height - 34) // 32)
-            for i, (item_id, count) in enumerate(junk[:max_junk]):
-                item = eng.content.items[item_id]
-                rect = pygame.Rect(junk_rect.x, junk_rect.y + 28 + i * 32, junk_rect.width, 28)
-                self._add_button(rect, f"{item.name} x{count} [not usable]", lambda: None, enabled=False)
-        else:
-            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (junk_rect.x, junk_rect.y + 28))
+        # Expanded: the selected category's items.
+        label = T.INV_CATEGORY_LABELS.get(self.inventory_category, self.inventory_category)
+        self.screen.blit(self.font_sm.render(f"{label} ({counts.get(self.inventory_category, 0)})",
+                                             True, TEXT_DIM), (items_rect.x, items_rect.y - 24))
+        rows = self.inventory_category_items(self.inventory_category)
+        if not rows:
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (items_rect.x, items_rect.y))
+            return
+        max_rows = max(1, items_rect.height // 34)
+        for i, (_item_id, text, on_click, enabled) in enumerate(rows[:max_rows]):
+            rect = pygame.Rect(items_rect.x, items_rect.y + i * 34, items_rect.width, 30)
+            if on_click is None:
+                self.screen.blit(self.font.render(self._fit_text(text, items_rect.width, self.font), True, TEXT_DIM),
+                                 (rect.x, rect.y + 4))
+            else:
+                self._add_button(rect, self._fit_text(text, items_rect.width - 24, self.font), on_click, enabled)
 
     def _skills_talents_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
         content = self._content_rect(panel)
