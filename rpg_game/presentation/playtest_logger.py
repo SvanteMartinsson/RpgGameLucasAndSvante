@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from rpg_game.core import combat
+from rpg_game.core.progression import round_half_up
 
 
 DEFAULT_LOG_DIR = Path("playtest_logs")
@@ -62,6 +63,8 @@ class PlaytestLogger:
         self.write(event, **fields)
 
     def combat_result(self, result: combat.CombatTurnResult, enemy, snapshot, location: str) -> None:
+        if result.flee_chance is not None:
+            self.flee(result.flee_chance, result.outcome == "fled", enemy)
         for resolution in result.action_resolutions:
             self.attack(resolution, snapshot)
         if result.loot_drop is not None:
@@ -73,6 +76,15 @@ class PlaytestLogger:
                 self.level_up(level)
         if result.respawn is not None:
             self.death(result.respawn, location)
+
+    def flee(self, chance: float, success: bool, enemy) -> None:
+        self.write(
+            "flee",
+            success=success,
+            chance_pct=round_half_up(chance * 100),
+            enemy_id=enemy.id,
+            enemy_level=enemy.level,
+        )
 
     def attack(self, resolution: combat.ActionResolution, snapshot) -> None:
         source = "player" if resolution.actor_name == snapshot.player.name else "enemy"

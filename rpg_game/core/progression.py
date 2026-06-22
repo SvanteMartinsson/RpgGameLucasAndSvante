@@ -11,6 +11,13 @@ GOLD_LOSS_PER_LEVEL = 25
 # so fights last longer without touching the per-enemy numbers or their ratios.
 # 1.0 reproduces the pre-multiplier values exactly.
 ENEMY_HP_MULTIPLIER = 2.0
+
+# Flee chance scales with difficulty via level delta (enemy_level - player_level):
+# trivial enemies are easy to leave, dangerous ones a real gamble. Tunable.
+FLEE_BASE_CHANCE = 0.60          # even level
+FLEE_CHANCE_PER_LEVEL = 0.05     # lost per level the enemy is above you
+FLEE_CHANCE_FLOOR = 0.35         # vs a much stronger enemy
+FLEE_CHANCE_CAP = 0.85           # vs a much weaker enemy
 EARLY_XP_REQUIREMENTS = {
     1: 10,
     2: 30,

@@ -347,28 +347,38 @@ class GameEngine:
         )
 
     def flee_chance(self, enemy: Enemy) -> float:
-        diff = (equipment.effective_stat(self.player, "speed") - enemy.speed) + (self.player.level - enemy.level)
-        return combat.clamp(0.5 + 0.05 * diff, 0.10, 0.95)
+        # Scales with difficulty via level delta: easy to leave a trivial enemy,
+        # a gamble against one well above you (enemies are level-scaled now).
+        delta = enemy.level - self.player.level
+        chance = progression.FLEE_BASE_CHANCE - progression.FLEE_CHANCE_PER_LEVEL * delta
+        return combat.clamp(chance, progression.FLEE_CHANCE_FLOOR, progression.FLEE_CHANCE_CAP)
 
     def attempt_flee(self, enemy: Enemy) -> combat.CombatTurnResult:
         player = self.player
         events: list[str] = []
-        if self.rng.random() < self.flee_chance(enemy):
+        chance = self.flee_chance(enemy)
+        if self.rng.random() < chance:
             events.append(f"You fled from {enemy.name}.")
-            return combat.CombatTurnResult(
+            result = combat.CombatTurnResult(
                 outcome="fled",
                 events=events,
                 player_hp=player.hp,
                 enemy_hp=enemy.hp,
                 pending_stat_choices=player.pending_stat_choices,
             )
+            result.flee_chance = chance
+            return result
 
+        # Failed flee costs the turn: the enemy gets a free attack.
         events.append(f"You failed to flee. {enemy.name} gets a free attack.")
         resolution = combat.enemy_take_turn(enemy, player, self.content.actions, self.rng)
         events.extend(resolution.events)
         if not player.is_alive:
-            return self._defeat(enemy, events, action_resolutions=[resolution])
-        return self._combat_result("ongoing", enemy, events, action_resolutions=[resolution])
+            result = self._defeat(enemy, events, action_resolutions=[resolution])
+        else:
+            result = self._combat_result("ongoing", enemy, events, action_resolutions=[resolution])
+        result.flee_chance = chance
+        return result
 
     def apply_stat_choice(self, stat: str) -> str:
         return progression.apply_stat_choice(self.player, stat)

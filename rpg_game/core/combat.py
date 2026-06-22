@@ -137,6 +137,7 @@ class CombatTurnResult:
     enemy_reveal: EnemyReveal | None = None
     respawn: RespawnResult | None = None
     action_resolutions: list[ActionResolution] = field(default_factory=list)
+    flee_chance: float | None = None  # set on a flee attempt (for logging)
 
 
 @dataclass

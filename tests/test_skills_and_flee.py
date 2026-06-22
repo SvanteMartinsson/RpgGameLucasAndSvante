@@ -66,7 +66,7 @@ class SkillEquippingTests(unittest.TestCase):
 
 class FleeTests(unittest.TestCase):
     def test_flee_success_ends_encounter_without_damage(self):
-        engine = GameEngine(rng=random.Random(1))  # first roll 0.134 < 0.65
+        engine = GameEngine(rng=random.Random(1))  # first roll 0.134 < 0.60 (even level)
         engine.start_new_game("Hero", "fighter")
         rat = engine.content.enemies["giant_rat"].create_enemy()
 
@@ -77,7 +77,7 @@ class FleeTests(unittest.TestCase):
         self.assertEqual(rat.hp, rat.max_hp)
 
     def test_flee_failure_gives_enemy_a_free_attack(self):
-        engine = GameEngine(rng=random.Random(0))  # first roll 0.844 >= 0.65
+        engine = GameEngine(rng=random.Random(0))  # first roll 0.844 >= 0.60 (even level)
         engine.start_new_game("Hero", "fighter")
         rat = engine.content.enemies["giant_rat"].create_enemy()
 
@@ -87,14 +87,14 @@ class FleeTests(unittest.TestCase):
         self.assertEqual(engine.player.hp, 92)  # took the free hit (rolled enemy attack)
         self.assertTrue(any("failed to flee" in event for event in result.events))
 
-    def test_flee_chance_drops_against_faster_enemy(self):
+    def test_flee_chance_drops_against_higher_level_enemy(self):
         engine = GameEngine(rng=random.Random(1))
-        engine.start_new_game("Hero", "fighter")
-        slow = engine.content.enemies["giant_rat"].create_enemy()
-        fast = engine.content.enemies["giant_rat"].create_enemy()
-        fast.speed = slow.speed + 20
+        engine.start_new_game("Hero", "fighter")  # level 1
+        weak = engine.content.enemies["giant_rat"].create_enemy()
+        strong = engine.content.enemies["giant_rat"].create_enemy()
+        strong.level = engine.player.level + 5  # well above the player
 
-        self.assertGreater(engine.flee_chance(slow), engine.flee_chance(fast))
+        self.assertGreater(engine.flee_chance(weak), engine.flee_chance(strong))
 
 
 if __name__ == "__main__":
