@@ -65,14 +65,19 @@ def enter_place(player: Player, content: GameContent, place_id: str) -> str:
     return f"Entered {new_place.name}."
 
 
-def roll_enemy_level(template: EnemyTemplate, rng: random.Random) -> int:
-    """Roll a wild spawn level uniformly within the template's range.
+def roll_enemy_level(template: EnemyTemplate, rng: random.Random, region: "Place | None" = None) -> int:
+    """Roll a wild spawn level uniformly within a range.
 
-    Falls back to the fixed base level when no range is set (level_min/max == 0),
-    so arena/tournament templates never vary.
+    A region's level band (set on the place) overrides the enemy type's band, so
+    a shared enemy rolls higher in the west without changing the core. Falls back
+    to the type band, then the fixed base level (so arena templates never vary).
     """
-    low = template.level_min or template.level
-    high = template.level_max or template.level
+    if region is not None and (region.level_min or region.level_max):
+        low = region.level_min or region.level_max
+        high = region.level_max or region.level_min
+    else:
+        low = template.level_min or template.level
+        high = template.level_max or template.level
     if high < low:
         low, high = high, low
     return rng.randint(low, high)
@@ -101,5 +106,5 @@ def create_encounter(player: Player, content: GameContent, rng: random.Random) -
     enemy_id = rng.choice(place.encounters)
     template = content.enemies[enemy_id]
     enemy = template.create_enemy()
-    scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng))
+    scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng, region=place))
     return enemy

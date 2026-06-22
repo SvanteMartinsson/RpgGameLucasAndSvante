@@ -87,8 +87,8 @@ class Zone2BorderTest(unittest.TestCase):
         self.app.world.set_tile(40, 8)
         self.app.sync_location()
         self.app.encounter_rate = 1.0
-        seen = {self.app.maybe_encounter().id for _ in range(60)}
-        self.assertTrue(seen <= {"undead", "cave_bear", "undead_priest"})
+        seen = {self.app.maybe_encounter().id for _ in range(80)}
+        self.assertTrue(seen <= {"undead", "cave_bear", "undead_priest", "dire_wolf", "wild_boar", "treant"})
         self.assertNotIn("giant_rat", seen)  # rat is a core-zone enemy
 
     def test_defeat_in_west_respawns_at_rotequero_tile(self):

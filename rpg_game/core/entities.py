@@ -279,6 +279,11 @@ class Place:
     connections: tuple[Connection, ...]
     store_inventory: tuple[str, ...]
     respawn_place_id: str
+    # Optional regional wild level band (0 = unset). When set, it overrides the
+    # enemy type's level_min/max for spawns in this region, so a shared enemy
+    # (e.g. undead) can roll a higher band in the west without changing the core.
+    level_min: int = 0
+    level_max: int = 0
 
 
 @dataclass

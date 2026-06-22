@@ -454,5 +454,93 @@
     "drop_chance": 0.0,
     "rare_table_access": false,
     "loot_table": []
+  },
+  {
+    "id": "dire_wolf",
+    "name": "Dire Wolf",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 45,
+    "damage": 12,
+    "armor": 1,
+    "speed": 12,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast"],
+    "action_ids": ["wolf_bite", "normal"],
+    "ai": [
+      {"condition": {"always": true}, "action": "wolf_bite"}
+    ],
+    "xp_reward": 20,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "wild_boar",
+    "name": "Wild Boar",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 60,
+    "damage": 11,
+    "armor": 1,
+    "speed": 8,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast"],
+    "action_ids": ["boar_charge", "normal"],
+    "ai": [
+      {"condition": {"skill_ready": "boar_charge"}, "action": "boar_charge"},
+      {"condition": {"always": true}, "action": "normal"}
+    ],
+    "xp_reward": 22,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
+  },
+  {
+    "id": "treant",
+    "name": "Treant",
+    "level": 6,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 90,
+    "damage": 13,
+    "armor": 3,
+    "speed": 3,
+    "resistances": {
+      "physical": 1.0,
+      "fire": 2.0,
+      "frost": 0.5,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast", "plant"],
+    "action_ids": ["treant_slam", "normal"],
+    "ai": [
+      {"condition": {"always": true}, "action": "treant_slam"}
+    ],
+    "xp_reward": 26,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
   }
 ]

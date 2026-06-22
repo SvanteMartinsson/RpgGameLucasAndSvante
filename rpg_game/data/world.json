@@ -686,10 +686,15 @@
         "y": 838.1
       },
       "danger_tier": 2,
+      "level_min": 5,
+      "level_max": 10,
       "encounters": [
         "undead",
         "cave_bear",
-        "undead_priest"
+        "undead_priest",
+        "dire_wolf",
+        "wild_boar",
+        "treant"
       ],
       "respawn": true,
       "locked": false,

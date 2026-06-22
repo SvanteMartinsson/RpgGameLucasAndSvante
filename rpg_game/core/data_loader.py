@@ -222,6 +222,8 @@ def load_content() -> GameContent:
             connections=connections,
             store_inventory=tuple(row.get("store_inventory", DEFAULT_STORE_INVENTORY)),
             respawn_place_id=row["id"] if row["respawn"] else world["meta"]["start_place_id"],
+            level_min=row.get("level_min", 0),
+            level_max=row.get("level_max", 0),
         )
 
     _validate_gear(equipment_slots, gear_items)
