@@ -1,6 +1,13 @@
-"""Every screen centers identically via the shared present() canvas path, so the
-content's anchor doesn't jump between menus, battle and the overworld in
-fullscreen. Skips when pygame/pytmx are not installed.
+"""Non-converted (fixed-canvas) screens center identically via the shared
+present() path, so the content's anchor doesn't jump between battle and the
+overworld in fullscreen.
+
+NOTE: this island model only holds for screens that still draw onto a fixed
+design canvas. Screens converted to fluid layout (the start menu — see
+test_start_menu_fluid) size their canvas to the live display, so present()
+becomes the identity transform and they anchor at the origin (ox == 0) instead.
+Both paths coexist; this file pins the still-fixed screens. Skips when
+pygame/pytmx are not installed.
 """
 
 import os
@@ -61,11 +68,23 @@ class FullscreenCenteringTest(unittest.TestCase):
         self.assertEqual(app.screen.get_size(), app.view_size)  # canvas, not the window
         self.assertIsNot(app.screen, app.display)
 
-    def test_no_screen_anchors_at_the_origin_when_larger_display(self):
+    def test_fixed_canvas_screens_center_when_display_is_larger(self):
+        # Only the still-fixed-canvas screens (overworld, battle) are islands.
+        # Converted fluid screens (start menu) intentionally anchor at origin.
         for transform, _size in (self._overworld_transform(), self._battle_transform()):
             ox, oy, _scale = transform
             self.assertGreater(ox, 0)
             self.assertGreater(oy, 0)
+
+    def test_converted_fluid_screen_anchors_at_origin(self):
+        # A fluid screen sizes its canvas to the display; present() then centers
+        # nothing. This documents that the island assumption above does NOT apply
+        # to converted screens, without breaking the fixed ones.
+        from rpg_game.presentation.pygame_canvas import present
+        display = pygame.Surface(DISPLAY)
+        canvas = pygame.Surface(display.get_size())  # fluid: canvas == display
+        ox, oy, scale = present(display, canvas, (18, 20, 28))
+        self.assertEqual((ox, oy, scale), (0, 0, 1.0))
 
     def test_all_screens_share_the_same_center_anchor(self):
         ow_t, ow_size = self._overworld_transform()

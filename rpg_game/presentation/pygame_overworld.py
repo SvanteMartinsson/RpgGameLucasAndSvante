@@ -1315,11 +1315,36 @@ def engine_from_start_choice(
     raise ValueError(f"unknown start menu choice: {choice}")
 
 
+def start_menu_layout(size: tuple[int, int], options) -> tuple[list[Button], tuple[int, int], tuple[int, int]]:
+    """Center the title + button stack on the *live* surface size.
+
+    Fluid pilot: layout is a function of the real display size, not a fixed
+    1024x680 canvas, so the menu fills the screen in fullscreen instead of
+    sitting as a small centered island. Returns the buttons plus the title and
+    message anchor points (both horizontally centered)."""
+    w, h = size
+    button_w, button_h, gap = 320, 48, 60
+    start_y = h // 2 - (len(options) * gap) // 2
+    buttons = [
+        Button(
+            pygame.Rect(w // 2 - button_w // 2, start_y + index * gap, button_w, button_h),
+            label,
+            choice,
+        )
+        for index, (choice, label) in enumerate(options)
+    ]
+    title_pos = (w // 2, max(48, start_y - 90))   # title sits above the stack
+    msg_pos = (w // 2, max(80, start_y - 48))      # error line just under the title
+    return buttons, title_pos, msg_pos
+
+
 def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     pygame.init()
     pygame.display.set_caption(T.CAPTION_START)
     display = acquire_display((WIDTH, HEIGHT))
-    screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
+    # Fluid: the canvas matches the display, so present() is the identity
+    # transform (0, 0, 1.0) and content is authored at native resolution.
+    screen = pygame.Surface(display.get_size())
     offset = (0, 0, 1.0)
     font = pygame.font.SysFont("menlo,consolas,monospace", 20)
     font_sm = pygame.font.SysFont("menlo,consolas,monospace", 14)
@@ -1327,17 +1352,10 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     clock = pygame.time.Clock()
 
     while True:
+        if screen.get_size() != display.get_size():
+            screen = pygame.Surface(display.get_size())  # follow resize / fullscreen
         options = start_menu_options(save_path)
-        button_w, button_h = 320, 48
-        start_y = HEIGHT // 2 - (len(options) * 60) // 2
-        buttons = [
-            Button(
-                pygame.Rect(WIDTH // 2 - button_w // 2, start_y + index * 60, button_w, button_h),
-                label,
-                choice,
-            )
-            for index, (choice, label) in enumerate(options)
-        ]
+        buttons, title_pos, msg_pos = start_menu_layout(display.get_size(), options)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1359,10 +1377,10 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
 
         screen.fill(BG)
         title = font_lg.render(T.START_TITLE, True, ACCENT)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 150)))
+        screen.blit(title, title.get_rect(center=title_pos))
         if message:
             msg = font_sm.render(message, True, BAD)
-            screen.blit(msg, msg.get_rect(center=(WIDTH // 2, 198)))
+            screen.blit(msg, msg.get_rect(center=msg_pos))
 
         mouse = to_canvas(pygame.mouse.get_pos(), offset)
         for button in buttons:
