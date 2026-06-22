@@ -6,6 +6,11 @@ from rpg_game.core.entities import Player
 
 # Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
 GOLD_LOSS_PER_LEVEL = 25
+
+# Global, tunable scalar on every enemy's max HP at creation (wild and arena),
+# so fights last longer without touching the per-enemy numbers or their ratios.
+# 1.0 reproduces the pre-multiplier values exactly.
+ENEMY_HP_MULTIPLIER = 2.0
 EARLY_XP_REQUIREMENTS = {
     1: 10,
     2: 30,

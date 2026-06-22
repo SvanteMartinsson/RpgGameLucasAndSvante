@@ -2,6 +2,7 @@
 
 import random
 import unittest
+from unittest.mock import patch
 
 from rpg_game.core import combat, world
 from rpg_game.core.game import GameEngine
@@ -10,6 +11,11 @@ from rpg_game.core.progression import round_half_up
 
 class EnemyLevelScalingTest(unittest.TestCase):
     def setUp(self):
+        # Isolate level-scaling math from the global HP multiplier (tested
+        # separately); 1.0 reproduces the pre-multiplier scaling values.
+        multiplier = patch("rpg_game.core.progression.ENEMY_HP_MULTIPLIER", 1.0)
+        multiplier.start()
+        self.addCleanup(multiplier.stop)
         self.engine = GameEngine()
         self.engine.start_new_game("Hero", "fighter")
 

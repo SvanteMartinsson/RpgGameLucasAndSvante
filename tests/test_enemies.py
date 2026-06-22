@@ -1,5 +1,6 @@
 import random
 import unittest
+from unittest.mock import patch
 
 from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
@@ -12,6 +13,13 @@ def _engine():
 
 
 class HealerArchetypeTests(unittest.TestCase):
+    def setUp(self):
+        # These exercise heal amounts / HP thresholds against the base max_hp
+        # (40); pin the global HP multiplier to 1.0 so the arithmetic holds.
+        multiplier = patch("rpg_game.core.progression.ENEMY_HP_MULTIPLIER", 1.0)
+        multiplier.start()
+        self.addCleanup(multiplier.stop)
+
     def test_healer_heals_when_below_50_percent_and_ready(self):
         engine = _engine()
         priest = engine.content.enemies["undead_priest"].create_enemy()

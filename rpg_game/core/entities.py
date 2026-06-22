@@ -177,12 +177,19 @@ class EnemyTemplate:
     level_max: int = 0
 
     def create_enemy(self) -> "Enemy":
+        # Late import avoids a circular import (progression imports entities).
+        # The global HP multiplier is applied here, at creation, to every enemy
+        # (wild and arena); per-level scaling (world.scale_enemy_to_level) stacks
+        # on top of this for wild spawns.
+        from rpg_game.core import progression
+
+        max_hp = max(1, progression.round_half_up(self.max_hp * progression.ENEMY_HP_MULTIPLIER))
         return Enemy(
             id=self.id,
             name=self.name,
             level=self.level,
-            max_hp=self.max_hp,
-            hp=self.max_hp,
+            max_hp=max_hp,
+            hp=max_hp,
             damage=self.damage,
             armor=self.armor,
             speed=self.speed,
