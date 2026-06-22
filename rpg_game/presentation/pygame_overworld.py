@@ -765,7 +765,11 @@ class OverworldApp:
         for layer in tmx.visible_layers:
             if hasattr(layer, "tiles"):
                 for x, y, image in layer.tiles():
-                    self.screen.blit(image, (x * tw - ox, y * th - oy))
+                    dest = (x * tw - ox, y * th - oy)
+                    if image is None:  # tile without graphic -> placeholder block, never crash
+                        pygame.draw.rect(self.screen, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
+                    else:
+                        self.screen.blit(image, dest)
         for (tx, ty), place_id in self.world.town_tiles.items():
             rect = pygame.Rect(tx * tw - ox + 4, ty * th - oy + 4, tw - 8, th - 8)
             color = TOWN_HUB if place_id == self.zone.respawn_place_id else TOWN_COLOR

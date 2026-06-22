@@ -9,3 +9,8 @@ __pycache__/
 savegame.json
 playtest_logs/
 .aider*
+.DS_Store
+# Raw third-party asset packs (downloaded separately); only the prepared
+# rpg_game/assets/ files are tracked.
+/Pixel Art Top Down - Basic v1.2.3/
+/Pixel Crawler - Free Pack/

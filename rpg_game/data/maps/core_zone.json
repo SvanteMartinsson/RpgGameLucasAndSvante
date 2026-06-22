@@ -8,6 +8,12 @@
     {"place_id": "burg_320", "min_tile_x": 41},
     {"place_id": "burg_146", "min_tile_x": 28}
   ],
+  "_ground_themes_comment": "Presentation only: which tile theme paints each zone's base ground (by tile-x). Aligned with the wild_regions bands. grave_heath/frostfell/ash_waste/karr tilesets are registered but reserved (no zone yet).",
+  "ground_themes": [
+    {"theme": "cainos", "max_tile_x": 27},
+    {"theme": "mork_skog", "min_tile_x": 28, "max_tile_x": 40},
+    {"theme": "cursed_mire", "min_tile_x": 41}
+  ],
   "respawn_place_id": "burg_5",
   "towns": [
     {"tile": [14, 10], "place_id": "burg_5", "label": "Hordanita"},
