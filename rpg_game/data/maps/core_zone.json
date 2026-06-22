@@ -1,18 +1,28 @@
 {
-  "_comment": "Spelbar kärnzon (fri-gång-overworld, Modell B). Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i vildmark. Gates spärrar vägen ut mot resten av den (tänkta men ospelbara) världen — FLYTTA gaten utåt när en ny zon öppnas, ta inte bort den. Allt här är data/tunbart; ingen spridd hårdkodning.",
+  "_comment": "Spelbar overworld (fri-gång, Modell B). Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark; wild_regions = per-x-område-pooler (väster, zon 2). Gates spärrar vägen ut mot ospelbara zoner — FLYTTA dem utåt när en ny zon öppnas. Allt här är data/tunbart.",
   "map": "overworld.tmx",
   "start_tile": [14, 10],
   "encounter_rate_per_step": 0.06,
   "wild_region_place_id": "burg_54",
+  "wild_regions": [
+    {"place_id": "burg_146", "min_tile_x": 28}
+  ],
   "respawn_place_id": "burg_5",
   "towns": [
     {"tile": [14, 10], "place_id": "burg_5", "label": "Hordanita"},
     {"tile": [6, 6], "place_id": "burg_117", "label": "Yeblegali"},
-    {"tile": [21, 14], "place_id": "burg_160", "label": "Gaste"}
+    {"tile": [21, 14], "place_id": "burg_160", "label": "Gaste"},
+    {"tile": [30, 12], "place_id": "burg_235", "label": "Jinosa"},
+    {"tile": [34, 6], "place_id": "burg_379", "label": "Condillosca"},
+    {"tile": [39, 10], "place_id": "burg_146", "label": "Rotequero"},
+    {"tile": [38, 16], "place_id": "burg_67", "label": "Fongorinos"},
+    {"tile": [44, 6], "place_id": "burg_200", "label": "Estables"},
+    {"tile": [42, 17], "place_id": "burg_320", "label": "Parguillas"},
+    {"tile": [45, 13], "place_id": "burg_219", "label": "Tierva"}
   ],
   "gates": [
     {"tile": [14, 0], "message_key": "gate_north"},
-    {"tile": [27, 10], "message_key": "gate_east"},
-    {"tile": [13, 19], "message_key": "gate_south"}
+    {"tile": [13, 19], "message_key": "gate_south"},
+    {"tile": [47, 10], "message_key": "gate_deep_west"}
   ]
 }

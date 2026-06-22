@@ -37,7 +37,12 @@ GATE_MESSAGES = {
     "gate_north": "The road north isn't safe yet — more of the world opens later.",
     "gate_east": "Unknown lands lie to the east. Blocked for now.",
     "gate_south": "South beyond Hordanita's reaches isn't ready yet.",
+    "gate_deep_west": "The far west is uncharted. More of the world opens later.",
 }
+
+# Soft warning when crossing into the western wilderness (zone 2) — flavor, not
+# a wall.
+WEST_BORDER_FLAVOR = "The road west feels desolate. Few return unscathed."
 
 
 def gate_message(key: str) -> str:

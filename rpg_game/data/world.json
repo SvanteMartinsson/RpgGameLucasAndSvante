@@ -691,7 +691,7 @@
         "cave_bear",
         "undead_priest"
       ],
-      "respawn": false,
+      "respawn": true,
       "locked": false,
       "connections": [
         {

@@ -93,6 +93,7 @@ class ZoneConfig:
     towns: dict  # (tx, ty) -> place_id
     town_labels: dict  # (tx, ty) -> label
     gates: dict  # (tx, ty) -> message
+    wild_regions: tuple = ()  # ((place_id, min_x, max_x), ...) by tile x; else default
 
     @staticmethod
     def load(path: str = ZONE_CONFIG) -> "ZoneConfig":
@@ -106,6 +107,10 @@ class ZoneConfig:
             tuple(g["tile"]): g["message"] if "message" in g else T.gate_message(g.get("message_key", ""))
             for g in data.get("gates", [])
         }
+        wild_regions = tuple(
+            (r["place_id"], r.get("min_tile_x", 0), r.get("max_tile_x", 10**9))
+            for r in data.get("wild_regions", [])
+        )
         return ZoneConfig(
             map_path=os.path.join(MAPS_DIR, data["map"]),
             start_tile=tuple(data.get("start_tile", [1, 1])),
@@ -115,7 +120,17 @@ class ZoneConfig:
             towns=towns,
             town_labels=labels,
             gates=gates,
+            wild_regions=wild_regions,
         )
+
+    def wild_region_at(self, tile: tuple[int, int]) -> str:
+        """Encounter/region source for a wilderness tile (by tile x), so the
+        western area draws a different (tier-2) pool than the core."""
+        tile_x = tile[0]
+        for place_id, min_x, max_x in self.wild_regions:
+            if min_x <= tile_x <= max_x:
+                return place_id
+        return self.wild_region_place_id
 
 
 # --- movement model (pure, headless-testable) ------------------------------
@@ -243,6 +258,7 @@ class OverworldApp:
         self.clock = pygame.time.Clock()
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
+        self._in_west = self.zone.wild_region_at(self._last_tile) != self.zone.wild_region_place_id
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
@@ -271,8 +287,12 @@ class OverworldApp:
     # -- engine glue --------------------------------------------------------
 
     def sync_location(self) -> None:
-        """Keep engine location in step with the tile under the player."""
-        place_id = self.world.town_place_id() or self.zone.wild_region_place_id
+        """Keep engine location in step with the tile under the player.
+
+        Wilderness draws from the region under the player (western tiles use the
+        zone-2 pool/respawn), towns set their own place.
+        """
+        place_id = self.world.town_place_id() or self.zone.wild_region_at(self.world.current_tile)
         if place_id != self.engine.player.current_place_id:
             self.engine.enter_place(place_id)
 
@@ -637,6 +657,10 @@ class OverworldApp:
             tile = self.world.current_tile
             if tile != self._last_tile:
                 self._last_tile = tile
+                in_west = self.zone.wild_region_at(tile) != self.zone.wild_region_place_id
+                if in_west and not self._in_west:
+                    self.set_toast(T.WEST_BORDER_FLAVOR, WARN)  # soft signal, not a wall
+                self._in_west = in_west
                 enemy = self.maybe_encounter()
                 if enemy is not None:
                     self.start_battle(enemy)
