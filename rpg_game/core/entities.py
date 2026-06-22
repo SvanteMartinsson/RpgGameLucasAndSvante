@@ -284,6 +284,11 @@ class Place:
     # (e.g. undead) can roll a higher band in the west without changing the core.
     level_min: int = 0
     level_max: int = 0
+    # Optional rare encounter for this region: rolled before the uniform pool,
+    # so a miniboss appears occasionally without changing the normal pool's
+    # relative frequencies. Empty/0 = none.
+    rare_encounter: str = ""
+    rare_chance: float = 0.0
 
 
 @dataclass

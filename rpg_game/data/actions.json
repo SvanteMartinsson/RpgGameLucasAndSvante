@@ -933,5 +933,37 @@
         "target": "self"
       }
     ]
+  },
+  {
+    "id": "worg_bite",
+    "name": "Rending Bite",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.6,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "worg_pounce",
+    "name": "Hollow Pounce",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 3.0,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
   }
 ]

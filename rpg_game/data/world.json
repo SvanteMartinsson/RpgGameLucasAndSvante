@@ -691,6 +691,8 @@
       "danger_tier": 2,
       "level_min": 5,
       "level_max": 10,
+      "rare_encounter": "hollow_worg",
+      "rare_chance": 0.05,
       "encounters": [
         "undead",
         "cave_bear",

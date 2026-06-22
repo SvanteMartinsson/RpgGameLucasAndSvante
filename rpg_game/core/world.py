@@ -103,7 +103,10 @@ def create_encounter(player: Player, content: GameContent, rng: random.Random) -
     place = get_current_place(player, content)
     if not place.encounters:
         return None
-    enemy_id = rng.choice(place.encounters)
+    if place.rare_encounter and rng.random() < place.rare_chance:
+        enemy_id = place.rare_encounter
+    else:
+        enemy_id = rng.choice(place.encounters)
     template = content.enemies[enemy_id]
     enemy = template.create_enemy()
     scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng, region=place))

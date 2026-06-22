@@ -224,6 +224,8 @@ def load_content() -> GameContent:
             respawn_place_id=row["id"] if row["respawn"] else world["meta"]["start_place_id"],
             level_min=row.get("level_min", 0),
             level_max=row.get("level_max", 0),
+            rare_encounter=row.get("rare_encounter", ""),
+            rare_chance=row.get("rare_chance", 0.0),
         )
 
     _validate_gear(equipment_slots, gear_items)

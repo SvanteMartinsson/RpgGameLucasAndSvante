@@ -633,5 +633,35 @@
     "drop_chance": 0.0,
     "rare_table_access": false,
     "loot_table": []
+  },
+  {
+    "id": "hollow_worg",
+    "name": "Hollow Worg",
+    "level": 8,
+    "level_min": 5,
+    "level_max": 10,
+    "max_hp": 140,
+    "damage": 18,
+    "armor": 2,
+    "speed": 8,
+    "resistances": {
+      "physical": 0.9,
+      "fire": 1.0,
+      "frost": 1.0,
+      "holy": 1.0,
+      "poison": 1.0
+    },
+    "tags": ["beast", "cursed"],
+    "action_ids": ["worg_pounce", "worg_bite", "normal"],
+    "ai": [
+      {"condition": {"skill_ready": "worg_pounce"}, "action": "worg_pounce"},
+      {"condition": {"always": true}, "action": "worg_bite"}
+    ],
+    "xp_reward": 60,
+    "gold_min": 0,
+    "gold_max": 0,
+    "drop_chance": 0.0,
+    "rare_table_access": false,
+    "loot_table": []
   }
 ]
