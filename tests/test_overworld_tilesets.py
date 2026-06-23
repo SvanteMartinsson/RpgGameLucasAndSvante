@@ -91,7 +91,7 @@ class OverworldTilesetTest(unittest.TestCase):
             os.chdir(other)
             try:
                 tmx = load_pygame(os.path.join(os.path.dirname(DEFAULT_MAP), "overworld.tmx"))
-                self.assertEqual(len(tmx.tilesets), 22)
+                self.assertEqual(len(tmx.tilesets), 28)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:

@@ -50,11 +50,31 @@ class Zone2BorderTest(unittest.TestCase):
         self.assertNotIn((27, 10), self.app.world.gate_messages)
         self.assertNotIn((27, 10), self.app.world.blocked)
 
+    def _west_is_reachable_from(self, start, goal_x=30):
+        """True if some tile with x >= goal_x is reachable from `start` on the
+        blocked-tile grid (4-neighbour). Models walking west while stepping
+        around scattered decoration props, not a dead-straight corridor."""
+        from collections import deque
+        world = self.app.world
+        cols = world.map_px_w // world.tw
+        rows = world.map_px_h // world.th
+        seen, queue = {start}, deque([start])
+        while queue:
+            tx, ty = queue.popleft()
+            if tx >= goal_x:
+                return True
+            for nx, ny in ((tx + 1, ty), (tx - 1, ty), (tx, ty + 1), (tx, ty - 1)):
+                if 0 <= nx < cols and 0 <= ny < rows and (nx, ny) not in seen \
+                        and (nx, ny) not in world.blocked:
+                    seen.add((nx, ny))
+                    queue.append((nx, ny))
+        return False
+
     def test_can_walk_from_core_into_the_west(self):
-        self.app.world.set_tile(22, 12)  # just east of Gaste, core side
-        for _ in range(150):
-            self.app.world.try_move(3, 0)
-        self.assertGreaterEqual(self.app.world.current_tile[0], 30)  # crossed into the west
+        # The border is open: from just east of Gaste you can reach the west,
+        # detouring a tile up/down around any decoration prop in the corridor.
+        self.assertTrue(self._west_is_reachable_from((22, 12)),
+                        "cannot reach the west from the core side")
 
     def test_far_west_edge_is_still_gated(self):
         self.assertIn((47, 10), self.app.world.gate_messages)
