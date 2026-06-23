@@ -116,6 +116,9 @@ class GameEngine:
         player = self.player
         player.hp = equipment.effective_stat(player, "max_hp")
         player.mana = equipment.effective_stat(player, "max_mana")
+        # Resting here makes this town your respawn point, so death returns you to
+        # the last place you chose to rest rather than a fixed regional hub.
+        player.last_rest_place_id = place.id
         return RestResult(
             outcome="rested",
             message=f"You rest at {place.name} and recover to full HP and mana.",
@@ -452,7 +455,9 @@ class GameEngine:
 
     def _respawn_player(self) -> progression.RespawnResult:
         player = self.player
-        player.current_place_id = player.respawn_place_id
+        # Respawn at the last rested town; before any rest, fall back to the
+        # regional hub (respawn_place_id) so early-game behaviour is unchanged.
+        player.current_place_id = player.last_rest_place_id or player.respawn_place_id
         return progression.apply_death_penalty(player)
 
     def _defeat(
