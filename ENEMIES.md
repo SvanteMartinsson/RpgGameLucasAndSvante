@@ -69,6 +69,12 @@ laddningen, välj — tanka den, fly, eller döda castern innan den släpps.
 caster. Grunts (giant_rat, undead) behåller sin enkla roll — alla fiender
 behöver inte vara arketyper.
 
+**Auktoritativ data: `enemies.json`. Denna tabell är en läsbar spegling.** Roll
+härleds ur AI/actions (finns inte som fält i datan). Resistans ×>1.0 = svag mot,
+×<1.0 = tålig.
+
+### Core- och vildmarksfiender
+
 | id | Namn | Roll | Speed | Resistances / tags | Notis |
 |---|---|---|---:|---|---|
 | `giant_rat` | Giant Rat | grunt | 8 | `beast` | introfiende, basattack |
@@ -76,8 +82,34 @@ behöver inte vara arketyper.
 | `cave_bear` | Cave Bear | **bruiser** | 6 | physical lätt tålig; `beast` | tung attack |
 | `undead_priest` | Undead Priest | **healer** | 9 | holy ×2.0; `undead` | healar sig själv |
 | `plague_acolyte` | Plague Acolyte | **caster** | 14 | poison-tålig | telegraferar nuke |
+| `dire_wolf` | Dire Wolf | grunt | 12 | `beast` | wolf_bite; zon-2 rar (lvl 5-10) |
+| `wild_boar` | Wild Boar | grunt | 8 | `beast` | boar_charge; zon-2 rar (lvl 5-10) |
+| `treant` | Treant | **bruiser** | 3 | fire ×2.0; frost ×0.5; `beast, plant` | mkt långsam treant_slam; zon-2 rar |
+| `mutated_mudcrab` | Mutated Mudcrab | grunt | 6 | fire ×0.5; `beast` | crab_claw; zon-2 rar (lvl 5-10) |
+| `bog_wraith` | Bog Wraith | **caster** | 14 | frost ×2.0; `undead, spirit` | wraith_hex + wraith_bolt; zon-2 rar |
+| `tar_beast` | Tar Beast | **bruiser** | 4 | fire ×1.5; `beast, ooze` | self-regen + ensnare + maul; zon-2 rar |
+| `hollow_worg` | Hollow Worg | grunt | 8 | physical ×0.9; `beast, cursed` | pounce + bite; lvl 8 rar top-band-miniboss |
 
 Startvärden för stats/skadetal sätts i `enemies.json` och tunas där.
+
+### Arena-duellanter (turneringsmotståndare)
+
+Platsbundna turneringsmotståndare (`arena_*`), inte vildmarkspooler. De flesta är
+raka människo-attackare med en signaturskill → `grunt`; bara de med ren spell-
+telegraf märks `caster`.
+
+| id | Namn | Roll | Speed | Resistances / tags | Notis |
+|---|---|---|---:|---|---|
+| `arena_ralla_quickstep` | Ralla Quickstep | grunt | 13 | `human, duelist` | snabb basattackare (lvl 1) |
+| `arena_borin_shieldhand` | Borin Shieldhand | grunt | 7 | `human, guard` | block + normal (lvl 1) |
+| `arena_mira_candlewick` | Mira Candlewick | **caster** | 10 | fire ×0.8; frost ×1.25; `human, mage` | ignite-DoT + firebolt (lvl 2) |
+| `arena_tomas_reed` | Tomas Reed | grunt | 9 | `human, swordsman` | basattackare (lvl 2) |
+| `arena_selka_bowyer` | Selka Bowyer | grunt | 12 | `human, archer` | aimed_shot (lvl 3) |
+| `arena_ivar_grim` | Ivar Grim | grunt | 8 | physical ×0.95; `human, veteran` | taunt + sunder (lvl 3) |
+| `arena_nalia_frostveil` | Nalia Frostveil | **caster** | 11 | fire ×1.25; frost ×0.75; `human, mage` | frostbolt (lvl 4) |
+| `arena_orren_blackbell` | Orren Blackbell | grunt | 13 | poison ×0.75; `human, rogue` | backstab + riposte (lvl 4) |
+| `arena_ser_kaela_voss` | Ser Kaela Voss | grunt | 10 | physical ×0.9; `human, knight` | counter + sunder (lvl 5) |
+| `arena_lord_maren_dusk` | Lord Maren Dusk | grunt | 12 | physical ×0.9; `human, champion` | combo + counter (lvl 6) |
 
 ## Koppling till world.json
 
