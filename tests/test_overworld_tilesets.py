@@ -23,9 +23,12 @@ except Exception:  # pragma: no cover - import guard
 # Expected tileset sources: placeholder + cainos(3) + 6 themes x 3.
 THEMES = ("grave_heath", "cursed_mire", "frostfell", "ash_waste", "mork_skog", "karr")
 ZONE_THEME_TILE = {  # (tile_x, tile_y) -> expected ground tileset name
-    (0, 10): "cainos_grass",       # core
-    (34, 10): "mork_skog_grass",   # western forest
-    (45, 10): "cursed_mire_grass", # deep-west swamp
+    # The per-zone colouring was reverted (unify_overworld_theme.py): the whole
+    # map now renders one uniform cainos ground, so the seam is gone. Gameplay
+    # regions (encounters/levels) are unchanged.
+    (0, 10): "cainos_grass",   # core
+    (34, 10): "cainos_grass",  # western forest — same palette now
+    (45, 10): "cainos_grass",  # deep-west swamp — same palette now
 }
 
 
@@ -54,20 +57,21 @@ class OverworldTilesetTest(unittest.TestCase):
             self.assertIn(f"{theme}_stone", names)
             self.assertIn(f"{theme}_wall", names)
 
-    def test_each_zone_renders_its_theme_base_ground(self):
+    def test_whole_map_renders_one_uniform_cainos_ground(self):
         ground = self.tmx.get_layer_by_name("ground")
         for (x, y), expected in ZONE_THEME_TILE.items():
             gid = ground.data[y][x]
             self.assertEqual(self.tmx.get_tileset_from_gid(gid).name, expected, (x, y))
 
-    def test_reserved_themes_registered_but_not_used_for_ground(self):
+    def test_themed_grass_registered_but_no_longer_used_for_ground(self):
         ground = self.tmx.get_layer_by_name("ground")
         used = {self.tmx.get_tileset_from_gid(ground.data[y][x]).name
                 for y in range(self.tmx.height) for x in range(self.tmx.width)}
-        self.assertEqual(used, {"cainos_grass", "mork_skog_grass", "cursed_mire_grass"})
-        # reserved themes still exist as sources
+        self.assertEqual(used, {"cainos_grass"})  # uniform; no per-zone seam
+        # The themed sheets stay registered as sources, so re-theming later is trivial.
         names = {ts.name for ts in self.tmx.tilesets}
-        for reserved in ("grave_heath_grass", "frostfell_grass", "ash_waste_grass", "karr_grass"):
+        for reserved in ("mork_skog_grass", "cursed_mire_grass", "grave_heath_grass",
+                         "frostfell_grass", "ash_waste_grass", "karr_grass"):
             self.assertIn(reserved, names)
 
     def test_every_ground_tile_has_a_real_image(self):
