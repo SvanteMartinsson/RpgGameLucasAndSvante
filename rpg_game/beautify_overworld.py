@@ -42,13 +42,15 @@ GRAVES = [87, 103, 135, 137, 167]                  # Props-arket (gravstenar/kor
 # Varje träd: en stam-tile (-> walls, kolliderar + ritas) + krontiles (-> decor_over,
 # ritas ÖVER gräs via transparens, INGEN kollision, under spelaren). Koordinater är
 # (dx, dy) relativt stam-basen (0,0); dy negativt = uppåt. Verifierat mot alfa-täckning.
+# The dy=-4 top row held sparse, partial leaf tiles (alpha ~6-38%) a full cell
+# above the dense canopy, so they read as detached "leaf blobs" floating over the
+# crown. Dropped here: a slightly lower but cohesive crown beats a loose blob.
+# The dense rows (dy -3/-2/-1) are kept intact. Stamp 74 had no top row.
 TREES = [
-    {"trunk": 66, "canopy": [(-1,-4,1),(0,-4,2),
-                             (-1,-3,17),(0,-3,18),(1,-3,19),
+    {"trunk": 66, "canopy": [(-1,-3,17),(0,-3,18),(1,-3,19),
                              (-1,-2,33),(0,-2,34),(1,-2,35),
                              (-1,-1,49),(0,-1,50),(1,-1,51)]},
-    {"trunk": 70, "canopy": [(0,-4,6),
-                             (-1,-3,21),(0,-3,22),(1,-3,23),
+    {"trunk": 70, "canopy": [(-1,-3,21),(0,-3,22),(1,-3,23),
                              (-1,-2,37),(0,-2,38),(1,-2,39),
                              (-1,-1,53),(0,-1,54),(1,-1,55)]},
     {"trunk": 74, "canopy": [(-1,-3,25),(0,-3,26),(1,-3,27),
