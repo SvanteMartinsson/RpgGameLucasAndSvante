@@ -26,11 +26,8 @@
         "y": 915.2
       },
       "danger_tier": 1,
-      "encounters": [
-        "giant_rat",
-        "undead"
-      ],
-      "respawn": false,
+      "encounters": [],
+      "respawn": true,
       "locked": false,
       "connections": [
         {

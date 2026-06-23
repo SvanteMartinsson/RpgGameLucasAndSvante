@@ -110,12 +110,17 @@ class ZoneConfig:
             tuple(g["tile"]): g["message"] if "message" in g else T.gate_message(g.get("message_key", ""))
             for g in data.get("gates", [])
         }
+        # Regions/themes can bound by tile-x AND tile-y (y defaults to the whole
+        # column, so old x-band-only configs are unchanged). The southern Verralda
+        # heath is a y-band (min_tile_y); core/west stay x-bands.
         wild_regions = tuple(
-            (r["place_id"], r.get("min_tile_x", 0), r.get("max_tile_x", 10**9))
+            (r["place_id"], r.get("min_tile_x", 0), r.get("max_tile_x", 10**9),
+             r.get("min_tile_y", 0), r.get("max_tile_y", 10**9))
             for r in data.get("wild_regions", [])
         )
         ground_themes = tuple(
-            (t["theme"], t.get("min_tile_x", 0), t.get("max_tile_x", 10**9))
+            (t["theme"], t.get("min_tile_x", 0), t.get("max_tile_x", 10**9),
+             t.get("min_tile_y", 0), t.get("max_tile_y", 10**9))
             for t in data.get("ground_themes", [])
         )
         return ZoneConfig(
@@ -131,23 +136,26 @@ class ZoneConfig:
             ground_themes=ground_themes,
         )
 
-    def zone_for_tile(self, tile: tuple[int, int]) -> int:
-        """1-based zone from the ground-theme band the tile-x falls in
-        (cainos=1, mork_skog=2, cursed_mire=3). Defaults to 1 (core)."""
-        tile_x = tile[0]
-        for index, (_theme, min_x, max_x) in enumerate(self.ground_themes, start=1):
-            if min_x <= tile_x <= max_x:
-                return index
-        return 1
-
     def wild_region_at(self, tile: tuple[int, int]) -> str:
-        """Encounter/region source for a wilderness tile (by tile x), so the
-        western area draws a different (tier-2) pool than the core."""
-        tile_x = tile[0]
-        for place_id, min_x, max_x in self.wild_regions:
-            if min_x <= tile_x <= max_x:
+        """Encounter/region source for a wilderness tile, by tile-x AND tile-y.
+        First matching region wins, so list narrower/southern regions first. Lets
+        the western area draw a tier-2 pool and the southern heath its own."""
+        tx, ty = tile
+        for place_id, min_x, max_x, min_y, max_y in self.wild_regions:
+            if min_x <= tx <= max_x and min_y <= ty <= max_y:
                 return place_id
         return self.wild_region_place_id
+
+    def zone_for_tile(self, tile: tuple[int, int]) -> int:
+        """1-based zone from the ground-theme band the tile falls in (for the
+        respawn-relocation cost). Currently x-only; the y bounds are loaded but
+        the 2D zone-number derivation is deferred to the enemy/faction slice, so
+        the heath reads as the core zone (free relocation) for now."""
+        tx = tile[0]
+        for index, (_theme, min_x, max_x, _min_y, _max_y) in enumerate(self.ground_themes, start=1):
+            if min_x <= tx <= max_x:
+                return index
+        return 1
 
 
 # --- movement model (pure, headless-testable) ------------------------------
@@ -280,7 +288,7 @@ class OverworldApp:
         self.clock = pygame.time.Clock()
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
-        self._in_west = self.zone.wild_region_at(self._last_tile) != self.zone.wild_region_place_id
+        self._last_region = self.zone.wild_region_at(self._last_tile)
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
@@ -766,10 +774,10 @@ class OverworldApp:
             tile = self.world.current_tile
             if tile != self._last_tile:
                 self._last_tile = tile
-                in_west = self.zone.wild_region_at(tile) != self.zone.wild_region_place_id
-                if in_west and not self._in_west:
-                    self.set_toast(T.WEST_BORDER_FLAVOR, WARN)  # soft signal, not a wall
-                self._in_west = in_west
+                region = self.zone.wild_region_at(tile)
+                if region != self._last_region and region != self.zone.wild_region_place_id:
+                    self.set_toast(T.region_flavor(region), WARN)  # soft signal, not a wall
+                self._last_region = region
                 enemy = self.maybe_encounter()
                 if enemy is not None:
                     self.start_battle(enemy)

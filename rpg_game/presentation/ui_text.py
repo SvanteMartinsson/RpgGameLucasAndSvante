@@ -38,11 +38,24 @@ GATE_MESSAGES = {
     "gate_east": "Unknown lands lie to the east. Blocked for now.",
     "gate_south": "South beyond Hordanita's reaches isn't ready yet.",
     "gate_deep_west": "The far west is uncharted. More of the world opens later.",
+    # The old gate_south is now open into Verralda; the frontier moved further
+    # south to the heath's far edge.
+    "gate_verralda_south": "Beyond the heath the land is still unfinished — more opens later.",
 }
 
 # Soft warning when crossing into the western wilderness (zone 2) — flavor, not
 # a wall.
 WEST_BORDER_FLAVOR = "The road west feels desolate. Few return unscathed."
+
+# Per-region soft signal shown when first crossing into a non-core region.
+REGION_FLAVOR = {
+    "burg_121": "Söderut tunnar byarna ut — Verraldas hedar tar vid.",
+}
+
+
+def region_flavor(region_id: str) -> str:
+    """Soft border flavor for a region; western regions share the desolate line."""
+    return REGION_FLAVOR.get(region_id, WEST_BORDER_FLAVOR)
 
 
 def gate_message(key: str) -> str:

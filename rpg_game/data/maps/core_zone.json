@@ -5,14 +5,16 @@
   "encounter_rate_per_step": 0.06,
   "wild_region_place_id": "burg_54",
   "wild_regions": [
+    {"place_id": "burg_121", "min_tile_y": 20},
     {"place_id": "burg_320", "min_tile_x": 41},
     {"place_id": "burg_146", "min_tile_x": 28}
   ],
-  "_ground_themes_comment": "Presentation only: which tile theme paints each zone's base ground (by tile-x). Aligned with the wild_regions bands. grave_heath/frostfell/ash_waste/karr tilesets are registered but reserved (no zone yet).",
+  "_ground_themes_comment": "Presentation only: which tile theme paints each zone's base ground (by tile-x, optionally tile-y). Aligned with the wild_regions bands. The southern Verralda heath (y>=20) is grave_heath. frostfell/ash_waste/karr tilesets remain registered but reserved.",
   "ground_themes": [
     {"theme": "cainos", "max_tile_x": 27},
     {"theme": "mork_skog", "min_tile_x": 28, "max_tile_x": 40},
-    {"theme": "cursed_mire", "min_tile_x": 41}
+    {"theme": "cursed_mire", "min_tile_x": 41},
+    {"theme": "grave_heath", "min_tile_y": 20}
   ],
   "respawn_place_id": "burg_5",
   "towns": [
@@ -25,11 +27,12 @@
     {"tile": [38, 16], "place_id": "burg_67", "label": "Fongorinos"},
     {"tile": [44, 6], "place_id": "burg_200", "label": "Estables"},
     {"tile": [42, 17], "place_id": "burg_320", "label": "Parguillas"},
-    {"tile": [45, 13], "place_id": "burg_219", "label": "Tierva"}
+    {"tile": [45, 13], "place_id": "burg_219", "label": "Tierva"},
+    {"tile": [14, 26], "place_id": "burg_121", "label": "Alherralba"}
   ],
   "gates": [
     {"tile": [14, 0], "message_key": "gate_north"},
-    {"tile": [13, 19], "message_key": "gate_south"},
-    {"tile": [47, 10], "message_key": "gate_deep_west"}
+    {"tile": [47, 10], "message_key": "gate_deep_west"},
+    {"tile": [13, 31], "message_key": "gate_verralda_south"}
   ]
 }

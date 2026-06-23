@@ -63,16 +63,23 @@ class OverworldTilesetTest(unittest.TestCase):
             gid = ground.data[y][x]
             self.assertEqual(self.tmx.get_tileset_from_gid(gid).name, expected, (x, y))
 
-    def test_themed_grass_registered_but_no_longer_used_for_ground(self):
+    def test_ground_uses_cainos_core_and_grave_heath_south(self):
         ground = self.tmx.get_layer_by_name("ground")
         used = {self.tmx.get_tileset_from_gid(ground.data[y][x]).name
                 for y in range(self.tmx.height) for x in range(self.tmx.width)}
-        self.assertEqual(used, {"cainos_grass"})  # uniform; no per-zone seam
-        # The themed sheets stay registered as sources, so re-theming later is trivial.
+        # Core (y<20) stays uniform cainos; the southern Verralda heath is grave_heath.
+        self.assertEqual(used, {"cainos_grass", "grave_heath_grass"})
+        # Reserved themes stay registered as sources, so re-theming later is trivial.
         names = {ts.name for ts in self.tmx.tilesets}
-        for reserved in ("mork_skog_grass", "cursed_mire_grass", "grave_heath_grass",
+        for reserved in ("mork_skog_grass", "cursed_mire_grass",
                          "frostfell_grass", "ash_waste_grass", "karr_grass"):
             self.assertIn(reserved, names)
+
+    def test_southern_heath_ground_is_grave_heath(self):
+        ground = self.tmx.get_layer_by_name("ground")
+        for (x, y) in [(5, 25), (14, 26), (40, 30)]:  # rows in the new south area
+            name = self.tmx.get_tileset_from_gid(ground.data[y][x]).name
+            self.assertEqual(name, "grave_heath_grass", (x, y))
 
     def test_every_ground_tile_has_a_real_image(self):
         ground = self.tmx.get_layer_by_name("ground")
