@@ -117,6 +117,43 @@ class InventoryOverviewTest(unittest.TestCase):
         bone = next(r for r in rows if r[0] == "bone_dust")
         self.assertIsNone(bone[2])  # no on_click — not usable
 
+    # -- Character slot counts mirror the inventory ------------------------
+
+    def _slots(self):
+        from rpg_game.core.view import build_snapshot
+        return build_snapshot(self.eng).equipment_slots
+
+    def test_character_slot_count_matches_inventory_for_every_slot(self):
+        # Own a spread of gear; each slot's (N) must equal the inventory's count
+        # for that slot's category (same single source).
+        self.eng.player.owned_gear_ids = ("tin_amulet", "iron_helm", "novice_ring", "swift_ring")
+        counts = self.app.inventory_counts()
+        for slot in self._slots():
+            self.assertEqual(self.app.slot_owned_count(slot), counts[slot.slot_type], slot.id)
+
+    def test_three_ring_slots_share_one_pool(self):
+        self.eng.player.owned_gear_ids = ("novice_ring", "swift_ring")  # 2 owned rings
+        ring_slots = [s for s in self._slots() if s.slot_type == "ring"]
+        self.assertEqual([s.id for s in ring_slots], ["ring_1", "ring_2", "ring_3"])
+        for slot in ring_slots:
+            self.assertEqual(self.app.slot_owned_count(slot), 2)  # all show the shared total
+        self.assertEqual(self.app.inventory_counts()["ring"], 2)
+
+    def test_empty_slot_still_reports_owned_count(self):
+        self.eng.player.owned_gear_ids = ("tin_amulet", "sage_amulet")  # owned, none equipped
+        amulet = next(s for s in self._slots() if s.id == "amulet")
+        self.assertEqual(amulet.equipped_item_id, "")     # slot is empty
+        self.assertEqual(self.app.slot_owned_count(amulet), 2)  # but options exist
+
+    def test_equipped_item_is_included_in_the_count(self):
+        # Mirror the inventory: an equipped item still counts as owned.
+        self.eng.player.owned_gear_ids = ("novice_ring",)
+        self.eng.equip_gear("novice_ring", "ring_1")
+        ring = next(s for s in self._slots() if s.id == "ring_1")
+        self.assertEqual(ring.equipped_item_id, "novice_ring")
+        self.assertEqual(self.app.slot_owned_count(ring), 1)
+        self.assertEqual(self.app.slot_owned_count(ring), self.app.inventory_counts()["ring"])
+
     # -- renders in every category without crashing ------------------------
 
     def test_renders_all_categories(self):

@@ -501,6 +501,14 @@ class OverworldApp:
             counts[slot_type] = gear_by_type.get(slot_type, 0)
         return counts
 
+    def slot_owned_count(self, slot, counts: dict | None = None) -> int:
+        """Owned items for a slot's category, from the SAME source as the
+        inventory (inventory_counts). Ring slots share one 'ring' pool, so all
+        three ring slots report the same total. Equipped items are included,
+        mirroring the inventory."""
+        counts = self.inventory_counts() if counts is None else counts
+        return counts.get(slot.slot_type, 0)
+
     def inventory_category_items(self, category: str):
         """Items in a category for display: (item_id, label, on_click) tuples.
         Equippable items hand off to the Character panel; consumables use; junk
@@ -1095,11 +1103,13 @@ class OverworldApp:
             self.selected_equipment_slot = "weapon"
         self.screen.blit(self.font_sm.render("Slots", True, TEXT_DIM), (slots_rect.x, slots_rect.y - 24))
         max_slots = max(1, min(len(slots), slots_rect.height // 28))
+        counts = self.inventory_counts()  # one source, shared with the inventory view
         for i, slot in enumerate(slots[:max_slots]):
             rect = pygame.Rect(slots_rect.x, slots_rect.y + i * 28, slots_rect.width, 24)
             selected = slot.id == self.selected_equipment_slot
             item = slot.equipped_item_name or "[empty]"
-            label = f"{'> ' if selected else '  '}{slot.name}: {item}"
+            # Owned count per slot's category, so empty slots still signal options.
+            label = f"{'> ' if selected else '  '}{slot.name}: {item} ({self.slot_owned_count(slot, counts)})"
             self._add_button(rect, label, (lambda sid=slot.id: self.select_equipment_slot(sid)), True)
 
         selected_slot = next((slot for slot in slots if slot.id == self.selected_equipment_slot), slots[0])
