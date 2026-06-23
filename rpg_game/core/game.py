@@ -24,6 +24,14 @@ class RestResult:
     player_mana: int = 0
 
 
+@dataclass(frozen=True)
+class RelocateRespawnResult:
+    success: bool
+    message: str
+    cost: int = 0
+    already_set: bool = False
+
+
 class GameEngine:
     def __init__(self, content: GameContent | None = None, rng: random.Random | None = None) -> None:
         self.content = content or load_content()
@@ -116,15 +124,33 @@ class GameEngine:
         player = self.player
         player.hp = equipment.effective_stat(player, "max_hp")
         player.mana = equipment.effective_stat(player, "max_mana")
-        # Resting here makes this town your respawn point, so death returns you to
-        # the last place you chose to rest rather than a fixed regional hub.
-        player.last_rest_place_id = place.id
+        # Resting only heals now. Moving the respawn point is a separate, paid
+        # action (relocate_respawn) so you never respawn somewhere you didn't buy.
         return RestResult(
             outcome="rested",
             message=f"You rest at {place.name} and recover to full HP and mana.",
             player_hp=player.hp,
             player_mana=player.mana,
         )
+
+    def relocate_respawn(self, zone: int) -> RelocateRespawnResult:
+        """Buy a move of the respawn point to the current rest town. Zone 1 is
+        free; higher zones cost progression.respawn_relocation_cost(zone). Sets
+        last_rest_place_id (the chosen respawn) only on success. Observation of
+        gold/respawn only — combat/RNG untouched."""
+        place = self.current_place()
+        cost = progression.respawn_relocation_cost(zone)
+        if not place.has_store:
+            return RelocateRespawnResult(False, "You can only set your respawn point in a town with services.", cost)
+        if self.player.last_rest_place_id == place.id:
+            return RelocateRespawnResult(False, f"{place.name} is already your respawn point.", cost, already_set=True)
+        if self.player.gold < cost:
+            return RelocateRespawnResult(False, f"Not enough gold. Moving your respawn to {place.name} costs {cost}.", cost)
+        self.player.gold -= cost
+        self.player.last_rest_place_id = place.id
+        message = (f"Respawn point moved to {place.name} for {cost} gold."
+                   if cost else f"Respawn point set to {place.name}.")
+        return RelocateRespawnResult(True, message, cost)
 
     def available_tournaments(self) -> list[Tournament]:
         return tournaments.available_tournaments(self.player, self.content)

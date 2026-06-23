@@ -1,13 +1,12 @@
-"""Respawn returns you to the town you last RESTED in, not a fixed regional hub.
+"""Respawn relocation is a PAID, zone-scaled action at rest towns.
 
-Before any rest, respawn falls back to the regional hub (unchanged early-game
-behaviour). Resting sets the respawn point; it survives save/load. The rest heal
-and the death penalty (lost XP/gold, half-HP) are untouched — only WHERE you
-respawn changes.
+Resting only heals now (it no longer moves your respawn — changed from commit
+4a039e2). Buying the move in a zone-2 town costs 700 G and sets the respawn
+there; zone 1 is free. The death penalty and rest heal are untouched — only how
+the respawn point is chosen changed.
 """
 
 import json
-import random
 import tempfile
 import unittest
 
@@ -16,7 +15,8 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 
-REST_TOWNS = ("burg_5", "burg_67", "burg_146")  # has_store towns (rest-enabled)
+# Rest towns by zone (derived from tile-x bands): burg_5 = zone 1 (core),
+# burg_146 / burg_67 = zone 2 (western forest).
 
 
 def _engine():
@@ -25,64 +25,111 @@ def _engine():
     return engine
 
 
-class RespawnAtRestTest(unittest.TestCase):
-    def test_respawn_at_each_town_you_last_rested_in(self):
-        engine = _engine()
-        for town in ("burg_5", "burg_146"):
-            engine.enter_place(town)
-            engine.rest()
-            engine._respawn_player()
-            self.assertEqual(engine.player.current_place_id, town)
+class RespawnRelocationTest(unittest.TestCase):
+    # -- cost formula -------------------------------------------------------
+    def test_cost_formula_per_zone(self):
+        self.assertEqual(progression.respawn_relocation_cost(1), 0)
+        self.assertEqual(progression.respawn_relocation_cost(2), 700)
+        self.assertEqual(progression.respawn_relocation_cost(3), 1000)
+        self.assertEqual(progression.respawn_relocation_cost(4), 1300)
 
-    def test_last_rest_overrides_the_regional_hub(self):
-        # Rest in Fongorinos (hub = burg_5), then walk into Rotequero's region
-        # (which would set respawn_place_id = burg_146). Respawn must still return
-        # to the rested town, not the region hub.
+    # -- buying the move ----------------------------------------------------
+    def test_zone2_purchase_charges_700_and_moves_respawn(self):
         engine = _engine()
-        engine.enter_place("burg_67")
-        engine.rest()
         engine.enter_place("burg_146")
-        self.assertEqual(engine.player.respawn_place_id, "burg_146")  # region hub tracked
+        engine.player.gold = 1000
+        result = engine.relocate_respawn(zone=2)
+        self.assertTrue(result.success)
+        self.assertEqual(result.cost, 700)
+        self.assertEqual(engine.player.gold, 300)
+        self.assertEqual(engine.player.last_rest_place_id, "burg_146")
         engine._respawn_player()
-        self.assertEqual(engine.player.current_place_id, "burg_67")   # but rested town wins
+        self.assertEqual(engine.player.current_place_id, "burg_146")
 
-    def test_respawn_without_resting_uses_default_hub(self):
+    def test_zone1_relocation_is_free(self):
         engine = _engine()
-        self.assertEqual(engine.player.last_rest_place_id, "")  # never rested
-        default = engine.player.respawn_place_id
-        engine._respawn_player()
-        self.assertTrue(engine.player.current_place_id)            # never None/empty
-        self.assertEqual(engine.player.current_place_id, default)  # unchanged behaviour
+        engine.enter_place("burg_5")
+        engine.player.gold = 0
+        result = engine.relocate_respawn(zone=1)
+        self.assertTrue(result.success)
+        self.assertEqual(result.cost, 0)
+        self.assertEqual(engine.player.gold, 0)            # nothing charged
+        self.assertEqual(engine.player.last_rest_place_id, "burg_5")
+
+    def test_insufficient_gold_blocks_and_charges_nothing(self):
+        engine = _engine()
+        engine.enter_place("burg_146")
+        engine.player.gold = 100
+        result = engine.relocate_respawn(zone=2)
+        self.assertFalse(result.success)
+        self.assertEqual(engine.player.gold, 100)          # untouched
+        self.assertEqual(engine.player.last_rest_place_id, "")  # respawn unchanged
+        engine._respawn_player()                            # falls back to hub, no crash
+        self.assertEqual(engine.player.current_place_id, engine.player.respawn_place_id)
+
+    def test_already_your_respawn_is_free_and_no_double_charge(self):
+        engine = _engine()
+        engine.enter_place("burg_146")
+        engine.player.gold = 1000
+        self.assertTrue(engine.relocate_respawn(zone=2).success)
+        again = engine.relocate_respawn(zone=2)             # already set
+        self.assertFalse(again.success)
+        self.assertTrue(again.already_set)
+        self.assertEqual(engine.player.gold, 300)           # not charged twice
+
+    def test_relocation_requires_a_store_town(self):
+        engine = _engine()
+        engine.enter_place("burg_54")  # wilderness region, no store
+        engine.player.gold = 1000
+        result = engine.relocate_respawn(zone=1)
+        self.assertFalse(result.success)
+        self.assertEqual(engine.player.gold, 1000)
+
+    # -- rest no longer moves respawn (changed from 4a039e2) ----------------
+    def test_rest_no_longer_sets_respawn(self):
+        engine = _engine()
+        engine.enter_place("burg_146")
+        engine.rest()
+        self.assertEqual(engine.player.last_rest_place_id, "")  # rest heals only now
 
     def test_rest_still_fully_heals(self):
         engine = _engine()
         engine.enter_place("burg_5")
-        engine.player.hp = 1
-        engine.player.mana = 0
+        engine.player.hp, engine.player.mana = 1, 0
         result = engine.rest()
         self.assertEqual(result.outcome, "rested")
         self.assertEqual(engine.player.hp, engine.effective_stat("max_hp"))
         self.assertEqual(engine.player.mana, engine.effective_stat("max_mana"))
 
+    # -- unchanged invariants ----------------------------------------------
+    def test_respawn_without_purchase_uses_default_hub(self):
+        engine = _engine()
+        self.assertEqual(engine.player.last_rest_place_id, "")
+        default = engine.player.respawn_place_id
+        engine._respawn_player()
+        self.assertTrue(engine.player.current_place_id)        # never None
+        self.assertEqual(engine.player.current_place_id, default)
+
     def test_death_penalty_values_unchanged(self):
         engine = _engine()
         engine.enter_place("burg_146")
-        engine.rest()
+        engine.player.gold = 1000
+        engine.relocate_respawn(zone=2)  # gold now 300
         p = engine.player
         p.level, p.gold, p.xp = 3, 200, 137
         result = engine._respawn_player()
-        # Same penalty as before the respawn-point change.
         self.assertEqual(result.gold_lost, 3 * progression.GOLD_LOSS_PER_LEVEL)
         self.assertEqual(result.xp_lost, 137)
         self.assertEqual(result.hp, progression.round_half_up(p.max_hp / 2))
-        self.assertEqual(engine.player.current_place_id, "burg_146")  # and respawns at rest
+        self.assertEqual(engine.player.current_place_id, "burg_146")  # respawns at chosen town
 
-    def test_rest_point_survives_save_load(self):
+    def test_relocation_survives_save_load(self):
         with tempfile.TemporaryDirectory() as folder:
             path = f"{folder}/save.json"
             engine = _engine()
             engine.enter_place("burg_146")
-            engine.rest()
+            engine.player.gold = 1000
+            engine.relocate_respawn(zone=2)
             engine.save(path)
 
             reloaded = GameEngine()
@@ -92,7 +139,6 @@ class RespawnAtRestTest(unittest.TestCase):
             self.assertEqual(reloaded.player.current_place_id, "burg_146")
 
     def test_old_saves_without_field_default_to_empty(self):
-        # Backward compat: a save predating the field loads with "" (hub fallback).
         with tempfile.TemporaryDirectory() as folder:
             path = f"{folder}/save.json"
             engine = _engine()
@@ -106,11 +152,12 @@ class RespawnAtRestTest(unittest.TestCase):
             self.assertTrue(reloaded.load(path).success)
             self.assertEqual(reloaded.player.last_rest_place_id, "")
 
-    def test_death_log_reflects_last_rested_town(self):
+    def test_death_log_reflects_chosen_respawn(self):
         with tempfile.TemporaryDirectory() as folder:
             engine = _engine()
             engine.enter_place("burg_146")
-            engine.rest()
+            engine.player.gold = 1000
+            engine.relocate_respawn(zone=2)
             enemy = next(iter(engine.content.enemies.values())).create_enemy()
             result = engine._defeat(enemy, [])  # respawn happens inside
             logger = PlaytestLogger(folder)

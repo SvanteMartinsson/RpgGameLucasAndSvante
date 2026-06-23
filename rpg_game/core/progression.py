@@ -7,6 +7,18 @@ from rpg_game.core.entities import Player
 # Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
 GOLD_LOSS_PER_LEVEL = 25
 
+# Cost to move your respawn point to a rest town, scaled by the town's zone:
+# zone 1 is free; zone 2 costs RESPAWN_RELOCATION_BASE; each zone above adds
+# RESPAWN_RELOCATION_STEP (zone N>=2: BASE + (N-2)*STEP -> 700 / 1000 / 1300 ...).
+RESPAWN_RELOCATION_BASE = 700
+RESPAWN_RELOCATION_STEP = 300
+
+
+def respawn_relocation_cost(zone: int) -> int:
+    if zone <= 1:
+        return 0
+    return RESPAWN_RELOCATION_BASE + (zone - 2) * RESPAWN_RELOCATION_STEP
+
 # Global, tunable scalar on every enemy's max HP at creation (wild and arena),
 # so fights last longer without touching the per-enemy numbers or their ratios.
 # 1.0 reproduces the pre-multiplier values exactly.

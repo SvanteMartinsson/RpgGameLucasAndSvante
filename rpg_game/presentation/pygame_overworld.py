@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat
+from rpg_game.core import combat, progression
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
@@ -95,6 +95,7 @@ class ZoneConfig:
     town_labels: dict  # (tx, ty) -> label
     gates: dict  # (tx, ty) -> message
     wild_regions: tuple = ()  # ((place_id, min_x, max_x), ...) by tile x; else default
+    ground_themes: tuple = ()  # ((theme, min_x, max_x), ...) in order; zone = index+1
 
     @staticmethod
     def load(path: str = ZONE_CONFIG) -> "ZoneConfig":
@@ -112,6 +113,10 @@ class ZoneConfig:
             (r["place_id"], r.get("min_tile_x", 0), r.get("max_tile_x", 10**9))
             for r in data.get("wild_regions", [])
         )
+        ground_themes = tuple(
+            (t["theme"], t.get("min_tile_x", 0), t.get("max_tile_x", 10**9))
+            for t in data.get("ground_themes", [])
+        )
         return ZoneConfig(
             map_path=os.path.join(MAPS_DIR, data["map"]),
             start_tile=tuple(data.get("start_tile", [1, 1])),
@@ -122,7 +127,17 @@ class ZoneConfig:
             town_labels=labels,
             gates=gates,
             wild_regions=wild_regions,
+            ground_themes=ground_themes,
         )
+
+    def zone_for_tile(self, tile: tuple[int, int]) -> int:
+        """1-based zone from the ground-theme band the tile-x falls in
+        (cainos=1, mork_skog=2, cursed_mire=3). Defaults to 1 (core)."""
+        tile_x = tile[0]
+        for index, (_theme, min_x, max_x) in enumerate(self.ground_themes, start=1):
+            if min_x <= tile_x <= max_x:
+                return index
+        return 1
 
     def wild_region_at(self, tile: tuple[int, int]) -> str:
         """Encounter/region source for a wilderness tile (by tile x), so the
@@ -392,6 +407,10 @@ class OverworldApp:
         elif action == "rest":
             result = self.engine.rest()
             self.set_toast(result.message, GOOD if result.outcome == "rested" else TEXT_DIM)
+        elif action == "relocate_respawn":
+            zone = self.zone.zone_for_tile(self.world.current_tile)
+            result = self.engine.relocate_respawn(zone)
+            self.set_toast(result.message, GOOD if result.success else (TEXT_DIM if result.already_set else BAD))
         elif action == "tournaments":
             if self.engine.available_tournaments():
                 self.mode = "tournaments"
@@ -853,12 +872,18 @@ class OverworldApp:
         has_store = self.engine.current_place().has_store
         col_w = (panel.width - 60) // 2
         actions = list(T.TOWN_ACTIONS)
+        already_respawn = False
+        if has_store:
+            zone = self.zone.zone_for_tile(self.world.current_tile)
+            cost = progression.respawn_relocation_cost(zone)
+            already_respawn = self.engine.player.last_rest_place_id == self.engine.current_place().id
+            actions.append(("relocate_respawn", T.relocate_respawn_label(cost, already=already_respawn)))
         if self.engine.available_tournaments():
             actions.append(("tournaments", T.TOWN_TOURNAMENTS))
         for i, (action, label) in enumerate(actions):
             col, row = i % 2, i // 2
             rect = pygame.Rect(panel.x + 20 + col * (col_w + 20), panel.y + 70 + row * 56, col_w, 44)
-            enabled = not (action == "store" and not has_store)
+            enabled = not (action == "store" and not has_store) and not (action == "relocate_respawn" and already_respawn)
             self._add_button(rect, label, (lambda a=action: self.do_action(a)), enabled)
         self.screen.blit(self.font_sm.render(T.BACK_TO_MAP, True, TEXT_DIM),
                          (panel.x + 20, panel.bottom - 30))

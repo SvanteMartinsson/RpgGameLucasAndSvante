@@ -84,6 +84,14 @@ SCREEN_TITLES = {
 }
 
 TOWN_TOURNAMENTS = "Tournaments"
+
+
+def relocate_respawn_label(cost: int, already: bool = False) -> str:
+    if already:
+        return "Respawn point (here)"
+    if cost <= 0:
+        return "Set respawn here (free)"
+    return f"Move respawn here ({cost} G)"
 TOURNAMENT_SERIES_WARNING = (
     "Locked series: fights in a row, no flee or weapon swap mid-match, "
     "full HP/mana and equipment changes between matches, reward only after full victory."

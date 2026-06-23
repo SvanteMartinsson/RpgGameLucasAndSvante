@@ -109,6 +109,18 @@ class OverworldTilesetTest(unittest.TestCase):
         self.assertEqual(self.app.zone.wild_region_at((34, 8)), "burg_146")
         self.assertEqual(self.app.zone.wild_region_at((45, 8)), "burg_320")
 
+    def test_zone_for_tile_maps_ground_theme_bands(self):
+        # Zone number (for respawn-relocation cost) derives from the tile-x band:
+        # cainos=1, mork_skog=2, cursed_mire=3. Rest towns: burg_5 z1, burg_67/
+        # burg_146 z2.
+        z = self.app.zone
+        self.assertEqual(z.zone_for_tile((14, 10)), 1)  # Hordanita (core)
+        self.assertEqual(z.zone_for_tile((27, 10)), 1)
+        self.assertEqual(z.zone_for_tile((28, 10)), 2)
+        self.assertEqual(z.zone_for_tile((39, 10)), 2)  # Rotequero
+        self.assertEqual(z.zone_for_tile((41, 10)), 3)
+        self.assertEqual(z.zone_for_tile((45, 10)), 3)
+
 
 if __name__ == "__main__":
     unittest.main()
