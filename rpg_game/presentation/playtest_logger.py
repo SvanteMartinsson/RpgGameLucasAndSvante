@@ -54,6 +54,13 @@ class PlaytestLogger:
             player_level=snapshot.player.level,
             location=location,
             loadout=_loadout(snapshot),
+            # Starting vitals for both sides, so a fight's opening state is visible.
+            player_hp=snapshot.player.hp,
+            player_max_hp=snapshot.player.max_hp,
+            player_mana=snapshot.player.mana,
+            player_max_mana=snapshot.player.max_mana,
+            enemy_hp=enemy.hp,
+            enemy_max_hp=getattr(enemy, "max_hp", enemy.hp),
         )
 
     def equip(self, slot: str, item_id: str, damage_type: str = "", stats=None) -> None:
@@ -73,8 +80,17 @@ class PlaytestLogger:
     def combat_result(self, result: combat.CombatTurnResult, enemy, snapshot, location: str) -> None:
         if result.flee_chance is not None:
             self.flee(result.flee_chance, result.outcome == "fled", enemy)
+        player_name = snapshot.player.name
+        enemy_max_hp = getattr(enemy, "max_hp", enemy.hp)
         for resolution in result.action_resolutions:
-            self.attack(resolution, snapshot)
+            # End-of-turn HP of whichever side this resolution targeted. Each
+            # combatant takes at most one hit per turn, so the turn-final HP is
+            # this event's post-state. Pure observation off the returned result.
+            if resolution.target_name == player_name:
+                hp_after, max_hp = result.player_hp, snapshot.player.max_hp
+            else:
+                hp_after, max_hp = result.enemy_hp, enemy_max_hp
+            self.attack(resolution, snapshot, target_hp_after=hp_after, target_max_hp=max_hp)
         for event in result.events:
             self._maybe_log_tick(event)
         if result.loot_drop is not None:
@@ -85,7 +101,8 @@ class PlaytestLogger:
             for level in range(snapshot.player.level - result.levels_gained + 1, snapshot.player.level + 1):
                 self.level_up(level)
         if result.respawn is not None:
-            self.death(result.respawn, location)
+            # snapshot is built post-respawn, so its place is the respawn place.
+            self.death(result.respawn, location, snapshot.place.id)
 
     def flee(self, chance: float, success: bool, enemy) -> None:
         self.write(
@@ -114,7 +131,8 @@ class PlaytestLogger:
             fields["damage_type"] = damage_type
         self.write("dot_tick", **fields)
 
-    def attack(self, resolution: combat.ActionResolution, snapshot) -> None:
+    def attack(self, resolution: combat.ActionResolution, snapshot,
+               target_hp_after: int | None = None, target_max_hp: int | None = None) -> None:
         source = "player" if resolution.actor_name == snapshot.player.name else "enemy"
         fields = dict(
             source=source,
@@ -132,6 +150,11 @@ class PlaytestLogger:
             # Attribute the player's attack to the weapon behind it, so a holy
             # hit is traceable to the holy weapon without guessing.
             fields["weapon"] = _equipped_weapon(snapshot)
+        if target_hp_after is not None:
+            # The defender's HP after this event, so the HP trajectory through the
+            # fight is reconstructable turn by turn.
+            fields["target_hp_after"] = target_hp_after
+            fields["target_max_hp"] = target_max_hp
         self.write("attack", **fields)
 
     def drop(self, drop, enemy) -> None:
@@ -149,7 +172,10 @@ class PlaytestLogger:
     def level_up(self, new_level: int) -> None:
         self.write("level_up", new_level=new_level)
 
-    def death(self, respawn, location: str) -> None:
+    def death(self, respawn, location: str, respawn_place_id: str = "") -> None:
+        # `hp_after`/`mana_after` are the post-respawn vitals (half of max after
+        # the death penalty), NOT the HP at the moment of death (always 0). The
+        # explicit respawn_* fields disambiguate that and say where you reappear.
         self.write(
             "death",
             location=location,
@@ -157,6 +183,8 @@ class PlaytestLogger:
             lost_gold=respawn.gold_lost,
             hp_after=respawn.hp,
             mana_after=respawn.mana,
+            respawn_hp=respawn.hp,
+            respawn_place_id=respawn_place_id,
         )
 
     def write(self, event: str, **fields) -> None:
