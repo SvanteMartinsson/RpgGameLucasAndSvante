@@ -29,7 +29,7 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import ui_text as T
-from rpg_game.presentation.pygame_canvas import acquire_display, present, to_canvas
+from rpg_game.presentation.pygame_canvas import acquire_display, present, set_display_mode, to_canvas
 
 # --- Layout ----------------------------------------------------------------
 
@@ -329,7 +329,7 @@ class BattleApp:
             self.running = False
             return
         if event.type == pygame.VIDEORESIZE:
-            self.display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            self.display = set_display_mode((event.w, event.h))
             return
         if event.type == pygame.KEYDOWN:
             self._handle_key(event)
@@ -733,7 +733,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
                 pygame.quit()
                 sys.exit(0)
             if event.type == pygame.VIDEORESIZE:
-                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+                display = set_display_mode((event.w, event.h))
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
                 for i, rect in enumerate(list_rects):

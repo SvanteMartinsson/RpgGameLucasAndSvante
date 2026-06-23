@@ -15,13 +15,73 @@ and ``to_canvas`` maps display-space mouse positions back into canvas space.
 
 from __future__ import annotations
 
+import os
+
 import pygame
 
-WINDOW_FLAGS = pygame.RESIZABLE
+# SCALED lets SDL scale the logical render surface up to the real (HiDPI/Retina)
+# framebuffer with integer scaling — crisp pixel art, and content fills the screen
+# instead of sitting 1:1 in the top-left of a 2x buffer. RESIZABLE (not exclusive
+# FULLSCREEN) keeps the macOS window controls + app-switching; the OS green button
+# still gives true native fullscreen.
+WINDOW_FLAGS = pygame.RESIZABLE | pygame.SCALED
 # Leave headroom for the OS menu bar / dock / title bar so the window fits.
 _DESKTOP_MARGIN = 0.92
 
+
+def set_display_mode(size: tuple[int, int], flags: int = WINDOW_FLAGS) -> pygame.Surface:
+    """set_mode with a headless fallback: if no hardware renderer exists (dummy
+    driver in tests), SCALED can't initialize, so retry without it."""
+    try:
+        return pygame.display.set_mode(size, flags)
+    except pygame.error:
+        return pygame.display.set_mode(size, flags & ~pygame.SCALED)
+
 Transform = tuple[int, int, float]
+
+# Set RPG_DISPLAY_DEBUG=1 to log display geometry at every change. Kept in for
+# diagnosing fullscreen anchoring regressions (the bug that recurs). It prints
+# the LOGICAL surface present() centers against, the OS window size, the desktop
+# sizes, the canvas, and the transform — a logical-vs-physical gap (e.g. Retina
+# 2x) shows up as content that centers in the math yet sits top-left on screen.
+_DISPLAY_DEBUG = bool(os.environ.get("RPG_DISPLAY_DEBUG"))
+# Lines are also appended here so they survive the window closing. Override with
+# RPG_DISPLAY_DEBUG_LOG. The file is truncated once per process at import.
+_DEBUG_LOG_PATH = os.environ.get("RPG_DISPLAY_DEBUG_LOG", "/tmp/rpg_display_debug.log")
+_last_debug_key = None
+
+if _DISPLAY_DEBUG:
+    try:
+        with open(_DEBUG_LOG_PATH, "w", encoding="utf-8") as _fh:
+            _fh.write("# rpg display debug — surface(get_size) is what present() centers against\n")
+    except Exception:  # pragma: no cover - logging must never break the game
+        pass
+
+
+def _debug_display(tag: str, display: pygame.Surface, transform: Transform | None = None) -> None:
+    if not _DISPLAY_DEBUG:
+        return
+    global _last_debug_key
+    try:
+        window = pygame.display.get_window_size()
+    except Exception:
+        window = None
+    try:
+        desktops = pygame.display.get_desktop_sizes()
+    except Exception:
+        desktops = None
+    key = (tag, display.get_size(), window, transform)
+    if key == _last_debug_key:
+        return
+    _last_debug_key = key
+    line = (f"[display:{tag}] surface(get_size)={display.get_size()} window={window} "
+            f"desktops={desktops} transform={transform}")
+    print(line, flush=True)
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
+    except Exception:  # pragma: no cover
+        pass
 
 
 def desktop_size() -> tuple[int, int]:
@@ -45,8 +105,8 @@ def fit_size(preferred: tuple[int, int]) -> tuple[int, int]:
 
 
 def open_window(preferred: tuple[int, int]) -> pygame.Surface:
-    """Open a normal resizable window, clamped so it fits the desktop."""
-    return pygame.display.set_mode(fit_size(preferred), WINDOW_FLAGS)
+    """Open a normal resizable (SCALED) window, clamped so it fits the desktop."""
+    return set_display_mode(fit_size(preferred), WINDOW_FLAGS)
 
 
 def acquire_display(default_size: tuple[int, int]) -> pygame.Surface:
@@ -73,7 +133,9 @@ def present(display: pygame.Surface, canvas: pygame.Surface, bg) -> Transform:
     ox, oy = max(0, (dw - fw) // 2), max(0, (dh - fh) // 2)
     display.blit(frame, (ox, oy))
     pygame.display.flip()
-    return (ox, oy, scale)
+    transform = (ox, oy, scale)
+    _debug_display(f"present canvas={cw}x{ch}", display, transform)
+    return transform
 
 
 def to_canvas(pos: tuple[int, int], transform: Transform) -> tuple[int, int]:
