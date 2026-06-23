@@ -164,6 +164,11 @@ class BattleApp:
         # Inherit the caller's display (window or fullscreen); draw to a fixed
         # canvas that present() blits centered onto it.
         self.display = acquire_display((WIDTH, HEIGHT))
+        # Pump one event cycle and re-read the OS-confirmed surface so the first
+        # frame centers against the real drawable size instead of a stale window
+        # size (which otherwise anchors top-left until the first VIDEORESIZE).
+        pygame.event.pump()
+        self.display = pygame.display.get_surface() or self.display
         self.screen = pygame.Surface((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)

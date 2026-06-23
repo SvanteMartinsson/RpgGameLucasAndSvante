@@ -322,6 +322,12 @@ class OverworldApp:
             # clamped so it never exceeds the desktop.
             self.windowed_size = fit_size(self.windowed_size)
             self.display = open_window(self.windowed_size)
+        # Pump one event cycle and re-read the OS-confirmed surface so the FIRST
+        # frame uses the real drawable size. Without this the window can report a
+        # stale size until the first VIDEORESIZE, anchoring content top-left until
+        # an alt-tab "heals" it.
+        pygame.event.pump()
+        self.display = pygame.display.get_surface() or self.display
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
