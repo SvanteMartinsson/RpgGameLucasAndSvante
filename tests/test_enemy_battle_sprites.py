@@ -20,6 +20,7 @@ except Exception:  # pragma: no cover - import guard
 SPRITED = [
     "giant_rat", "undead", "cave_bear", "undead_priest", "dire_wolf",
     "wild_boar", "treant", "mutated_mudcrab", "bog_wraith", "tar_beast",
+    "hollow_worg",
 ]
 
 
@@ -73,8 +74,8 @@ class EnemyBattleSpriteTest(unittest.TestCase):
                                raw.get_width() / raw.get_height(), places=1)
 
     def test_missing_sprite_falls_back_without_crashing(self):
-        self.assertIsNone(pb.enemy_sprite("hollow_worg"))  # sprite intentionally absent
-        battle = self._battle("hollow_worg")
+        self.assertIsNone(pb.enemy_sprite("plague_acolyte"))  # real enemy, no sprite art
+        battle = self._battle("plague_acolyte")
         battle.draw()  # fallback box, no crash
 
     def test_unknown_enemy_without_sprite_also_falls_back(self):

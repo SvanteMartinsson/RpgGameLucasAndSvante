@@ -72,8 +72,8 @@ class BattleLayoutTest(unittest.TestCase):
         self.assertLessEqual(pb.GROUND_Y, pb.STAGE.bottom)
 
     def test_fallback_box_drawn_for_spriteless_enemy(self):
-        _engine, battle = self._battle("hollow_worg")  # no sprite art
-        self.assertIsNone(pb.enemy_sprite("hollow_worg"))
+        _engine, battle = self._battle("plague_acolyte")  # real enemy, no sprite art
+        self.assertIsNone(pb.enemy_sprite("plague_acolyte"))
         battle.draw()  # must not raise; draws the fallback box on the stage
 
     def test_clicks_map_through_the_transform_to_the_right_button(self):

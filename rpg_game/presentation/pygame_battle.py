@@ -86,7 +86,7 @@ ENEMY_SPRITE_TIER = {
     "cave_bear": "large",
     "treant": "large",
     "tar_beast": "large",
-    "hollow_worg": "large",  # sized for when its sprite arrives; falls back until then
+    "hollow_worg": "large",
 }
 # Bigger on the roomier stage, but with air left in the band (not dominant).
 TIER_HEIGHT = {"small": 150, "medium": 200, "large": 250}
