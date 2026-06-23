@@ -34,6 +34,13 @@ CAINOS = {
 GRASS_TARGET = {
     "mork_skog": (78, 88),
     "cursed_mire": (80, 90),
+    "grave_heath": (78, 90),
+}
+# Already-lifted themes that the grave_heath pass must NOT re-touch (double-lift
+# would shove their luma out of range). Grass sheet sha256 locks them.
+PRIOR_THEME_GRASS = {
+    "rpg_game/assets/tiles/generated/01-TX-Tileset-Grass__mork_skog.png": "d0857f2070dca7b1",
+    "rpg_game/assets/tiles/generated/01-TX-Tileset-Grass__cursed_mire.png": "5c8a0198e239c563",
 }
 
 
@@ -75,20 +82,21 @@ class ThemeRecolorTest(unittest.TestCase):
 
     def test_zones_stay_distinct_and_below_cainos(self):
         tile0 = pygame.Rect(0, 0, 32, 32)
-        mork = _opaque_luma(_grass("mork_skog"), tile0)
-        mire = _opaque_luma(_grass("cursed_mire"), tile0)
         cainos = _opaque_luma(
             pygame.image.load("rpg_game/assets/tiles/cainos/TX Tileset Grass.png"), tile0)
-        self.assertLess(mork, mire)        # mork_skog stays the darkest
-        self.assertLess(mire, cainos)      # both remain below cainos -> zones read distinct
+        for theme in GRASS_TARGET:
+            luma = _opaque_luma(_grass(theme), tile0)
+            self.assertLess(luma, cainos, f"{theme} should stay below cainos")  # distinct
+        # mork_skog stays the darkest of the lifted themes.
+        self.assertLess(_opaque_luma(_grass("mork_skog"), tile0),
+                        _opaque_luma(_grass("cursed_mire"), tile0))
 
     def test_props_and_struct_sheets_are_lifted_not_drowning(self):
         # The likely-wrong guess was "only the grass needs lifting". Verify the
-        # prop/struct sheets rose too (before-means were ~48-62; now well above).
-        for theme in ("mork_skog", "cursed_mire"):
+        # prop/struct sheets rose too (before-means were ~48-73; now well above).
+        for theme in ("mork_skog", "cursed_mire", "grave_heath"):
             for name in ("03-TX-Props-with-Shadow", "06-TX-Struct"):
-                surf = pygame.image.load(os.path.join(PROPS if "Props" in name or "Struct" in name else TILES,
-                                                       f"{name}__{theme}.png"))
+                surf = pygame.image.load(os.path.join(PROPS, f"{name}__{theme}.png"))
                 self.assertGreaterEqual(_opaque_luma(surf), 70.0,
                                         f"{name}__{theme} still too dark")
 
@@ -97,9 +105,15 @@ class ThemeRecolorTest(unittest.TestCase):
             digest = hashlib.sha256(open(path, "rb").read()).hexdigest()[:16]
             self.assertEqual(digest, expected, f"cainos sheet changed: {path}")
 
-    def test_recolor_targets_only_the_two_dark_themes(self):
-        # Structural guard: the script can never touch cainos or other themes.
-        self.assertEqual(set(rt.THEME_FACTORS), {"mork_skog", "cursed_mire"})
+    def test_previously_lifted_themes_are_byte_identical(self):
+        # The grave_heath pass must not re-lift mork_skog / cursed_mire.
+        for path, expected in PRIOR_THEME_GRASS.items():
+            digest = hashlib.sha256(open(path, "rb").read()).hexdigest()[:16]
+            self.assertEqual(digest, expected, f"prior theme re-touched: {path}")
+
+    def test_recolor_targets_only_the_reserved_dark_themes(self):
+        # Structural guard: the script can never touch cainos or unrelated themes.
+        self.assertEqual(set(rt.THEME_FACTORS), {"mork_skog", "cursed_mire", "grave_heath"})
         for theme in rt.THEME_FACTORS:
             sheets = rt.theme_sheets(theme)
             self.assertTrue(sheets)  # found something to lift

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """recolor_themes.py — tonal harmonisation of the dark overworld zones.
 
-Lifts EVERY themed sheet for mork_skog and cursed_mire into the same
+Lifts EVERY themed sheet for the dark/reserved themes into the same
 light/saturation family as cainos, so the hard seam between zones softens and
 props/trees stop drowning in dark ground. The transform is per-pixel in HSV:
 multiply Value and Saturation by per-theme factors, PRESERVE hue (zone identity),
@@ -20,6 +20,7 @@ Factors were tuned (see the repo discussion) so the base-grass tile-0 luma lands
 in the target window while staying below cainos (~106) so zones read distinct:
   mork_skog   V*1.70 S*1.70 : luma 51 -> ~81   (target 78-88)
   cursed_mire V*1.40 S*1.50 : luma 64 -> ~87   (target 80-90)
+  grave_heath V*1.20 S*1.60 : luma 74 -> ~88   (target 78-90; brighter base, gentler lift)
 """
 from __future__ import annotations
 
@@ -36,6 +37,7 @@ import pygame  # noqa: E402
 THEME_FACTORS = {
     "mork_skog": (1.70, 1.70),
     "cursed_mire": (1.40, 1.50),
+    "grave_heath": (1.20, 1.60),
 }
 SHEET_DIRS = (
     "rpg_game/assets/tiles/generated",
