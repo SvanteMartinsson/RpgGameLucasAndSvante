@@ -74,6 +74,7 @@ BTN = (46, 52, 70)
 BTN_HOVER = (66, 76, 102)
 BTN_DISABLED = (34, 38, 50)
 BTN_EDGE = (90, 100, 130)
+XP_COL = (180, 150, 240)  # matches the battle HUD's XP bar
 PLAYER_COLOR = (235, 200, 90)
 PLAYER_EDGE = (40, 36, 16)
 TOWN_COLOR = (90, 150, 230)
@@ -822,7 +823,8 @@ class OverworldApp:
         snap = build_snapshot(self.engine)
         place = self.engine.current_place()
         in_town = self.world.town_place_id() is not None
-        bar = pygame.Rect(0, 0, self.screen.get_width(), 26)
+        # Two-line HUD: vitals row + a slim XP-progress row beneath it.
+        bar = pygame.Rect(0, 0, self.screen.get_width(), 46)
         overlay = pygame.Surface(bar.size, pygame.SRCALPHA)
         overlay.fill((10, 12, 18, 200))
         self.screen.blit(overlay, (0, 0))
@@ -831,10 +833,26 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render(left, True, TEXT), (8, 6))
         right = self.font_sm.render(where, True, ACCENT if in_town else TEXT_DIM)
         self.screen.blit(right, right.get_rect(topright=(self.screen.get_width() - 8, 6)))
+        self._draw_xp_bar(snap.player)
         if self.mode == "walk":
             hint = T.HINT_TOWN if in_town else T.HINT_WALK
             hsurf = self.font_sm.render(hint, True, TEXT_DIM)
             self.screen.blit(hsurf, hsurf.get_rect(midbottom=(self.screen.get_width() // 2, self.screen.get_height() - 6)))
+
+    def _draw_xp_bar(self, player) -> None:
+        """Compact progress bar toward the next level. Reads the snapshot's
+        existing xp / xp_required (same numbers as the Character screen); no
+        recompute. Guards xp_required == 0 (max level / unset) against div-by-0."""
+        required = player.xp_required
+        ratio = max(0.0, min(1.0, player.xp / required)) if required else 0.0
+        track = pygame.Rect(8, 28, 170, 8)
+        pygame.draw.rect(self.screen, (24, 26, 34), track, border_radius=3)
+        if ratio > 0:
+            fill = pygame.Rect(track.x, track.y, max(1, int(track.width * ratio)), track.height)
+            pygame.draw.rect(self.screen, XP_COL, fill, border_radius=3)
+        pygame.draw.rect(self.screen, PANEL_EDGE, track, width=1, border_radius=3)
+        label = f"XP {player.xp}/{required}" if required else f"XP {player.xp}"
+        self.screen.blit(self.font_sm.render(label, True, TEXT_DIM), (track.right + 8, track.y - 3))
 
     def _overlay_panel(self, title: str) -> pygame.Rect:
         w, h = self.screen.get_size()
