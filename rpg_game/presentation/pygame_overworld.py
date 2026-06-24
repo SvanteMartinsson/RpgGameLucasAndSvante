@@ -61,6 +61,9 @@ FPS = 60
 PLAYER_SIZE = 20
 PLAYER_SPEED = 3
 COLLISION_LAYER = "walls"
+# Player-centered zoom: the world view is scaled so ~this many tiles are visible
+# across the window (Platinum-style). Integer zoom only -> crisp pixel art.
+ZOOM_TARGET_TILES_W = 10
 
 # Colors (shared palette with the battle shell)
 BG = (18, 20, 28)
@@ -285,6 +288,7 @@ class OverworldApp:
         # so the overworld is anchored identically to the menus/battle in any mode.
         self.screen = pygame.Surface(self.view_size)
         self._transform = (0, 0, 1.0)
+        self._cam_offset = (0, 0)  # world px offset from the last _draw_map (for screen_to_tile)
         self.display = None
         self._apply_display_mode()
         self.clock = pygame.time.Clock()
@@ -817,9 +821,31 @@ class OverworldApp:
             self._draw_toast()
         self._transform = present(self.display, self.screen, BG)
 
+    def _zoom_factor(self) -> int:
+        """Integer zoom so the world view is ~ZOOM_TARGET_TILES_W tiles wide on any
+        window (Platinum-style). Integer -> crisp nearest-neighbour pixel art."""
+        w = self.screen.get_width()
+        return max(2, min(5, round(w / (ZOOM_TARGET_TILES_W * self.world.tw))))
+
+    def screen_to_tile(self, screen_pos: tuple[int, int]) -> tuple[int, int]:
+        """Map a screen-space pixel back through the zoom + camera to a world tile."""
+        zoom = self._zoom_factor()
+        ox, oy = self._cam_offset
+        wx = screen_pos[0] // zoom + ox
+        wy = screen_pos[1] // zoom + oy
+        return (wx // self.world.tw, wy // self.world.th)
+
     def _draw_map(self) -> None:
-        view_w, view_h = self.screen.get_size()
+        screen_w, screen_h = self.screen.get_size()
+        zoom = self._zoom_factor()
+        # Render the world at 1x onto a small surface (screen / zoom), then integer
+        # nearest-neighbour scale it up -> a zoomed, crisp view. HUD/labels are drawn
+        # later in unscaled screen space so text stays readable.
+        view_w, view_h = max(1, screen_w // zoom), max(1, screen_h // zoom)
+        world = pygame.Surface((view_w, view_h))
+        world.fill(BG)
         ox, oy = self.world.camera_offset(view_w, view_h)
+        self._cam_offset = (ox, oy)
         tmx = self.world.tmx
         tw, th = self.world.tw, self.world.th
         for layer in tmx.visible_layers:
@@ -827,25 +853,31 @@ class OverworldApp:
                 for x, y, image in layer.tiles():
                     dest = (x * tw - ox, y * th - oy)
                     if image is None:  # tile without graphic -> placeholder block, never crash
-                        pygame.draw.rect(self.screen, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
+                        pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
-                        self.screen.blit(image, dest)
+                        world.blit(image, dest)
+        labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
             rect = pygame.Rect(tx * tw - ox + 4, ty * th - oy + 4, tw - 8, th - 8)
             color = TOWN_HUB if place_id == self.zone.respawn_place_id else TOWN_COLOR
-            pygame.draw.rect(self.screen, color, rect, border_radius=4)
-            pygame.draw.rect(self.screen, BG, rect, width=2, border_radius=4)
-            label = self.zone.town_labels.get((tx, ty), place_id)
-            surf = self.font_sm.render(label, True, TEXT)
-            self.screen.blit(surf, surf.get_rect(center=(tx * tw - ox + tw // 2, ty * th - oy - 8)))
+            pygame.draw.rect(world, color, rect, border_radius=4)
+            pygame.draw.rect(world, BG, rect, width=2, border_radius=4)
+            labels.append((self.zone.town_labels.get((tx, ty), place_id),
+                           tx * tw - ox + tw // 2, ty * th - oy - 8))
         for (tx, ty), _msg in self.world.gate_messages.items():
             rect = pygame.Rect(tx * tw - ox + 2, ty * th - oy + 2, tw - 4, th - 4)
-            pygame.draw.rect(self.screen, GATE_COLOR, rect, border_radius=3)
+            pygame.draw.rect(world, GATE_COLOR, rect, border_radius=3)
             for gx in range(rect.left + 5, rect.right, 8):
-                pygame.draw.line(self.screen, BG, (gx, rect.top), (gx, rect.bottom), 2)
+                pygame.draw.line(world, BG, (gx, rect.top), (gx, rect.bottom), 2)
         player = self.world.player.move(-ox, -oy)
-        pygame.draw.rect(self.screen, PLAYER_COLOR, player, border_radius=4)
-        pygame.draw.rect(self.screen, PLAYER_EDGE, player, width=2, border_radius=4)
+        pygame.draw.rect(world, PLAYER_COLOR, player, border_radius=4)
+        pygame.draw.rect(world, PLAYER_EDGE, player, width=2, border_radius=4)
+        # Zoom the whole world surface up by an integer factor (crisp), then blit.
+        self.screen.blit(pygame.transform.scale(world, (view_w * zoom, view_h * zoom)), (0, 0))
+        # Town labels in unscaled screen space at the zoomed positions (readable).
+        for text, wx, wy in labels:
+            surf = self.font_sm.render(text, True, TEXT)
+            self.screen.blit(surf, surf.get_rect(center=(wx * zoom, wy * zoom)))
 
     def _draw_hud(self) -> None:
         snap = build_snapshot(self.engine)
