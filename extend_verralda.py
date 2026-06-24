@@ -19,10 +19,12 @@ spine + halos keep Alherralba, the frontier gate and the north seam reachable.
 from __future__ import annotations
 
 import collections
+import json
 import random
 import re
 
 TMX = "rpg_game/data/maps/overworld.tmx"
+ZONE = "rpg_game/data/maps/core_zone.json"
 CORE_HEIGHT = 20                # rows 0..19 are the core, preserved verbatim
 SOUTH_ROWS = 12                 # heath rows (y = 20 .. 31)
 NEW_H = CORE_HEIGHT + SOUTH_ROWS
@@ -43,6 +45,21 @@ PROP_TILESETS = [
 
 # Grass tile indices, same conventions as the core ground.
 GBASE, GVAR, GDET = 0, [1, 2, 3], [4, 5, 6, 7, 12, 13, 20, 21, 22, 28, 29]
+COBBLE = [35, 43, 44, 45]        # cobblestone path tiles (same layout as cainos)
+
+# Faction path net: which heath towns connect to which, by place_id. Built into an
+# L-path mesh that also ties in the north seam and the frontier gate. Missing
+# place_ids are skipped, so the script stays robust to the town list.
+PATH_EDGES = [
+    ("seam", "burg_121"),      # core seam -> Alherralba (hub)
+    ("seam", "frontier"),      # spine down to the frontier gate
+    ("burg_121", "burg_54"),   # Bondemilis cluster around Alherralba
+    ("burg_121", "burg_385"),
+    ("burg_121", "burg_149"),
+    ("burg_121", "burg_293"),  # hub -> the contested crossroads
+    ("burg_293", "burg_105"),  # crossroads -> Harrow outskirts (east)
+    ("burg_105", "burg_53"),
+]
 
 # Tree stamps (cainos/grave_heath share layout): trunk -> walls, canopy -> decor.
 # Same fixed stamps as the core after the detached-top-row fix (no dy=-4 row).
@@ -136,6 +153,20 @@ def _register_tilesets(src):
     return src.replace('<layer id="1" name="ground"', block + '<layer id="1" name="ground"', 1)
 
 
+def _l_path(a, b):
+    """L-shaped cell set between two tiles (horizontal then vertical)."""
+    (x1, y1), (x2, y2) = a, b
+    cells = {(x, y1) for x in range(min(x1, x2), max(x1, x2) + 1)}
+    cells |= {(x2, y) for y in range(min(y1, y2), max(y1, y2) + 1)}
+    return cells
+
+
+def _heath_town_tiles():
+    """place_id -> (x, y) for towns that sit in the heath (y >= CORE_HEIGHT)."""
+    zone = json.load(open(ZONE, encoding="utf-8"))
+    return {t["place_id"]: tuple(t["tile"]) for t in zone["towns"] if t["tile"][1] >= CORE_HEIGHT}
+
+
 def main():
     src = open(TMX, encoding="utf-8").read()
     src = _register_tilesets(src)
@@ -143,12 +174,23 @@ def main():
     cur_h = int(re.search(r'<map [^>]*\bheight="(\d+)"', src).group(1))
     layers = _layers(src)
 
-    # Protected spine + halos: north seam down to the frontier gate, branch to
-    # Alherralba. Props/trees never land here, so nothing gets walled in.
-    protected = set()
-    spine = [(SEAM_X, y) for y in range(CORE_HEIGHT, NEW_H)]          # seam -> frontier gate
-    spine += [(14, y) for y in range(CORE_HEIGHT, ALHERRALBA[1] + 1)]  # branch to Alherralba
-    for (cx, cy) in spine + [ALHERRALBA, (FRONTIER_GATE_X, NEW_H - 1), (SEAM_X, CORE_HEIGHT - 1)]:
+    # Heath town tiles (Alherralba + faction villages) drive the path net.
+    towns = _heath_town_tiles()
+    anchors = dict(towns)
+    anchors["seam"] = (SEAM_X, CORE_HEIGHT)               # entrance from the core
+    anchors["frontier"] = (FRONTIER_GATE_X, NEW_H - 1)    # future-zone gate
+
+    # Cobblestone path net connecting villages + Alherralba + seam + frontier.
+    path_cells = set()
+    for a, b in PATH_EDGES:
+        if a in anchors and b in anchors:
+            path_cells |= _l_path(anchors[a], anchors[b])
+    path_cells = {(x, y) for x, y in path_cells if 1 <= x < w - 1 and CORE_HEIGHT <= y < NEW_H - 1}
+
+    # Protected: paths + town tiles + a halo around towns/seam/frontier, so props
+    # never cover a path or wall in a village.
+    protected = set(path_cells) | set(towns.values())
+    for (cx, cy) in list(towns.values()) + [anchors["seam"], anchors["frontier"]]:
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 protected.add((cx + dx, cy + dy))
@@ -172,7 +214,11 @@ def main():
         rows = [grid[y][:] for y in range(CORE_HEIGHT)]  # core, byte-identical
         for y in range(CORE_HEIGHT, NEW_H):
             if name == "ground":
-                rows.append(_heath_ground_row(w))
+                row = _heath_ground_row(w)
+                for x in range(w):
+                    if (x, y) in path_cells:               # cobble over grass on paths
+                        row[x] = GRASS_FIRSTGID + random.choice(COBBLE)
+                rows.append(row)
             elif name == "walls":
                 row = [0] * w
                 row[0] = row[w - 1] = BORDER_GID
@@ -190,7 +236,8 @@ def main():
     for (x, y), gid in canopy.items():
         new_grids["decor_over"][y][x] = gid                # canopy: drawn, no collision
 
-    # Reachability over walkable cells from the start tile.
+    # Reachability over walkable cells from the start tile; every heath town +
+    # the frontier gate's approach must be reachable, nothing walled in.
     walls = new_grids["walls"]
     blocked = {(x, y) for y in range(NEW_H) for x in range(w) if walls[y][x] != 0}
     seen, q = {(14, 10)}, collections.deque([(14, 10)])
@@ -199,7 +246,8 @@ def main():
         for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
             if 0 <= nx < w and 0 <= ny < NEW_H and (nx, ny) not in blocked and (nx, ny) not in seen:
                 seen.add((nx, ny)); q.append((nx, ny))
-    assert ALHERRALBA in seen, "Alherralba unreachable"
+    for pid, tile in towns.items():
+        assert tile in seen, f"{pid} at {tile} unreachable"
     assert (SEAM_X, CORE_HEIGHT) in seen, "heath not reachable through the seam"
 
     # Write layers + map height back.
@@ -217,8 +265,8 @@ def main():
     src = re.sub(r'(<map [^>]*\bheight=)"%d"' % cur_h, r'\1"%d"' % NEW_H, src, count=1)
 
     open(TMX, "w", encoding="utf-8").write(src)
-    print(f"heath {w}x{NEW_H}: {len(trunks)} trees, {len(props)} props "
-          f"(density {PROP_DENSITY}), Alherralba + frontier reachable")
+    print(f"heath {w}x{NEW_H}: {len(towns)} towns, {len(path_cells)} path cells, "
+          f"{len(trunks)} trees, {len(props)} props — all towns reachable")
 
 
 if __name__ == "__main__":

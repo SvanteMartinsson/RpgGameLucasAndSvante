@@ -143,6 +143,60 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertGreater(heath, 0)                         # the heath does have trees
         self.assertLess(heath / 12, core / 20)               # but sparser per row than the core
 
+    # -- faction villages + connecting paths -------------------------------
+
+    FACTION_VILLAGES = {
+        "burg_54": "Guaredama", "burg_385": "Cantida", "burg_149": "Salles",   # Bondemilis
+        "burg_293": "Urrequena",                                                # crossroads
+        "burg_105": "Chuequeroma", "burg_53": "Barroncami",                     # Harrow
+    }
+
+    def test_faction_villages_are_town_tiles_in_the_heath(self):
+        towns = self.zone.towns  # (tx, ty) -> place_id
+        by_id = {pid: tile for tile, pid in towns.items()}
+        for pid, label in self.FACTION_VILLAGES.items():
+            self.assertIn(pid, by_id, f"{label} missing as a town tile")
+            self.assertGreaterEqual(by_id[pid][1], 20, f"{label} not in the heath (y>=20)")
+            self.assertEqual(self.zone.town_labels[by_id[pid]], label)
+
+    def test_villages_are_landmarks_without_a_store(self):
+        # Alherralba stays the only service hub; villages are named landmarks.
+        for pid in self.FACTION_VILLAGES:
+            self.assertFalse(self.app.engine.content.places[pid].has_store)
+
+    def test_every_village_is_reachable_from_start(self):
+        blocked = self.world.blocked
+        seen, q = {(14, 10)}, deque([(14, 10)])
+        while q:
+            x, y = q.popleft()
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if 0 <= nx < 48 and 0 <= ny < 32 and (nx, ny) not in blocked and (nx, ny) not in seen:
+                    seen.add((nx, ny)); q.append((nx, ny))
+        by_id = {pid: tile for tile, pid in self.zone.towns.items()}
+        for pid in self.FACTION_VILLAGES:
+            self.assertIn(by_id[pid], seen, f"{pid} walled in")
+
+    def test_no_prop_or_path_covers_a_village(self):
+        # Town tiles must be walkable (no obstacle GID sitting on them).
+        walls = self.world.tmx.get_layer_by_name("walls")
+        by_id = {pid: tile for tile, pid in self.zone.towns.items()}
+        for pid in self.FACTION_VILLAGES:
+            tx, ty = by_id[pid]
+            self.assertEqual(walls.data[ty][tx], 0, f"{pid} has a wall/prop on it")
+
+    def test_heath_has_cobble_paths(self):
+        # The path net paints grave_heath cobble (firstgid 387 + 35/43/44/45) into
+        # the ground layer; pytmx name check via raw CSV (pytmx remaps gids).
+        import re
+        import os
+        from rpg_game.presentation.pygame_overworld import MAPS_DIR
+        src = open(os.path.join(MAPS_DIR, "overworld.tmx"), encoding="utf-8").read()
+        m = re.search(r'name="ground"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>', src, re.S)
+        rows = [[int(v) for v in r.rstrip(",").split(",")] for r in m.group(1).strip().split("\n")]
+        cobble = {387 + i for i in (35, 43, 44, 45)}
+        n = sum(1 for y in range(20, len(rows)) for x in range(48) if rows[y][x] in cobble)
+        self.assertGreater(n, 20)  # a connecting path net, not a stray tile
+
     def test_renders_without_crashing(self):
         self.app.draw()
 

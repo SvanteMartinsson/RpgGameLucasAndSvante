@@ -28,7 +28,13 @@
     {"tile": [44, 6], "place_id": "burg_200", "label": "Estables"},
     {"tile": [42, 17], "place_id": "burg_320", "label": "Parguillas"},
     {"tile": [45, 13], "place_id": "burg_219", "label": "Tierva"},
-    {"tile": [14, 26], "place_id": "burg_121", "label": "Alherralba"}
+    {"tile": [14, 26], "place_id": "burg_121", "label": "Alherralba"},
+    {"tile": [8, 24], "place_id": "burg_54", "label": "Guaredama"},
+    {"tile": [10, 29], "place_id": "burg_385", "label": "Cantida"},
+    {"tile": [20, 28], "place_id": "burg_149", "label": "Salles"},
+    {"tile": [28, 24], "place_id": "burg_293", "label": "Urrequena"},
+    {"tile": [40, 27], "place_id": "burg_105", "label": "Chuequeroma"},
+    {"tile": [44, 30], "place_id": "burg_53", "label": "Barroncami"}
   ],
   "gates": [
     {"tile": [14, 0], "message_key": "gate_north"},
