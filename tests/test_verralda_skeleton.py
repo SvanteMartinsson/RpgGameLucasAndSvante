@@ -94,6 +94,55 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertNotEqual(T.region_flavor("burg_121"), T.WEST_BORDER_FLAVOR)
         self.assertEqual(T.region_flavor("burg_146"), T.WEST_BORDER_FLAVOR)  # west unchanged
 
+    # -- heath is populated with themed trees + props ----------------------
+
+    def _tileset_of(self, gid):
+        return self.world.tmx.get_tileset_from_gid(gid).name if gid else None
+
+    def test_grave_heath_prop_tilesets_registered(self):
+        names = {ts.name for ts in self.world.tmx.tilesets}
+        self.assertIn("grave_heath_plant", names)
+        self.assertIn("grave_heath_props", names)
+
+    def test_heath_has_trees_and_props_drawn_and_blocking(self):
+        tmx = self.world.tmx
+        walls = tmx.get_layer_by_name("walls")
+        decor = tmx.get_layer_by_name("decor_over")
+        heath_walls = [self._tileset_of(walls.data[y][x])
+                       for y in range(20, tmx.height) for x in range(tmx.width)]
+        heath_decor = [self._tileset_of(decor.data[y][x])
+                       for y in range(20, tmx.height) for x in range(tmx.width)]
+        # Obstacles (trunks + rocks/bushes) in walls; canopies in decor_over.
+        self.assertIn("grave_heath_plant", heath_walls)   # trunks / bushes
+        self.assertIn("grave_heath_props", heath_walls)   # rocks / markers
+        self.assertIn("grave_heath_plant", heath_decor)   # canopies
+
+    def test_no_canopy_gids_collide_in_walls(self):
+        tmx = self.world.tmx
+        walls = tmx.get_layer_by_name("walls")
+        decor = tmx.get_layer_by_name("decor_over")
+        canopy = {decor.data[y][x] for y in range(tmx.height) for x in range(tmx.width) if decor.data[y][x]}
+        wall_gids = {walls.data[y][x] for y in range(tmx.height) for x in range(tmx.width) if walls.data[y][x]}
+        self.assertEqual(canopy & wall_gids, set())  # canopy never collides
+
+    def test_heath_trees_are_sparser_than_the_core_forest(self):
+        # Distinct open-farmland feel: fewer trunks per row in the heath than the
+        # core forest. pytmx remaps gids internally, so count from the RAW TMX
+        # CSV where gids are firstgid + tile-index. Trunks are plant idx 66/70/74
+        # (cainos_plant firstgid 2691 in the core, grave_heath_plant 4227 south).
+        import re
+        from rpg_game.presentation.pygame_overworld import DEFAULT_MAP, MAPS_DIR
+        import os
+        src = open(os.path.join(MAPS_DIR, "overworld.tmx"), encoding="utf-8").read()
+        m = re.search(r'name="walls"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>', src, re.S)
+        rows = [[int(v) for v in r.rstrip(",").split(",")] for r in m.group(1).strip().split("\n")]
+        core_trunks = {2691 + i for i in (66, 70, 74)}
+        heath_trunks = {4227 + i for i in (66, 70, 74)}
+        core = sum(1 for y in range(20) for x in range(48) if rows[y][x] in core_trunks)
+        heath = sum(1 for y in range(20, len(rows)) for x in range(48) if rows[y][x] in heath_trunks)
+        self.assertGreater(heath, 0)                         # the heath does have trees
+        self.assertLess(heath / 12, core / 20)               # but sparser per row than the core
+
     def test_renders_without_crashing(self):
         self.app.draw()
 

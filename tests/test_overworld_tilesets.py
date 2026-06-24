@@ -102,7 +102,10 @@ class OverworldTilesetTest(unittest.TestCase):
             os.chdir(other)
             try:
                 tmx = load_pygame(os.path.join(os.path.dirname(DEFAULT_MAP), "overworld.tmx"))
-                self.assertEqual(len(tmx.tilesets), 28)
+                # placeholder + cainos(3) + 6 themes x 3 tile sheets (22)
+                # + cainos plant/props (2) + mork_skog/cursed_mire plant/props (4)
+                # + grave_heath plant/props (2, for the Verralda heath) = 30.
+                self.assertEqual(len(tmx.tilesets), 30)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:
