@@ -792,6 +792,12 @@ class OverworldApp:
 
     def draw(self) -> None:
         self.buttons = []
+        # Fluid overworld: the canvas tracks the live (logical) display size, so
+        # the world fills the window instead of sitting as a centered island. The
+        # camera (camera_offset) then shows more map; present() is the identity
+        # transform. SCALED still upscales the logical surface crisply on HiDPI.
+        if self.display is not None and self.screen.get_size() != self.display.get_size():
+            self.screen = pygame.Surface(self.display.get_size())
         self.screen.fill(BG)
         self._draw_map()
         self._draw_hud()

@@ -1,13 +1,12 @@
-"""Non-converted (fixed-canvas) screens center identically via the shared
-present() path, so the content's anchor doesn't jump between battle and the
-overworld in fullscreen.
+"""Display anchoring across screens.
 
-NOTE: this island model only holds for screens that still draw onto a fixed
-design canvas. Screens converted to fluid layout (the start menu — see
-test_start_menu_fluid) size their canvas to the live display, so present()
-becomes the identity transform and they anchor at the origin (ox == 0) instead.
-Both paths coexist; this file pins the still-fixed screens. Skips when
-pygame/pytmx are not installed.
+Two models coexist:
+- FLUID screens (start menu, overworld) size their canvas to the live display,
+  so present() is the identity transform and they FILL the window (ox == 0).
+- FIXED-canvas screens (battle, character creation) draw a design-size canvas
+  that present() centers as an island (ox > 0) on a larger display.
+
+Skips when pygame/pytmx are not installed.
 """
 
 import os
@@ -63,18 +62,22 @@ class FullscreenCenteringTest(unittest.TestCase):
         battle.draw()
         return battle._transform, battle.screen.get_size()
 
-    def test_overworld_draws_to_a_fixed_canvas_not_the_raw_display(self):
+    def test_overworld_is_fluid_fills_the_window(self):
+        # The overworld canvas tracks the live display, so it fills the window
+        # (identity transform, no island) and the camera shows more world.
         app = OverworldApp()
-        self.assertEqual(app.screen.get_size(), app.view_size)  # canvas, not the window
+        app.display = pygame.Surface(DISPLAY)
+        app.draw()
+        self.assertEqual(app.screen.get_size(), DISPLAY)   # canvas == display
+        self.assertEqual(app._transform, (0, 0, 1.0))       # identity -> no margins
         self.assertIsNot(app.screen, app.display)
 
-    def test_fixed_canvas_screens_center_when_display_is_larger(self):
-        # Only the still-fixed-canvas screens (overworld, battle) are islands.
-        # Converted fluid screens (start menu) intentionally anchor at origin.
-        for transform, _size in (self._overworld_transform(), self._battle_transform()):
-            ox, oy, _scale = transform
-            self.assertGreater(ox, 0)
-            self.assertGreater(oy, 0)
+    def test_fixed_canvas_battle_centers_when_display_is_larger(self):
+        # Battle keeps a fixed design canvas -> centered island on a big display.
+        transform, _size = self._battle_transform()
+        ox, oy, _scale = transform
+        self.assertGreater(ox, 0)
+        self.assertGreater(oy, 0)
 
     def test_converted_fluid_screen_anchors_at_origin(self):
         # A fluid screen sizes its canvas to the display; present() then centers
