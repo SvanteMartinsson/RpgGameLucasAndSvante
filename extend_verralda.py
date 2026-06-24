@@ -20,11 +20,21 @@ from __future__ import annotations
 
 import collections
 import json
+import os
 import random
 import re
 
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+import pygame  # noqa: E402 — only to measure prop-tile alpha coverage
+
 TMX = "rpg_game/data/maps/overworld.tmx"
 ZONE = "rpg_game/data/maps/core_zone.json"
+# Only tiles at least this opaque may go in the WALLS (collision) layer. A sparse
+# or transparent prop tile would be an invisible obstacle ("phantom collision").
+MIN_PROP_ALPHA = 25.0
+PLANT_ARK = "rpg_game/assets/props/generated/01-TX-Plant-with-Shadow__grave_heath.png"
+PROPS_ARK = "rpg_game/assets/props/generated/03-TX-Props-with-Shadow__grave_heath.png"
 CORE_HEIGHT = 20                # rows 0..19 are the core, preserved verbatim
 SOUTH_ROWS = 12                 # heath rows (y = 20 .. 31)
 NEW_H = CORE_HEIGHT + SOUTH_ROWS
@@ -134,11 +144,30 @@ def _place_trees(w, protected):
     return trunks, canopy, footprint_all
 
 
+def _opaque_pct(surface, idx, ts=32, cols=16):
+    cx, cy = (idx % cols) * ts, (idx // cols) * ts
+    opaque = sum(1 for y in range(cy, cy + ts) for x in range(cx, cx + ts)
+                 if surface.get_at((x, y))[3] > 0)
+    return 100.0 * opaque / (ts * ts)
+
+
+def _solid(ark_path, indices):
+    """Keep only indices whose tile is >= MIN_PROP_ALPHA opaque — a real, visible
+    obstacle. Sparse/transparent tiles would be invisible (phantom) collision."""
+    surface = pygame.image.load(ark_path).convert_alpha()
+    return [i for i in indices if _opaque_pct(surface, i) >= MIN_PROP_ALPHA]
+
+
 def _obstacle_pool():
+    # Filter every candidate against its ark so the walls layer only ever holds
+    # visible props (no phantom collision).
+    bushes = _solid(PLANT_ARK, BUSHES)
+    rocks = _solid(PROPS_ARK, ROCKS)
+    graves = _solid(PROPS_ARK, GRAVES)
     pool = []
-    pool += [(PLANT_FIRSTGID, i) for i in BUSHES] * 2     # scrub
-    pool += [(PROPS_FIRSTGID, i) for i in ROCKS] * 3      # more scattered stone
-    pool += [(PROPS_FIRSTGID, i) for i in GRAVES] * 1     # occasional contested-land marker
+    pool += [(PLANT_FIRSTGID, i) for i in bushes] * 2     # scrub
+    pool += [(PROPS_FIRSTGID, i) for i in rocks] * 3      # more scattered stone
+    pool += [(PROPS_FIRSTGID, i) for i in graves] * 1     # occasional contested-land marker
     return pool
 
 
@@ -168,6 +197,8 @@ def _heath_town_tiles():
 
 
 def main():
+    pygame.init()
+    pygame.display.set_mode((1, 1))  # needed for convert_alpha() when measuring props
     src = open(TMX, encoding="utf-8").read()
     src = _register_tilesets(src)
     w = int(re.search(r'<map [^>]*\bwidth="(\d+)"', src).group(1))
