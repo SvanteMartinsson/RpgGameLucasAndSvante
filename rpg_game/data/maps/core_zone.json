@@ -1,44 +1,44 @@
 {
-  "_comment": "Spelbar overworld (fri-gång, Modell B). Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark; wild_regions = per-x-område-pooler (väster, zon 2). Gates spärrar vägen ut mot ospelbara zoner — FLYTTA dem utåt när en ny zon öppnas. Allt här är data/tunbart.",
+  "_comment": "Spelbar overworld (fri-gång, Modell B). Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark; wild_regions = per-x/y-område-pooler. Gates spärrar vägen ut mot ospelbara zoner — FLYTTA dem utåt när en ny zon öppnas. Allt här är data/tunbart. Kartan är 80x56 (kärna y<36, Verralda-hed y>=36).",
   "map": "overworld.tmx",
-  "start_tile": [14, 10],
+  "start_tile": [26, 18],
   "encounter_rate_per_step": 0.06,
   "wild_region_place_id": "burg_54",
   "wild_regions": [
-    {"place_id": "burg_121", "min_tile_y": 20},
-    {"place_id": "burg_320", "min_tile_x": 41},
-    {"place_id": "burg_146", "min_tile_x": 28}
+    {"place_id": "burg_121", "min_tile_y": 36},
+    {"place_id": "burg_320", "min_tile_x": 69},
+    {"place_id": "burg_146", "min_tile_x": 46}
   ],
-  "_ground_themes_comment": "Presentation only: which tile theme paints each zone's base ground (by tile-x, optionally tile-y). Aligned with the wild_regions bands. The southern Verralda heath (y>=20) is grave_heath. frostfell/ash_waste/karr tilesets remain registered but reserved.",
+  "_ground_themes_comment": "Presentation only: which tile theme paints each zone's base ground (by tile-x, optionally tile-y). The whole core renders uniform cainos; the southern Verralda heath (y>=36) is grave_heath. The x-bands still drive zone_for_tile (respawn cost) and align with the wild_regions. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets remain registered but reserved.",
   "ground_themes": [
-    {"theme": "cainos", "max_tile_x": 27},
-    {"theme": "mork_skog", "min_tile_x": 28, "max_tile_x": 40},
-    {"theme": "cursed_mire", "min_tile_x": 41},
-    {"theme": "grave_heath", "min_tile_y": 20}
+    {"theme": "cainos", "max_tile_x": 45},
+    {"theme": "mork_skog", "min_tile_x": 46, "max_tile_x": 68},
+    {"theme": "cursed_mire", "min_tile_x": 69},
+    {"theme": "grave_heath", "min_tile_y": 36}
   ],
   "respawn_place_id": "burg_5",
   "towns": [
-    {"tile": [14, 10], "place_id": "burg_5", "label": "Hordanita"},
-    {"tile": [6, 6], "place_id": "burg_117", "label": "Yeblegali"},
-    {"tile": [21, 14], "place_id": "burg_160", "label": "Gaste"},
-    {"tile": [30, 12], "place_id": "burg_235", "label": "Jinosa"},
-    {"tile": [34, 6], "place_id": "burg_379", "label": "Condillosca"},
-    {"tile": [39, 10], "place_id": "burg_146", "label": "Rotequero"},
-    {"tile": [38, 16], "place_id": "burg_67", "label": "Fongorinos"},
-    {"tile": [44, 6], "place_id": "burg_200", "label": "Estables"},
-    {"tile": [42, 17], "place_id": "burg_320", "label": "Parguillas"},
-    {"tile": [45, 13], "place_id": "burg_219", "label": "Tierva"},
-    {"tile": [14, 26], "place_id": "burg_121", "label": "Alherralba"},
-    {"tile": [8, 24], "place_id": "burg_54", "label": "Guaredama"},
-    {"tile": [10, 29], "place_id": "burg_385", "label": "Cantida"},
-    {"tile": [20, 28], "place_id": "burg_149", "label": "Salles"},
-    {"tile": [28, 24], "place_id": "burg_293", "label": "Urrequena"},
-    {"tile": [40, 27], "place_id": "burg_105", "label": "Chuequeroma"},
-    {"tile": [44, 30], "place_id": "burg_53", "label": "Barroncami"}
+    {"tile": [26, 18], "place_id": "burg_5", "label": "Hordanita"},
+    {"tile": [10, 8], "place_id": "burg_117", "label": "Yeblegali"},
+    {"tile": [38, 22], "place_id": "burg_160", "label": "Gaste"},
+    {"tile": [50, 16], "place_id": "burg_235", "label": "Jinosa"},
+    {"tile": [57, 7], "place_id": "burg_379", "label": "Condillosca"},
+    {"tile": [66, 12], "place_id": "burg_146", "label": "Rotequero"},
+    {"tile": [60, 26], "place_id": "burg_67", "label": "Fongorinos"},
+    {"tile": [73, 6], "place_id": "burg_200", "label": "Estables"},
+    {"tile": [70, 31], "place_id": "burg_320", "label": "Parguillas"},
+    {"tile": [74, 17], "place_id": "burg_219", "label": "Tierva"},
+    {"tile": [24, 47], "place_id": "burg_121", "label": "Alherralba"},
+    {"tile": [14, 42], "place_id": "burg_54", "label": "Guaredama"},
+    {"tile": [17, 51], "place_id": "burg_385", "label": "Cantida"},
+    {"tile": [33, 44], "place_id": "burg_149", "label": "Salles"},
+    {"tile": [50, 43], "place_id": "burg_293", "label": "Urrequena"},
+    {"tile": [63, 47], "place_id": "burg_105", "label": "Chuequeroma"},
+    {"tile": [73, 51], "place_id": "burg_53", "label": "Barroncami"}
   ],
   "gates": [
-    {"tile": [14, 0], "message_key": "gate_north"},
-    {"tile": [47, 10], "message_key": "gate_deep_west"},
-    {"tile": [13, 31], "message_key": "gate_verralda_south"}
+    {"tile": [26, 0], "message_key": "gate_north"},
+    {"tile": [79, 28], "message_key": "gate_deep_west"},
+    {"tile": [24, 55], "message_key": "gate_verralda_south"}
   ]
 }

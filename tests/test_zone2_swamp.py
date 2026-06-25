@@ -83,8 +83,8 @@ class SwampRegionRoutingTest(unittest.TestCase):
         except Exception:  # pragma: no cover - import guard
             self.skipTest("pygame/pytmx not installed")
         zone = ZoneConfig.load()
-        self.assertEqual(zone.wild_region_at((42, 17)), SWAMP)   # deep west
-        self.assertEqual(zone.wild_region_at((34, 8)), FOREST)   # mid west
+        self.assertEqual(zone.wild_region_at((72, 17)), SWAMP)   # deep west (x>=69)
+        self.assertEqual(zone.wild_region_at((50, 8)), FOREST)   # mid west (46<=x<=68)
         self.assertEqual(zone.wild_region_at((14, 8)), CORE)     # core
 
 

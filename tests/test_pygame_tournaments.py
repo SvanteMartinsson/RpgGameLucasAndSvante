@@ -36,14 +36,14 @@ class PygameTournamentTest(unittest.TestCase):
         self.app = OverworldApp()
 
     def test_town_menu_shows_tournaments_only_where_available(self):
-        self.app.world.set_tile(14, 10)  # Hordanita
+        self.app.world.set_tile(26, 18)  # Hordanita
         self.app.sync_location()
         self.app.mode = "townmenu"
         self.app.draw()
         labels = [button.label for button in self.app.buttons]
         self.assertIn("Tournaments", labels)
 
-        self.app.world.set_tile(6, 6)  # Yeblegali
+        self.app.world.set_tile(10, 8)  # Yeblegali
         self.app.sync_location()
         self.app.mode = "townmenu"
         self.app.draw()

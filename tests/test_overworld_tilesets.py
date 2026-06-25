@@ -77,7 +77,7 @@ class OverworldTilesetTest(unittest.TestCase):
 
     def test_southern_heath_ground_is_grave_heath(self):
         ground = self.tmx.get_layer_by_name("ground")
-        for (x, y) in [(5, 25), (14, 26), (40, 30)]:  # rows in the new south area
+        for (x, y) in [(5, 42), (24, 47), (40, 50)]:  # rows in the south heath (y>=36)
             name = self.tmx.get_tileset_from_gid(ground.data[y][x]).name
             self.assertEqual(name, "grave_heath_grass", (x, y))
 
@@ -127,24 +127,24 @@ class OverworldTilesetTest(unittest.TestCase):
                             self.assertNotEqual(block.name, "water_autotile")
 
     def test_collision_and_spawns_unchanged(self):
-        # walls layer preserved verbatim -> same blocked tiles, gates and regions
+        # border blocks; spawn walkable; region bands intact on the 80x56 map
         self.assertIn((0, 0), self.app.world.blocked)        # border wall
-        self.assertNotIn((14, 10), self.app.world.blocked)   # Hordanita start tile walkable
-        self.assertEqual(self.app.zone.wild_region_at((14, 8)), "burg_54")
-        self.assertEqual(self.app.zone.wild_region_at((34, 8)), "burg_146")
-        self.assertEqual(self.app.zone.wild_region_at((45, 8)), "burg_320")
+        self.assertNotIn((26, 18), self.app.world.blocked)   # Hordanita start tile walkable
+        self.assertEqual(self.app.zone.wild_region_at((20, 8)), "burg_54")
+        self.assertEqual(self.app.zone.wild_region_at((50, 8)), "burg_146")
+        self.assertEqual(self.app.zone.wild_region_at((72, 8)), "burg_320")
 
     def test_zone_for_tile_maps_ground_theme_bands(self):
         # Zone number (for respawn-relocation cost) derives from the tile-x band:
         # cainos=1, mork_skog=2, cursed_mire=3. Rest towns: burg_5 z1, burg_67/
         # burg_146 z2.
         z = self.app.zone
-        self.assertEqual(z.zone_for_tile((14, 10)), 1)  # Hordanita (core)
-        self.assertEqual(z.zone_for_tile((27, 10)), 1)
-        self.assertEqual(z.zone_for_tile((28, 10)), 2)
-        self.assertEqual(z.zone_for_tile((39, 10)), 2)  # Rotequero
-        self.assertEqual(z.zone_for_tile((41, 10)), 3)
-        self.assertEqual(z.zone_for_tile((45, 10)), 3)
+        self.assertEqual(z.zone_for_tile((26, 18)), 1)  # Hordanita (core)
+        self.assertEqual(z.zone_for_tile((45, 18)), 1)
+        self.assertEqual(z.zone_for_tile((46, 18)), 2)
+        self.assertEqual(z.zone_for_tile((66, 18)), 2)  # Rotequero
+        self.assertEqual(z.zone_for_tile((69, 18)), 3)
+        self.assertEqual(z.zone_for_tile((74, 18)), 3)
 
 
 if __name__ == "__main__":

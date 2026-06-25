@@ -39,7 +39,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual(self.app.engine.player.current_place_id, "burg_5")
 
     def test_stepping_onto_town_sets_location(self):
-        self.app.world.set_tile(6, 6)  # Yeblegali
+        self.app.world.set_tile(10, 8)  # Yeblegali
         self.app.sync_location()
         self.assertEqual(self.app.engine.player.current_place_id, "burg_117")
 
@@ -52,7 +52,7 @@ class OverworldTownsTest(unittest.TestCase):
     # -- town menu actions go through the engine ----------------------------
 
     def test_rest_in_hub_heals_via_engine(self):
-        self.app.world.set_tile(14, 10)
+        self.app.world.set_tile(26, 18)
         self.app.sync_location()
         self.app.engine.player.hp = 1
         self.app.do_action("rest")
@@ -64,7 +64,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.addCleanup(lambda: os.path.exists("savegame.json") and os.remove("savegame.json"))
 
     def test_store_gated_when_town_has_no_store(self):
-        self.app.world.set_tile(6, 6)  # Yeblegali has no store
+        self.app.world.set_tile(10, 8)  # Yeblegali has no store
         self.app.sync_location()
         self.app.mode = "townmenu"
         self.app.do_action("store")
@@ -80,7 +80,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual(self.app.mode, "walk")
 
     def test_enter_on_town_opens_menu(self):
-        self.app.world.set_tile(14, 10)
+        self.app.world.set_tile(26, 18)
         self.app.sync_location()
         self.app.mode = "walk"
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
@@ -89,7 +89,7 @@ class OverworldTownsTest(unittest.TestCase):
     # -- gates --------------------------------------------------------------
 
     def test_gate_blocks_and_shows_its_message(self):
-        self.app.world.set_tile(14, 2)  # below the north gate at (14, 0)
+        self.app.world.set_tile(26, 2)  # below the north gate at (26, 0)
         message = ""
         for _ in range(40):
             hit = self.app.world.try_move(0, -3)

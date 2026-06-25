@@ -41,7 +41,7 @@ class OverworldEncounterTest(unittest.TestCase):
     # -- the roll -----------------------------------------------------------
 
     def test_no_encounter_in_town(self):
-        self.app.world.set_tile(14, 10)  # Hordanita
+        self.app.world.set_tile(26, 18)  # Hordanita
         self.app.sync_location()
         self.app.encounter_rate = 1.0
         self.assertIsNone(self.app.maybe_encounter())
@@ -102,7 +102,7 @@ class OverworldEncounterTest(unittest.TestCase):
         enemy = self.app.engine.create_encounter()
         self.app.engine.player.current_place_id = "burg_5"  # engine respawn already happened
         self.app.resolve_battle_outcome("defeat", enemy)
-        self.assertEqual(self.app.world.current_tile, (14, 10))
+        self.assertEqual(self.app.world.current_tile, (26, 18))
         self.assertEqual(self.app.engine.player.current_place_id, "burg_5")
 
 

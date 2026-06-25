@@ -27,14 +27,12 @@ except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
 TMX = os.path.join(MAPS_DIR, "overworld.tmx") if DEPS_OK else ""
-HEATH_Y0 = 20            # heath rows (the part this task generates)
+HEATH_Y0 = 36            # heath rows (south of the seam) on the 80x56 map
 MIN_ALPHA = 25.0
-# Pre-existing phantom-collision cells in the CORE (rows 0-19), inherited from
-# beautify_overworld.py's prop index lists. They predate this task and live in the
-# byte-identical core, so fixing them needs a separate beautify-side change. Frozen
-# here so a heath regression (count > this) fails, while the known core debt is
-# tracked rather than silently ignored.
-KNOWN_CORE_PHANTOM = 10
+# The 80x56 regeneration (regenerate_overworld.py) replaced the old scattered
+# props with only a solid border + solid tree trunks, so the pre-existing core
+# phantom-collision debt is gone. The whole map must now be clean (0).
+KNOWN_CORE_PHANTOM = 0
 
 
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
