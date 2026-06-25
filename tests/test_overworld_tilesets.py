@@ -105,26 +105,26 @@ class OverworldTilesetTest(unittest.TestCase):
                 # placeholder + cainos(3) + 6 themes x 3 tile sheets (22)
                 # + cainos plant/props (2) + mork_skog/cursed_mire plant/props (4)
                 # + grave_heath plant/props (2, for the Verralda heath) (30)
-                # + water_autotile (1, rivers/lakes; registered, not yet placed) = 31.
-                self.assertEqual(len(tmx.tilesets), 31)
+                # + water_autotile + water_bridge (rivers/lake/bridges) = 32.
+                self.assertEqual(len(tmx.tilesets), 32)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:
                 os.chdir(cwd)
 
-    def test_water_autotile_registered_and_unplaced(self):
-        # The seamless water set is registered as a source (placeable in the edge
-        # phase) but referenced by NO layer yet -> nothing visual changed.
-        ts = [t for t in self.tmx.tilesets if t.name == "water_autotile"]
-        self.assertEqual(len(ts), 1)
-        self.assertEqual(ts[0].firstgid, 4739)
-        for layer in self.tmx.layers:
-            if hasattr(layer, "data"):
-                for row in layer.data:
-                    for gid in row:
-                        block = self.tmx.get_tileset_from_gid(gid) if gid else None
-                        if block is not None:
-                            self.assertNotEqual(block.name, "water_autotile")
+    def test_water_tilesets_registered_and_placed(self):
+        # v3 edge phase: water_autotile (rivers/lake) + water_bridge (decks) are
+        # registered, and the water is now actually placed (in the walls layer).
+        byname = {t.name: t for t in self.tmx.tilesets}
+        self.assertIn("water_autotile", byname)
+        self.assertIn("water_bridge", byname)
+        self.assertEqual(byname["water_autotile"].firstgid, 4739)
+        self.assertEqual(byname["water_bridge"].firstgid, 4755)
+        walls = self.tmx.get_layer_by_name("walls")
+        water_cells = sum(1 for y in range(self.tmx.height) for x in range(self.tmx.width)
+                          if walls.data[y][x]
+                          and self.tmx.get_tileset_from_gid(walls.data[y][x]).name == "water_autotile")
+        self.assertGreater(water_cells, 200, "water not placed in walls")
 
     def test_collision_and_spawns_unchanged(self):
         # border blocks; spawn walkable; region bands intact on the 80x56 map

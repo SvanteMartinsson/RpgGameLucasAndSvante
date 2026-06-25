@@ -83,8 +83,15 @@ class OverworldCollisionTest(unittest.TestCase):
         for y in range(y0, min(y1, len(self.walls))):
             for x in range(len(self.walls[y])):
                 gid = self.walls[y][x]
-                if gid and self._tileset_of(gid)[1] != "placeholder":  # skip border
-                    yield x, y, gid
+                if not gid:
+                    continue
+                name = self._tileset_of(gid)[1]
+                # skip the border block and water: water is intentionally-visible
+                # collision (rivers/lake), not an invisible phantom prop. Its shore
+                # autotiles are <25% opaque by design but clearly read as water.
+                if name == "placeholder" or name.startswith("water"):
+                    continue
+                yield x, y, gid
 
     def test_heath_walls_have_no_invisible_collision(self):
         offenders = [(x, y, round(self._alpha(g)))

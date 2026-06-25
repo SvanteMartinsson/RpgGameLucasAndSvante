@@ -16,6 +16,7 @@ Deterministic (seeded). Reads core_zone.json for the town/gate/seam data.
 """
 import collections
 import json
+import math
 import random
 import re
 
@@ -64,6 +65,163 @@ def read_layer_csv(src, name):
     return [[int(v) for v in r.rstrip(",").split(",")] for r in rows]
 
 
+# ===================== WATER (edge phase v3) =========================
+WATER_FG = 4739
+WIDX = {"full": 0, "edge_N": 1, "edge_E": 2, "edge_S": 3, "edge_W": 4,
+        "out_NW": 5, "out_NE": 6, "out_SE": 7, "out_SW": 8,
+        "in_NW": 9, "in_NE": 10, "in_SE": 11, "in_SW": 12, "chan_H": 13, "chan_V": 14}
+# Corner pattern (nw,ne,se,sw water?) -> tile. Adjacent tiles share two corners,
+# so touching borders match by construction (seamless). Saddles -> full.
+CORNER_MAP = {
+    (1, 1, 1, 1): "full", (0, 0, 1, 1): "edge_N", (1, 1, 0, 0): "edge_S",
+    (1, 0, 0, 1): "edge_E", (0, 1, 1, 0): "edge_W", (0, 0, 1, 0): "out_NW",
+    (0, 0, 0, 1): "out_NE", (0, 1, 0, 0): "out_SW", (1, 0, 0, 0): "out_SE",
+    (0, 1, 1, 1): "in_NW", (1, 0, 1, 1): "in_NE", (1, 1, 1, 0): "in_SW", (1, 1, 0, 1): "in_SE",
+}
+BRIDGE_FG = 4755
+PLANK_H, PLANK_V = 13, 14            # horizontal / vertical bridge planks
+LAKE = (72, 55, 12, 7)               # cx, cy, rx, ry
+LANDTUNGA = (73, 51, 2.3, 1.6)       # Barroncami land (not water)
+SEAM_CY, SEAM_AMP = 36.0, 1.3
+SEAM_FLAT = ((10, 15), (55, 60))     # straighten the seam near its two bridges
+CORE_PTS = [(20, 2), (18, 10), (23, 19), (27, 24), (27, 31), (24, 35)]
+HEATH_PTS = [(46, 37), (45, 42), (45, 47), (45, 52), (53, 54), (63, 54)]
+RIVER_HALF = 1.0
+# Bridges as boxes that carve ALL water they cross (full body + soft shores),
+# so the deck reaches dry bank to dry bank. The deck is 2-wide (the lane); the
+# river is straight under it. (x0,x1,y0,y1 inclusive, plank, flow axis of river).
+# flow 'EW' = river runs east-west (seam) -> 2-wide lane in x; 'NS' = river runs
+# north-south (inner/edge) -> 2-wide lane in y.
+BRIDGES = [
+    (12, 13, 33, 38, PLANK_V, "EW"),   # seam west  (core<->heath)
+    (57, 58, 33, 38, PLANK_V, "EW"),   # seam east  (core<->heath)
+    (24, 29, 27, 28, PLANK_H, "NS"),   # core inner river
+    (42, 47, 43, 44, PLANK_H, "NS"),   # heath inner river (W<->E heath)
+    (75, 78, 27, 28, PLANK_H, "NS"),   # right edge river (deep_west gate)
+]
+
+
+def _seg_d(px, py, ax, ay, bx, by):
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def _poly_d(pts, gx, gy):
+    return min(_seg_d(gx, gy, *pts[i], *pts[i + 1]) for i in range(len(pts) - 1))
+
+
+def _seam_y(gx):
+    for a, b in SEAM_FLAT:
+        if a <= gx <= b:
+            return SEAM_CY
+    return SEAM_CY + SEAM_AMP * math.sin(gx / 5.0)
+
+
+def _in_landtunga(gx, gy):
+    # ellipse + a short north neck so Barroncami connects to the east-heath shore.
+    if ((gx - LANDTUNGA[0]) / LANDTUNGA[2]) ** 2 + ((gy - LANDTUNGA[1]) / LANDTUNGA[3]) ** 2 <= 1.0:
+        return True
+    return 72 <= gx <= 74 and 46 <= gy <= 53
+
+
+def water_corner(gx, gy):
+    if _in_landtunga(gx, gy):
+        return False
+    # lake
+    if ((gx - LAKE[0]) / LAKE[2]) ** 2 + ((gy - LAKE[1]) / LAKE[3]) ** 2 <= 1.0:
+        return True
+    # seam flood (straightened near the two bridges)
+    if 1 <= gx <= 78 and abs(gy - _seam_y(gx)) <= RIVER_HALF:
+        return True
+    # core + heath inner rivers
+    if _poly_d(CORE_PTS, gx, gy) <= RIVER_HALF:
+        return True
+    if _poly_d(HEATH_PTS, gx, gy) <= RIVER_HALF:
+        return True
+    # right edge river (gentle meander around x=77), down into the lake. Capped at
+    # gx<=78 so the deep_west gate column (x=79) stays dry + reachable via its bridge.
+    if 2 <= gy <= 49 and gx <= 78 and abs(gx - (77.0 + 0.6 * math.sin(gy / 4.0))) <= 1.0:
+        return True
+    return False
+
+
+def build_water(ground, walls, decor):
+    """Autotile the water field into walls (visible + collision), carve bridges
+    into ground (walkable). Returns (placed water cells, lake cells)."""
+    cw = [[water_corner(gx, gy) for gx in range(W + 1)] for gy in range(H + 1)]
+    placed = {}
+    for y in range(H):
+        for x in range(W):
+            pat = (int(cw[y][x]), int(cw[y][x + 1]), int(cw[y + 1][x + 1]), int(cw[y + 1][x]))
+            if sum(pat) == 0:
+                continue
+            placed[(x, y)] = CORNER_MAP.get(pat, "full")  # saddle -> full water
+    # bridge cells = every water cell inside a bridge box (carve the whole crossing)
+    bridge_cells = set()
+    for x0, x1, y0, y1, plank, _flow in BRIDGES:
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if (x, y) in placed:
+                    bridge_cells.add((x, y))
+    for (x, y), name in placed.items():
+        if (x, y) in bridge_cells:
+            continue
+        walls[y][x] = WATER_FG + WIDX[name]   # water: visible under player + blocks
+        decor[y][x] = 0                       # no canopy floating on water
+    for x0, x1, y0, y1, plank, _flow in BRIDGES:
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if (x, y) in placed:
+                    decor[y][x] = BRIDGE_FG + plank  # over grass, under player
+                    walls[y][x] = 0                  # walkable (no collision)
+    # the right edge river IS the east boundary where it runs -> drop the wall ring
+    for y in range(2, 50):
+        if walls[y][W - 1] == BORDER_GID:
+            walls[y][W - 1] = 0
+    lake = {(x, y) for (x, y) in placed
+            if ((x - LAKE[0]) / LAKE[2]) ** 2 + ((y - LAKE[1]) / LAKE[3]) ** 2 <= 1.0}
+    return placed, bridge_cells, lake
+
+
+def assert_water_invariants(placed, bridge_cells, lake, gates):
+    # 1) every water cell connects to the lake (no dead river ends)
+    water = set(placed)
+    seen = set(lake)
+    dq = collections.deque(lake)
+    while dq:
+        x, y = dq.popleft()
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if (nx, ny) in water and (nx, ny) not in seen:
+                seen.add((nx, ny))
+                dq.append((nx, ny))
+    orphan = water - seen
+    assert not orphan, f"water not connected to lake: {sorted(orphan)[:8]} ({len(orphan)})"
+    # 2) bridges: 2-wide deck on a straight segment, river continues both ends,
+    #    dry land on both banks (no bend under bridge).
+    for x0, x1, y0, y1, plank, flow in BRIDGES:
+        if flow == "EW":       # river east-west; deck 2-wide in x; banks N/S
+            assert x1 == x0 + 1, f"seam bridge deck not 2-wide: {(x0, x1)}"
+            # river continues straight west and east of the deck at the full rows
+            wet_rows = [y for y in range(y0, y1 + 1) if (x0, y) in water]
+            assert wet_rows, f"seam bridge {x0} has no water"
+            for ry in wet_rows:
+                assert (x0 - 1, ry) in water and (x1 + 1, ry) in water, \
+                    f"seam bridge x={x0} not on straight channel at y={ry}"
+        else:                  # river north-south; deck 2-wide in y; banks W/E
+            assert y1 == y0 + 1, f"bridge deck not 2-wide: {(y0, y1)}"
+            wet_cols = [x for x in range(x0, x1 + 1) if (x, y0) in water]
+            assert wet_cols, f"bridge rows {y0}-{y1} cross no water"
+            for rx in wet_cols:
+                assert (rx, y0 - 1) in water and (rx, y1 + 1) in water, \
+                    f"bridge y={y0} not on straight channel at x={rx}"
+    # 3) gates not drowned
+    for g in gates:
+        assert g not in water, f"gate drowned: {g}"
+
+
 def line_cells(a, b):
     (ax, ay), (bx, by) = a, b
     steps = max(abs(ax - bx), abs(ay - by)) or 1
@@ -96,6 +254,15 @@ def main():
                 protected.add((gx + dx, gy + dy))
     for a, b in (("burg_117", "burg_54"), ("burg_149", "burg_67")):
         protected |= line_cells(towns[a], towns[b])
+    # Keep the bridge bank->town corridors forest-free (forests yield to them just
+    # as they yield to towns/paths). Each line stays within ONE river-bounded
+    # region so it never needs an extra crossing -> all towns reach a bridge bank.
+    for (bx, by), pid in [((23, 27), "burg_117"), ((30, 27), "burg_5"),
+                          ((12, 32), "burg_117"), ((12, 39), "burg_54"),
+                          ((57, 32), "burg_67"), ((57, 39), "burg_293"),
+                          ((41, 43), "burg_149"), ((48, 43), "burg_293"),
+                          ((74, 27), "burg_320")]:
+        protected |= line_cells((bx, by), towns[pid])
 
     # ---- GROUND: textured open grass (visible detail, not monochrome) ----
     # Dedicated RNG so detail-density tuning never perturbs the (approved) path
@@ -163,6 +330,10 @@ def main():
         base = PLANT[theme_plant(y)]
         walls[y][x] = base + TRUNK     # solid -> collision + render
         decor[y][x] = base + CANOPY    # leafy top, over the trunk
+
+    # ---- WATER (edge phase v3): rivers + lake + bridges ----
+    placed, bridge_cells, lake = build_water(ground, walls, decor)
+    assert_water_invariants(placed, bridge_cells, lake, gates)
 
     # ---- reachability: flood-fill from start over walls==0 ----
     blocked = {(x, y) for y in range(H) for x in range(W) if walls[y][x] != 0}

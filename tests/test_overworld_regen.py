@@ -93,16 +93,17 @@ class OverworldRegenTest(unittest.TestCase):
             self.assertIn(gate, seen, f"gate {gate} unreachable")
 
     def test_zone_crossing_edges_passable_over_the_seam(self):
+        # core<->heath is gated by the seam flood; the only crossings are the two
+        # seam bridges (x=12-13 west, x=57-58 east). Those bridge cells are walkable
+        # and a core cell above each connects to a heath cell below it.
+        blocked = self.world.blocked
+        for bx in (12, 13, 57, 58):
+            for by in (35, 36):
+                self.assertNotIn((bx, by), blocked, f"seam bridge cell {(bx, by)} blocked")
         seen = self._reachable()
-        # both endpoints of each cross-seam edge are in the same reachable set,
-        # and the seam itself is open on the crossing columns (not walled).
-        for a, b in ZONE_EDGES:
+        for a, b in ZONE_EDGES:   # both endpoints reachable through the bridges
             self.assertIn(TOWNS[a], seen)
             self.assertIn(TOWNS[b], seen)
-        crossings = [TOWNS["burg_117"][0], TOWNS["burg_149"][0]]
-        for x in crossings:
-            self.assertTrue(any((x + dx, SEAM_Y) in seen for dx in (-1, 0, 1)),
-                            f"seam not passable near x={x}")
 
     def test_heath_faction_grouping_preserved(self):
         for pid in BONDEMILIS + HARROW:
@@ -113,10 +114,11 @@ class OverworldRegenTest(unittest.TestCase):
         self.assertLess(bond_x, harrow_x)
 
     def test_open_wilderness_is_the_default(self):
-        # foundation feel: the vast majority of tiles are walkable (open).
+        # land stays mostly open; the v3 rivers + lake add intended water obstacle
+        # (~14%), so the floor is lower than the pre-water foundation.
         walkable = sum(1 for y in range(H) for x in range(W)
                        if (x, y) not in self.world.blocked)
-        self.assertGreater(walkable / (W * H), 0.80)
+        self.assertGreater(walkable / (W * H), 0.70)
 
     # -- ground texture + broken path hints (under player, no collision) ----
 
@@ -175,6 +177,36 @@ class OverworldRegenTest(unittest.TestCase):
                     interior.append((x, y))
             self.assertTrue(any(not self._is_path(ground[y][x]) for x, y in interior),
                             f"edge {a}<->{b} has an unbroken path line")
+
+    def _is_water(self, gid):
+        return 4739 <= gid <= 4754   # water_autotile gids (firstgid 4739, 16 tiles)
+
+    def test_v3_water_invariants(self):
+        walls = self._layer("walls")
+        decor = self._layer("decor_over")
+        water = {(x, y) for y in range(H) for x in range(W) if self._is_water(walls[y][x])}
+        bridges = {(x, y) for y in range(H) for x in range(W) if 4755 <= decor[y][x] <= 4778}
+        self.assertGreater(len(water), 200, "no water placed")
+        # gates are not drowned
+        for g in self.world.gate_messages:
+            self.assertNotIn(g, water, f"gate drowned: {g}")
+        # all water connects to the lake (no dead river ends). Bridges carve gaps in
+        # the walls water, so treat bridge cells as river connectors for the flood.
+        river = water | bridges
+        lake = {(x, y) for (x, y) in water
+                if ((x - 72) / 12) ** 2 + ((y - 55) / 7) ** 2 <= 1.0}
+        self.assertTrue(lake, "no lake cells")
+        seen, dq = set(lake), deque(lake)
+        while dq:
+            x, y = dq.popleft()
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if (nx, ny) in river and (nx, ny) not in seen:
+                    seen.add((nx, ny))
+                    dq.append((nx, ny))
+        self.assertEqual(water - seen, set(), "water not all connected to the lake")
+        # the five bridge crossings are walkable (not blocked)
+        for bx, by in [(12, 35), (57, 35), (26, 27), (44, 43), (77, 28)]:
+            self.assertNotIn((bx, by), self.world.blocked, f"bridge {(bx, by)} blocked")
 
     def test_paths_and_detail_never_collide(self):
         # path + detail live in the ground layer only; the walls layer must hold
