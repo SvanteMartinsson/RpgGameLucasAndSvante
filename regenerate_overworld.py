@@ -22,13 +22,21 @@ import re
 random.seed(80)
 TMX = "rpg_game/data/maps/overworld.tmx"
 ZONE = "rpg_game/data/maps/core_zone.json"
+WORLD = "rpg_game/data/world.json"
 W, H = 80, 56
 SEAM_Y = 36                       # core rows 0..35, Verralda heath 36..55
 BORDER_GID = 2                    # placeholder solid block (matches old border)
 
 GRASS = {"cainos": 3, "grave_heath": 387}   # ground firstgids (uniform per band)
 PLANT = {"cainos": 2691, "grave_heath": 4227}
-GBASE, GVAR, GDET = 0, [1, 2, 3], [4, 5, 6, 7, 12, 13, 20, 21]
+# Grass-sheet tile indices (all within the grass tileset, so ground stays
+# {cainos_grass, grave_heath_grass}). idx 0-31 are grass; 32-63 are cobble.
+GBASE = 0
+GVAR = [1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27]   # subtle grass tufts
+GDET = [5, 6, 7, 12, 13, 14, 20, 21, 22, 29, 30, 31]             # flowers/pebbles (life)
+# Broken/overgrown path remnants: fuller cobble near towns, scattered cobble mid-way.
+PATH_NEAR = [44, 45, 36, 37]      # a path-stub leaving a town
+PATH_FAR = [52, 53, 60, 61]       # scattered cobble in grass -> overgrown remnant
 TRUNK, CANOPY = 66, 34            # solid trunk (walls) + dense canopy (decor_over)
 
 # Organic forest masses (cx, cy, r) placed BETWEEN towns. Minority terrain you
@@ -84,14 +92,44 @@ def main():
     for a, b in (("burg_117", "burg_54"), ("burg_149", "burg_67")):
         protected |= line_cells(towns[a], towns[b])
 
-    # ---- GROUND: open grass, uniform per band ----
+    # ---- GROUND: textured open grass (varied, not monochrome) ----
     ground = [[0] * W for _ in range(H)]
     for y in range(H):
         for x in range(W):
             base = GRASS[theme_ground(x, y)]
             r = random.random()
-            idx = random.choice(GDET) if r < 0.04 else (random.choice(GVAR) if r < 0.28 else GBASE)
+            idx = random.choice(GDET) if r < 0.06 else (random.choice(GVAR) if r < 0.45 else GBASE)
             ground[y][x] = base + idx
+
+    # ---- broken PATH HINTS toward neighbour towns (ground layer, no collision) ----
+    # For each world.json connection between two on-map towns, lay sparse cobble
+    # along the line: a denser stub leaving each town, tapering to scattered,
+    # overgrown remnants (with gaps) in the middle. Reads "a road ran this way",
+    # not a paved corridor. Town tiles themselves stay clear.
+    world = json.load(open(WORLD, encoding="utf-8"))
+    places = {p["id"]: p for p in world["places"]}
+    edges, seen_e = [], set()
+    for pid, p in places.items():
+        for conn in p.get("connections", []):
+            a, b = pid, conn["to"]
+            key = tuple(sorted((a, b)))
+            if key in seen_e or a not in towns or b not in towns:
+                continue
+            seen_e.add(key)
+            edges.append((a, b))
+    for a, b in edges:
+        (ax, ay), (bx, by) = towns[a], towns[b]
+        steps = max(abs(ax - bx), abs(ay - by)) or 1
+        for i in range(steps + 1):
+            t = i / steps
+            x = round(ax + (bx - ax) * t)
+            y = round(ay + (by - ay) * t)
+            if (x, y) in town_tiles or not (0 < x < W - 1 and 0 < y < H - 1):
+                continue
+            mid = 2 * min(t, 1 - t)                  # 0 at a town, 1 at the midpoint
+            if random.random() < 0.85 - 0.7 * mid:   # dense at ends, sparse + gappy mid
+                pool = PATH_NEAR if mid < 0.4 else PATH_FAR
+                ground[y][x] = GRASS[theme_ground(x, y)] + random.choice(pool)
 
     # ---- WALLS: border + gate holes + organic forest masses ----
     walls = [[0] * W for _ in range(H)]
@@ -141,8 +179,11 @@ def main():
     for lid, name, grid in (("1", "ground", ground), ("2", "walls", walls), ("3", "decor_over", decor)):
         src = re.sub(r'(<layer id="%s" name="%s")[^>]*(>)' % (lid, name),
                      lambda m: f'{m.group(1)} width="{W}" height="{H}"{m.group(2)}', src, count=1)
-        src = re.sub(r'(<layer id="%s" name="%s"[^>]*>\s*<data encoding="csv">\s*).*?(\s*</data>)' % (lid, name),
-                     lambda m: m.group(1) + csv(grid) + "\n" + m.group(2), src, count=1, flags=re.S)
+        # Consume surrounding whitespace OUTSIDE the capture groups so the data
+        # block is rewritten to a fixed shape every run (idempotent — no blank
+        # line creeps in before </data> on re-runs).
+        src = re.sub(r'(<layer id="%s" name="%s"[^>]*>\s*<data encoding="csv">)\s*.*?\s*(</data>)' % (lid, name),
+                     lambda m: m.group(1) + "\n" + csv(grid) + "\n  " + m.group(2), src, count=1, flags=re.S)
 
     open(TMX, "w", encoding="utf-8").write(src)
     print(f"OK 80x56: {len(town_tiles)} towns + {len(gates)} gates reachable; "

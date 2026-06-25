@@ -118,6 +118,52 @@ class OverworldRegenTest(unittest.TestCase):
                        if (x, y) not in self.world.blocked)
         self.assertGreater(walkable / (W * H), 0.80)
 
+    # -- ground texture + broken path hints (under player, no collision) ----
+
+    def _layer(self, name):
+        return self.world.tmx.get_layer_by_name(name).data
+
+    def _is_path(self, gid):
+        # cobble path tiles are idx 32-63 of the grass tilesets (firstgid 3/387).
+        return any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387))
+
+    def test_ground_is_textured_not_monochrome(self):
+        ground = self._layer("ground")
+        from collections import Counter
+        c = Counter(ground[y][x] for y in range(H) for x in range(W))
+        self.assertGreater(len(c), 20, "ground barely varied (near-monochrome)")
+        base = c[3] + c[387]  # the two base-grass gids
+        self.assertLess(base / (W * H), 0.65, "ground dominated by base grass")
+
+    def test_path_hints_exist_and_are_broken(self):
+        ground = self._layer("ground")
+        towns = {tuple(t): p for t, p in self.zone.towns.items()}
+        town_pos = {p: t for t, p in self.zone.towns.items()}
+        # path remnants are present at all
+        n_path = sum(1 for y in range(H) for x in range(W) if self._is_path(ground[y][x]))
+        self.assertGreater(n_path, 30, "no path hints painted")
+        # every on-map connection edge has a GAP (no unbroken cobble line)
+        for a, b in ZONE_EDGES + (("burg_5", "burg_117"), ("burg_5", "burg_160"),
+                                  ("burg_105", "burg_53"), ("burg_121", "burg_385")):
+            (ax, ay), (bx, by) = town_pos[a], town_pos[b]
+            steps = max(abs(ax - bx), abs(ay - by)) or 1
+            interior = []
+            for i in range(steps + 1):
+                x = round(ax + (bx - ax) * i / steps)
+                y = round(ay + (by - ay) * i / steps)
+                if (x, y) not in town_pos.values():
+                    interior.append((x, y))
+            self.assertTrue(any(not self._is_path(ground[y][x]) for x, y in interior),
+                            f"edge {a}<->{b} has an unbroken path line")
+
+    def test_paths_and_detail_never_collide(self):
+        # path + detail live in the ground layer only; the walls layer must hold
+        # no grass-sheet (path/detail) gid -> walking over a path is never blocked.
+        walls = self._layer("walls")
+        offenders = [(x, y) for y in range(H) for x in range(W)
+                     if walls[y][x] and self._is_path(walls[y][x])]
+        self.assertEqual(offenders, [], f"path tiles in walls (collide): {offenders}")
+
 
 if __name__ == "__main__":
     unittest.main()
