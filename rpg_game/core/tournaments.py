@@ -78,6 +78,11 @@ def complete_tournament(player: Player, content: GameContent, tournament: Tourna
     if not tournament.repeatable:
         player.completed_tournament_ids.add(tournament.id)
 
+    # Clearing a tournament restores the player to full HP and mana (same recovery
+    # as between matches) — a quality-of-life reset after the series.
+    player.hp = equipment.effective_stat(player, "max_hp")
+    player.mana = equipment.effective_stat(player, "max_mana")
+
     reward_bits = []
     if tournament.reward.gold:
         reward_bits.append(f"{tournament.reward.gold} gold")

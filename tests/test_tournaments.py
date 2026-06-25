@@ -53,6 +53,14 @@ class TournamentProgressionTests(unittest.TestCase):
         self.assertIn("steel_greatsword", engine.player.owned_weapon_ids)
         self.assertIn(tournament.id, engine.player.completed_tournament_ids)
 
+    def test_completing_a_tournament_restores_full_hp_and_mana(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        engine.player.hp, engine.player.mana = 1, 0
+        engine.complete_tournament(engine.content.tournaments["fongorinos_iron_ring"])
+        self.assertEqual(engine.player.hp, engine.effective_stat("max_hp"))
+        self.assertEqual(engine.player.mana, engine.effective_stat("max_mana"))
+
     def test_completed_non_repeatable_tournament_cannot_start_again(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")
