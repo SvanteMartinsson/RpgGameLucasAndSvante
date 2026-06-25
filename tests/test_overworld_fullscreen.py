@@ -33,10 +33,16 @@ class CanvasMathTest(unittest.TestCase):
     def tearDownClass(cls):
         pygame.quit()
 
-    def test_present_centers_at_native_size_when_display_is_larger(self):
+    def test_present_scales_up_to_fill_a_larger_display(self):
         canvas = pygame.Surface((1024, 680))
         big = pygame.Surface((1280, 800))
-        self.assertEqual(pygame_canvas.present(big, canvas, (0, 0, 0)), (128, 60, 1.0))
+        ox, oy, scale = pygame_canvas.present(big, canvas, (0, 0, 0))
+        self.assertGreater(scale, 1.0)  # fills the window, not a native-size island
+        self.assertAlmostEqual(scale, min(1280 / 1024, 800 / 680))
+        # aspect-preserved + centered, and the scaled frame fits within the display
+        self.assertEqual((ox, oy), ((1280 - int(1024 * scale)) // 2, (800 - int(680 * scale)) // 2))
+        self.assertLessEqual(ox * 2 + int(1024 * scale), 1280)
+        self.assertLessEqual(oy * 2 + int(680 * scale), 800)
         same = pygame.Surface((1024, 680))
         self.assertEqual(pygame_canvas.present(same, canvas, (0, 0, 0)), (0, 0, 1.0))
 

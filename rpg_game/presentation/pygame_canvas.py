@@ -135,12 +135,16 @@ def acquire_display(default_size: tuple[int, int]) -> pygame.Surface:
 
 
 def present(display: pygame.Surface, canvas: pygame.Surface, bg) -> Transform:
-    """Fill the display, blit the canvas (scaled to fit, centered), flip."""
+    """Fill the display, blit the canvas scaled to fit (aspect-preserving) and
+    centered, then flip. Scales DOWN on a smaller display and UP on a larger one,
+    so a fixed-layout canvas (battle / character creation) fills the window
+    instead of sitting as a small native-size island. Fluid screens set the canvas
+    to the display size, so scale stays 1.0 (identity) for them."""
     display.fill(bg)
     dw, dh = display.get_size()
     cw, ch = canvas.get_size()
-    scale = min(1.0, dw / cw, dh / ch) if cw and ch else 1.0
-    if scale < 1.0:
+    scale = min(dw / cw, dh / ch) if cw and ch else 1.0
+    if scale != 1.0:
         frame = pygame.transform.scale(canvas, (max(1, int(cw * scale)), max(1, int(ch * scale))))
     else:
         frame = canvas

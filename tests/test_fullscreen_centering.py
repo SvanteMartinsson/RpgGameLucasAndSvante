@@ -4,7 +4,8 @@ Two models coexist:
 - FLUID screens (start menu, overworld) size their canvas to the live display,
   so present() is the identity transform and they FILL the window (ox == 0).
 - FIXED-canvas screens (battle, character creation) draw a design-size canvas
-  that present() centers as an island (ox > 0) on a larger display.
+  that present() scales UP (aspect-preserved) to FILL the window, centered with
+  letterbox bars only on the mismatched axis.
 
 Skips when pygame/pytmx are not installed.
 """
@@ -72,12 +73,15 @@ class FullscreenCenteringTest(unittest.TestCase):
         self.assertEqual(app._transform, (0, 0, 1.0))       # identity -> no margins
         self.assertIsNot(app.screen, app.display)
 
-    def test_fixed_canvas_battle_centers_when_display_is_larger(self):
-        # Battle keeps a fixed design canvas -> centered island on a big display.
+    def test_fixed_canvas_battle_fills_when_display_is_larger(self):
+        # Battle keeps a fixed design canvas -> present scales it UP to fill the
+        # window (aspect-preserved), so it is no longer a tiny native-size island.
         transform, _size = self._battle_transform()
-        ox, oy, _scale = transform
-        self.assertGreater(ox, 0)
-        self.assertGreater(oy, 0)
+        ox, oy, scale = transform
+        self.assertGreater(scale, 1.0)            # upscaled to fill, not native
+        self.assertGreaterEqual(ox, 0)
+        self.assertGreaterEqual(oy, 0)
+        self.assertTrue(ox == 0 or oy == 0)       # fills at least one axis fully
 
     def test_converted_fluid_screen_anchors_at_origin(self):
         # A fluid screen sizes its canvas to the display; present() then centers
@@ -93,9 +97,11 @@ class FullscreenCenteringTest(unittest.TestCase):
         ow_t, ow_size = self._overworld_transform()
         bt_t, bt_size = self._battle_transform()
         screen_center = (DISPLAY[0] / 2, DISPLAY[1] / 2)
-        # Each canvas, whatever its size, is centered on the same display point.
-        self.assertEqual(_canvas_center(ow_t, ow_size), screen_center)
-        self.assertEqual(_canvas_center(bt_t, bt_size), screen_center)
+        # Each canvas, whatever its size/scale, is centered on the same display
+        # point (within 1px — int truncation of the scaled frame size).
+        for center in (_canvas_center(ow_t, ow_size), _canvas_center(bt_t, bt_size)):
+            self.assertAlmostEqual(center[0], screen_center[0], delta=1.0)
+            self.assertAlmostEqual(center[1], screen_center[1], delta=1.0)
 
     def test_windowed_equal_size_has_no_offset(self):
         app = OverworldApp()
