@@ -104,6 +104,31 @@ class PlaytestLogger:
             # snapshot is built post-respawn, so its place is the respawn place.
             self.death(result.respawn, location, snapshot.place.id)
 
+    def display(self, trigger: str, surface, window, transform=None,
+                mode: str = "", desktops=None) -> None:
+        """Record a display-geometry event tagged with the action that triggered
+        it, so a playtest log shows which actions cause window/anchoring changes
+        (the recurring fullscreen bug). Takes plain size tuples — no pygame here.
+
+        `fills` is the key signal: a correctly-filled frame has surface == window;
+        when they diverge the logical surface sits in a corner of a larger window.
+        """
+        surface = tuple(surface)
+        window = tuple(window) if window else surface
+        fields = {
+            "trigger": trigger,
+            "surface": list(surface),
+            "window": list(window),
+            "fills": surface == window,
+        }
+        if mode:
+            fields["mode"] = mode
+        if transform is not None:
+            fields["transform"] = list(transform)
+        if desktops is not None:
+            fields["desktops"] = [list(d) for d in desktops]
+        self.write("display", **fields)
+
     def flee(self, chance: float, success: bool, enemy) -> None:
         self.write(
             "flee",

@@ -325,6 +325,28 @@ class OverworldApp:
         self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
         self.playtest_logger.session_start(build_snapshot(self.engine))
+        self._last_fills = None  # edge-trigger for anchoring changes in draw()
+        self._log_display("init")
+
+    def _log_display(self, trigger: str) -> None:
+        """Record current window geometry to the playtest log, tagged with the
+        action that triggered it — so a playtest shows which actions cause the
+        window to resize / stop filling (the recurring fullscreen bug)."""
+        logger = getattr(self, "playtest_logger", None)
+        if logger is None or self.display is None:
+            return
+        try:
+            window = pygame.display.get_window_size()
+        except Exception:  # pragma: no cover - driver without window info
+            window = self.display.get_size()
+        try:
+            desktops = pygame.display.get_desktop_sizes()
+        except Exception:  # pragma: no cover
+            desktops = None
+        logger.display(
+            trigger, self.display.get_size(), window, transform=self._transform,
+            mode="fullscreen" if self.fullscreen else "windowed", desktops=desktops,
+        )
 
     def _new_engine(self) -> GameEngine:
         engine = GameEngine()
@@ -376,6 +398,7 @@ class OverworldApp:
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
         self._apply_display_mode()
+        self._log_display("toggle_fullscreen")
 
     # -- wild encounters + battle loop --------------------------------------
 
@@ -403,6 +426,7 @@ class OverworldApp:
         ).run()
         # Re-assert the overworld display (preserves window/fullscreen state).
         self._apply_display_mode()
+        self._log_display("after_battle")
         self.resolve_battle_outcome(outcome, enemy)
 
     def resolve_battle_outcome(self, outcome: str, enemy) -> None:
@@ -681,6 +705,7 @@ class OverworldApp:
             location_id=location_id,
         ).run()
         self._apply_display_mode()
+        self._log_display("after_tournament_battle")
         return outcome
 
     def _start_next_tournament_match(self) -> None:
@@ -724,6 +749,7 @@ class OverworldApp:
                 # Follow the user's resize / Mac maximize; present() re-centers the canvas.
                 self.windowed_size = (event.w, event.h)
                 self.display = set_display_mode(self.windowed_size)
+                self._log_display("resize")
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -830,6 +856,15 @@ class OverworldApp:
         if self.toast:
             self._draw_toast()
         self._transform = present(self.display, self.screen, BG)
+        # Edge-triggered: log only when the fills-state flips (window starts/stops
+        # filling), so an anchoring glitch is captured with no per-frame spam.
+        try:
+            fills = self.display.get_size() == pygame.display.get_window_size()
+        except Exception:  # pragma: no cover - driver without window info
+            fills = True
+        if fills != self._last_fills:
+            self._last_fills = fills
+            self._log_display("anchor_change")
 
     def _zoom_factor(self) -> int:
         """Integer zoom so the world view is ~ZOOM_TARGET_TILES_W tiles wide on any
