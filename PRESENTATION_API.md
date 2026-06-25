@@ -1,7 +1,7 @@
 # Presentation API Contract
 
-Det här dokumentet beskriver gränsen som terminal-UI och ett framtida
-Pygame-UI ska använda. Målet är att presentationen ska rendera state och skicka
+Det här dokumentet beskriver gränsen som terminal-UI och Pygame-UI:t (battle +
+overworld) använder. Målet är att presentationen ska rendera state och skicka
 kommandon, inte duplicera spelregler.
 
 ## Rendera state

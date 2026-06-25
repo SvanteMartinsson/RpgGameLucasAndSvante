@@ -195,10 +195,6 @@ def actor_speed(actor: Actor) -> int:
     return effective_stat(actor, "speed")
 
 
-def actor_is_alive(actor: Actor) -> bool:
-    return actor.hp > 0
-
-
 def ordered_by_speed(player: Player, enemy: Enemy) -> list[Actor]:
     if actor_speed(player) >= actor_speed(enemy):
         return [player, enemy]

@@ -32,7 +32,7 @@ Projektet kräver Python 3.10+ och har inga externa runtime-beroenden.
 rpg_game/
   core/              # spelkärnan: regler, state, combat, progression, world
   data/              # JSON-data för klasser, skills, fiender, loot och värld
-  presentation/      # terminal-UI; framtida Pygame-UI ska ligga separat
+  presentation/      # terminal-UI + Pygame-UI (battle + overworld)
   tools/             # utvecklarverktyg för tuning och diagnostik
 tests/               # regressionstester för regler och speldata
 src/                 # ursprunglig Java-prototyp
@@ -42,8 +42,8 @@ bin/                 # kompilerade Java-klasser, historik
 
 Viktig princip: `rpg_game/core/` får inte vara beroende av terminalen. Kärnan
 returnerar strukturerade resultat; `rpg_game/presentation/terminal.py` skriver
-text och läser input. Det gör att ett framtida Pygame-lager kan använda samma
-spelregler.
+text och läser input. Tack vare det använder Pygame-lagret samma spelregler
+utan att duplicera dem.
 
 ## Dokumentation
 
@@ -59,7 +59,7 @@ spelregler.
 - `ENEMIES.md`: fiendearketyper, AI och telegraph.
 - `DAMAGE.md`: multikomponent-skada, attack-action och crit-range.
 - `PRESENTATION_API.md`: kontraktet mellan core och terminal/Pygame-lager.
-- `OVERWORLD.md`: framtida Pygame-/tilemap-riktning.
+- `OVERWORLD.md`: Pygame-/tilemap-overworlden (kamera, gates, zoner).
 
 ## Spelöversikt
 
@@ -156,6 +156,5 @@ Följande är medvetet inte färdigt ännu:
 
 - bank/stash
 - quests och dialogsystem
-- Pygame-presentation
 - permanent bestiary för Identify
 - flera samtidiga fiender

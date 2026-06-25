@@ -74,9 +74,10 @@ strid.
 
 ## Gate: spelbar kärnzon nu, resten gated
 
-Hela 21-platsersvärlden är *tänkt* men inte spelbar än. Den spelbara kärnan är
-Hordanita (hub, `burg_5`) plus ett par närliggande platser, på placeholder-tiles
-(grönt fält + grå block).
+Hela 21-platsersvärlden är *tänkt*; den spelbara delen växer utåt. Idag är
+kärnan runt Hordanita (hub, `burg_5`) plus den södra Verralda-heden
+(grave_heath, se `ZONE_VERRALDA.md`) spelbara, ritade med riktiga tema-tilesets
+(cainos / grave_heath), träd och props. Resten är fortfarande gated.
 
 Vägarna ut mot resten av världen är **gated** — ej gångbara tiles vid kanterna,
 var och en med en rad text som förklarar varför ("Vägen norrut är inte trygg
@@ -97,9 +98,9 @@ dödar rörelse på den andra.
 
 ## Konst-implikation (framtid)
 
-- **Tilesets** (sömlös terräng) — använd ett befintligt pixel-art-tileset-pack,
-  INTE magenta-AI-pipelinen; AI är dålig på sömlösa, kaklande tiles. Nu körs
-  enkla placeholder-tiles (grönt fält + grå block).
+- **Tilesets** (sömlös terräng) — riktiga pixel-art-tilesets (Cainos-baserade,
+  per-zon-tema som grave_heath) är inkopplade via Tiled/pytmx, palett-
+  harmoniserade och med utströdda träd/props.
 - **Top-down spelar-sprite** med 4-riktnings-gångcykel — en framtida sak;
   just nu en enkel markör.
 - Striden använder sidovy; overworld är top-down. Två vyer.

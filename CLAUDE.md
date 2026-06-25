@@ -60,10 +60,11 @@ Spelkärnan ligger i `rpg_game/core/`. Den ska inte använda:
 - terminalspecifik kod
 - Pygame
 
-Presentation ligger i `rpg_game/presentation/`. Just nu finns terminal-UI i
-`rpg_game/presentation/terminal.py`. Ett framtida Pygame-lager ska prata med
-samma `GameEngine`, `rpg_game.core.view.build_snapshot()` och samma
-strukturerade resultat. Se `PRESENTATION_API.md`.
+Presentation ligger i `rpg_game/presentation/`: terminal-UI
+(`terminal.py`) och Pygame-lagret (`pygame_battle.py`, `pygame_overworld.py`,
+`pygame_canvas.py`). Båda pratar med samma `GameEngine`,
+`rpg_game.core.view.build_snapshot()` och samma strukturerade resultat och
+duplicerar inga spelregler. Se `PRESENTATION_API.md`.
 
 Strid ska gå genom en enda pipeline:
 
@@ -200,6 +201,5 @@ Inte implementerat ännu:
 - bank/stash
 - quests
 - dialogsystem
-- Pygame
 - permanent bestiary för Identify
 - flera samtidiga fiender

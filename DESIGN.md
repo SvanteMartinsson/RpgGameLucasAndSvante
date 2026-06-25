@@ -100,9 +100,8 @@ Målet är att textversionen ska kunna köras med:
 python -m rpg_game
 ```
 
-Inga externa dependencies krävs i första steget.
-
-Pygame installeras inte ännu.
+Terminal-UI:t och kärnan är beroendefria. Det grafiska Pygame-lagret
+(battle + overworld) kräver pygame/pytmx — se `requirements.txt`.
 
 ## Spelflöde
 
@@ -466,9 +465,10 @@ Första butikens utbud:
 
 ## Save/load
 
-Save/load implementeras inte i första porten, men state ska hållas i strukturer som går att serialisera senare.
-
-Vald enkel lösning: ingen fil sparas i steg 1.
+Save/load är implementerat: `rpg_game/core/persistence.py` serialiserar
+spelarstate till JSON och `GameEngine.save()` / `.load()` skriver/läser det.
+Nya fält läggs till bakåtkompatibelt (deserialisering faller tillbaka på
+default), så äldre sparfiler fortsätter att laddas.
 
 ## Presentation: terminal
 
@@ -483,11 +483,10 @@ Terminal-UI:t ska vara tunt och bara ansvara för:
 
 Terminal-UI:t ska inte själv beräkna skada, XP, loot, inventory eller world state.
 
-## Framtida Pygame-lager
+## Pygame-lager (presentationskontrakt)
 
-Pygame-lagret ska senare kunna använda samma spelkärna.
-
-För att möjliggöra det ska kärnan:
+Pygame-lagret (battle + overworld) använder samma spelkärna som terminal-UI:t.
+Det möjliggörs av att kärnan:
 
 - returnera strukturerade resultat från actions
 - inte använda `print()`
@@ -499,14 +498,10 @@ För att möjliggöra det ska kärnan:
 
 Följande är fortfarande framtida arbete:
 
-- Pygame
-- save/load
 - quests
 - bossar
 - dialogsystem
-- utrustningsslots utöver vapen
 - inventory-vikt eller maxslots
-- kartgrafik
 - permanent bestiary
 - flera samtidiga fiender
 

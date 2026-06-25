@@ -284,8 +284,8 @@ class OverworldApp:
         # Clamp the initial window so it can never open larger than the desktop.
         self.windowed_size = fit_size(self.view_size)
         self.fullscreen = False
-        # Draw to a fixed canvas; present() blits it centered on the real display,
-        # so the overworld is anchored identically to the menus/battle in any mode.
+        # Initial canvas; draw() resizes it to the live display each frame (fluid
+        # overworld) so the world fills the window and the camera shows more map.
         self.screen = pygame.Surface(self.view_size)
         self._transform = (0, 0, 1.0)
         self._cam_offset = (0, 0)  # world px offset from the last _draw_map (for screen_to_tile)
@@ -314,11 +314,6 @@ class OverworldApp:
         self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
         self.playtest_logger.session_start(build_snapshot(self.engine))
-        # Diagnostic switch: auto-enter fullscreen on launch so display geometry is
-        # captured without needing the F11 key (macOS often grabs F11). Temporary,
-        # behind an env flag — paired with RPG_DISPLAY_DEBUG to log both modes.
-        if os.environ.get("RPG_START_FULLSCREEN"):
-            self.toggle_fullscreen()
 
     def _new_engine(self) -> GameEngine:
         engine = GameEngine()
