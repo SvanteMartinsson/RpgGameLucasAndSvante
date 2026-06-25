@@ -30,12 +30,27 @@ _DESKTOP_MARGIN = 0.92
 
 
 def set_display_mode(size: tuple[int, int], flags: int = WINDOW_FLAGS) -> pygame.Surface:
-    """set_mode with a headless fallback: if no hardware renderer exists (dummy
-    driver in tests), SCALED can't initialize, so retry without it."""
+    """set_mode with two safeguards:
+
+    1. Headless fallback: if no hardware renderer exists (dummy driver in tests),
+       SCALED can't initialize, so retry without it.
+    2. macOS-HiDPI anchoring fix (the recurring fullscreen bug): on some monitors
+       SCALED yields a *logical* surface smaller than the *physical* window and
+       fails to upscale it, so content sits 1:1 in the top-left of a 2x buffer.
+       Every correctly-filled frame has surface size == window size, so if they
+       diverge we recreate at the real window size without SCALED (we scale the
+       canvas crisply in present()/draw() instead). One-time, at creation."""
     try:
-        return pygame.display.set_mode(size, flags)
+        surface = pygame.display.set_mode(size, flags)
     except pygame.error:
-        return pygame.display.set_mode(size, flags & ~pygame.SCALED)
+        surface = pygame.display.set_mode(size, flags & ~pygame.SCALED)
+    try:
+        window = pygame.display.get_window_size()
+    except Exception:  # pragma: no cover - driver without window info
+        window = surface.get_size()
+    if window[0] > 0 and window[1] > 0 and window != surface.get_size():
+        surface = pygame.display.set_mode(window, flags & ~pygame.SCALED)
+    return surface
 
 Transform = tuple[int, int, float]
 
