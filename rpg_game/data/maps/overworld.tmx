@@ -90,6 +90,9 @@
  <tileset firstgid="4483" name="grave_heath_props" tilewidth="32" tileheight="32" tilecount="256" columns="16">
   <image source="../../assets/props/generated/03-TX-Props-with-Shadow__grave_heath.png" width="512" height="512"/>
  </tileset>
+ <tileset firstgid="4739" name="water_autotile" tilewidth="32" tileheight="32" tilecount="16" columns="4">
+  <image source="../../assets/tiles/generated/water_autotile_32x32.png" width="128" height="128"/>
+ </tileset>
 <layer id="1" name="ground" width="48" height="32">
   <data encoding="csv">
 3,6,6,6,6,4,3,4,3,6,4,3,3,6,48,4,4,4,3,3,3,3,6,3,3,3,4,3,3,3,3,3,3,3,4,3,6,3,3,3,3,3,6,3,3,5,3,3,

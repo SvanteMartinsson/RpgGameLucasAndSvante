@@ -104,12 +104,27 @@ class OverworldTilesetTest(unittest.TestCase):
                 tmx = load_pygame(os.path.join(os.path.dirname(DEFAULT_MAP), "overworld.tmx"))
                 # placeholder + cainos(3) + 6 themes x 3 tile sheets (22)
                 # + cainos plant/props (2) + mork_skog/cursed_mire plant/props (4)
-                # + grave_heath plant/props (2, for the Verralda heath) = 30.
-                self.assertEqual(len(tmx.tilesets), 30)
+                # + grave_heath plant/props (2, for the Verralda heath) (30)
+                # + water_autotile (1, rivers/lakes; registered, not yet placed) = 31.
+                self.assertEqual(len(tmx.tilesets), 31)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:
                 os.chdir(cwd)
+
+    def test_water_autotile_registered_and_unplaced(self):
+        # The seamless water set is registered as a source (placeable in the edge
+        # phase) but referenced by NO layer yet -> nothing visual changed.
+        ts = [t for t in self.tmx.tilesets if t.name == "water_autotile"]
+        self.assertEqual(len(ts), 1)
+        self.assertEqual(ts[0].firstgid, 4739)
+        for layer in self.tmx.layers:
+            if hasattr(layer, "data"):
+                for row in layer.data:
+                    for gid in row:
+                        block = self.tmx.get_tileset_from_gid(gid) if gid else None
+                        if block is not None:
+                            self.assertNotEqual(block.name, "water_autotile")
 
     def test_collision_and_spawns_unchanged(self):
         # walls layer preserved verbatim -> same blocked tiles, gates and regions
