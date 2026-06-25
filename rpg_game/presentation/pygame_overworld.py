@@ -830,6 +830,19 @@ class OverworldApp:
         wy = screen_pos[1] // zoom + oy
         return (wx // self.world.tw, wy // self.world.th)
 
+    def _visible_tile_bounds(self, view_w: int, view_h: int,
+                             ox: int, oy: int) -> tuple[int, int, int, int]:
+        """Half-open tile range [left,right) x [top,bottom) overlapping the camera
+        window, +1 tile margin, clamped to the map. Covers every on-surface tile
+        (render-identical to a full sweep) while staying O(view), not O(map)."""
+        tmx = self.world.tmx
+        tw, th = self.world.tw, self.world.th
+        left = max(0, ox // tw - 1)
+        right = min(tmx.width, (ox + view_w) // tw + 2)
+        top = max(0, oy // th - 1)
+        bottom = min(tmx.height, (oy + view_h) // th + 2)
+        return left, right, top, bottom
+
     def _draw_map(self) -> None:
         screen_w, screen_h = self.screen.get_size()
         zoom = self._zoom_factor()
@@ -843,9 +856,23 @@ class OverworldApp:
         self._cam_offset = (ox, oy)
         tmx = self.world.tmx
         tw, th = self.world.tw, self.world.th
+        # Viewport culling: blit only the tiles overlapping the camera window
+        # instead of the whole map. Render-identical to a full sweep — off-window
+        # tiles blit off-surface and contribute no pixels — but the blit count is
+        # bounded by the view, not the map area. Applies to all layers identically.
+        left, right, top, bottom = self._visible_tile_bounds(view_w, view_h, ox, oy)
+        get_image = tmx.get_tile_image_by_gid
         for layer in tmx.visible_layers:
-            if hasattr(layer, "tiles"):
-                for x, y, image in layer.tiles():
+            data = getattr(layer, "data", None)
+            if data is None:  # not a tile layer (object/image layer)
+                continue
+            for y in range(top, bottom):
+                row = data[y]
+                for x in range(left, right):
+                    gid = row[x]
+                    if not gid:  # empty cell
+                        continue
+                    image = get_image(gid)
                     dest = (x * tw - ox, y * th - oy)
                     if image is None:  # tile without graphic -> placeholder block, never crash
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
