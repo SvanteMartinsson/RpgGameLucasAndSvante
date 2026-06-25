@@ -32,8 +32,13 @@ PLANT = {"cainos": 2691, "grave_heath": 4227}
 # Grass-sheet tile indices (all within the grass tileset, so ground stays
 # {cainos_grass, grave_heath_grass}). idx 0-31 are grass; 32-63 are cobble.
 GBASE = 0
-GVAR = [1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27]   # subtle grass tufts
-GDET = [5, 6, 7, 12, 13, 14, 20, 21, 22, 29, 30, 31]             # flowers/pebbles (life)
+# Only tiles with a genuinely VISIBLE mark count (measured: idx 1-27 grass "tufts"
+# are pixel-identical to base at zoom). Stone/pebble tiles read as earthy ground
+# texture; flowers add colour sparingly so it stays wilderness, not a meadow.
+GROUND_STONE = [6, 12, 13, 21, 28, 31, 7, 22, 30]               # pale pebbles/stones
+GROUND_FLOWER = [14, 20, 23, 29]                                # yellow/orange flowers
+DETAIL_DENSITY = 0.18      # share of cells carrying a visible detail mark
+FLOWER_SHARE = 0.28        # of those, how many are flowers (rest stones)
 # Broken/overgrown path remnants: fuller cobble near towns, scattered cobble mid-way.
 PATH_NEAR = [44, 45, 36, 37]      # a path-stub leaving a town
 PATH_FAR = [52, 53, 60, 61]       # scattered cobble in grass -> overgrown remnant
@@ -92,13 +97,19 @@ def main():
     for a, b in (("burg_117", "burg_54"), ("burg_149", "burg_67")):
         protected |= line_cells(towns[a], towns[b])
 
-    # ---- GROUND: textured open grass (varied, not monochrome) ----
+    # ---- GROUND: textured open grass (visible detail, not monochrome) ----
+    # Dedicated RNG so detail-density tuning never perturbs the (approved) path
+    # hints + forest masses, which keep using the module RNG.
+    gd = random.Random(81)
     ground = [[0] * W for _ in range(H)]
     for y in range(H):
         for x in range(W):
             base = GRASS[theme_ground(x, y)]
-            r = random.random()
-            idx = random.choice(GDET) if r < 0.06 else (random.choice(GVAR) if r < 0.45 else GBASE)
+            if gd.random() < DETAIL_DENSITY:
+                pool = GROUND_FLOWER if gd.random() < FLOWER_SHARE else GROUND_STONE
+                idx = gd.choice(pool)
+            else:
+                idx = GBASE
             ground[y][x] = base + idx
 
     # ---- broken PATH HINTS toward neighbour towns (ground layer, no collision) ----

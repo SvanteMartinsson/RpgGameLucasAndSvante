@@ -121,19 +121,39 @@ class OverworldRegenTest(unittest.TestCase):
     # -- ground texture + broken path hints (under player, no collision) ----
 
     def _layer(self, name):
-        return self.world.tmx.get_layer_by_name(name).data
+        # Parse the RAW TMX CSV (pytmx remaps gids internally, which would break
+        # firstgid math); raw gids are firstgid + tile-index.
+        import os
+        import re
+        from rpg_game.presentation.pygame_overworld import MAPS_DIR
+        src = open(os.path.join(MAPS_DIR, "overworld.tmx"), encoding="utf-8").read()
+        m = re.search(r'name="%s"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>' % name, src, re.S)
+        return [[int(v) for v in r.rstrip(",").split(",")] for r in m.group(1).strip().split("\n")]
 
     def _is_path(self, gid):
         # cobble path tiles are idx 32-63 of the grass tilesets (firstgid 3/387).
         return any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387))
 
-    def test_ground_is_textured_not_monochrome(self):
+    # grass-sheet indices that carry a VISIBLE mark at zoom (stones + flowers);
+    # the micro-tuft "variant" tiles are pixel-identical to base and don't count.
+    VISIBLE_MARK = {6, 7, 12, 13, 21, 22, 28, 30, 31, 14, 20, 23, 29}
+
+    def _mark_idx(self, gid):
+        for fg in (3, 387):
+            if fg <= gid < fg + 32:   # grass region (not cobble)
+                return gid - fg
+        return None
+
+    def test_ground_has_lively_visible_detail(self):
+        # Judged on visible marks, not gid count: enough scattered stone/flower
+        # detail to read as living wilderness, but sparse enough to stay open
+        # (not a meadow). The before/after zoom render is the real proof.
         ground = self._layer("ground")
-        from collections import Counter
-        c = Counter(ground[y][x] for y in range(H) for x in range(W))
-        self.assertGreater(len(c), 20, "ground barely varied (near-monochrome)")
-        base = c[3] + c[387]  # the two base-grass gids
-        self.assertLess(base / (W * H), 0.65, "ground dominated by base grass")
+        vis = sum(1 for y in range(H) for x in range(W)
+                  if self._mark_idx(ground[y][x]) in self.VISIBLE_MARK)
+        frac = vis / (W * H)
+        self.assertGreater(frac, 0.12, f"too sparse to read as lively: {frac:.2f}")
+        self.assertLess(frac, 0.30, f"too busy (meadow, not open wilderness): {frac:.2f}")
 
     def test_path_hints_exist_and_are_broken(self):
         ground = self._layer("ground")
