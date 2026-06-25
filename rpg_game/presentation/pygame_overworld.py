@@ -273,7 +273,14 @@ class OverworldApp:
     def __init__(self, engine: GameEngine | None = None, zone: ZoneConfig | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(T.CAPTION_OVERWORLD)
-        pygame.display.set_mode((1, 1))  # video mode for tile .convert() during load
+        # Inherit the window the previous screen (start menu / creation / battle)
+        # already opened — possibly maximized or on an external monitor — so
+        # entering the overworld never shrinks to a tiny default. Only open a
+        # throwaway video mode if none exists yet (needed for tile .convert()).
+        prev = pygame.display.get_surface()
+        self._inherited_size = prev.get_size() if prev is not None else None
+        if prev is None:
+            pygame.display.set_mode((1, 1))
         self.zone = zone or ZoneConfig.load()
         self.engine = engine or self._new_engine()
         self.world = Overworld(self.zone.map_path, dict(self.zone.gates), dict(self.zone.towns))
@@ -281,8 +288,12 @@ class OverworldApp:
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
-        # Clamp the initial window so it can never open larger than the desktop.
-        self.windowed_size = fit_size(self.view_size)
+        # Inherit the prior window's size (already a valid on-screen size) so the
+        # overworld matches it instead of shrinking; cold start clamps a default.
+        if self._inherited_size and self._inherited_size[0] > 1 and self._inherited_size[1] > 1:
+            self.windowed_size = self._inherited_size
+        else:
+            self.windowed_size = fit_size(self.view_size)
         self.fullscreen = False
         # Initial canvas; draw() resizes it to the live display each frame (fluid
         # overworld) so the world fills the window and the camera shows more map.
@@ -348,9 +359,13 @@ class OverworldApp:
         native fullscreen with Cmd+Tab and a clear way out. SCALED keeps pixel art
         crisp on HiDPI."""
         pygame.display.set_caption(T.CAPTION_OVERWORLD)
-        target = desktop_size() if self.fullscreen else self.windowed_size
-        self.display = open_window(target)
-        if not self.fullscreen:
+        if self.fullscreen:
+            self.display = open_window(desktop_size())   # clamp big mode to the desktop
+        else:
+            # windowed_size is already valid (clamped on cold start, or inherited
+            # from the previous screen) — open at exactly that, no re-clamp that
+            # would shrink an external-monitor / maximized window.
+            self.display = set_display_mode(self.windowed_size)
             self.windowed_size = self.display.get_size()
         # Pump one event cycle and re-read the OS-confirmed surface so the first
         # frame uses the real drawable size.
