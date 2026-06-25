@@ -84,7 +84,6 @@ def serialize_player(player: Player) -> dict:
         "equipped_weapon_id": player.equipped_weapon_id,
         "current_place_id": player.current_place_id,
         "respawn_place_id": player.respawn_place_id,
-        "last_rest_place_id": player.last_rest_place_id,
         "owned_weapon_ids": list(player.owned_weapon_ids),
         "owned_gear_ids": list(player.owned_gear_ids),
         "equipped_gear": dict(player.equipped_gear),
@@ -134,8 +133,15 @@ def deserialize_player(data: dict, default_place_id: str = "") -> Player:
         equipped_weapon_id=data.get("equipped_weapon_id", ""),
         inventory=inventory,
         current_place_id=data.get("current_place_id") or default_place_id,
-        respawn_place_id=data.get("respawn_place_id") or default_place_id,
-        last_rest_place_id=data.get("last_rest_place_id", ""),
+        # Migration: legacy saves stored the purchased respawn in last_rest_place_id
+        # while respawn_place_id was auto-set by movement (unreliable). If the
+        # legacy key is present, trust the purchased value (or default Hordanita);
+        # otherwise the new respawn_place_id is the single source of truth.
+        respawn_place_id=(
+            (data.get("last_rest_place_id") or default_place_id)
+            if "last_rest_place_id" in data
+            else (data.get("respawn_place_id") or default_place_id)
+        ),
         owned_weapon_ids=tuple(data.get("owned_weapon_ids", ())),
         owned_gear_ids=tuple(data.get("owned_gear_ids", ())),
         equipped_gear={key: str(value) for key, value in data.get("equipped_gear", {}).items()},

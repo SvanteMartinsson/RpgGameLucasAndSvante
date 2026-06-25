@@ -42,7 +42,10 @@ def travel(player: Player, content: GameContent, destination_id: str) -> str:
         raise ValueError(f"{content.places[normalized].name} is locked.")
     player.current_place_id = normalized
     new_place = content.places[normalized]
-    player.respawn_place_id = new_place.respawn_place_id
+    # NOTE: travel/enter set location only. The respawn point is a persistent
+    # player field changed ONLY by a purchased relocation (relocate_respawn) —
+    # never auto-moved by location/zone/death, so you never respawn somewhere
+    # you didn't choose.
     return f"Travelled to {new_place.name}."
 
 
@@ -50,9 +53,9 @@ def enter_place(player: Player, content: GameContent, place_id: str) -> str:
     """Set the player's location directly, without the adjacency gate.
 
     Free-walk presentation reaches a place by walking onto it, so there is no
-    "from" place to validate against. This mirrors :func:`travel`'s state update
-    (location + respawn point) but skips the connection check. Locked places are
-    still refused, same as travel.
+    "from" place to validate against. Sets location only — the respawn point is
+    NOT touched here (it moves solely via a purchased relocation). Locked places
+    are still refused, same as travel.
     """
     normalized = place_id.strip().lower()
     if normalized not in content.places:
@@ -61,7 +64,6 @@ def enter_place(player: Player, content: GameContent, place_id: str) -> str:
     if new_place.locked:
         raise ValueError(f"{new_place.name} is locked.")
     player.current_place_id = normalized
-    player.respawn_place_id = new_place.respawn_place_id
     return f"Entered {new_place.name}."
 
 

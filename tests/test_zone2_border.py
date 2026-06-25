@@ -97,11 +97,12 @@ class Zone2BorderTest(unittest.TestCase):
         self.assertEqual(self.app.engine.player.current_place_id, "burg_54")
         self.assertEqual(self.app.engine.player.respawn_place_id, "burg_5")
 
-    def test_western_wilderness_uses_zone2_region_and_respawn(self):
+    def test_western_wilderness_uses_zone2_region_but_respawn_unchanged(self):
         self.app.world.set_tile(50, 8)  # western wilderness (mid-west band)
         self.app.sync_location()
         self.assertEqual(self.app.engine.player.current_place_id, "burg_146")
-        self.assertEqual(self.app.engine.player.respawn_place_id, "burg_146")
+        # Region drives encounters, but respawn never auto-moves: still Hordanita.
+        self.assertEqual(self.app.engine.player.respawn_place_id, "burg_5")
 
     def test_western_encounters_come_from_zone2_pool(self):
         self.app.world.set_tile(50, 8)

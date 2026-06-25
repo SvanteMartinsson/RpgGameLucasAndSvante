@@ -1026,7 +1026,7 @@ class OverworldApp:
         if has_store:
             zone = self.zone.zone_for_tile(self.world.current_tile)
             cost = progression.respawn_relocation_cost(zone)
-            already_respawn = self.engine.player.last_rest_place_id == self.engine.current_place().id
+            already_respawn = self.engine.player.respawn_place_id == self.engine.current_place().id
             actions.append(("relocate_respawn", T.relocate_respawn_label(cost, already=already_respawn)))
         if self.engine.available_tournaments():
             actions.append(("tournaments", T.TOWN_TOURNAMENTS))

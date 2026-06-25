@@ -358,9 +358,6 @@ class Player:
     conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
     elemental_attack_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
-    # Town where the player last rested. On death this is the respawn target;
-    # empty (never rested) falls back to respawn_place_id (the regional hub).
-    last_rest_place_id: str = ""
     completed_tournament_ids: set[str] = field(default_factory=set)
 
     @property

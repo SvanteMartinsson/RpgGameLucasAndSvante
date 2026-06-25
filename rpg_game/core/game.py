@@ -134,20 +134,21 @@ class GameEngine:
         )
 
     def relocate_respawn(self, zone: int) -> RelocateRespawnResult:
-        """Buy a move of the respawn point to the current rest town. Zone 1 is
-        free; higher zones cost progression.respawn_relocation_cost(zone). Sets
-        last_rest_place_id (the chosen respawn) only on success. Observation of
-        gold/respawn only — combat/RNG untouched."""
+        """Buy a move of the respawn point to the current town. Zone 1 is free;
+        higher zones cost progression.respawn_relocation_cost(zone). This is the
+        ONLY thing that changes respawn_place_id — it never auto-moves with
+        location/zone/death. Observation of gold/respawn only — combat/RNG
+        untouched."""
         place = self.current_place()
         cost = progression.respawn_relocation_cost(zone)
         if not place.has_store:
             return RelocateRespawnResult(False, "You can only set your respawn point in a town with services.", cost)
-        if self.player.last_rest_place_id == place.id:
+        if self.player.respawn_place_id == place.id:
             return RelocateRespawnResult(False, f"{place.name} is already your respawn point.", cost, already_set=True)
         if self.player.gold < cost:
             return RelocateRespawnResult(False, f"Not enough gold. Moving your respawn to {place.name} costs {cost}.", cost)
         self.player.gold -= cost
-        self.player.last_rest_place_id = place.id
+        self.player.respawn_place_id = place.id
         message = (f"Respawn point moved to {place.name} for {cost} gold."
                    if cost else f"Respawn point set to {place.name}.")
         return RelocateRespawnResult(True, message, cost)
@@ -481,9 +482,9 @@ class GameEngine:
 
     def _respawn_player(self) -> progression.RespawnResult:
         player = self.player
-        # Respawn at the last rested town; before any rest, fall back to the
-        # regional hub (respawn_place_id) so early-game behaviour is unchanged.
-        player.current_place_id = player.last_rest_place_id or player.respawn_place_id
+        # Respawn at the persistent respawn point: Hordanita by default, changed
+        # only by a purchased relocation. Never derived from where/how you died.
+        player.current_place_id = player.respawn_place_id
         return progression.apply_death_penalty(player)
 
     def _defeat(

@@ -90,10 +90,17 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertEqual(self.zone.wild_region_at((44, 40)), "burg_121")  # south wins over band
         self.assertEqual(self.zone.wild_region_at((13, 40)), "burg_121")  # heath
 
-    def test_dying_in_heath_respawns_at_alherralba(self):
+    def test_dying_in_heath_respawns_at_hordanita_unless_relocated(self):
+        # Respawn no longer auto-moves: entering the heath leaves it at Hordanita.
         engine = self.app.engine
         engine.enter_place("burg_121")
-        self.assertEqual(engine.player.respawn_place_id, "burg_121")
+        self.assertEqual(engine.player.respawn_place_id, "burg_5")
+        engine._respawn_player()
+        self.assertEqual(engine.player.current_place_id, "burg_5")
+        # Only buying relocation at Alherralba moves it there.
+        engine.enter_place("burg_121")
+        engine.player.gold = 1000
+        self.assertTrue(engine.relocate_respawn(zone=1).success)
         engine._respawn_player()
         self.assertEqual(engine.player.current_place_id, "burg_121")
 
