@@ -261,84 +261,60 @@ class OverworldRegenTest(unittest.TestCase):
                 cur, ln = None, 0
         self.assertGreater(sum(runs) / len(runs), 2.0, "transition is checkerboard, not clustered")
 
-    def test_forests_use_per_zone_flora_with_organic_crowns(self):
+    GATES = ((26, 0), (79, 28), (24, 55))
+
+    def _is_sea_or_river(self, gid):           # water_autotile gids 4739..4754
+        return 4739 <= gid < 4755
+
+    def _is_bridge(self, gid):                  # water_bridge gids 4755..4778
+        return 4755 <= gid < 4779
+
+    def test_no_forest_canopy_anywhere(self):
+        # The forest edge-band + inner groves are gone: NO plant-sheet canopy/crown
+        # tile survives in walls or decor anywhere on the map.
         walls, decor = self._layer("walls"), self._layer("decor_over")
-        core_plant = heath_plant = 0
-        edge_crowns = center_crowns = 0
-        edge_ids = {17, 18, 19, 33, 35, 49, 50, 51, 21, 22, 23, 37, 39, 53, 54, 55,
-                    25, 26, 27, 41, 43, 57, 58, 59}
-        for y in range(H):
-            for x in range(W):
-                fg, off = self._plant_offset(decor[y][x])
-                if off is None:
-                    continue
-                if fg == 2691:
-                    core_plant += 1
-                else:
-                    heath_plant += 1
-                if off in edge_ids:
-                    edge_crowns += 1
-                elif off in (34, 38, 42):
-                    center_crowns += 1
-        # both zones grow their own flora
-        self.assertGreater(core_plant, 50)
-        self.assertGreater(heath_plant, 50)
-        # organic edges: leafy edge/corner crowns dominate over flat centre tiles
-        self.assertGreater(edge_crowns, center_crowns)
+        plant = [(x, y) for y in range(H) for x in range(W)
+                 if self._plant_offset(walls[y][x])[1] is not None
+                 or self._plant_offset(decor[y][x])[1] is not None]
+        self.assertEqual(plant, [], f"forest canopy still present at {plant[:5]}")
 
-    def _band_cells(self):
-        # The kept edge band, reconstructed exactly as the generator builds it.
-        gate_top, gate_bottom = range(23, 30), range(21, 28)
-        band = set()
-        for x in range(W):
-            if x not in gate_top:
-                band |= {(x, 0), (x, 1)}
-        for y in range(H):
-            band |= {(0, y), (1, y)}
-        for x in range(60):
-            if x not in gate_bottom:
-                band |= {(x, 54), (x, 55)}
-        return band
+    def test_sea_frames_and_seals_the_border(self):
+        # The whole map perimeter is water (the sea) except the dry gate mouths:
+        # no open non-gate edge cell remains.
+        walls = self._layer("walls")
 
-    def test_no_inner_forest_groves_remain(self):
-        # The inner forest masses are removed: no canopy collision fill and no crown
-        # decor may survive in the map interior (away from the 2-deep edge band + its
-        # 1-tile fringe). Plant-sheet tiles (firstgid 3/387 grass aside) only appear
-        # as forest canopy/crowns/bushes -> none should be left inland.
+        def near_gate(x, y):
+            return any(abs(x - gx) <= 6 and abs(y - gy) <= 6 for gx, gy in self.GATES)
+
+        perim = ([(x, 0) for x in range(W)] + [(x, H - 1) for x in range(W)]
+                 + [(0, y) for y in range(H)] + [(W - 1, y) for y in range(H)])
+        open_cells = [(x, y) for (x, y) in perim
+                      if not self._is_sea_or_river(walls[y][x]) and not near_gate(x, y)]
+        self.assertEqual(open_cells, [], f"unsealed non-gate border cells: {open_cells[:5]}")
+        # the sea is substantial (it frames the map, not a thin ring)
+        sea = sum(1 for y in range(H) for x in range(W) if self._is_sea_or_river(walls[y][x]))
+        self.assertGreater(sea, 900, "sea too small to frame the map")
+
+    def test_all_water_is_one_connected_body(self):
+        # sea + rivers + lake + (bridge-covered) cells flood-connect to the lake.
         walls, decor = self._layer("walls"), self._layer("decor_over")
-        for y in range(3, H - 3):           # interior, clear of the band + fringe ring
-            for x in range(3, W - 3):
-                self.assertIsNone(self._plant_offset(walls[y][x])[1],
-                                  f"grove canopy still blocks at {(x, y)}")
-                self.assertIsNone(self._plant_offset(decor[y][x])[1],
-                                  f"grove crown still drawn at {(x, y)}")
+        body = {(x, y) for y in range(H) for x in range(W)
+                if self._is_sea_or_river(walls[y][x]) or self._is_bridge(decor[y][x])}
+        lake = {(x, y) for (x, y) in body
+                if ((x - 72) / 12) ** 2 + ((y - 55) / 7) ** 2 <= 1.0}
+        seen, q = set(lake), deque(lake)
+        while q:
+            x, y = q.popleft()
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if (nx, ny) in body and (nx, ny) not in seen:
+                    seen.add((nx, ny))
+                    q.append((nx, ny))
+        self.assertEqual(body - seen, set(), "water not all one body connected to the lake")
 
-    def test_edge_band_is_the_only_canopy_and_seals_the_border(self):
-        # All remaining canopy collision (plant offset 34) lives on the kept edge
-        # band; the map border stays sealed (left edge fully blocked — no gate there).
+    def test_no_town_or_gate_sits_in_water(self):
         walls = self._layer("walls")
-        band = self._band_cells()
-        wall_offs = {self._plant_offset(walls[y][x])[1]
-                     for y in range(H) for x in range(W)
-                     if self._plant_offset(walls[y][x])[1] is not None}
-        self.assertEqual(wall_offs, {34}, f"collision fill changed: {wall_offs}")
-        canopy = {(x, y) for y in range(H) for x in range(W)
-                  if self._plant_offset(walls[y][x])[1] == 34}
-        self.assertTrue(canopy <= band, "canopy collision outside the edge band")
-        self.assertTrue(all(walls[y][0] for y in range(H)), "left edge band breached")
-
-    def test_edge_terrain_replaces_hard_border(self):
-        walls = self._layer("walls")
-        # the hard 1-tile placeholder border ring (gid 2) is gone
-        self.assertEqual(sum(1 for row in walls for g in row if g == 2), 0)
-        # cliff stamps are placed and blocking (cliff tileset gids 4779-4870)
-        cliff = sum(1 for row in walls for g in row if 4779 <= g <= 4870)
-        self.assertGreater(cliff, 20, "no cliff collision placed")
-        # dense forest edge band walls the top edge (rows 0-1 mostly blocked)
-        top_band = sum(1 for x in range(W) if walls[0][x] or walls[1][x])
-        self.assertGreater(top_band, 30, "top edge not banded")
-        # ...but with an opening at the north gate so it stays reachable
-        self.assertEqual(walls[0][26], 0, "north gate column is walled")
+        for (x, y) in list(TOWNS.values()) + list(self.GATES):
+            self.assertFalse(self._is_sea_or_river(walls[y][x]), f"{(x, y)} drowned")
 
     def test_paths_and_detail_never_collide(self):
         # path + detail live in the ground layer only; the walls layer must hold

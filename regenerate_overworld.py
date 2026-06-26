@@ -227,9 +227,49 @@ def _in_landtunga(gx, gy):
     return 72 <= gx <= 74 and 46 <= gy <= 53
 
 
-def water_corner(gx, gy):
+# ---- SEA: an organic coastline that frames the map (replaces the forest band) ----
+# A corner is sea when its distance to the nearest map edge is below a wavy coast
+# depth (base + two sines + a hash term -> never a straight rectangle). The coast is
+# pulled BACK toward the edge around dry anchors (gates + coastal towns) so a gate
+# keeps a dry mouth to the edge and no town is drowned. Same corner-based autotile as
+# the lake/rivers (water_corner feeds the one CORNER_MAP field), so it is seamless and
+# merges with the rivers + lake into a single water body.
+SEA_BASE = 3.0
+SEA_EDGE = {"N": (0.0, 11.0), "S": (2.3, 23.0), "W": (4.1, 37.0), "E": (1.2, 53.0)}  # phase, hash salt
+
+
+def _sea_depth(t, edge):
+    ph, salt = SEA_EDGE[edge]
+    return (SEA_BASE + 1.5 * math.sin(t / 5.0 + ph) + 0.8 * math.sin(t / 2.3 + ph * 1.7)
+            + (_hash01(t * 1.7, salt) - 0.5) * 2.0)
+
+
+def _nearest_edge(gx, gy):
+    dN, dS, dW, dE = gy, H - gy, gx, W - gx
+    m = min(dN, dS, dW, dE)
+    if m == dN:
+        return m, gx, "N"
+    if m == dS:
+        return m, gx, "S"
+    if m == dW:
+        return m, gy, "W"
+    return m, gy, "E"
+
+
+def sea_corner(gx, gy, dry_points):
+    m, t, edge = _nearest_edge(gx, gy)
+    depth = _sea_depth(t, edge)
+    for (ax, ay, rad) in dry_points:          # indent the coast around gates/towns
+        depth = min(depth, math.hypot(gx - ax, gy - ay) - rad)
+    return m < depth
+
+
+def water_corner(gx, gy, dry_points=()):
     if _in_landtunga(gx, gy):
         return False
+    # sea frame (organic coastline)
+    if dry_points and sea_corner(gx, gy, dry_points):
+        return True
     # lake
     if ((gx - LAKE[0]) / LAKE[2]) ** 2 + ((gy - LAKE[1]) / LAKE[3]) ** 2 <= 1.0:
         return True
@@ -248,10 +288,10 @@ def water_corner(gx, gy):
     return False
 
 
-def build_water(ground, walls, decor):
+def build_water(ground, walls, decor, dry_points=()):
     """Autotile the water field into walls (visible + collision), carve bridges
     into ground (walkable). Returns (placed water cells, lake cells)."""
-    cw = [[water_corner(gx, gy) for gx in range(W + 1)] for gy in range(H + 1)]
+    cw = [[water_corner(gx, gy, dry_points) for gx in range(W + 1)] for gy in range(H + 1)]
     placed = {}
     for y in range(H):
         for x in range(W):
@@ -409,78 +449,29 @@ def main():
                 pool = PATH_NEAR if mid < 0.4 else PATH_FAR
                 ground[y][x] = GRASS[theme_ground(x, y)] + random.choice(pool)
 
-    # ---- WALLS: natural edge terrain (cliffs + dense forest) + forest masses ----
-    # No hard 1-tile border ring any more — the map edge is already blocked by the
-    # bounds check; the boundary is now organic. Cliff stamps round the corners and
-    # dense forest bands wall the long edges, with openings at the three gates.
+    # ---- WALLS: the SEA frames the map; rivers + lake live inside ----
+    # The old forest edge-band + cliff corners are gone: the perimeter is now an
+    # organic sea coastline (built by build_water from the same autotile as the lake/
+    # rivers), so the boundary reads as a coast, not a square wall.
     walls = [[0] * W for _ in range(H)]
     decor = [[0] * W for _ in range(H)]
 
-    # Cliff corner accents (discrete stamps, not a tiling set): L-corner top-left,
-    # a long wall above Estables (top-right), a pillar bottom-left. Bottom-right is
-    # the lake. Placed first so the forest bands flow around them.
-    place_cliff("corner", 0, 0, walls, decor)
-    place_cliff("horizontal", 66, 0, walls, decor)
-    place_cliff("vertical", 0, 49, walls, decor)
-
-    # CONTINUOUS dense forest edge band (2 cells deep) along the full long edges, so
-    # the cliffs are embedded in it (no grass gap) and every corner is sealed: the
-    # band wraps to the right edge across the top (rounding the open top-right to the
-    # edge-river), down the whole left edge, and along the bottom up to the lake.
-    # Right edge = the edge-river. Clear openings only at the two land gates.
-    GATE_OPEN = {(26, 0): range(23, 30), (24, 55): range(21, 28)}
-    band = set()
-    for x in range(0, 80):                        # top edge -> the full width (both corners)
-        if x not in GATE_OPEN[(26, 0)]:
-            band |= {(x, 0), (x, 1)}
-    for y in range(0, 56):                         # left edge -> full height (corner to corner)
-        band |= {(0, y), (1, y)}
-    for x in range(0, 60):                          # bottom edge -> up to the lake (x>=60)
-        if x not in GATE_OPEN[(24, 55)]:
-            band |= {(x, 54), (x, 55)}
-
-    # Inner forest MASSES (organic blobs you weave around) are kept as a distinct set
-    # from the edge BAND (the clean solid map-edge wall). Only the masses get the
-    # emergent-treetop depth pass; the band stays a flat solid wall so a future slice
-    # can't accidentally open the map edge by reshaping forest decor.
-    inner_forest = set()
+    # inner_forest is still COMPUTED (then discarded) ONLY to preserve the seeded
+    # random.uniform draws — it was the last consumer of the module RNG stream, so
+    # keeping the draws guarantees ground/paths/water stay byte-identical to before.
     for cx, cy, r in FORESTS:
         for y in range(max(1, cy - r - 1), min(H - 1, cy + r + 2)):
             for x in range(max(1, cx - r - 1), min(W - 1, cx + r + 2)):
                 if (x - cx) ** 2 + (y - cy) ** 2 <= (r + random.uniform(-1.2, 0.4)) ** 2:
-                    if (x, y) not in protected:
-                        inner_forest.add((x, y))
-    band_cells = {c for c in band if c not in protected}
-    # The inner forest MASSES are removed entirely: their cells stay open ground (no
-    # walls collision, no canopy decor). inner_forest is still COMPUTED above so its
-    # seeded random.uniform draws are preserved — it was the LAST consumer of the
-    # module RNG stream (water/bridges are deterministic, towns are static from
-    # core_zone.json, path hints drew earlier), so keeping the draws guarantees
-    # ground/water/paths/towns stay byte-identical. It is reused here ONLY as
-    # marching-tile CONTEXT so the kept edge band's crowns are byte-identical even
-    # where a (now removed) mass used to touch the band.
-    marching_context = inner_forest | band_cells
-    # Only the edge BAND is written -> solid border wall + its leafy crowns, unchanged.
-    for (x, y) in band_cells:
-        if walls[y][x] != 0:       # don't overwrite a cliff stamp
-            continue
-        base = PLANT[theme_at(x, y)]
-        walls[y][x] = base + CANOPY
-        decor[y][x] = base + crown_tile(x, y, marching_context)
-    # Sparse bush fringe just outside the BAND only (the inner masses' fringe is gone
-    # with them). Excludes every original forest cell so freed ground stays clear and
-    # the band's own fringe bushes are byte-identical.
-    fringe = {(x + dx, y + dy) for (x, y) in band_cells for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-              if (x + dx, y + dy) not in marching_context}
-    for (x, y) in fringe:
-        if not (0 <= x < W and 0 <= y < H) or (x, y) in protected:
-            continue
-        if walls[y][x] == 0 and decor[y][x] == 0 and _hash01(x, y) < 0.35:
-            base = PLANT[theme_at(x, y)]
-            decor[y][x] = base + BUSHES[int(_hash01(y, x) * len(BUSHES))]
+                    pass  # groves removed; draw consumed for determinism
 
-    # ---- WATER (edge phase v3): rivers + lake + bridges ----
-    placed, bridge_cells, lake = build_water(ground, walls, decor)
+    # Dry anchors: the coast is pulled back around each gate (a wide dry MOUTH that
+    # reaches the edge = the zone opening) and each town (so no settlement is drowned).
+    dry_points = [(gx, gy, 4.5) for (gx, gy) in gates]
+    dry_points += [(tx, ty, 3.5) for (tx, ty) in town_tiles]
+
+    # ---- WATER + SEA: coastline frame + rivers + lake + bridges ----
+    placed, bridge_cells, lake = build_water(ground, walls, decor, dry_points)
     assert_water_invariants(placed, bridge_cells, lake, gates)
 
     # ---- reachability: flood-fill from start over walls==0 ----
@@ -517,8 +508,8 @@ def main():
 
     open(TMX, "w", encoding="utf-8").write(src)
     print(f"OK 80x56: {len(town_tiles)} towns + {len(gates)} gates reachable; "
-          f"{len(band_cells)} edge-band trunks (inner groves removed); walkable ~"
-          f"{100*(1 - len(blocked)/(W*H)):.1f}% (incl. border)")
+          f"{len(placed)} water cells (sea coast + rivers + lake); walkable ~"
+          f"{100*(1 - len(blocked)/(W*H)):.1f}% (incl. sea)")
 
 
 if __name__ == "__main__":

@@ -109,7 +109,7 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertNotEqual(T.region_flavor("burg_121"), T.WEST_BORDER_FLAVOR)
         self.assertEqual(T.region_flavor("burg_146"), T.WEST_BORDER_FLAVOR)  # west unchanged
 
-    # -- heath is populated with themed trees (trunks in walls, canopies over) --
+    # -- heath is open: forest groves + edge band are gone (sea frames the map) --
 
     def _tileset_of(self, gid):
         return self.world.tmx.get_tileset_from_gid(gid).name if gid else None
@@ -119,22 +119,20 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertIn("grave_heath_plant", names)
         self.assertIn("grave_heath_props", names)  # reserved for the edge phase
 
-    def test_heath_has_trees_drawn_and_blocking(self):
+    def test_heath_is_open_with_no_forest_canopy(self):
+        # The themed forest trees are removed; the heath is open ground framed by the
+        # sea. No plant-sheet canopy survives in walls or decor below the seam.
         tmx = self.world.tmx
         walls = tmx.get_layer_by_name("walls")
         decor = tmx.get_layer_by_name("decor_over")
-        heath_walls = [self._tileset_of(walls.data[y][x])
-                       for y in range(SEAM_Y, tmx.height) for x in range(tmx.width)]
-        heath_decor = [self._tileset_of(decor.data[y][x])
-                       for y in range(SEAM_Y, tmx.height) for x in range(tmx.width)]
-        self.assertIn("grave_heath_plant", heath_walls)   # trunks block
-        self.assertIn("grave_heath_plant", heath_decor)   # canopies drawn over
+        for y in range(SEAM_Y, tmx.height):
+            for x in range(tmx.width):
+                self.assertNotEqual(self._tileset_of(walls.data[y][x]), "grave_heath_plant")
+                self.assertNotEqual(self._tileset_of(decor.data[y][x]), "grave_heath_plant")
 
-    def test_only_dense_canopy_collides_never_wispy_edge_crowns(self):
-        # Forest collision fill is the dense centre canopy (offset 34, fully opaque,
-        # hidden under the crown). The wispy edge/corner crown tiles (transparent
-        # outline) live ONLY in decor_over and must never end up in walls (they
-        # would read as phantom collision). Raw CSV: plant gid = firstgid + offset.
+    def test_no_plant_canopy_collides_anywhere(self):
+        # The forest is gone entirely: no plant-sheet (cainos/grave_heath) canopy gid
+        # remains in the walls collision layer — the border is sealed by the SEA now.
         import os
         import re
         from rpg_game.presentation.pygame_overworld import MAPS_DIR
@@ -151,13 +149,9 @@ class VerraldaSkeletonTest(unittest.TestCase):
             return None
 
         walls = layer("walls")
-        wispy = {17, 18, 19, 33, 35, 49, 50, 51, 21, 22, 23, 37, 39, 53, 54, 55,
-                 25, 26, 27, 41, 43, 57, 58, 59}   # all crown tiles except the dense centres
         wall_offsets = {plant_offset(walls[y][x]) for y in range(len(walls))
                         for x in range(len(walls[0])) if plant_offset(walls[y][x]) is not None}
-        self.assertTrue(wall_offsets, "no forest fill in walls")
-        self.assertEqual(wall_offsets & wispy, set(), "wispy crown tile used as collision")
-        self.assertTrue(wall_offsets <= {34, 38, 42}, f"unexpected plant collision tiles: {wall_offsets}")
+        self.assertEqual(wall_offsets, set(), f"forest canopy still in walls: {wall_offsets}")
 
     # -- faction villages (grouping preserved on the larger heath) --------
 
