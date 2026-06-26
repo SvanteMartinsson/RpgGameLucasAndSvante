@@ -208,6 +208,65 @@ class OverworldRegenTest(unittest.TestCase):
         for bx, by in [(12, 35), (57, 35), (26, 27), (44, 43), (77, 28)]:
             self.assertNotIn((bx, by), self.world.blocked, f"bridge {(bx, by)} blocked")
 
+    def _plant_offset(self, gid):
+        for fg in (2691, 4227):       # cainos_plant / grave_heath_plant
+            if fg <= gid < fg + 256:
+                return fg, gid - fg
+        return None, None
+
+    def test_gradual_zone_transition_no_hard_line(self):
+        ground = self._layer("ground")
+
+        def gtheme(gid):
+            if 3 <= gid < 67:
+                return "cainos"
+            if 387 <= gid < 451:
+                return "grave_heath"
+            return None
+
+        def heath_share(y):
+            row = [gtheme(ground[y][x]) for x in range(W)]
+            row = [t for t in row if t]
+            return row.count("grave_heath") / len(row) if row else 0.0
+
+        # north of the band is pure core, south is pure heath
+        self.assertEqual(heath_share(24), 0.0)
+        self.assertEqual(heath_share(50), 1.0)
+        # inside the band every row is MIXED (no hard line where 100% core -> 100% heath)
+        for y in range(30, 43):
+            s = heath_share(y)
+            self.assertGreater(s, 0.0, f"row {y} is pure core (hard edge)")
+            self.assertLess(s, 1.0, f"row {y} is pure heath (hard edge)")
+        # and the trend rises (binned to smooth per-cell hash noise)
+        north = sum(heath_share(y) for y in range(29, 34)) / 5
+        south = sum(heath_share(y) for y in range(39, 44)) / 5
+        self.assertGreater(south, north + 0.2)
+
+    def test_forests_use_per_zone_flora_with_organic_crowns(self):
+        walls, decor = self._layer("walls"), self._layer("decor_over")
+        core_plant = heath_plant = 0
+        edge_crowns = center_crowns = 0
+        edge_ids = {17, 18, 19, 33, 35, 49, 50, 51, 21, 22, 23, 37, 39, 53, 54, 55,
+                    25, 26, 27, 41, 43, 57, 58, 59}
+        for y in range(H):
+            for x in range(W):
+                fg, off = self._plant_offset(decor[y][x])
+                if off is None:
+                    continue
+                if fg == 2691:
+                    core_plant += 1
+                else:
+                    heath_plant += 1
+                if off in edge_ids:
+                    edge_crowns += 1
+                elif off in (34, 38, 42):
+                    center_crowns += 1
+        # both zones grow their own flora
+        self.assertGreater(core_plant, 50)
+        self.assertGreater(heath_plant, 50)
+        # organic edges: leafy edge/corner crowns dominate over flat centre tiles
+        self.assertGreater(edge_crowns, center_crowns)
+
     def test_edge_terrain_replaces_hard_border(self):
         walls = self._layer("walls")
         # the hard 1-tile placeholder border ring (gid 2) is gone

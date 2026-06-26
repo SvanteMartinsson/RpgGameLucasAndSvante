@@ -44,6 +44,25 @@ FLOWER_SHARE = 0.28        # of those, how many are flowers (rest stones)
 PATH_NEAR = [44, 45, 36, 37]      # a path-stub leaving a town
 PATH_FAR = [52, 53, 60, 61]       # scattered cobble in grass -> overgrown remnant
 TRUNK, CANOPY = 66, 34            # solid trunk (walls) + dense canopy (decor_over)
+# Three tree-canopy variants (3x3 crown tiles incl. baked trunk+shadow at the
+# bottom row). Used as a blob-autotile: a forest cell picks the crown tile that
+# matches which sides are forest, so the mass core is dense (center tile) and the
+# edges get the leafy rounded outline tiles -> organic, non-blocky edges + depth.
+TREE_CROWNS = [
+    [17, 18, 19, 33, 34, 35, 49, 50, 51],
+    [21, 22, 23, 37, 38, 39, 53, 54, 55],
+    [25, 26, 27, 41, 42, 43, 57, 58, 59],
+]
+BUSHES = [83, 85, 87, 91]         # small flora for the sparse forest fringe
+
+
+def crown_tile(x, y, forest):
+    """Pick a crown tile for forest cell (x,y) by which orthogonal neighbours are
+    also forest (marching-tiles), with a coherent per-region variant."""
+    grp = TREE_CROWNS[int(_hash01(x // 3, y // 3) * 3) % 3]
+    row = 0 if (x, y - 1) not in forest else (2 if (x, y + 1) not in forest else 1)
+    col = 0 if (x - 1, y) not in forest else (2 if (x + 1, y) not in forest else 1)
+    return grp[row * 3 + col]
 
 # Organic forest masses (cx, cy, r) placed BETWEEN towns. Minority terrain you
 # weave around; kept off town margins + the two zone-crossing lines.
@@ -51,12 +70,39 @@ FORESTS = [(20, 28, 5), (44, 10, 4), (52, 31, 4), (67, 21, 4),
            (40, 50, 5), (8, 50, 3), (33, 14, 3), (58, 40, 3), (30, 6, 3)]
 
 
+# Gradual core<->heath transition: instead of a hard line at the seam, a band
+# (BAND_N..BAND_S) dithers BOTH ground grass and flora between the two themes by a
+# share that rises monotonically with y (10% heath at the north edge -> 50% at the
+# seam -> 90% at the south edge). Outside the band the theme is pure. The dither is
+# a deterministic per-cell hash, so it never perturbs the seeded RNG stream (paths
+# / forest blobs / water stay byte-identical). General over any adjacent pair.
+BAND_N, BAND_S = 28, 44
+
+
+def _hash01(x, y):
+    v = math.sin(x * 127.1 + y * 311.7) * 43758.5453
+    return v - math.floor(v)
+
+
+def heath_share(y):
+    if y <= BAND_N:
+        return 0.0
+    if y >= BAND_S:
+        return 1.0
+    return 0.1 + 0.8 * (y - BAND_N) / (BAND_S - BAND_N)   # 0.1 -> 0.5 (seam) -> 0.9
+
+
+def theme_at(x, y):
+    """Zone theme for a cell, dithered through the transition band."""
+    return "grave_heath" if _hash01(x, y) < heath_share(y) else "cainos"
+
+
 def theme_ground(x, y):
-    return "grave_heath" if y >= SEAM_Y else "cainos"
+    return theme_at(x, y)
 
 
-def theme_plant(y):
-    return "grave_heath" if y >= SEAM_Y else "cainos"
+def theme_plant(y, x=0):
+    return theme_at(x, y)
 
 
 def read_layer_csv(src, name):
@@ -379,12 +425,25 @@ def main():
                     if (x, y) not in protected:
                         forest_cells.add((x, y))
     forest_cells |= {c for c in band if c not in protected}
+    # Collision footprint is the blob (unchanged -> reachability identical); the
+    # crown is recomposed as a marching-tile blob so edges are leafy/organic, the
+    # core dense, with per-zone flora dithered through the transition band.
     for (x, y) in forest_cells:
         if walls[y][x] != 0:       # don't overwrite a cliff stamp
             continue
-        base = PLANT[theme_plant(y)]
-        walls[y][x] = base + TRUNK     # solid -> collision + render
-        decor[y][x] = base + CANOPY    # leafy top, over the trunk
+        base = PLANT[theme_at(x, y)]
+        walls[y][x] = base + CANOPY                      # dense green: collision + fill (hidden under crown; no grey trunk poking through wispy edges)
+        decor[y][x] = base + crown_tile(x, y, forest_cells)  # leafy crown over the player (south edge shows trunk+shadow)
+    # Sparse bush fringe just outside the blob: visual overhang, non-blocking, so
+    # the mass fades into grass instead of ending on a hard edge.
+    fringe = {(x + dx, y + dy) for (x, y) in forest_cells for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+              if (x + dx, y + dy) not in forest_cells}
+    for (x, y) in fringe:
+        if not (0 <= x < W and 0 <= y < H) or (x, y) in protected:
+            continue
+        if walls[y][x] == 0 and decor[y][x] == 0 and _hash01(x, y) < 0.35:
+            base = PLANT[theme_at(x, y)]
+            decor[y][x] = base + BUSHES[int(_hash01(y, x) * len(BUSHES))]
 
     # ---- WATER (edge phase v3): rivers + lake + bridges ----
     placed, bridge_cells, lake = build_water(ground, walls, decor)

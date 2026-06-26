@@ -77,7 +77,7 @@ class OverworldTilesetTest(unittest.TestCase):
 
     def test_southern_heath_ground_is_grave_heath(self):
         ground = self.tmx.get_layer_by_name("ground")
-        for (x, y) in [(5, 42), (24, 47), (40, 50)]:  # rows in the south heath (y>=36)
+        for (x, y) in [(5, 47), (24, 47), (40, 50)]:  # pure heath, south of the transition band (y>44)
             name = self.tmx.get_tileset_from_gid(ground.data[y][x]).name
             self.assertEqual(name, "grave_heath_grass", (x, y))
 
