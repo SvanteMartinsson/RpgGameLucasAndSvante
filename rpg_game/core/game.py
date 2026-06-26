@@ -95,6 +95,10 @@ class GameEngine:
             and node.action_id in player_class.starting_skill_ids
         }
         equipment.recompute_gear_modifiers(player, self.content)
+        # One free rest, carried as an inventory item (B20). The voucher IS the
+        # free-rest grant — no separate "first rest free" flag — and persists with
+        # the inventory like any other item.
+        player.inventory.add_consumable("rest_voucher")
         self.state = GameState(player=player, content=self.content)
         return self.state
 
@@ -123,23 +127,42 @@ class GameEngine:
     def current_place(self):
         return world.get_current_place(self.player, self.content)
 
-    def rest(self) -> RestResult:
+    REST_VOUCHER_ID = "rest_voucher"
+
+    def rest(self, zone: int = 1) -> RestResult:
         place = self.current_place()
+        player = self.player
         if not place.has_store:
             return RestResult(
                 outcome="not_allowed",
                 message="You can only rest in a town with services.",
-                player_hp=self.player.hp,
-                player_mana=self.player.mana,
-        )
-        player = self.player
+                player_hp=player.hp,
+                player_mana=player.mana,
+            )
+        # A Rest Voucher makes the rest free (and is consumed); otherwise it costs
+        # gold scaled by zone. Too poor -> refuse, drawing no gold and no voucher.
+        has_voucher = player.inventory.count(self.REST_VOUCHER_ID) > 0
+        cost = 0 if has_voucher else progression.rest_cost(zone)
+        if not has_voucher and player.gold < cost:
+            return RestResult(
+                outcome="not_allowed",
+                message=f"Resting costs {cost} gold — you can't afford it.",
+                player_hp=player.hp,
+                player_mana=player.mana,
+            )
+        if has_voucher:
+            player.inventory.remove_consumable(self.REST_VOUCHER_ID)
+            paid = "using your Rest Voucher"
+        else:
+            player.gold -= cost
+            paid = f"for {cost} gold"
+        # Resting only heals. Moving the respawn point is a separate, paid action
+        # (relocate_respawn) so you never respawn somewhere you didn't buy.
         player.hp = equipment.effective_stat(player, "max_hp")
         player.mana = equipment.effective_stat(player, "max_mana")
-        # Resting only heals now. Moving the respawn point is a separate, paid
-        # action (relocate_respawn) so you never respawn somewhere you didn't buy.
         return RestResult(
             outcome="rested",
-            message=f"You rest at {place.name} and recover to full HP and mana.",
+            message=f"You rest at {place.name} ({paid}) and recover to full HP and mana.",
             player_hp=player.hp,
             player_mana=player.mana,
         )

@@ -1,4 +1,4 @@
-"""Death penalty applied on respawn (half HP/mana, lost XP, gold loss)."""
+"""Death penalty applied on respawn (FULL HP/mana heal, lost XP, gold loss)."""
 
 import unittest
 
@@ -13,21 +13,15 @@ def _engine():
 
 
 class DeathPenaltyTest(unittest.TestCase):
-    def test_half_hp_and_mana_round_half_up(self):
+    def test_respawn_restores_full_hp_and_mana(self):
         engine = _engine()
         p = engine.player
         p.max_hp, p.max_mana, p.gold, p.xp, p.level = 101, 51, 0, 0, 1
+        p.hp, p.mana = 1, 0
         result = progression.apply_death_penalty(p)
-        self.assertEqual(p.hp, 51)    # round_half_up(50.5) == 51
-        self.assertEqual(p.mana, 26)  # round_half_up(25.5) == 26
-        self.assertEqual((result.hp, result.mana), (51, 26))
-
-    def test_even_max_halves_cleanly(self):
-        engine = _engine()
-        p = engine.player
-        p.max_hp, p.max_mana = 100, 40
-        progression.apply_death_penalty(p)
-        self.assertEqual((p.hp, p.mana), (50, 20))
+        self.assertEqual(p.hp, 101)   # full, no soft-lock at half HP
+        self.assertEqual(p.mana, 51)
+        self.assertEqual((result.hp, result.mana), (101, 51))
 
     def test_xp_resets_to_floor_level_unchanged(self):
         engine = _engine()
@@ -60,7 +54,7 @@ class DeathPenaltyTest(unittest.TestCase):
         p.gold, p.xp = 100, 30
         result = engine._respawn_player()
         self.assertEqual(p.current_place_id, p.respawn_place_id)
-        self.assertEqual(p.hp, progression.round_half_up(p.max_hp / 2))
+        self.assertEqual(p.hp, p.max_hp)   # full heal on respawn
         self.assertIsInstance(result, progression.RespawnResult)
 
     def test_defeat_result_carries_structured_respawn(self):

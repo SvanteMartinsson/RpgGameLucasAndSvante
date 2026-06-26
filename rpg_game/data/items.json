@@ -1,5 +1,13 @@
 [
   {
+    "id": "rest_voucher",
+    "name": "Rest Voucher",
+    "kind": "voucher",
+    "heal_amount": 0,
+    "price": 0,
+    "tier": 1
+  },
+  {
     "id": "lesser_hp_potion",
     "name": "Lesser HP Potion",
     "kind": "consumable",

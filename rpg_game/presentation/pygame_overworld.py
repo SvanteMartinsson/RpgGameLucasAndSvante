@@ -500,7 +500,7 @@ class OverworldApp:
             else:
                 self.set_toast(T.NO_STORE, TEXT_DIM)
         elif action == "rest":
-            result = self.engine.rest()
+            result = self.engine.rest(self.zone.zone_for_tile(self.world.current_tile))
             self.set_toast(result.message, GOOD if result.outcome == "rested" else TEXT_DIM)
         elif action == "relocate_respawn":
             zone = self.zone.zone_for_tile(self.world.current_tile)

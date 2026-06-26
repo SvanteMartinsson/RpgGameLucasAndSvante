@@ -71,6 +71,7 @@ class InventoryOverviewTest(unittest.TestCase):
         self.assertEqual(self.app.inventory_counts()["weapon"], before)
 
     def test_consumable_and_junk_counts_from_the_bag(self):
+        self.eng.player.inventory.consumables.clear()  # isolate from the new-game grant
         self.eng.player.inventory.add_consumable("hp_potion")
         self.eng.player.inventory.add_consumable("hp_potion")
         self.eng.player.inventory.add_consumable("bone_dust")

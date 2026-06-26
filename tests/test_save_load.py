@@ -52,7 +52,9 @@ class SaveLoadTests(unittest.TestCase):
         self.assertEqual(loaded.player.owned_weapon_ids, ("holy_mace", "staff", "rimebrand"))
         self.assertEqual(loaded.player.learned_talent_ids, engine.player.learned_talent_ids)
         self.assertEqual(loaded.player.equipped_skill_ids, engine.player.equipped_skill_ids)
-        self.assertEqual(loaded.player.inventory.consumables, {"hp_potion": 3, "rat_pelt": 2})
+        # rest_voucher is granted at new game (B20) and round-trips like any item.
+        self.assertEqual(loaded.player.inventory.consumables,
+                         {"rest_voucher": 1, "hp_potion": 3, "rat_pelt": 2})
         self.assertEqual(loaded.player.current_place_id, engine.player.current_place_id)
 
     def test_save_returns_structured_result_and_writes_file(self):

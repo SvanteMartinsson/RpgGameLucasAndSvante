@@ -132,7 +132,7 @@ class RespawnRelocationTest(unittest.TestCase):
         result = engine._respawn_player()
         self.assertEqual(result.gold_lost, 3 * progression.GOLD_LOSS_PER_LEVEL)
         self.assertEqual(result.xp_lost, 137)
-        self.assertEqual(result.hp, progression.round_half_up(p.max_hp / 2))
+        self.assertEqual(result.hp, p.max_hp)   # respawn now full-heals (B20)
         self.assertEqual(engine.player.current_place_id, "burg_146")
 
 

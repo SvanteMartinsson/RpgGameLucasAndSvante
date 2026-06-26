@@ -19,6 +19,16 @@ def respawn_relocation_cost(zone: int) -> int:
         return 0
     return RESPAWN_RELOCATION_BASE + (zone - 2) * RESPAWN_RELOCATION_STEP
 
+
+# Cost to rest at a town inn (heal to full). The first rest is free via the Rest
+# Voucher granted at new game; after that it costs gold, scaled by the town's zone.
+REST_COST_ZONE1 = 50
+REST_COST_LATER = 100
+
+
+def rest_cost(zone: int) -> int:
+    return REST_COST_ZONE1 if zone <= 1 else REST_COST_LATER
+
 # Global, tunable scalar on every enemy's max HP at creation (wild and arena),
 # so fights last longer without touching the per-enemy numbers or their ratios.
 # 1.0 reproduces the pre-multiplier values exactly.
@@ -53,13 +63,14 @@ class RespawnResult:
 def apply_death_penalty(player: Player) -> RespawnResult:
     """Apply the on-death penalty in place and report what was lost.
 
-    - HP and mana drop to half of max (round_half_up).
+    - HP and mana are restored to FULL (you respawn ready to act again — no
+      soft-lock where you wake at half HP with no gold to heal).
     - Within-level XP progress resets to the level floor; the level is never
       reduced.
     - Gold drops by level * GOLD_LOSS_PER_LEVEL, clamped to [0, current gold].
     """
-    new_hp = round_half_up(equipment.effective_stat(player, "max_hp") / 2)
-    new_mana = round_half_up(equipment.effective_stat(player, "max_mana") / 2)
+    new_hp = equipment.effective_stat(player, "max_hp")
+    new_mana = equipment.effective_stat(player, "max_mana")
     xp_lost = player.xp
     gold_lost = min(player.gold, player.level * GOLD_LOSS_PER_LEVEL)
     player.hp = new_hp
