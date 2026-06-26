@@ -193,6 +193,53 @@ class GearDropDataTests(unittest.TestCase):
         self.assertIn("training_cap", engine.player.owned_gear_ids)
 
 
+class PerEnemyUniqueTableTests(unittest.TestCase):
+    """B6: every drop-capable enemy has a COMMON table (loot_table) plus a
+    signature UNIQUE table (unique_table) whose item drops at ~3-8%, giving a
+    reason to hunt that specific enemy."""
+
+    SIGNATURES = {
+        "giant_rat": "gnaw_charm", "undead": "grave_band", "cave_bear": "bearclaw_grips",
+        "undead_priest": "censer_pendant", "plague_acolyte": "plaguebearer_mask",
+        "dire_wolf": "direpelt_cloak", "wild_boar": "tusk_pendant", "treant": "heartwood_ring",
+        "mutated_mudcrab": "carapace_plate", "bog_wraith": "wraithlight_band",
+        "tar_beast": "tarheart_amulet", "hollow_worg": "worgfang",
+    }
+
+    def test_every_drop_capable_enemy_has_unique_and_common_tables(self):
+        content = _engine().content
+        for eid, tmpl in content.enemies.items():
+            if tmpl.drop_chance <= 0:        # arena opponents drop nothing
+                continue
+            self.assertTrue(tmpl.loot_table, f"{eid} has no common table")
+            self.assertTrue(tmpl.unique_table, f"{eid} has no unique table")
+
+    def test_signature_unique_drops_in_target_band(self):
+        # Expected rate is deterministic from the weights -> no RNG flakiness:
+        # drop_chance * signature_weight / total_pool_weight, must land in 3-8%.
+        engine = _engine()
+        for eid, sig in self.SIGNATURES.items():
+            enemy = engine.content.enemies[eid].create_enemy()
+            pool = engine.loot_pool(enemy)
+            total = sum(float(e["weight"]) for e in pool)
+            sig_weight = sum(float(e["weight"]) for e in pool if e["item_id"] == sig)
+            self.assertGreater(sig_weight, 0, f"{sig} not in {eid} pool")
+            rate = enemy.drop_chance * sig_weight / total
+            self.assertTrue(0.03 <= rate <= 0.08, f"{eid} signature rate {rate:.3f} outside 3-8%")
+
+    def test_signature_actually_resolves_from_roll(self):
+        # the unique item is reachable through the normal weighted roll path
+        for eid, sig in self.SIGNATURES.items():
+            seen = False
+            for seed in range(300):
+                engine = _engine(seed)
+                drop = engine.roll_loot(engine.content.enemies[eid].create_enemy())
+                if drop and drop.item_id == sig:
+                    seen = True
+                    break
+            self.assertTrue(seen, f"{eid} signature {sig} never dropped in 300 rolls")
+
+
 class PickupTests(unittest.TestCase):
     def test_picked_up_weapon_is_owned_and_equippable(self):
         engine = _engine(1)

@@ -178,5 +178,14 @@
     "damage_type": "physical",
     "category": "melee",
     "tier": 2
+  },
+  {
+    "id": "worgfang",
+    "name": "Worgfang",
+    "damage_bonus": 20,
+    "price": 740,
+    "damage_type": "physical",
+    "category": "melee",
+    "tier": 4
   }
 ]

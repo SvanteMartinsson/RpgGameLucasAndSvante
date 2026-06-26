@@ -16,20 +16,57 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast"],
-    "action_ids": ["power", "normal", "quick"],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "power",
+      "normal",
+      "quick"
+    ],
     "xp_reward": 5,
     "gold_min": 3,
     "gold_max": 8,
     "drop_chance": 0.35,
     "rare_table_access": false,
     "loot_table": [
-      { "item_id": "rat_pelt", "weight": 70, "rarity_tier": 1 },
-      { "item_id": "hp_potion", "weight": 25, "rarity_tier": 1 },
-      { "item_id": "training_cap", "weight": 16, "rarity_tier": 1 },
-      { "item_id": "novice_ring", "weight": 10, "rarity_tier": 1 },
-      { "item_id": "worn_shortsword", "weight": 10, "rarity_tier": 1 },
-      { "item_id": "steel_greatsword", "weight": 5, "rarity_tier": 3 }
+      {
+        "item_id": "rat_pelt",
+        "weight": 70,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "hp_potion",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "training_cap",
+        "weight": 16,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "novice_ring",
+        "weight": 10,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "worn_shortsword",
+        "weight": 10,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 5,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "gnaw_charm",
+        "weight": 22,
+        "rarity_tier": 2
+      }
     ]
   },
   {
@@ -49,20 +86,57 @@
       "holy": 2.0,
       "poison": 0.0
     },
-    "tags": ["undead"],
-    "action_ids": ["power", "normal", "quick"],
+    "tags": [
+      "undead"
+    ],
+    "action_ids": [
+      "power",
+      "normal",
+      "quick"
+    ],
     "xp_reward": 10,
     "gold_min": 14,
     "gold_max": 31,
     "drop_chance": 0.4,
     "rare_table_access": false,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 70, "rarity_tier": 1 },
-      { "item_id": "hp_potion", "weight": 20, "rarity_tier": 1 },
-      { "item_id": "padded_vest", "weight": 14, "rarity_tier": 1 },
-      { "item_id": "focus_band", "weight": 8, "rarity_tier": 1 },
-      { "item_id": "hunting_bow", "weight": 10, "rarity_tier": 1 },
-      { "item_id": "rimebrand", "weight": 10, "rarity_tier": 3 }
+      {
+        "item_id": "bone_dust",
+        "weight": 70,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "hp_potion",
+        "weight": 20,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "padded_vest",
+        "weight": 14,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "focus_band",
+        "weight": 8,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "hunting_bow",
+        "weight": 10,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "rimebrand",
+        "weight": 10,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "grave_band",
+        "weight": 19,
+        "rarity_tier": 2
+      }
     ]
   },
   {
@@ -82,10 +156,20 @@
       "holy": 1.0,
       "poison": 1.25
     },
-    "tags": ["beast"],
-    "action_ids": ["bear_maul", "normal"],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "bear_maul",
+      "normal"
+    ],
     "ai": [
-      { "condition": { "always": true }, "action": "bear_maul" }
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "bear_maul"
+      }
     ],
     "xp_reward": 15,
     "gold_min": 18,
@@ -93,13 +177,48 @@
     "drop_chance": 0.6,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 25, "rarity_tier": 3 },
-      { "item_id": "guard_cap", "weight": 20, "rarity_tier": 2 },
-      { "item_id": "reinforced_vest", "weight": 12, "rarity_tier": 2 },
-      { "item_id": "iron_hatchet", "weight": 14, "rarity_tier": 2 },
-      { "item_id": "steel_greatsword", "weight": 20, "rarity_tier": 3 },
-      { "item_id": "emberwand", "weight": 15, "rarity_tier": 3 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 25,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "guard_cap",
+        "weight": 20,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "reinforced_vest",
+        "weight": 12,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "iron_hatchet",
+        "weight": 14,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "emberwand",
+        "weight": 15,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "bearclaw_grips",
+        "weight": 16,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -119,12 +238,27 @@
       "holy": 2.0,
       "poison": 0.0
     },
-    "tags": ["undead"],
+    "tags": [
+      "undead"
+    ],
     "mana": 30,
-    "action_ids": ["priest_heal", "priest_strike"],
+    "action_ids": [
+      "priest_heal",
+      "priest_strike"
+    ],
     "ai": [
-      { "condition": { "self_hp_below": 50 }, "action": "priest_heal" },
-      { "condition": { "always": true }, "action": "priest_strike" }
+      {
+        "condition": {
+          "self_hp_below": 50
+        },
+        "action": "priest_heal"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "priest_strike"
+      }
     ],
     "xp_reward": 18,
     "gold_min": 16,
@@ -132,11 +266,38 @@
     "drop_chance": 0.6,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "mana_potion", "weight": 30, "rarity_tier": 2 },
-      { "item_id": "sage_amulet", "weight": 18, "rarity_tier": 2 },
-      { "item_id": "battle_amulet", "weight": 8, "rarity_tier": 3 },
-      { "item_id": "rimebrand", "weight": 30, "rarity_tier": 3 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "mana_potion",
+        "weight": 30,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "sage_amulet",
+        "weight": 18,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 8,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "rimebrand",
+        "weight": 30,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "censer_pendant",
+        "weight": 14,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -156,12 +317,27 @@
       "holy": 1.0,
       "poison": 0.5
     },
-    "tags": ["cultist"],
+    "tags": [
+      "cultist"
+    ],
     "mana": 30,
-    "action_ids": ["acolyte_nuke", "acolyte_bolt"],
+    "action_ids": [
+      "acolyte_nuke",
+      "acolyte_bolt"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "acolyte_nuke" }, "action": "acolyte_nuke" },
-      { "condition": { "always": true }, "action": "acolyte_bolt" }
+      {
+        "condition": {
+          "skill_ready": "acolyte_nuke"
+        },
+        "action": "acolyte_nuke"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "acolyte_bolt"
+      }
     ],
     "xp_reward": 20,
     "gold_min": 18,
@@ -169,11 +345,38 @@
     "drop_chance": 0.6,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "tattered_cloth", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "antidote", "weight": 30, "rarity_tier": 2 },
-      { "item_id": "duelist_gloves", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "haste_circuit", "weight": 8, "rarity_tier": 4 },
-      { "item_id": "emberwand", "weight": 30, "rarity_tier": 3 }
+      {
+        "item_id": "tattered_cloth",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "antidote",
+        "weight": 30,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "duelist_gloves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "haste_circuit",
+        "weight": 8,
+        "rarity_tier": 4
+      },
+      {
+        "item_id": "emberwand",
+        "weight": 30,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "plaguebearer_mask",
+        "weight": 14,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -191,8 +394,14 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "duelist"],
-    "action_ids": ["quick", "normal"],
+    "tags": [
+      "human",
+      "duelist"
+    ],
+    "action_ids": [
+      "quick",
+      "normal"
+    ],
     "xp_reward": 4,
     "gold_min": 0,
     "gold_max": 0,
@@ -215,12 +424,28 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "guard"],
+    "tags": [
+      "human",
+      "guard"
+    ],
     "mana": 20,
-    "action_ids": ["block", "normal"],
+    "action_ids": [
+      "block",
+      "normal"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "block" }, "action": "block" },
-      { "condition": { "always": true }, "action": "normal" }
+      {
+        "condition": {
+          "skill_ready": "block"
+        },
+        "action": "block"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
     ],
     "xp_reward": 5,
     "gold_min": 0,
@@ -244,12 +469,29 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "mage"],
+    "tags": [
+      "human",
+      "mage"
+    ],
     "mana": 30,
-    "action_ids": ["firebolt", "ignite", "quick"],
+    "action_ids": [
+      "firebolt",
+      "ignite",
+      "quick"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "ignite" }, "action": "ignite" },
-      { "condition": { "always": true }, "action": "firebolt" }
+      {
+        "condition": {
+          "skill_ready": "ignite"
+        },
+        "action": "ignite"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "firebolt"
+      }
     ],
     "xp_reward": 7,
     "gold_min": 0,
@@ -273,8 +515,15 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "swordsman"],
-    "action_ids": ["power", "normal", "quick"],
+    "tags": [
+      "human",
+      "swordsman"
+    ],
+    "action_ids": [
+      "power",
+      "normal",
+      "quick"
+    ],
     "xp_reward": 6,
     "gold_min": 0,
     "gold_max": 0,
@@ -297,12 +546,28 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "archer"],
+    "tags": [
+      "human",
+      "archer"
+    ],
     "mana": 25,
-    "action_ids": ["aimed_shot", "quick"],
+    "action_ids": [
+      "aimed_shot",
+      "quick"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "aimed_shot" }, "action": "aimed_shot" },
-      { "condition": { "always": true }, "action": "quick" }
+      {
+        "condition": {
+          "skill_ready": "aimed_shot"
+        },
+        "action": "aimed_shot"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "quick"
+      }
     ],
     "xp_reward": 9,
     "gold_min": 0,
@@ -326,12 +591,29 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "veteran"],
+    "tags": [
+      "human",
+      "veteran"
+    ],
     "mana": 25,
-    "action_ids": ["taunt", "sunder", "normal"],
+    "action_ids": [
+      "taunt",
+      "sunder",
+      "normal"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "taunt" }, "action": "taunt" },
-      { "condition": { "always": true }, "action": "sunder" }
+      {
+        "condition": {
+          "skill_ready": "taunt"
+        },
+        "action": "taunt"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "sunder"
+      }
     ],
     "xp_reward": 10,
     "gold_min": 0,
@@ -355,11 +637,22 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "mage"],
+    "tags": [
+      "human",
+      "mage"
+    ],
     "mana": 40,
-    "action_ids": ["frostbolt", "quick"],
+    "action_ids": [
+      "frostbolt",
+      "quick"
+    ],
     "ai": [
-      { "condition": { "always": true }, "action": "frostbolt" }
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "frostbolt"
+      }
     ],
     "xp_reward": 12,
     "gold_min": 0,
@@ -383,12 +676,29 @@
       "holy": 1.0,
       "poison": 0.75
     },
-    "tags": ["human", "rogue"],
+    "tags": [
+      "human",
+      "rogue"
+    ],
     "mana": 30,
-    "action_ids": ["backstab", "riposte", "quick"],
+    "action_ids": [
+      "backstab",
+      "riposte",
+      "quick"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "riposte" }, "action": "riposte" },
-      { "condition": { "always": true }, "action": "backstab" }
+      {
+        "condition": {
+          "skill_ready": "riposte"
+        },
+        "action": "riposte"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "backstab"
+      }
     ],
     "xp_reward": 13,
     "gold_min": 0,
@@ -412,12 +722,29 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "knight"],
+    "tags": [
+      "human",
+      "knight"
+    ],
     "mana": 35,
-    "action_ids": ["counter", "sunder", "power"],
+    "action_ids": [
+      "counter",
+      "sunder",
+      "power"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "counter" }, "action": "counter" },
-      { "condition": { "always": true }, "action": "sunder" }
+      {
+        "condition": {
+          "skill_ready": "counter"
+        },
+        "action": "counter"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "sunder"
+      }
     ],
     "xp_reward": 16,
     "gold_min": 0,
@@ -441,12 +768,29 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["human", "champion"],
+    "tags": [
+      "human",
+      "champion"
+    ],
     "mana": 45,
-    "action_ids": ["combo", "counter", "normal"],
+    "action_ids": [
+      "combo",
+      "counter",
+      "normal"
+    ],
     "ai": [
-      { "condition": { "skill_ready": "counter" }, "action": "counter" },
-      { "condition": { "always": true }, "action": "combo" }
+      {
+        "condition": {
+          "skill_ready": "counter"
+        },
+        "action": "counter"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "combo"
+      }
     ],
     "xp_reward": 20,
     "gold_min": 0,
@@ -472,10 +816,20 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast"],
-    "action_ids": ["wolf_bite", "normal"],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "wolf_bite",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"always": true}, "action": "wolf_bite"}
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "wolf_bite"
+      }
     ],
     "xp_reward": 20,
     "gold_min": 18,
@@ -483,12 +837,43 @@
     "drop_chance": 0.55,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
-      { "item_id": "windstep_boots", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "duelist_gloves", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "crimson_signet", "weight": 6, "rarity_tier": 4 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "windstep_boots",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "duelist_gloves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "crimson_signet",
+        "weight": 6,
+        "rarity_tier": 4
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "direpelt_cloak",
+        "weight": 13,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -508,11 +893,26 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast"],
-    "action_ids": ["boar_charge", "normal"],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "boar_charge",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"skill_ready": "boar_charge"}, "action": "boar_charge"},
-      {"condition": {"always": true}, "action": "normal"}
+      {
+        "condition": {
+          "skill_ready": "boar_charge"
+        },
+        "action": "boar_charge"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
     ],
     "xp_reward": 22,
     "gold_min": 18,
@@ -520,12 +920,43 @@
     "drop_chance": 0.55,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
-      { "item_id": "iron_helm", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "marcher_greaves", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "haste_circuit", "weight": 6, "rarity_tier": 4 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_helm",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "marcher_greaves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "haste_circuit",
+        "weight": 6,
+        "rarity_tier": 4
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "tusk_pendant",
+        "weight": 13,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -545,10 +976,21 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast", "plant"],
-    "action_ids": ["treant_slam", "normal"],
+    "tags": [
+      "beast",
+      "plant"
+    ],
+    "action_ids": [
+      "treant_slam",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"always": true}, "action": "treant_slam"}
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "treant_slam"
+      }
     ],
     "xp_reward": 26,
     "gold_min": 22,
@@ -556,12 +998,43 @@
     "drop_chance": 0.6,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
-      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "iron_helm", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "emberwand", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "crimson_signet", "weight": 6, "rarity_tier": 4 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_helm",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "emberwand",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "crimson_signet",
+        "weight": 6,
+        "rarity_tier": 4
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "heartwood_ring",
+        "weight": 12,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -581,10 +1054,20 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast"],
-    "action_ids": ["crab_claw", "normal"],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "crab_claw",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"always": true}, "action": "crab_claw"}
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "crab_claw"
+      }
     ],
     "xp_reward": 24,
     "gold_min": 20,
@@ -592,12 +1075,43 @@
     "drop_chance": 0.6,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 20, "rarity_tier": 3 },
-      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "marcher_greaves", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "steel_greatsword", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "haste_circuit", "weight": 6, "rarity_tier": 4 }
+      {
+        "item_id": "bone_dust",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "marcher_greaves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "haste_circuit",
+        "weight": 6,
+        "rarity_tier": 4
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "carapace_plate",
+        "weight": 12,
+        "rarity_tier": 3
+      }
     ]
   },
   {
@@ -617,12 +1131,28 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["undead", "spirit"],
+    "tags": [
+      "undead",
+      "spirit"
+    ],
     "mana": 30,
-    "action_ids": ["wraith_hex", "wraith_bolt"],
+    "action_ids": [
+      "wraith_hex",
+      "wraith_bolt"
+    ],
     "ai": [
-      {"condition": {"skill_ready": "wraith_hex"}, "action": "wraith_hex"},
-      {"condition": {"always": true}, "action": "wraith_bolt"}
+      {
+        "condition": {
+          "skill_ready": "wraith_hex"
+        },
+        "action": "wraith_hex"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "wraith_bolt"
+      }
     ],
     "xp_reward": 22,
     "gold_min": 18,
@@ -630,12 +1160,43 @@
     "drop_chance": 0.55,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "tattered_cloth", "weight": 40, "rarity_tier": 1 },
-      { "item_id": "mana_potion", "weight": 22, "rarity_tier": 2 },
-      { "item_id": "battle_amulet", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "rimebrand", "weight": 14, "rarity_tier": 3 },
-      { "item_id": "windstep_boots", "weight": 10, "rarity_tier": 3 },
-      { "item_id": "veteran_ring", "weight": 4, "rarity_tier": 5 }
+      {
+        "item_id": "tattered_cloth",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "mana_potion",
+        "weight": 22,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "rimebrand",
+        "weight": 14,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "windstep_boots",
+        "weight": 10,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "veteran_ring",
+        "weight": 4,
+        "rarity_tier": 5
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "wraithlight_band",
+        "weight": 13,
+        "rarity_tier": 4
+      }
     ]
   },
   {
@@ -655,12 +1216,35 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast", "ooze"],
-    "action_ids": ["tar_regen", "tar_ensnare", "tar_maul", "normal"],
+    "tags": [
+      "beast",
+      "ooze"
+    ],
+    "action_ids": [
+      "tar_regen",
+      "tar_ensnare",
+      "tar_maul",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"skill_ready": "tar_regen"}, "action": "tar_regen"},
-      {"condition": {"skill_ready": "tar_ensnare"}, "action": "tar_ensnare"},
-      {"condition": {"always": true}, "action": "tar_maul"}
+      {
+        "condition": {
+          "skill_ready": "tar_regen"
+        },
+        "action": "tar_regen"
+      },
+      {
+        "condition": {
+          "skill_ready": "tar_ensnare"
+        },
+        "action": "tar_ensnare"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "tar_maul"
+      }
     ],
     "xp_reward": 30,
     "gold_min": 25,
@@ -668,13 +1252,48 @@
     "drop_chance": 0.65,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 30, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 22, "rarity_tier": 3 },
-      { "item_id": "iron_cuirass", "weight": 18, "rarity_tier": 3 },
-      { "item_id": "marcher_greaves", "weight": 14, "rarity_tier": 3 },
-      { "item_id": "steel_greatsword", "weight": 14, "rarity_tier": 3 },
-      { "item_id": "crimson_signet", "weight": 8, "rarity_tier": 4 },
-      { "item_id": "veteran_ring", "weight": 4, "rarity_tier": 5 }
+      {
+        "item_id": "bone_dust",
+        "weight": 30,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 22,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 18,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "marcher_greaves",
+        "weight": 14,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "steel_greatsword",
+        "weight": 14,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "crimson_signet",
+        "weight": 8,
+        "rarity_tier": 4
+      },
+      {
+        "item_id": "veteran_ring",
+        "weight": 4,
+        "rarity_tier": 5
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "tarheart_amulet",
+        "weight": 12,
+        "rarity_tier": 4
+      }
     ]
   },
   {
@@ -694,11 +1313,28 @@
       "holy": 1.0,
       "poison": 1.0
     },
-    "tags": ["beast", "cursed"],
-    "action_ids": ["worg_pounce", "worg_bite", "normal"],
+    "tags": [
+      "beast",
+      "cursed"
+    ],
+    "action_ids": [
+      "worg_pounce",
+      "worg_bite",
+      "normal"
+    ],
     "ai": [
-      {"condition": {"skill_ready": "worg_pounce"}, "action": "worg_pounce"},
-      {"condition": {"always": true}, "action": "worg_bite"}
+      {
+        "condition": {
+          "skill_ready": "worg_pounce"
+        },
+        "action": "worg_pounce"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "worg_bite"
+      }
     ],
     "xp_reward": 60,
     "gold_min": 80,
@@ -706,14 +1342,53 @@
     "drop_chance": 0.9,
     "rare_table_access": true,
     "loot_table": [
-      { "item_id": "bone_dust", "weight": 8, "rarity_tier": 1 },
-      { "item_id": "greater_hp_potion", "weight": 12, "rarity_tier": 3 },
-      { "item_id": "iron_cuirass", "weight": 16, "rarity_tier": 3 },
-      { "item_id": "battle_amulet", "weight": 14, "rarity_tier": 3 },
-      { "item_id": "crimson_signet", "weight": 12, "rarity_tier": 4 },
-      { "item_id": "veteran_ring", "weight": 14, "rarity_tier": 5 },
-      { "item_id": "gravewarden_blade", "weight": 10, "rarity_tier": 5 },
-      { "item_id": "pyre_scepter", "weight": 8, "rarity_tier": 5 }
+      {
+        "item_id": "bone_dust",
+        "weight": 8,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 14,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "crimson_signet",
+        "weight": 12,
+        "rarity_tier": 4
+      },
+      {
+        "item_id": "veteran_ring",
+        "weight": 14,
+        "rarity_tier": 5
+      },
+      {
+        "item_id": "gravewarden_blade",
+        "weight": 10,
+        "rarity_tier": 5
+      },
+      {
+        "item_id": "pyre_scepter",
+        "weight": 8,
+        "rarity_tier": 5
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "worgfang",
+        "weight": 7,
+        "rarity_tier": 4
+      }
     ]
   }
 ]

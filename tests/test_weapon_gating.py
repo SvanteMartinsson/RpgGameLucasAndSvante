@@ -30,6 +30,7 @@ class WeaponGatingTests(unittest.TestCase):
             "worn_shortsword": "melee",
             "hunting_bow": "ranged",
             "iron_hatchet": "melee",
+            "worgfang": "melee",
         }
         self.assertEqual(
             {weapon_id: weapon.category for weapon_id, weapon in engine.content.weapons.items()},

@@ -186,8 +186,12 @@ class GameEngine:
         return world.create_encounter(self.player, self.content, self.rng)
 
     def loot_pool(self, enemy: Enemy) -> list[dict[str, object]]:
+        # Each enemy resolves from its own COMMON table (loot_table: shared junk,
+        # potions, common gear) plus its signature UNIQUE table (unique_table: the
+        # item worth hunting it for), and the shared rare table when it has access.
+        # One weighted pool -> a single resolution path, no parallel loot logic.
         max_tier = 6 if enemy.rare_table_access else 3
-        pool = list(enemy.loot_table)
+        pool = list(enemy.loot_table) + list(enemy.unique_table)
         if enemy.rare_table_access:
             pool += list(self.content.rare_loot_table)
         return [entry for entry in pool if int(entry.get("rarity_tier", 1)) <= max_tier]

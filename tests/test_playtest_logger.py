@@ -33,6 +33,7 @@ class PlaytestLoggerTests(unittest.TestCase):
             enemy.hp = 1
             enemy.drop_chance = 1.0
             enemy.loot_table = ({"item_id": "rat_pelt", "weight": 1, "rarity_tier": 1},)
+            enemy.unique_table = ()  # controlled drop: only rat_pelt in the pool
             logger = PlaytestLogger(folder)
             snapshot = build_snapshot(engine)
 

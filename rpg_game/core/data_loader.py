@@ -183,6 +183,7 @@ def load_content() -> GameContent:
             mana=row.get("mana", 0),
             ai=tuple(row.get("ai", ())),
             loot_table=tuple(row.get("loot_table", ())),
+            unique_table=tuple(row.get("unique_table", ())),
             drop_chance=row.get("drop_chance", 0.0),
             rare_table_access=row.get("rare_table_access", False),
             level_min=row.get("level_min", row["level"]),

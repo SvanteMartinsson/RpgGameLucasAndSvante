@@ -168,6 +168,7 @@ class EnemyTemplate:
     mana: int = 0
     ai: tuple[dict[str, object], ...] = ()
     loot_table: tuple[dict[str, object], ...] = ()
+    unique_table: tuple[dict[str, object], ...] = ()
     drop_chance: float = 0.0
     rare_table_access: bool = False
     # Wild spawn level range (0 = use `level`, i.e. no range). Stats are scaled
@@ -203,6 +204,7 @@ class EnemyTemplate:
             max_mana=self.mana,
             ai=self.ai,
             loot_table=self.loot_table,
+            unique_table=self.unique_table,
             drop_chance=self.drop_chance,
             rare_table_access=self.rare_table_access,
         )
@@ -227,6 +229,7 @@ class Enemy:
     max_mana: int = 0
     ai: tuple[dict[str, object], ...] = ()
     loot_table: tuple[dict[str, object], ...] = ()
+    unique_table: tuple[dict[str, object], ...] = ()
     drop_chance: float = 0.0
     rare_table_access: bool = False
     charging_action_id: str = ""
