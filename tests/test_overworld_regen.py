@@ -214,7 +214,7 @@ class OverworldRegenTest(unittest.TestCase):
                 return fg, gid - fg
         return None, None
 
-    def test_gradual_zone_transition_no_hard_line(self):
+    def test_gradual_coherent_zone_transition(self):
         ground = self._layer("ground")
 
         def gtheme(gid):
@@ -225,22 +225,41 @@ class OverworldRegenTest(unittest.TestCase):
             return None
 
         def heath_share(y):
-            row = [gtheme(ground[y][x]) for x in range(W)]
-            row = [t for t in row if t]
+            row = [t for t in (gtheme(ground[y][x]) for x in range(W)) if t]
             return row.count("grave_heath") / len(row) if row else 0.0
 
-        # north of the band is pure core, south is pure heath
+        # pure core north of the band, pure heath south of it
         self.assertEqual(heath_share(24), 0.0)
         self.assertEqual(heath_share(50), 1.0)
-        # inside the band every row is MIXED (no hard line where 100% core -> 100% heath)
-        for y in range(30, 43):
-            s = heath_share(y)
-            self.assertGreater(s, 0.0, f"row {y} is pure core (hard edge)")
-            self.assertLess(s, 1.0, f"row {y} is pure heath (hard edge)")
-        # and the trend rises (binned to smooth per-cell hash noise)
+        # GRADUAL, no hard line: adjacent band rows change smoothly (no abrupt
+        # jump from mostly-core to mostly-heath in one row)
+        for y in range(28, 44):
+            self.assertLess(abs(heath_share(y + 1) - heath_share(y)), 0.5,
+                            f"hard jump at row {y}")
+        # monotone trend north -> south, and the seam itself is clearly blended
         north = sum(heath_share(y) for y in range(29, 34)) / 5
         south = sum(heath_share(y) for y in range(39, 44)) / 5
         self.assertGreater(south, north + 0.2)
+        self.assertTrue(0.2 < heath_share(36) < 0.8, "seam not blended")
+        # COHERENT, not checkerboard: same-theme cells form runs > 2 on average
+        runs, cur, ln = [], None, 0
+        for y in range(30, 43):
+            for x in range(W):
+                t = gtheme(ground[y][x])
+                if t is None:
+                    if ln:
+                        runs.append(ln)
+                    cur, ln = None, 0
+                elif t == cur:
+                    ln += 1
+                else:
+                    if ln:
+                        runs.append(ln)
+                    cur, ln = t, 1
+            if ln:
+                runs.append(ln)
+                cur, ln = None, 0
+        self.assertGreater(sum(runs) / len(runs), 2.0, "transition is checkerboard, not clustered")
 
     def test_forests_use_per_zone_flora_with_organic_crowns(self):
         walls, decor = self._layer("walls"), self._layer("decor_over")

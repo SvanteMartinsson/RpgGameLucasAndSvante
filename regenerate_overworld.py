@@ -84,6 +84,22 @@ def _hash01(x, y):
     return v - math.floor(v)
 
 
+NOISE_CELL = 5  # coarse lattice spacing -> patches ~5 tiles wide (coastline feel)
+
+
+def _vnoise(x, y):
+    """Deterministic smooth value noise in [0,1): hashed lattice + smoothstep
+    bilinear interpolation. Neighbouring cells get similar values, so a threshold
+    of it yields coherent organic patches, not per-cell salt-and-pepper."""
+    gx, gy = x / NOISE_CELL, y / NOISE_CELL
+    x0, y0 = math.floor(gx), math.floor(gy)
+    fx, fy = gx - x0, gy - y0
+    sx, sy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)  # smoothstep
+    v00, v10 = _hash01(x0, y0), _hash01(x0 + 1, y0)
+    v01, v11 = _hash01(x0, y0 + 1), _hash01(x0 + 1, y0 + 1)
+    return (v00 * (1 - sx) + v10 * sx) * (1 - sy) + (v01 * (1 - sx) + v11 * sx) * sy
+
+
 def heath_share(y):
     if y <= BAND_N:
         return 0.0
@@ -93,8 +109,10 @@ def heath_share(y):
 
 
 def theme_at(x, y):
-    """Zone theme for a cell, dithered through the transition band."""
-    return "grave_heath" if _hash01(x, y) < heath_share(y) else "cainos"
+    """Zone theme for a cell. In the band, a coherent value-noise field thresholded
+    by the (monotonic) heath share -> the two grasses interfinger as organic
+    patches with a moving coastline, never a checkerboard."""
+    return "grave_heath" if _vnoise(x, y) < heath_share(y) else "cainos"
 
 
 def theme_ground(x, y):
@@ -404,16 +422,19 @@ def main():
     place_cliff("horizontal", 66, 0, walls, decor)
     place_cliff("vertical", 0, 49, walls, decor)
 
-    # Dense forest edge bands (2 cells deep) just inside the long edges, between the
-    # corner cliffs / lake, with a clear opening at each gate so it stays reachable.
-    GATE_OPEN = {(26, 0): range(23, 30), (24, 55): range(21, 28)}  # x-spans kept open
+    # CONTINUOUS dense forest edge band (2 cells deep) along the full long edges, so
+    # the cliffs are embedded in it (no grass gap) and every corner is sealed: the
+    # band wraps to the right edge across the top (rounding the open top-right to the
+    # edge-river), down the whole left edge, and along the bottom up to the lake.
+    # Right edge = the edge-river. Clear openings only at the two land gates.
+    GATE_OPEN = {(26, 0): range(23, 30), (24, 55): range(21, 28)}
     band = set()
-    for x in range(6, 66):                       # top edge (after corner, before wall)
+    for x in range(0, 80):                        # top edge -> the full width (both corners)
         if x not in GATE_OPEN[(26, 0)]:
             band |= {(x, 0), (x, 1)}
-    for y in range(6, 49):                        # left edge (between the two cliffs)
+    for y in range(0, 56):                         # left edge -> full height (corner to corner)
         band |= {(0, y), (1, y)}
-    for x in range(6, 55):                         # bottom edge (before the lake)
+    for x in range(0, 60):                          # bottom edge -> up to the lake (x>=60)
         if x not in GATE_OPEN[(24, 55)]:
             band |= {(x, 54), (x, 55)}
 
