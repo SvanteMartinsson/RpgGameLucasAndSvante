@@ -29,7 +29,6 @@ SEAM_Y = 36                       # core rows 0..35, Verralda heath 36..55
 BORDER_GID = 2                    # placeholder solid block (matches old border)
 
 GRASS = {"cainos": 3, "grave_heath": 387}   # ground firstgids (uniform per band)
-PLANT = {"cainos": 2691, "grave_heath": 4227}
 # Grass-sheet tile indices (all within the grass tileset, so ground stays
 # {cainos_grass, grave_heath_grass}). idx 0-31 are grass; 32-63 are cobble.
 GBASE = 0
@@ -43,26 +42,6 @@ FLOWER_SHARE = 0.28        # of those, how many are flowers (rest stones)
 # Broken/overgrown path remnants: fuller cobble near towns, scattered cobble mid-way.
 PATH_NEAR = [44, 45, 36, 37]      # a path-stub leaving a town
 PATH_FAR = [52, 53, 60, 61]       # scattered cobble in grass -> overgrown remnant
-TRUNK, CANOPY = 66, 34            # solid trunk (walls) + dense canopy (decor_over)
-# Three tree-canopy variants (3x3 crown tiles incl. baked trunk+shadow at the
-# bottom row). Used as a blob-autotile: a forest cell picks the crown tile that
-# matches which sides are forest, so the mass core is dense (center tile) and the
-# edges get the leafy rounded outline tiles -> organic, non-blocky edges + depth.
-TREE_CROWNS = [
-    [17, 18, 19, 33, 34, 35, 49, 50, 51],
-    [21, 22, 23, 37, 38, 39, 53, 54, 55],
-    [25, 26, 27, 41, 42, 43, 57, 58, 59],
-]
-BUSHES = [83, 85, 87, 91]         # small flora for the sparse forest fringe
-
-
-def crown_tile(x, y, forest):
-    """Pick a crown tile for forest cell (x,y) by which orthogonal neighbours are
-    also forest (marching-tiles), with a coherent per-region variant."""
-    grp = TREE_CROWNS[int(_hash01(x // 3, y // 3) * 3) % 3]
-    row = 0 if (x, y - 1) not in forest else (2 if (x, y + 1) not in forest else 1)
-    col = 0 if (x - 1, y) not in forest else (2 if (x + 1, y) not in forest else 1)
-    return grp[row * 3 + col]
 
 
 # Organic forest masses (cx, cy, r) placed BETWEEN towns. Minority terrain you
@@ -128,41 +107,6 @@ def read_layer_csv(src, name):
     m = re.search(r'<layer id="\d+" name="%s"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>' % name, src, re.S)
     rows = m.group(1).strip().split("\n")
     return [[int(v) for v in r.rstrip(",").split(",")] for r in rows]
-
-
-# ===================== EDGE TERRAIN (cliffs) =========================
-# Cliff stamps registered as tilesets (firstgid). Footprints precomputed from the
-# art (>=25% opaque cell -> solid/walls + visible; wispy fringe -> decor_over) so
-# this generator stays pygame-free. gid of a stamp cell = firstgid + ty*cols + tx.
-def _rect(cols, ys):
-    return [(tx, ty) for ty in ys for tx in range(cols)]
-
-CLIFFS = {
-    # long horizontal wall (8x4): solid body rows 1-3
-    "horizontal": {"fg": 4779, "cols": 8, "rows": 4,
-                   "solid": _rect(8, (1, 2, 3)), "fringe": []},
-    # L-corner (6x6): horizontal top + a leg turning down on the right
-    "corner": {"fg": 4811, "cols": 6, "rows": 6,
-               "solid": _rect(6, (1, 2, 3)) + [(3, 4), (4, 4), (5, 4), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5)],
-               "fringe": [(1, 4), (2, 4), (0, 5)]},
-    # vertical pillar/wall (4x6): solid body, narrower top row
-    "vertical": {"fg": 4847, "cols": 4, "rows": 6,
-                 "solid": [(1, 0), (2, 0)] + _rect(4, (1, 2, 3, 4, 5)), "fringe": [(0, 0), (3, 0)]},
-}
-
-
-def place_cliff(name, ox, oy, walls, decor):
-    """Stamp a cliff: solid cells block (walls, drawn under the player), wispy
-    fringe is decoration only (decor_over). Off-map cells are clipped."""
-    c = CLIFFS[name]
-    for (tx, ty) in c["solid"]:
-        x, y = ox + tx, oy + ty
-        if 0 <= x < W and 0 <= y < H:
-            walls[y][x] = c["fg"] + ty * c["cols"] + tx
-    for (tx, ty) in c["fringe"]:
-        x, y = ox + tx, oy + ty
-        if 0 <= x < W and 0 <= y < H and walls[y][x] == 0:
-            decor[y][x] = c["fg"] + ty * c["cols"] + tx
 
 
 # ===================== WATER (edge phase v3) =========================
