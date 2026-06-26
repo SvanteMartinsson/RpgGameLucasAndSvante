@@ -66,6 +66,11 @@ PLAYER_SIZE = 20
 # instead be ~33% slower, not 20%.
 PLAYER_SPEED = 2.4
 COLLISION_LAYER = "walls"
+WATER_TILESET = "water_autotile"
+# A water autotile cell blocks only if >= this fraction of it is water. Measured
+# fractions: outer corner ~0.22, edge ~0.58, channel ~0.76, inner corner ~0.89,
+# full 1.0 -> 0.6 makes shore (edge + outer) walkable while deep water still blocks.
+WATER_BLOCK_THRESHOLD = 0.6
 # Player-centered zoom: the world view is scaled so ~this many tiles are visible
 # across the window (Platinum-style). Integer zoom only -> crisp pixel art. Integer
 # steps mean the actual tiles-in-width jumps in steps (12 here -> ~12-13 wide).
@@ -199,7 +204,32 @@ class Overworld:
             layer = self.tmx.get_layer_by_name(COLLISION_LAYER)
         except (ValueError, KeyError):
             return set()
-        return {(x, y) for x, y, _img in layer.tiles()}
+        # Majority-water collision: a water autotile cell blocks only if at least
+        # WATER_BLOCK_THRESHOLD of it is actually water. Shore/edge (~0.58) and outer-
+        # corner (~0.22) tiles are mostly land -> walkable, so the player can step up
+        # to the water's edge; full (1.0), inner corner (~0.89) and channel (~0.76)
+        # tiles still block. The tiles are STILL rendered (from this layer) — only
+        # membership in `blocked` changes. Non-water collision tiles always block.
+        blocked = set()
+        frac: dict[int, float] = {}
+        for x, y, img in layer.tiles():
+            gid = layer.data[y][x]
+            ts = self.tmx.get_tileset_from_gid(gid) if gid else None
+            if ts is not None and ts.name == WATER_TILESET and img is not None:
+                f = frac.get(gid)
+                if f is None:
+                    f = self._water_fraction(img)
+                    frac[gid] = f
+                if f < WATER_BLOCK_THRESHOLD:
+                    continue  # mostly-land shore tile: drawn, but walkable
+            blocked.add((x, y))
+        return blocked
+
+    @staticmethod
+    def _water_fraction(img: "pygame.Surface") -> float:
+        w, h = img.get_size()
+        opaque = sum(1 for yy in range(h) for xx in range(w) if img.get_at((xx, yy))[3] > 0)
+        return opaque / (w * h) if w and h else 1.0
 
     def _place_player_at_first_free_tile(self) -> None:
         for ty in range(self.tmx.height):
