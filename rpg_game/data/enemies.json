@@ -290,6 +290,11 @@
         "item_id": "rimebrand",
         "weight": 30,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "greater_mana_potion",
+        "weight": 12,
+        "rarity_tier": 3
       }
     ],
     "unique_table": [
@@ -1189,6 +1194,11 @@
         "item_id": "veteran_ring",
         "weight": 4,
         "rarity_tier": 5
+      },
+      {
+        "item_id": "greater_mana_potion",
+        "weight": 10,
+        "rarity_tier": 3
       }
     ],
     "unique_table": [

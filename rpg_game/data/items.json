@@ -1,11 +1,37 @@
 [
   {
+    "id": "lesser_hp_potion",
+    "name": "Lesser HP Potion",
+    "kind": "consumable",
+    "heal_amount": 25,
+    "price": 30,
+    "tier": 1
+  },
+  {
     "id": "hp_potion",
     "name": "HP Potion",
     "kind": "consumable",
     "heal_amount": 50,
     "price": 65,
     "tier": 1
+  },
+  {
+    "id": "lesser_mana_potion",
+    "name": "Lesser Mana Potion",
+    "kind": "consumable",
+    "heal_amount": 0,
+    "mana_amount": 25,
+    "price": 50,
+    "tier": 1
+  },
+  {
+    "id": "greater_mana_potion",
+    "name": "Greater Mana Potion",
+    "kind": "consumable",
+    "heal_amount": 0,
+    "mana_amount": 100,
+    "price": 280,
+    "tier": 3
   },
   {
     "id": "greater_hp_potion",

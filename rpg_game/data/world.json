@@ -20,6 +20,8 @@
       "description": "A fortified town with a working market.",
       "has_store": true,
       "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
         "hp_potion",
         "mana_potion",
         "iron_hatchet",
@@ -181,6 +183,8 @@
       "description": "The realm's hub and largest city.",
       "has_store": true,
       "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
         "hp_potion",
         "antidote",
         "worn_shortsword",
@@ -223,6 +227,8 @@
       "description": "A fortified town with a working market.",
       "has_store": true,
       "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
         "mana_potion",
         "antidote",
         "hp_potion",
@@ -712,6 +718,8 @@
       "description": "A fortified town with a working market.",
       "has_store": true,
       "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
         "hp_potion",
         "mana_potion",
         "steel_greatsword",
