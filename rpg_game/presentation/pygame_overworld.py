@@ -59,11 +59,17 @@ SAVE_PATH = os.path.join(_PROJECT_ROOT, "savegame.json")
 
 FPS = 60
 PLAYER_SIZE = 20
-PLAYER_SPEED = 3
+# 20% slower than the old 3 px/frame (0.8 * 3). It is a FLOAT, but the player is an
+# integer pygame.Rect, so the app keeps a per-axis sub-pixel accumulator (see
+# update()): each move-frame adds PLAYER_SPEED, the rect moves by the integer part,
+# the fraction carries to the next frame. Setting the rect step to int(2.4)=2 would
+# instead be ~33% slower, not 20%.
+PLAYER_SPEED = 2.4
 COLLISION_LAYER = "walls"
 # Player-centered zoom: the world view is scaled so ~this many tiles are visible
-# across the window (Platinum-style). Integer zoom only -> crisp pixel art.
-ZOOM_TARGET_TILES_W = 10
+# across the window (Platinum-style). Integer zoom only -> crisp pixel art. Integer
+# steps mean the actual tiles-in-width jumps in steps (12 here -> ~12-13 wide).
+ZOOM_TARGET_TILES_W = 12
 
 # Colors (shared palette with the battle shell)
 BG = (18, 20, 28)
@@ -306,6 +312,11 @@ class OverworldApp:
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
         self._last_region = self.zone.wild_region_at(self._last_tile)
+        # Sub-pixel movement remainder (float) per axis; the int part moves the rect
+        # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
+        # on any teleport so no drift accumulates across a reposition.
+        self._move_accum_x = 0.0
+        self._move_accum_y = 0.0
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
@@ -436,6 +447,7 @@ class OverworldApp:
             tile = self.town_tile_by_place.get(respawn_place)
             if tile is not None:
                 self.world.set_tile(*tile)
+            self._move_accum_x = self._move_accum_y = 0.0  # teleport -> no carried drift
             self.sync_location()
             self.set_toast(T.defeat_respawn(self.engine.current_place().name), BAD)
         else:
@@ -813,20 +825,28 @@ class OverworldApp:
         dx = (keys[pygame.K_RIGHT] or keys[pygame.K_d]) - (keys[pygame.K_LEFT] or keys[pygame.K_a])
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
         if dx or dy:
-            message = self.world.try_move(dx * PLAYER_SPEED, dy * PLAYER_SPEED)
-            if message:
-                self.set_toast(message, WARN)
-            self.sync_location()
-            tile = self.world.current_tile
-            if tile != self._last_tile:
-                self._last_tile = tile
-                region = self.zone.wild_region_at(tile)
-                if region != self._last_region and region != self.zone.wild_region_place_id:
-                    self.set_toast(T.region_flavor(region), WARN)  # soft signal, not a wall
-                self._last_region = region
-                enemy = self.maybe_encounter()
-                if enemy is not None:
-                    self.start_battle(enemy)
+            # Accumulate sub-pixel movement; move the integer part, carry the rest.
+            # int() truncates toward zero so the fraction keeps its sign both ways.
+            self._move_accum_x += dx * PLAYER_SPEED
+            self._move_accum_y += dy * PLAYER_SPEED
+            step_x, step_y = int(self._move_accum_x), int(self._move_accum_y)
+            self._move_accum_x -= step_x
+            self._move_accum_y -= step_y
+            if step_x or step_y:
+                message = self.world.try_move(step_x, step_y)
+                if message:
+                    self.set_toast(message, WARN)
+                self.sync_location()
+                tile = self.world.current_tile
+                if tile != self._last_tile:
+                    self._last_tile = tile
+                    region = self.zone.wild_region_at(tile)
+                    if region != self._last_region and region != self.zone.wild_region_place_id:
+                        self.set_toast(T.region_flavor(region), WARN)  # soft signal, not a wall
+                    self._last_region = region
+                    enemy = self.maybe_encounter()
+                    if enemy is not None:
+                        self.start_battle(enemy)
 
     # -- rendering ----------------------------------------------------------
 

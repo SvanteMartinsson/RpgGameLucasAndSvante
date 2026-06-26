@@ -45,15 +45,20 @@ class OverworldZoomTest(unittest.TestCase):
             self.assertEqual(z, int(z))
             self.assertTrue(2 <= z <= 5)
 
-    def test_about_ten_tiles_visible_wide(self):
-        # The whole point: a small slice (~10 wide), not the whole map.
-        for size in [(960, 640), (1391, 903)]:
-            app = self._app(size)
+    def test_zoom_and_tiles_in_width_locked(self):
+        # ZOOM_TARGET_TILES_W=12 with integer-stepped zoom -> these exact values.
+        # (width -> expected integer zoom, tiles-in-width). Locks the ~12-wide view.
+        expected = {1280: (3, 1280 / (3 * 32)),    # 13.33 tiles (was 10.0 @ zoom 4)
+                    1600: (4, 1600 / (4 * 32))}     # 12.50 tiles (was 10.0 @ zoom 5)
+        for w, (exp_z, exp_tiles) in expected.items():
+            app = self._app((w, 720))
             app.draw()
             z = app._zoom_factor()
-            visible_w = (size[0] // z) / app.world.tw
-            self.assertTrue(8 <= visible_w <= 13, f"{size}: {visible_w:.1f} tiles wide")
-            self.assertLess(visible_w, app.world.tmx.width)  # not the whole 48-wide map
+            self.assertEqual(z, exp_z, f"width {w}")
+            visible_w = w / (z * app.world.tw)
+            self.assertAlmostEqual(visible_w, exp_tiles, delta=0.01)
+            self.assertGreater(visible_w, 11.5)             # ~2 tiles wider than the old 10
+            self.assertLess(visible_w, app.world.tmx.width)  # still a slice, not the map
 
     def test_player_stays_centered_mid_map(self):
         app = self._app((960, 640))
@@ -93,7 +98,7 @@ class OverworldZoomTest(unittest.TestCase):
         self.assertEqual(app._transform, (0, 0, 1.0))  # fluid: identity present
 
     def test_target_constant_drives_zoom(self):
-        self.assertEqual(ZOOM_TARGET_TILES_W, 10)
+        self.assertEqual(ZOOM_TARGET_TILES_W, 12)
 
 
 if __name__ == "__main__":
