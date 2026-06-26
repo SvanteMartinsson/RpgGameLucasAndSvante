@@ -286,41 +286,45 @@ class OverworldRegenTest(unittest.TestCase):
         # organic edges: leafy edge/corner crowns dominate over flat centre tiles
         self.assertGreater(edge_crowns, center_crowns)
 
-    def test_dense_forest_interior_reads_as_layered_canopy(self):
-        # The dense interior must NOT be a flat single body tile. A deep-interior cell
-        # (all 8 neighbours forest) gets only the body crown from marching, so any
-        # sunlit-dome / shadow-base tile there can ONLY come from the depth pass.
+    def _band_cells(self):
+        # The kept edge band, reconstructed exactly as the generator builds it.
+        gate_top, gate_bottom = range(23, 30), range(21, 28)
+        band = set()
+        for x in range(W):
+            if x not in gate_top:
+                band |= {(x, 0), (x, 1)}
+        for y in range(H):
+            band |= {(0, y), (1, y)}
+        for x in range(60):
+            if x not in gate_bottom:
+                band |= {(x, 54), (x, 55)}
+        return band
+
+    def test_no_inner_forest_groves_remain(self):
+        # The inner forest masses are removed: no canopy collision fill and no crown
+        # decor may survive in the map interior (away from the 2-deep edge band + its
+        # 1-tile fringe). Plant-sheet tiles (firstgid 3/387 grass aside) only appear
+        # as forest canopy/crowns/bushes -> none should be left inland.
         walls, decor = self._layer("walls"), self._layer("decor_over")
+        for y in range(3, H - 3):           # interior, clear of the band + fringe ring
+            for x in range(3, W - 3):
+                self.assertIsNone(self._plant_offset(walls[y][x])[1],
+                                  f"grove canopy still blocks at {(x, y)}")
+                self.assertIsNone(self._plant_offset(decor[y][x])[1],
+                                  f"grove crown still drawn at {(x, y)}")
 
-        def is_forest_fill(gid):                       # canopy collision fill (offset 34)
-            fg, off = self._plant_offset(gid)
-            return off == 34
-
-        forest = {(x, y) for y in range(H) for x in range(W) if is_forest_fill(walls[y][x])}
-        deep = [(x, y) for (x, y) in forest
-                if all((x + dx, y + dy) in forest for dx in (-1, 0, 1) for dy in (-1, 0, 1))]
-        self.assertGreater(len(deep), 40, "no dense interior to texture")
-
-        dome = {18, 22, 26}          # sunlit crown tops
-        shade = {50, 54, 58}         # shadowed lower-foliage bases
-        offs = [self._plant_offset(decor[y][x])[1] for (x, y) in deep]
-        depth = sum(1 for o in offs if o in dome or o in shade)
-        body = sum(1 for o in offs if o in (34, 38, 42))
-        # relief present: a real share of the interior is domes/shadow, not flat body
-        self.assertGreater(depth, 30, "interior is a flat mat (no emergent depth)")
-        self.assertGreater(depth, body * 0.5, "interior barely textured")
-        self.assertGreaterEqual(len({o for o in offs}), 5, "interior too uniform")
-
-    def test_forest_depth_is_decor_only_collision_unchanged(self):
-        # The depth pass writes decor_over only: the walls collision footprint stays
-        # exactly the dense-canopy fill (offset 34) — never a dome/shadow/edge tile,
-        # so trees can never silently open or block a tile.
+    def test_edge_band_is_the_only_canopy_and_seals_the_border(self):
+        # All remaining canopy collision (plant offset 34) lives on the kept edge
+        # band; the map border stays sealed (left edge fully blocked — no gate there).
         walls = self._layer("walls")
+        band = self._band_cells()
         wall_offs = {self._plant_offset(walls[y][x])[1]
                      for y in range(H) for x in range(W)
                      if self._plant_offset(walls[y][x])[1] is not None}
         self.assertEqual(wall_offs, {34}, f"collision fill changed: {wall_offs}")
-        # the edge band stays a clean solid wall (left edge fully blocked, no gate there)
+        canopy = {(x, y) for y in range(H) for x in range(W)
+                  if self._plant_offset(walls[y][x])[1] == 34}
+        self.assertTrue(canopy <= band, "canopy collision outside the edge band")
         self.assertTrue(all(walls[y][0] for y in range(H)), "left edge band breached")
 
     def test_edge_terrain_replaces_hard_border(self):
