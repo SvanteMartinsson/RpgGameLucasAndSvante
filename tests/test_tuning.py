@@ -1,8 +1,16 @@
 import random
 import unittest
+from dataclasses import replace
 
 from rpg_game.core.game import GameEngine
 from rpg_game.presentation import terminal
+
+
+def _sell_here(engine, *item_ids):
+    """Make the player's current store sell the given items (decouples the buy
+    mechanic from per-store curated stock)."""
+    place = engine.content.places[engine.player.current_place_id]
+    engine.content.places[place.id] = replace(place, store_inventory=item_ids)
 
 
 class WeaponOwnershipTests(unittest.TestCase):
@@ -17,6 +25,7 @@ class WeaponOwnershipTests(unittest.TestCase):
         engine = GameEngine()
         engine.start_new_game("Tank", "tank")
         engine.player.gold = 1000
+        _sell_here(engine, "axe")
 
         result = engine.buy_item("axe")
 
@@ -34,6 +43,7 @@ class WeaponOwnershipTests(unittest.TestCase):
         self.assertNotIn("axe", owned)  # ...but is not listed until owned
 
         engine.player.gold = 1000
+        _sell_here(engine, "axe")
         engine.buy_item("axe")
         self.assertIn("axe", [weapon.id for weapon in engine.owned_weapons()])
 

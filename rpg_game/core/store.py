@@ -51,8 +51,14 @@ def sell_value(price: int) -> int:
     return round_half_up(price * SELL_FRACTION)
 
 
+def gear_value(gear) -> int:
+    """Full shop value of a gear piece (gear has no authored price): derived from
+    its rarity + tier. Buy at full value, sell at SELL_FRACTION of it."""
+    return GEAR_RARITY_VALUE.get(gear.rarity, 10) + gear.tier * 8
+
+
 def gear_sell_value(gear) -> int:
-    return round_half_up((GEAR_RARITY_VALUE.get(gear.rarity, 10) + gear.tier * 8) * SELL_FRACTION)
+    return round_half_up(gear_value(gear) * SELL_FRACTION)
 
 
 def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
@@ -74,6 +80,18 @@ def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
                         f"+{weapon.damage_bonus} damage, tier {weapon.tier}, "
                         f"requires level {combat.weapon_required_level(weapon)}"
                     ),
+                )
+            )
+        elif item_id in content.gear_items:
+            gear = content.gear_items[item_id]
+            mods = ", ".join(f"{stat} {value:+}" for stat, value in gear.stat_modifiers.items())
+            entries.append(
+                StoreEntry(
+                    id=gear.id,
+                    name=gear.name,
+                    kind="gear",
+                    price=gear_value(gear),
+                    description=f"[{gear.rarity}] {mods}, requires level {gear.level_req}",
                 )
             )
         elif item_id in content.items:
@@ -115,6 +133,16 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
             )
         player.equipped_weapon_id = weapon.id
         return PurchaseResult(True, f"Bought and equipped {weapon.name}.")
+
+    if normalized in content.gear_items:
+        gear = content.gear_items[normalized]
+        price = gear_value(gear)
+        if player.gold < price:
+            return PurchaseResult(False, f"Not enough gold. {gear.name} costs {price}.")
+        player.gold -= price
+        if gear.id not in player.owned_gear_ids:
+            player.owned_gear_ids = (*player.owned_gear_ids, gear.id)
+        return PurchaseResult(True, f"Bought {gear.name}. Equip it in Character.")
 
     if normalized in content.items:
         item = content.items[normalized]

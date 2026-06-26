@@ -1405,13 +1405,16 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render(T.store_hint(gold), True, WARN),
                          (panel.x + 20, panel.y + 56))
         col_w = (panel.width - 60) // 2
+        # Rows that fit the panel — diversified stores carry more than the old 6.
+        row_h = 38
+        max_rows = max(6, (panel.bottom - (panel.y + 106) - 10) // row_h)
         self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
-        for i, entry in enumerate(eng.store_entries()[:6]):
-            rect = pygame.Rect(panel.x + 20, panel.y + 106 + i * 38, col_w, 32)
+        for i, entry in enumerate(eng.store_entries()[:max_rows]):
+            rect = pygame.Rect(panel.x + 20, panel.y + 106 + i * row_h, col_w, 32)
             self._add_button(rect, f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
         self.screen.blit(self.font.render(T.STORE_SELL, True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
-        for i, entry in enumerate(eng.sellable_entries()[:6]):
-            rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * 38, col_w, 32)
+        for i, entry in enumerate(eng.sellable_entries()[:max_rows]):
+            rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * row_h, col_w, 32)
             self._add_button(rect, f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
 
     def _overlay_system(self, panel) -> None:

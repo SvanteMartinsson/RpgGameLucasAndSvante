@@ -80,6 +80,8 @@ class WeaponLevelRequirementTests(unittest.TestCase):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Fighter", "fighter")
         engine.player.gold = 500
+        place = engine.content.places[engine.player.current_place_id]
+        engine.content.places[place.id] = replace(place, store_inventory=("axe",))
 
         result = engine.buy_item("axe")
 

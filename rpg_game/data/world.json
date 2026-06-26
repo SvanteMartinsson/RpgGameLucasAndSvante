@@ -10,7 +10,7 @@
     ],
     "start_place_id": "burg_5",
     "place_count": 21,
-    "note": "distance_px = sann pixel-längd (auktoritativt för restid). distance_km_approx kalibreras mot skalstrecket vid behov."
+    "note": "distance_px = sann pixel-l\u00e4ngd (auktoritativt f\u00f6r restid). distance_km_approx kalibreras mot skalstrecket vid behov."
   },
   "places": [
     {
@@ -19,6 +19,16 @@
       "type": "town",
       "description": "A fortified town with a working market.",
       "has_store": true,
+      "store_inventory": [
+        "hp_potion",
+        "mana_potion",
+        "iron_hatchet",
+        "axe",
+        "guard_cap",
+        "reinforced_vest",
+        "scout_leggings",
+        "swift_ring"
+      ],
       "mana_site": false,
       "port": false,
       "position": {
@@ -170,6 +180,17 @@
       "type": "city",
       "description": "The realm's hub and largest city.",
       "has_store": true,
+      "store_inventory": [
+        "hp_potion",
+        "antidote",
+        "worn_shortsword",
+        "sword",
+        "hunting_bow",
+        "training_cap",
+        "threadbare_gloves",
+        "worn_boots",
+        "padded_vest"
+      ],
       "mana_site": true,
       "port": false,
       "position": {
@@ -201,6 +222,17 @@
       "type": "town",
       "description": "A fortified town with a working market.",
       "has_store": true,
+      "store_inventory": [
+        "mana_potion",
+        "antidote",
+        "hp_potion",
+        "longsword",
+        "rimebrand",
+        "grip_wraps",
+        "runner_boots",
+        "sage_amulet",
+        "focus_band"
+      ],
       "mana_site": false,
       "port": false,
       "position": {
@@ -679,6 +711,16 @@
       "type": "town",
       "description": "A fortified town with a working market.",
       "has_store": true,
+      "store_inventory": [
+        "hp_potion",
+        "mana_potion",
+        "steel_greatsword",
+        "emberwand",
+        "iron_helm",
+        "marcher_greaves",
+        "swift_ring",
+        "lucky_loop"
+      ],
       "mana_site": false,
       "port": false,
       "position": {
