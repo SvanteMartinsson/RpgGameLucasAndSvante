@@ -30,6 +30,31 @@ class ViewSnapshotTests(unittest.TestCase):
         self.assertFalse(weapons["worldsplitter"].equippable)
         self.assertEqual(weapons["worldsplitter"].required_level, 4)
 
+    def test_weapon_type_is_exposed_and_surfaced(self):
+        # B4: the weapon TYPE (category) + stats live in the snapshot, and the
+        # presentation text helpers surface them so a NAMED weapon's type (e.g.
+        # is Venomfang a melee or a magic weapon?) is no longer invisible.
+        from rpg_game.presentation import ui_text as T
+
+        engine = GameEngine()
+        engine.start_new_game("Hero", "mage")
+        engine.player.owned_weapon_ids = ("staff", "venomfang")
+        snapshot = view.build_snapshot(engine)
+        weapons = {weapon.id: weapon for weapon in snapshot.weapons}
+
+        # data is exposed on the snapshot
+        self.assertEqual(weapons["staff"].category, "magic")
+        self.assertEqual(weapons["venomfang"].category, "melee")
+        self.assertEqual(weapons["venomfang"].damage_type, "physical")
+
+        # presentation surfaces the type + stats in the visible strings
+        label = T.weapon_label(weapons["venomfang"])
+        self.assertIn("Venomfang", label)
+        self.assertIn("Melee", label)
+        preview = T.weapon_preview(weapons["staff"])
+        for token in ("Magic", "tier", "Lv"):
+            self.assertIn(token, preview)
+
     def test_snapshot_is_immutable(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")

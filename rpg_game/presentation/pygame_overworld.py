@@ -583,7 +583,7 @@ class OverworldApp:
         if category == "weapon":
             for w in snap.weapons:
                 mark = " [equipped]" if w.equipped else ""
-                rows.append((w.id, f"{w.name} +{w.damage_bonus} {w.damage_type}{mark}",
+                rows.append((w.id, f"{T.weapon_label(w)}{mark}",
                              (lambda: self.inventory_equip_handoff("weapon")), True))
             return rows
         for gear in snap.gear:
@@ -1240,10 +1240,18 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render(f"{selected_slot.name} options", True, TEXT_DIM), (items_rect.x, items_rect.y - 24))
         max_items = max(1, items_rect.height // 34)
         if selected_slot.id == "weapon":
-            for i, w in enumerate(snap.weapons[:max_items]):
-                rect = pygame.Rect(items_rect.x, items_rect.y + i * 34, items_rect.width, 28)
+            # Preview: the equipped weapon's type + full stats, above the options.
+            equipped_w = next((w for w in snap.weapons if w.equipped), None)
+            options_y = items_rect.y
+            if equipped_w is not None:
+                self.screen.blit(self.font_sm.render(self._fit_text(T.weapon_preview(equipped_w), items_rect.width, self.font_sm), True, TEXT_DIM),
+                                 (items_rect.x, items_rect.y))
+                options_y = items_rect.y + 24
+            max_weapons = max(1, (items_rect.bottom - options_y) // 34)
+            for i, w in enumerate(snap.weapons[:max_weapons]):
+                rect = pygame.Rect(items_rect.x, options_y + i * 34, items_rect.width, 28)
                 suffix = " [equipped]" if w.equipped else ("" if w.equippable else f" needs Lv {w.required_level}")
-                label = f"{w.name} +{w.damage_bonus} {w.damage_type}{suffix}"
+                label = f"{T.weapon_label(w)}{suffix}"
                 self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
             return
 

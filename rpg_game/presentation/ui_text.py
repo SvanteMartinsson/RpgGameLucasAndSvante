@@ -131,6 +131,28 @@ def equipped_weapon(name: str) -> str:
     return f"Equipped {name}."
 
 
+# --- weapon type + preview (B4) -------------------------------------------
+# Weapon "type" is the gameplay category (drives weapon-gated skills); it is the
+# field abilities check, so it is the type the player needs to see.
+WEAPON_CATEGORY_LABELS = {"melee": "Melee", "magic": "Magic", "ranged": "Ranged"}
+
+
+def weapon_type(category: str) -> str:
+    return WEAPON_CATEGORY_LABELS.get(category, category.title())
+
+
+def weapon_label(weapon) -> str:
+    """One-line inventory/character label exposing the weapon TYPE (category)
+    alongside its damage, so a named weapon's type is no longer invisible."""
+    return f"{weapon.name} ({weapon_type(weapon.category)}) +{weapon.damage_bonus} {weapon.damage_type}"
+
+
+def weapon_preview(weapon) -> str:
+    """Full stat preview for the selected weapon — type spelled out explicitly."""
+    return (f"{weapon.name} — {weapon_type(weapon.category)} weapon, {weapon.damage_type} damage  "
+            f"(+{weapon.damage_bonus} dmg · tier {weapon.tier} · needs Lv {weapon.required_level})")
+
+
 def defeat_respawn(place_name: str) -> str:
     return f"Defeated — respawned at {place_name}."
 
