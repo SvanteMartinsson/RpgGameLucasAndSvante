@@ -54,6 +54,12 @@ TREE_CROWNS = [
     [25, 26, 27, 41, 42, 43, 57, 58, 59],
 ]
 BUSHES = [83, 85, 87, 91]         # small flora for the sparse forest fringe
+# Emergent treetops for the dense interior: a sunlit crown dome (lighter top tile)
+# over a shadowed lower-foliage base, per canopy variant. Scattered over the flat
+# body mat they read as many layered crowns with depth instead of one green disk.
+CROWN_TOP = [18, 22, 26]          # rounded sunlit dome  (variant 0/1/2)
+CROWN_BASE = [50, 54, 58]         # shadowed lower foliage that grounds the dome
+TREETOP_DENSITY = 0.22            # share of deep-interior cells that raise a dome
 
 
 def crown_tile(x, y, forest):
@@ -63,6 +69,51 @@ def crown_tile(x, y, forest):
     row = 0 if (x, y - 1) not in forest else (2 if (x, y + 1) not in forest else 1)
     col = 0 if (x - 1, y) not in forest else (2 if (x + 1, y) not in forest else 1)
     return grp[row * 3 + col]
+
+
+def _deep_interior(x, y, forest):
+    """True when (x,y) and all 8 neighbours are forest -> a flat body cell, safe to
+    overlay a dome without eating the leafy marching edges or the south trunk front."""
+    return all((x + dx, y + dy) in forest
+               for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+
+
+def _crown_variant(x, y):
+    """The canopy variant crown_tile() uses at (x,y) — coherent in ~3x3 blocks so the
+    depth tiles share the same palette as the surrounding body."""
+    return int(_hash01(x // 3, y // 3) * 3) % 3
+
+
+def scatter_treetops(inner, forest, decor):
+    """Give the dense interior vertical depth so the mass reads as many layered crowns,
+    not a flat mat. Two decor-only passes over inner FORESTS only (the edge band stays
+    a clean solid wall); both are pure _hash01/_vnoise fields, so walls/collision and
+    the seeded RNG stream (paths/water/forest) are untouched.
+
+    1) Sun/shade DAPPLE: a coherent value-noise field (offset off the zone field)
+       relights deep-interior body cells -> sunlit domes on the highs, shaded foliage
+       in the hollows, body in between -> rolling canopy relief.
+    2) Emergent TREETOPS: sparser, spaced domes grounded by a shadow base -> distinct
+       individual trees standing above the canopy, each with a trunk/shadow front."""
+    interior = [(x, y) for (x, y) in inner if _deep_interior(x, y, forest)]
+    for (x, y) in interior:                       # pass 1: sun/shade dapple
+        v = _crown_variant(x, y)
+        n = _vnoise(x * 1.3 + 40.0, y * 1.3 + 15.0)
+        base = PLANT[theme_at(x, y)]
+        if n < 0.34:
+            decor[y][x] = base + CROWN_BASE[v]    # shaded hollow
+        elif n > 0.66:
+            decor[y][x] = base + CROWN_TOP[v]     # sunlit dome
+
+    anchors = {(x, y) for (x, y) in interior
+               if _hash01(x * 1.7 + 3, y * 1.3 + 7) < TREETOP_DENSITY}
+    anchors = {(x, y) for (x, y) in anchors       # space them out -> individual trees
+               if (x - 1, y) not in anchors and (x, y - 1) not in anchors}
+    for (x, y) in anchors:                         # pass 2: emergent treetop + shadow
+        v = _crown_variant(x, y)
+        decor[y][x] = PLANT[theme_at(x, y)] + CROWN_TOP[v]
+        if (x, y + 1) not in anchors and _deep_interior(x, y + 1, forest):
+            decor[y + 1][x] = PLANT[theme_at(x, y + 1)] + CROWN_BASE[v]
 
 # Organic forest masses (cx, cy, r) placed BETWEEN towns. Minority terrain you
 # weave around; kept off town margins + the two zone-crossing lines.
@@ -438,14 +489,19 @@ def main():
         if x not in GATE_OPEN[(24, 55)]:
             band |= {(x, 54), (x, 55)}
 
-    forest_cells = set()
+    # Inner forest MASSES (organic blobs you weave around) are kept as a distinct set
+    # from the edge BAND (the clean solid map-edge wall). Only the masses get the
+    # emergent-treetop depth pass; the band stays a flat solid wall so a future slice
+    # can't accidentally open the map edge by reshaping forest decor.
+    inner_forest = set()
     for cx, cy, r in FORESTS:
         for y in range(max(1, cy - r - 1), min(H - 1, cy + r + 2)):
             for x in range(max(1, cx - r - 1), min(W - 1, cx + r + 2)):
                 if (x - cx) ** 2 + (y - cy) ** 2 <= (r + random.uniform(-1.2, 0.4)) ** 2:
                     if (x, y) not in protected:
-                        forest_cells.add((x, y))
-    forest_cells |= {c for c in band if c not in protected}
+                        inner_forest.add((x, y))
+    band_cells = {c for c in band if c not in protected}
+    forest_cells = inner_forest | band_cells
     # Collision footprint is the blob (unchanged -> reachability identical); the
     # crown is recomposed as a marching-tile blob so edges are leafy/organic, the
     # core dense, with per-zone flora dithered through the transition band.
@@ -455,6 +511,8 @@ def main():
         base = PLANT[theme_at(x, y)]
         walls[y][x] = base + CANOPY                      # dense green: collision + fill (hidden under crown; no grey trunk poking through wispy edges)
         decor[y][x] = base + crown_tile(x, y, forest_cells)  # leafy crown over the player (south edge shows trunk+shadow)
+    # Depth pass: emergent crown domes over the dense interior of the MASSES only.
+    scatter_treetops(inner_forest, forest_cells, decor)
     # Sparse bush fringe just outside the blob: visual overhang, non-blocking, so
     # the mass fades into grass instead of ending on a hard edge.
     fringe = {(x + dx, y + dy) for (x, y) in forest_cells for dx in (-1, 0, 1) for dy in (-1, 0, 1)

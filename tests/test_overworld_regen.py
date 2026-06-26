@@ -286,6 +286,43 @@ class OverworldRegenTest(unittest.TestCase):
         # organic edges: leafy edge/corner crowns dominate over flat centre tiles
         self.assertGreater(edge_crowns, center_crowns)
 
+    def test_dense_forest_interior_reads_as_layered_canopy(self):
+        # The dense interior must NOT be a flat single body tile. A deep-interior cell
+        # (all 8 neighbours forest) gets only the body crown from marching, so any
+        # sunlit-dome / shadow-base tile there can ONLY come from the depth pass.
+        walls, decor = self._layer("walls"), self._layer("decor_over")
+
+        def is_forest_fill(gid):                       # canopy collision fill (offset 34)
+            fg, off = self._plant_offset(gid)
+            return off == 34
+
+        forest = {(x, y) for y in range(H) for x in range(W) if is_forest_fill(walls[y][x])}
+        deep = [(x, y) for (x, y) in forest
+                if all((x + dx, y + dy) in forest for dx in (-1, 0, 1) for dy in (-1, 0, 1))]
+        self.assertGreater(len(deep), 40, "no dense interior to texture")
+
+        dome = {18, 22, 26}          # sunlit crown tops
+        shade = {50, 54, 58}         # shadowed lower-foliage bases
+        offs = [self._plant_offset(decor[y][x])[1] for (x, y) in deep]
+        depth = sum(1 for o in offs if o in dome or o in shade)
+        body = sum(1 for o in offs if o in (34, 38, 42))
+        # relief present: a real share of the interior is domes/shadow, not flat body
+        self.assertGreater(depth, 30, "interior is a flat mat (no emergent depth)")
+        self.assertGreater(depth, body * 0.5, "interior barely textured")
+        self.assertGreaterEqual(len({o for o in offs}), 5, "interior too uniform")
+
+    def test_forest_depth_is_decor_only_collision_unchanged(self):
+        # The depth pass writes decor_over only: the walls collision footprint stays
+        # exactly the dense-canopy fill (offset 34) — never a dome/shadow/edge tile,
+        # so trees can never silently open or block a tile.
+        walls = self._layer("walls")
+        wall_offs = {self._plant_offset(walls[y][x])[1]
+                     for y in range(H) for x in range(W)
+                     if self._plant_offset(walls[y][x])[1] is not None}
+        self.assertEqual(wall_offs, {34}, f"collision fill changed: {wall_offs}")
+        # the edge band stays a clean solid wall (left edge fully blocked, no gate there)
+        self.assertTrue(all(walls[y][0] for y in range(H)), "left edge band breached")
+
     def test_edge_terrain_replaces_hard_border(self):
         walls = self._layer("walls")
         # the hard 1-tile placeholder border ring (gid 2) is gone
