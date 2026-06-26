@@ -65,6 +65,41 @@ def read_layer_csv(src, name):
     return [[int(v) for v in r.rstrip(",").split(",")] for r in rows]
 
 
+# ===================== EDGE TERRAIN (cliffs) =========================
+# Cliff stamps registered as tilesets (firstgid). Footprints precomputed from the
+# art (>=25% opaque cell -> solid/walls + visible; wispy fringe -> decor_over) so
+# this generator stays pygame-free. gid of a stamp cell = firstgid + ty*cols + tx.
+def _rect(cols, ys):
+    return [(tx, ty) for ty in ys for tx in range(cols)]
+
+CLIFFS = {
+    # long horizontal wall (8x4): solid body rows 1-3
+    "horizontal": {"fg": 4779, "cols": 8, "rows": 4,
+                   "solid": _rect(8, (1, 2, 3)), "fringe": []},
+    # L-corner (6x6): horizontal top + a leg turning down on the right
+    "corner": {"fg": 4811, "cols": 6, "rows": 6,
+               "solid": _rect(6, (1, 2, 3)) + [(3, 4), (4, 4), (5, 4), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5)],
+               "fringe": [(1, 4), (2, 4), (0, 5)]},
+    # vertical pillar/wall (4x6): solid body, narrower top row
+    "vertical": {"fg": 4847, "cols": 4, "rows": 6,
+                 "solid": [(1, 0), (2, 0)] + _rect(4, (1, 2, 3, 4, 5)), "fringe": [(0, 0), (3, 0)]},
+}
+
+
+def place_cliff(name, ox, oy, walls, decor):
+    """Stamp a cliff: solid cells block (walls, drawn under the player), wispy
+    fringe is decoration only (decor_over). Off-map cells are clipped."""
+    c = CLIFFS[name]
+    for (tx, ty) in c["solid"]:
+        x, y = ox + tx, oy + ty
+        if 0 <= x < W and 0 <= y < H:
+            walls[y][x] = c["fg"] + ty * c["cols"] + tx
+    for (tx, ty) in c["fringe"]:
+        x, y = ox + tx, oy + ty
+        if 0 <= x < W and 0 <= y < H and walls[y][x] == 0:
+            decor[y][x] = c["fg"] + ty * c["cols"] + tx
+
+
 # ===================== WATER (edge phase v3) =========================
 WATER_FG = 4739
 WIDX = {"full": 0, "edge_N": 1, "edge_E": 2, "edge_S": 3, "edge_W": 4,
@@ -309,16 +344,33 @@ def main():
                 pool = PATH_NEAR if mid < 0.4 else PATH_FAR
                 ground[y][x] = GRASS[theme_ground(x, y)] + random.choice(pool)
 
-    # ---- WALLS: border + gate holes + organic forest masses ----
+    # ---- WALLS: natural edge terrain (cliffs + dense forest) + forest masses ----
+    # No hard 1-tile border ring any more — the map edge is already blocked by the
+    # bounds check; the boundary is now organic. Cliff stamps round the corners and
+    # dense forest bands wall the long edges, with openings at the three gates.
     walls = [[0] * W for _ in range(H)]
-    for x in range(W):
-        walls[0][x] = walls[H - 1][x] = BORDER_GID
-    for y in range(H):
-        walls[y][0] = walls[y][W - 1] = BORDER_GID
-    for (gx, gy) in gates:
-        walls[gy][gx] = 0  # carve the gate hole (presentation blocks it w/ message)
-
     decor = [[0] * W for _ in range(H)]
+
+    # Cliff corner accents (discrete stamps, not a tiling set): L-corner top-left,
+    # a long wall above Estables (top-right), a pillar bottom-left. Bottom-right is
+    # the lake. Placed first so the forest bands flow around them.
+    place_cliff("corner", 0, 0, walls, decor)
+    place_cliff("horizontal", 66, 0, walls, decor)
+    place_cliff("vertical", 0, 49, walls, decor)
+
+    # Dense forest edge bands (2 cells deep) just inside the long edges, between the
+    # corner cliffs / lake, with a clear opening at each gate so it stays reachable.
+    GATE_OPEN = {(26, 0): range(23, 30), (24, 55): range(21, 28)}  # x-spans kept open
+    band = set()
+    for x in range(6, 66):                       # top edge (after corner, before wall)
+        if x not in GATE_OPEN[(26, 0)]:
+            band |= {(x, 0), (x, 1)}
+    for y in range(6, 49):                        # left edge (between the two cliffs)
+        band |= {(0, y), (1, y)}
+    for x in range(6, 55):                         # bottom edge (before the lake)
+        if x not in GATE_OPEN[(24, 55)]:
+            band |= {(x, 54), (x, 55)}
+
     forest_cells = set()
     for cx, cy, r in FORESTS:
         for y in range(max(1, cy - r - 1), min(H - 1, cy + r + 2)):
@@ -326,7 +378,10 @@ def main():
                 if (x - cx) ** 2 + (y - cy) ** 2 <= (r + random.uniform(-1.2, 0.4)) ** 2:
                     if (x, y) not in protected:
                         forest_cells.add((x, y))
+    forest_cells |= {c for c in band if c not in protected}
     for (x, y) in forest_cells:
+        if walls[y][x] != 0:       # don't overwrite a cliff stamp
+            continue
         base = PLANT[theme_plant(y)]
         walls[y][x] = base + TRUNK     # solid -> collision + render
         decor[y][x] = base + CANOPY    # leafy top, over the trunk

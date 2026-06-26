@@ -114,11 +114,11 @@ class OverworldRegenTest(unittest.TestCase):
         self.assertLess(bond_x, harrow_x)
 
     def test_open_wilderness_is_the_default(self):
-        # land stays mostly open; the v3 rivers + lake add intended water obstacle
-        # (~14%), so the floor is lower than the pre-water foundation.
+        # land stays mostly open; rivers + lake + the cliff/forest edge terrain are
+        # intended obstacles (~30%), so the floor is lower than the bare foundation.
         walkable = sum(1 for y in range(H) for x in range(W)
                        if (x, y) not in self.world.blocked)
-        self.assertGreater(walkable / (W * H), 0.70)
+        self.assertGreater(walkable / (W * H), 0.65)
 
     # -- ground texture + broken path hints (under player, no collision) ----
 
@@ -207,6 +207,19 @@ class OverworldRegenTest(unittest.TestCase):
         # the five bridge crossings are walkable (not blocked)
         for bx, by in [(12, 35), (57, 35), (26, 27), (44, 43), (77, 28)]:
             self.assertNotIn((bx, by), self.world.blocked, f"bridge {(bx, by)} blocked")
+
+    def test_edge_terrain_replaces_hard_border(self):
+        walls = self._layer("walls")
+        # the hard 1-tile placeholder border ring (gid 2) is gone
+        self.assertEqual(sum(1 for row in walls for g in row if g == 2), 0)
+        # cliff stamps are placed and blocking (cliff tileset gids 4779-4870)
+        cliff = sum(1 for row in walls for g in row if 4779 <= g <= 4870)
+        self.assertGreater(cliff, 20, "no cliff collision placed")
+        # dense forest edge band walls the top edge (rows 0-1 mostly blocked)
+        top_band = sum(1 for x in range(W) if walls[0][x] or walls[1][x])
+        self.assertGreater(top_band, 30, "top edge not banded")
+        # ...but with an opening at the north gate so it stays reachable
+        self.assertEqual(walls[0][26], 0, "north gate column is walled")
 
     def test_paths_and_detail_never_collide(self):
         # path + detail live in the ground layer only; the walls layer must hold

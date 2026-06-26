@@ -105,8 +105,8 @@ class OverworldTilesetTest(unittest.TestCase):
                 # placeholder + cainos(3) + 6 themes x 3 tile sheets (22)
                 # + cainos plant/props (2) + mork_skog/cursed_mire plant/props (4)
                 # + grave_heath plant/props (2, for the Verralda heath) (30)
-                # + water_autotile + water_bridge (rivers/lake/bridges) = 32.
-                self.assertEqual(len(tmx.tilesets), 32)
+                # + water_autotile + water_bridge (2) + 3 cliff sheets (edge terrain) = 35.
+                self.assertEqual(len(tmx.tilesets), 35)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:
@@ -127,8 +127,8 @@ class OverworldTilesetTest(unittest.TestCase):
         self.assertGreater(water_cells, 200, "water not placed in walls")
 
     def test_collision_and_spawns_unchanged(self):
-        # border blocks; spawn walkable; region bands intact on the 80x56 map
-        self.assertIn((0, 0), self.app.world.blocked)        # border wall
+        # edge terrain blocks; spawn walkable; region bands intact on the 80x56 map
+        self.assertIn((0, 10), self.app.world.blocked)       # left forest edge band
         self.assertNotIn((26, 18), self.app.world.blocked)   # Hordanita start tile walkable
         self.assertEqual(self.app.zone.wild_region_at((20, 8)), "burg_54")
         self.assertEqual(self.app.zone.wild_region_at((50, 8)), "burg_146")
