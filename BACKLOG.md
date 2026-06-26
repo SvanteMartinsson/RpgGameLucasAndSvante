@@ -1,208 +1,245 @@
 # Svantrenish RPG — Backlog
 
-Fångade förbättringar/buggar att åtgärda. ID:n (B1–B15) matchar Lucas ursprungliga
-lista så vi kan referera till dem i build-prompts. Varje punkt: **Vad** / **Avsikt**
-(varför) / **Arkitekt-not** (beroende, storlek, vad som måste mätas först).
+Fångade förbättringar/buggar att åtgärda. ID:n (B1–B18) är stabila referenser i
+build-prompts. Varje punkt: **Vad** / **Avsikt** / **Not** (storlek, beroende,
+mät-först) / **Acceptans** (definition av "klart" — maskinellt kontrollerbart där
+det går; styr autonomt batch-arbete, se `CLAUDE.md` → Autonomt Batch-Arbete).
 
-> Princip som gäller hela listan: flera punkter beskriver *nuvarande beteende* som vi
-> inte säkert känner (drops, encounters, starter skills). Dessa kräver en STEG 0 som
-> **mäter koden** innan vi ändrar — gissa inte.
+> **STEG 0-princip:** punkter som beskriver nuvarande beteende vi inte säkert känner
+> inleds med en STEG 0 som **mäter koden** innan ändring.
 
----
+> **Avgränsning:** overworldens *försköning* spåras i `OVERWORLD_BEAUTIFY_PLAN.md`,
+> dubbleras inte här. B2/B17 korsar den (se noter).
 
-## Rörelse & kamera
-
-### B1 — Spelarhastighet + utzoomning
-- **Vad:** Sänk spelarens hastighet något. Zooma ut ca 2 tiles (ser fler tiles).
-- **Avsikt:** Bättre känsla/överblick när man roamar den nu större kartan.
-- **Not:** Liten tuning. Zoomen är den adaptiva heltals-zoomen (`ZOOM_TARGET_TILES_W`,
-  idag ~10 → testa ~12). Hastigheten är en rörelse-konstant. Båda är tunbara tal —
-  enklast att justera + känна efter i ett playtest. Låg risk.
+> **Acceptans markerad "(utkast — rätta)"** är arkitektens förslag på mål; Lucas
+> sätter de slutliga siffrorna. Balans verifieras via `rpg_game/core/simulation.py`.
 
 ---
 
-## Overworld & karta
+## Översikt
 
-### B2 — Broarna ser fel ut
-- **Vad:** Broarna läser som grafiska *räcken på mark*, inte en *bro över vatten*.
+**✅ Klart:** B5 · B6 · B7 · B9 · B14 · B15 (detaljer i arkivet). **B4** datadel klar
+(`e4f6c08`); kvarvarande UI lever i `CHARACTER_SCREEN.md`.
+**▶ Pågår:** Overworld-försköning (Slice 1a, se beautify-planen); B8 nästa kart-slice.
+**Härnäst:** karta klar (försköning + B8) → progression (⭐B3.1 → B3 + B7.1) →
+town-UI (B10) → utforskande (B11+B12) → UI/skärmar (B16/B16.1, B18; equip-skärm =
+`CHARACTER_SCREEN.md`) → tournaments (B13). _(Item-/ekonomi-passet B4·B6·B5·B15 klart.)_
+
+---
+
+## Aktiva punkter
+
+### Rörelse & kamera
+
+#### B1 — Spelarhastighet + utzoomning
+- **Vad:** Sänk hastigheten något. Zooma ut ca 2 tiles.
+- **Avsikt:** Bättre känsla/överblick på den större kartan.
+- **Not:** Liten tuning, låg risk. `ZOOM_TARGET_TILES_W` (idag ~10 → ~12); hastighet
+  är en rörelse-konstant.
+- **Acceptans (utkast — rätta):** ~12 tiles synliga i bredd; hastigheten sänkt
+  ~20–30%; tester gröna; arkitekten verifierar känslan i render/playtest.
+
+### Overworld & karta
+
+#### B2 — Broarna ser fel ut
+- **Vad:** Broarna läser som räcken på mark, inte bro över vatten.
 - **Avsikt:** En bro ska tydligt spänna över floden.
-- **Not:** Grafik/placerings-bugg från vatten-slicen (9c686e0). Bro-tiles (idx 13/14
-  + ändar/stolpar) hamnade i `decor_over` över gräs — de behöver läsa som däck över
-  *vatten*. Antingen fel tiles valda (räcke ≠ däck) eller fel komposition (saknar
-  vatten under). STEG 0: kolla vilka bro-tiles i `water_bridge_32x32_crisp.png` som
-  faktiskt är däck vs räcke/stolpe, och hur de ligger relativt vattnet under.
+- **Not:** Grafik/placerings-bugg (9c686e0). Korsar beautify-planens vatten-städning
+  och B17. STEG 0: vilka tiles i `water_bridge_32x32_crisp.png` är däck vs
+  räcke/stolpe, och hur ligger de mot vattnet under?
+- **Acceptans:** en bro renderar som däck med synligt vatten under; reachability +
+  bro-kollision (gångbar) oförändrade; arkitekt-render från klon bekräftar.
 
-### B8 — Städerna behöver läsas in
-- **Vad:** De stadskluster vi designat (packade 1–3-byggnaders-kluster av de nya
-  husen) ska placeras/renderas på kartan.
+#### B8 — Städerna behöver läsas in
+- **Vad:** Designade stadskluster (packade 1–3-byggnaders-kluster) placeras/renderas.
 - **Avsikt:** Städer = byggnads-kluster, inte markör-rutor.
-- **Not:** Detta ÄR edge-fasens stads-slice (redan planerad, efter klippor/skog).
-  Modell låst: packade kluster, beskuren tät kant, högre byggnader bak, ~3 tiles/hus,
-  samlad kollisions-footprint (Model A nu → Model B/gångbar senare). Hänger ihop med
-  B10 (vendor-skärm) och B4 (item-preview i butik).
+- **Not:** Edge-fasens stads-slice. Modell låst (packade kluster, ~3 tiles/hus,
+  samlad kollisions-footprint, Model A nu). Hänger ihop med B10, B4.
+- **Acceptans:** varje stad renderar som packat kluster (terracotta-tak, ljus sten);
+  samlad kollisions-footprint; reachability grön; arkitekt-render bekräftar modellen.
 
-### B11 — Karta + fog of war
-- **Vad:** Lägg till en karta så man hittar tillbaka. Fog of war för platser man inte
-  besökt.
-- **Avsikt:** Orientering i den större världen; utforskande belönas (avtäckning).
-- **Not:** Ny feature. Kräver: besökt-tracking per tile/region (sparas), en kart-vy
-  (minimap eller fullskärm), och fog-rendering. Medelstort. Hänger ihop med B12
-  (heatmap) — båda bygger på "var har spelaren varit".
+#### B17 — Diagonal flod utan kantighet  · *ny*
+- **Vad:** Flod som kan gå diagonalt utan att se trappstegig ut. Möjlig lösning:
+  halva tiles (trianglar) med korrekt kollision. Öppen för andra förslag.
+- **Avsikt:** Floder läser organiskt, inte block-kantigt.
+- **Not:** Grafik + ev. kollision. Billigast: mjukare meander i genereringen (ingen
+  kollisionsändring). STEG 0: vilka diagonala vatten-tiles finns; binär kollision
+  per tile eller subtile?
+- **Acceptans (utkast — rätta):** en diagonal flod läser organiskt i render; vald
+  lösning dokumenterad; vatten-konnektivitet (flood-fill) + reachability oförändrade;
+  vid subtile-kollision: test som låser kollisionen.
 
----
+#### B11 — Karta + fog of war
+- **Vad:** Karta så man hittar tillbaka; fog of war för obesökta platser.
+- **Avsikt:** Orientering; utforskande belönas.
+- **Not:** Ny feature, medel. Besökt-tracking (sparas) + kart-vy + fog-rendering.
+  Delar besökt-data med B12.
+- **Acceptans:** besökt-data sparas/laddas över sessioner; kart-vy öppnas; obesökt
+  döljs, återbesök avtäcker; test för besökt-tracking + persistens.
 
-## Strid & progression
+### Strid & progression
 
-### B3 — Talent tree är för tunt (8 talents/klass)
-- **Vad:** Bara 8 talents totalt per klass — för få.
+#### B3.1 — Dual-class (main + secondary)  ⭐ designbärande
+- **Vad:** Spelaren kombinerar **main** + **secondary** klass.
+- **Avsikt:** Roliga kombos; talents återanvänds över combos (löser delvis B3).
+- **Not:** Större arkitektur-feature, egen design-doc. Hörnsten — design FÖRST.
+  Påverkar B3, abilities, vapen-krav (B4).
+- **Acceptans:** design-doc skriven; main+secondary kan väljas/kombineras;
+  talents/abilities/vapenkrav respekterar kombon; tester låser combo-reglerna.
+  **HALT efter denna — bygg inte B3/B7.1 i samma körning (review först).**
+
+#### B3 — Talent tree är för tunt
+- **Vad:** Bara 8 talents/klass — för få.
 - **Avsikt:** Mer djup i progressionen.
-- **Not:** Storlek beror helt på B3.1 nedan — bygg dual-class FÖRST, då behövs färre
-  talents per main-klass. STEG 0: mappa nuvarande talent-data (var lagras de, hur
-  väljs de, hur kopplar de mot abilities/vapen).
+- **Not:** Storlek beror på B3.1 (bygg dual-class FÖRST). STEG 0: mappa talent-data.
+- **Acceptans (utkast — rätta):** meningsfullt fler valbara talents per klass-väg
+  efter B3.1-återanvändning (mål: ≥2× dagens upplevda val); unlock/equip + max 4
+  skills testade; ingen parallell talent-väg.
 
-### B3.1 — Dual-class (main + secondary)  ⭐ designbärande
-- **Vad:** Spelaren kombinerar en **main** + en **secondary** klass. Ursprunglig
-  tanke, vill fortfarande bygga.
-- **Avsikt:** Kombinationerna gör bygget roligt, OCH talents återanvänds över combos
-  → vi behöver inte lika många talents per main-klass (löser delvis B3).
-- **Not:** Större arkitektur-feature. Detta är hörnstenen — designa det INNAN vi
-  utökar talent-trees, annars bygger vi talents som sen måste göras om. Påverkar:
-  talent-systemet (B3), abilities (vilka kräver vilken klass-kombo), och vapen-krav
-  (B4 — abilities som kräver vapentyp). Egen design-doc värd att skriva.
+#### B7.1 — Starter-skill spökar i talent-/skills-UI:t  · *ny, uppföljning på B7*
+- **Vad:** Frenzy (starter-skill) visas som "Can learn" trots att den är upplåst från
+  start; man måste dessutom spendera en point för att fortsätta den redan upplåsta
+  pathen.
+- **Avsikt:** Starter-skillen ska räknas som inlärd — varken erbjudas igen eller
+  dubbelkräva en point.
+- **Not:** Trolig bugg i seamen B7↔B3-UI. **Hypotes (verifiera):** starter-skillen
+  skrivs inte in i talent-state som learned/spent vid klassval. STEG 0: hur avgör
+  UI:t "Can learn" vs "Learned"; registreras starter-skillen vid klassval?
+- **Acceptans:** starter-skill visas som "Learned"; pathen fortsätter utan extra
+  point-spend för den redan upplåsta noden; regressionstest låser beteendet.
 
-### B7 — Starter skills saknas för de flesta klasser
-- **Status:** ✅ Klar (commit `68b7935`). Varje klass startar nu med sin signatur-
-  l1-skill (samma mönster som Clerics smite): fighter frenzy, tank block, rogue
-  backstab, mage firebolt, hunter aimed_shot. Data-only.
-- **Vad:** Cleric har en starter skill vid klassval, men ingen annan klass.
-- **Avsikt:** Alla klasser ska börja med en starter skill (konsekvens).
-- **Not:** Trolig bugg/inkonsekvens. Liten. STEG 0: mät hur Clerics starter skill
-  tilldelas → applicera samma mönster på övriga klasser. Hänger ihop med B3.1 (hur
-  ser starter ut för en main+secondary-kombo?).
+### Items & ekonomi
 
----
+##### B4 — Vapentyp + item-preview → se CHARACTER_SCREEN.md
+- **Status:** datadelen klar (`e4f6c08`) — vapentyp/preview exponeras i snapshot +
+  text-helpers, testad. UI:t ersätts inte i interim-skärmen utan byggs som en del av
+  den nya equip-/character-skärmen (`CHARACTER_SCREEN.md`): hover på weapons/armour
+  → stats, klick → equip, slot-ikoner på kåp-figuren.
+- **Not:** B4 är inte längre en egen UI-punkt — den lever i CHARACTER_SCREEN-bygget.
 
-## Items & ekonomi
+> **B6 · B5 · B15 — klara.** Per-enemy unique/common-tables, store-diversifiering
+> (gear köpbart) och den tierade mana/health-potion-ekonomin är byggda och testade.
+> Se arkivet.
 
-### B4 — Items & character screen: vapentyp + item-preview  ⭐ viktig
-- **Vad:** Idag syns inte vilken *typ* av vapen man håller. Vill kunna klicka/skrolla
-  till ett vapen, se en **preview** + läsa dess **stats**. T.ex.: är *Venomfang* eller
-  *Pyrecore* en staff eller en mace?
-- **Avsikt:** Med bara text att gå på är vapentyp osynlig — och det är *kritiskt* för
-  att vissa abilities bara funkar med särskilda vapen.
-- **Not:** UI + data. Vapentyp måste exponeras i character/inventory-skärmen, och en
-  item-inspektions-vy (preview + stats) byggas. Hänger direkt ihop med B3.1 (vapen-
-  beroende abilities) — vapentyp är den länken. STEG 0: mät hur items/vapen lagrar
-  typ idag (finns fältet, visas det bara inte?).
+### Städer & UI
 
-### B5 — Store diversification
-- **Vad:** Alla stores säljer samma saker. När en större itempool införs ska varje
-  store ha *olika* simpel/medelbra gear.
-- **Avsikt:** Roligt att gå runt och utforska vad varje store innehåller. Vi har många
-  stores — utnyttja dem.
-- **Not:** Beror på en utökad itempool (förutsättning). Hänger ihop med B6 (drops),
-  B15 (pots-fördelning), B10 (vendor-skärm). Bör göras som en samlad item-/ekonomi-
-  pass, inte styckevis. STEG 0: hur är store-inventory definierat idag (delad lista?).
+#### B10 — Vendor-skärm i stadsmenyer
+- **Vad:** Skärm med olika vendors per hus/funktion man besöker.
+- **Avsikt:** Ge städerna karaktär; koppla funktion till byggnad.
+- **Not:** Town-UI, medel. Byggnad→funktion låst (shop→Store, inn→Rest,
+  church→respawn, tower→Mage Tower). Steg mot Model B. Efter B8.
+- **Acceptans:** stadsmenyn visar vendors mappade till husfunktioner; klick öppnar
+  rätt vendor; test för funktion→vendor-mappning.
 
-### B6 — Droptables per enemy
-- **Vad:** Varje fiende ska ha en egen droptable: **unika items** (t.ex. Hollow-worg
-  har något specifikt man vill jaga) + ett **common-table** med vanligare items.
-- **Avsikt:** Ge anledning att jaga specifika fiender.
-- **Not:** Loot-system. STEG 0 (viktig — vet inte hur drops hanteras idag): delar alla
-  fiender en pool, eller finns per-enemy redan? Mät innan design. Hänger ihop med B5
-  (itempool) och B15 (greater pots som drops).
+### Gränssnitt, loggar & skärmar
 
-### B15 — Mana items/stats + mana pots
-- **Vad:** Mana-items/stats behövs. Mana-pots känns idag som rare. Förslag: **lesser**
-  health & mana pots i vissa stores; **greater** health & mana pots reserverade till
-  tournament-rewards & drops.
-- **Avsikt:** Balansera ekonomin runt mana; göra greater pots till eftertraktade
-  belöningar.
-- **Not:** Item/ekonomi. Tier-system (lesser/greater) × (health/mana) × distribution
-  (store vs reward/drop). Hänger ihop med B5 (stores), B6 (drops), B13/B14 (tournament-
-  rewards). Del av den samlade item-passen.
+#### B16 — Overworld-logg (RuneScape-lik)  · *ny*
+- **Vad:** Halvgenomskinlig action-logg nere till vänster i overworld.
+- **Avsikt:** Se vad som hänt utan att tappa kartan.
+- **Not:** Presentation (`pygame_overworld`), overlay i skärmrymd som HUD:en. STEG 0:
+  hur ritas HUD-overlayen (font/panel/alpha)?
+- **Acceptans:** läsbar halvtransparent panel nere till vänster som skriver
+  world-actions; respekterar `present()`-transformen; arkitekt-render bekräftar.
 
----
+#### B16.1 — Combat-logg i overworld-loggen + flikar  · *ny, del av B16*
+- **Vad:** Combat-loggen in i overworld-loggen; flikar **ALL** + **Combat**.
+- **Avsikt:** Beständig historik; combat-events försvinner inte efter strid.
+- **Not:** Bygger på B16. STEG 0: var produceras combat-rader; kan de fångas i en
+  delad buffer som överlever battle→overworld?
+- **Acceptans:** combat-rader hamnar i overworld-loggen och överlever
+  battle→overworld; flikarna ALL/Combat filtrerar rätt; test för buffer-persistens.
 
-## Städer & UI
+#### B18 — Klassvals-skärmen omarbetad  · *ny*
+- **Vad:** Skärmen efter "New Game" är utdaterad — inzoomad, dålig textkvalité.
+- **Avsikt:** Läsbar, snygg klassvalsskärm.
+- **Not:** Presentation (`character_creation`). **Gör ihop med fluid-layout-
+  migrationen** (character_creation är nästa skärm i ordningen efter start_menu).
+  STEG 0: varför inzoomad (fast canvas-skala?); var renderas texten?
+- **Acceptans:** skärmen fyller fönstret fluid (ej fast inzoomad); text skarp/läsbar
+  på små + stora fönster; klassval funkar; klick mappar genom transformen;
+  arkitekt-render bekräftar på två fönsterstorlekar.
 
-### B10 — Swords-and-Sandals-liknande vendor-skärm i stadsmenyer
-- **Vad:** En skärm inne i en stads menyer med olika **vendors** som representerar
-  vilket **hus/funktion** man besöker.
-- **Avsikt:** Ge städerna karaktär; koppla funktion till plats/byggnad.
-- **Not:** Town-UI. Hänger direkt ihop med stads-modellen (B8) och byggnad→funktion-
-  mappningen vi låste (shop→Store, inn→Rest, church→respawn, tower→Mage Tower). Detta
-  är i praktiken steget mot **Model B** (gångbara städer där man går till rätt vendor).
-  Medelstort. Bygg efter att städerna är inlästa (B8).
+### Encounters
 
----
+#### B12 — Encounter-heatmap (avstånd från stad)
+- **Vad:** Stad + närmsta tiles safe; rate ökar längre ut; path-tiles sänker raten.
+- **Avsikt:** Gör vildmarken farligare längre ut; resor meningsfulla.
+- **Not:** STEG 0 (vet inte hur logiken funkar): mät `encounter_rate`/`wild_region`.
+  Delar besökt-data med B11. Påverkar inte respawn.
+- **Acceptans (utkast — rätta):** rate ~0 på stad + angränsande tiles; stiger
+  monotont med avstånd till nivå R i djupaste vildmark; path-tiles sänker raten
+  ~30–50%; sim/körning visar rate-kurvan mot mål; test för rate-funktionen.
 
-## Encounters
+### Tournaments
 
-### B12 — Encounter-heatmap (avstånd från stad)
-- **Vad:** Städer + närmaste tiles = **safe**. Encounter-rate **ökar** ju längre in i
-  vildmarken man kommer. **Path-tiles** (stig-antydningarna) sänker encounter-rate
-  något.
-- **Avsikt:** Idag finns ingen anledning att inte bara springa runt samma stad om och
-  om igen — heatmapen gör vildmarken farligare och resor meningsfulla.
-- **Not:** Encounter-system. STEG 0 (vet inte hur encounter-logiken funkar idag): mät
-  nuvarande `encounter_rate`/`wild_region`-logik. Bygger på avstånd-från-stad +
-  path-tile-modifier. Hänger ihop med B11 (besökt-data) och stig-antydningarna vi just
-  lade (de blir mekaniskt relevanta här). Påverkar INTE respawn (separat).
-
----
-
-## Tournaments
-
-### B13 — Tournaments: svårighet, priser, fler platser
-- **Vad:** Tournament-fienderna är alldeles för lätta; priserna behöver justeras. Lägg
-  till **fler tournaments** över hela världen.
-- **Avsikt:** Göra tournaments till en anledning att utforska världen.
-- **Not:** Balans + content. STEG 0: mät nuvarande tournament-fiende-nivåer + reward-
-  tabeller. Fler platser knyter ihop med utforskande (B11/B12). Greater pots som
-  reward kopplar till B15.
-
-### B14 — Full HP efter tournament
-- **Status:** ✅ Klar (commit `e53d9c2`). `complete_tournament` återställer HP+mana
-  till fullt vid avslutad serie.
-- **Vad:** Efter en tournament ska spelaren återställas till fullt HP.
-- **Avsikt:** Kvalitetsfix.
-- **Not:** Liten. Trolig enkel hook i tournament-avslut. STEG 0: var avslutas en
-  tournament i koden.
+#### B13 — Tournaments: svårighet, priser, fler platser
+- **Vad:** Tournament-fienderna är för lätta; priser justeras; fler tournaments över
+  världen.
+- **Avsikt:** Göra tournaments till en anledning att utforska.
+- **Not:** Balans + content. Verifiera via `simulation.py`. Greater pots som reward
+  kopplar till B15. Fler platser knyter ihop med B11/B12.
+- **Acceptans (Lucas mål):**
+  - Färsk **lvl 1 utan items** ska **förlora alla** turneringar (~0% vinst, sim
+    N≥200 seeds/matchup).
+  - **Tournament 2** (reward: *consecrated maul*) först klarbar **lvl 2 med flera
+    items eller lvl 3**: lvl1 ~0%, lvl2-utan-items låg vinst, lvl2-med-items eller
+    lvl3 rimlig vinst.
+  - Fler turneringar placerade över världen (platsbundna).
+  - Rapportera sim-matrisen (nivå × utrustning × turnering → vinst-rate) mot målen.
 
 ---
 
-## Dokumentation
+## Föreslagna kluster & ordning
 
-### B9 — README är gammal
-- **Status:** ✅ Klar (commit `be34ce2`). README speglar nu Pygame-overworlden,
-  pygame/pytmx-beroendet, starter skills, respawn-regeln och full HP efter tournament.
-- **Vad:** Uppdatera README — den är inaktuell.
-- **Avsikt:** Korrekt onboarding/projektbild.
-- **Not:** Doc-underhåll. Bör spegla nuvarande tillstånd (Pygame-spelet, 80×56-
-  overworld, zoner, vatten, etc.). Lägg sist i en relaterad slice eller som egen
-  städning. (Vi rensade redan falska "Pygame not implemented"-påståenden i 9f0bf6f —
-  men mer har hänt sedan dess.)
+1. **Karta klar först** (pågår): försköning (`OVERWORLD_BEAUTIFY_PLAN.md`) → **B8**.
+   **B2** + **B17** städas in i samma fas.
+2. **Item-/ekonomi-pass** (samlat): **B4 → B6 → B5 → B15** (delar itempoolen).
+3. **Progression**: ⭐**B3.1** FÖRST (HALT efter) → **B3** + **B7.1**.
+4. **Town-UI**: **B10** efter B8.
+5. **Värld/utforskande**: **B11** + **B12** (delar besökt-data).
+6. **UI/skärmar**: **B16 + B16.1**; **B18** ihop med fluid-migration av
+   character_creation.
+7. **Tournaments**: **B13** ihop med B15-rewards.
+8. **Småfixar när som helst**: **B1**, **B2**.
+
+> Mät-först-punkter (B12, B13, B16.1, B17, B7.1) inleds med STEG 0 som mäter
+> nuvarande kod innan design.
 
 ---
 
-## Föreslagna kluster & ordning (arkitekt-förslag, inte hugget i sten)
+## ✅ Klart (arkiv)
 
-Punkterna är inte oberoende — flera vill göras tillsammans:
+#### B7 — Starter skills för alla klasser
+- **Klar** (`68b7935`). Varje klass startar med sin signatur-l1-skill. Data-only.
+- **Uppföljning:** se **B7.1** (aktiv).
 
-1. **Edge-fasen klar först** (pågår): klippor/skog/kant → städer inlästa (**B8**).
-   Allt annat bygger på en färdig karta.
-2. **Item-/ekonomi-pass** (samlat): **B4** (vapentyp + preview) → **B6** (droptables)
-   → **B5** (store-diversifiering) → **B15** (pots-tiers). Gör inte styckevis; de delar
-   itempoolen.
-3. **Town-UI**: **B10** (vendor-skärm) efter B8 — steget mot gångbara städer (Model B).
-4. **Progression**: **B3.1** (dual-class) FÖRST → sen **B3** (talents) + **B7** (starter
-   skills). Designbärande, egen doc.
-5. **Värld/utforskande**: **B11** (karta/fog) + **B12** (encounter-heatmap) — delar
-   besökt-data.
-6. **Tournaments**: **B13** (balans/fler) + **B14** (full HP) — ihop med B15-rewards.
-7. **Småfixar när som helst**: **B1** (hastighet/zoom), **B2** (bro-grafik), **B14**,
-   **B9** (README sist).
+#### B9 — README uppdaterad
+- **Klar** (`be34ce2`). README speglar Pygame-overworlden, beroenden, starter skills,
+  respawn-regeln, full HP efter tournament.
 
-> Flera punkter (B6, B7, B12, B13, B14) börjar med "vet inte hur det funkar idag" →
-> varje sådan slice inleds med en STEG 0 som mäter nuvarande kod innan vi designar.
+#### B14 — Full HP efter tournament
+- **Klar** (`e53d9c2`). `complete_tournament` återställer HP+mana till fullt.
+
+#### B6 — Droptables per enemy
+- **Klar** (`391d5b0`). STEG 0: loot var redan per-enemy (`loot_table`) + delad
+  `rare_table`, men utan signatur. Nytt `unique_table`-fält per drop-fiende, mergat
+  i samma viktade `loot_pool()` (ingen parallell väg). 12 tematiska signaturer
+  (11 gear + vapnet Worgfang) viktade så varje landar ~3–8% (sim: 4.7–5.4%).
+
+#### B5 — Store diversification
+- **Klar** (`df0d394`). STEG 0: alla 4 stores föll till `DEFAULT_STORE_INVENTORY`
+  (identiskt) och kunde inte sälja gear. Gear-köp tillagt i store; varje store fick
+  eget kurerat sortiment (vapen + consumables + simpel/mid gear), tematiskt per stad.
+  Inga två identiska, ingen tom. _Antaget: per-stad-sortiment — bekräfta._
+
+#### B15 — Mana items/stats + mana pots
+- **Klar** (`ff543fe`). lesser_hp/lesser_mana (25) + greater_mana (100) tillagda.
+  Distributionsregel låst: lesser-pots i alla stores; greater-pots i ingen store,
+  endast via drop (greater_mana seedad i caster-droptabeller). Mana-stat-gear fanns.
+  _Antaget: tier 25/50/100, priser 30/50, greater_mana 280, drop-vikter 12/10 — bekräfta._
+
+#### B4 — Vapentyp + item-preview (datadel)
+- **Datadel klar** (`e4f6c08`). Vapentyp (category)+stats exponeras i
+  `WeaponSnapshot` och surfas via `ui_text.weapon_label()`/`weapon_preview()` i
+  inventory + Character-panelen. UI visuellt overifierad; full equip-skärm =
+  `CHARACTER_SCREEN.md` (aktiv pekare ovan).
