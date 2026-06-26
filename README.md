@@ -6,7 +6,14 @@ ursprungliga Java-koden ligger kvar i `src/` som historik och referens.
 
 ## Snabbstart
 
-Kör spelet från projektroten:
+Kör den **grafiska versionen** (Pygame) — fri-gång-overworld med strid:
+
+```sh
+pip install -r requirements.txt          # pygame + pytmx (helst i en venv)
+python3 -m rpg_game.presentation.pygame_overworld
+```
+
+Eller den beroendefria **terminal-versionen**:
 
 ```sh
 python3 -m rpg_game
@@ -24,7 +31,8 @@ Kör en snabb import-/syntaxkontroll:
 python3 -m compileall -q rpg_game tests
 ```
 
-Projektet kräver Python 3.10+ och har inga externa runtime-beroenden.
+Projektet kräver Python 3.10+. Spelkärnan och terminal-UI:t är beroendefria; det
+grafiska lagret kräver `pygame` och `pytmx` (se `requirements.txt`).
 
 ## Projektstruktur
 
@@ -63,13 +71,18 @@ utan att duplicera dem.
 
 ## Spelöversikt
 
-Spelaren väljer klass, startar i världen från `world.json`, reser mellan
-platser, utforskar för encounters, slåss i turordning baserad på speed och får
-XP, guld och eventuellt loot vid seger.
+Spelaren väljer klass och hamnar i världen från `world.json`. I den grafiska
+versionen går man fritt (WASD/piltangenter) över en sammanhängande tilemap-
+overworld, stöter på encounters i vildmarken och slåss i turordning baserad på
+speed för XP, guld och eventuellt loot. Terminal-versionen reser istället
+nod-för-nod mellan platser. Båda lagren delar samma `GameEngine` och spelregler.
 
 Nuvarande Python-version innehåller:
 
-- sex spelarklasser: Cleric, Tank, Rogue, Fighter, Mage och Hunter
+- en fri-gång Pygame-overworld på en 80×56 tilemap med kärna + sydlig Verralda-hed,
+  zon-grindar, floder/sjö med broar och utspridda städer
+- sex spelarklasser: Cleric, Tank, Rogue, Fighter, Mage och Hunter — var och en
+  börjar med en signatur-skill utrustad
 - talent trees med linjär upplåsning per gren
 - max fyra utrustade skills
 - action -> effects -> resolver-pipeline för strid
@@ -79,9 +92,10 @@ Nuvarande Python-version innehåller:
 - vapenägande, vapenbyte, vapenkategorier och level-krav för att equippa
 - loot drops med rarity-labels, pickup och sälj i butik
 - level-skalad XP och Identify i strid
+- respawn på Hordanita som standard; flyttas bara genom köpt relokering i en stad
 - save/load
 - immutable snapshots för presentationslager
-- platsbundna turneringar med namngivna mänskliga motståndare
+- platsbundna turneringar med namngivna mänskliga motståndare (full HP efter seger)
 
 ## Tuning
 
