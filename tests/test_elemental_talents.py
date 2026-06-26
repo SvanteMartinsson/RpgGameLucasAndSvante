@@ -18,7 +18,8 @@ def _cleric_with_holy_strikes() -> GameEngine:
     engine = GameEngine()
     engine.start_new_game("Cle", "cleric")  # base_damage 10
     engine.player.talent_points = 2
-    engine.allocate_talent("cleric_light_l1_smite")
+    # smite (cleric_light_l1_smite) is the pre-learned starter node; sanctified_strikes
+    # requires it and is allocatable straight away.
     engine.allocate_talent("cleric_sanctified_strikes")
     return engine
 
@@ -35,15 +36,20 @@ def _components(engine, action_id, weapon_id):
 
 class ElementalTalentTests(unittest.TestCase):
     def test_prerequisite_requires_tier1_node(self):
+        # Smite is the pre-learned starter, so use a non-starter branch (pest) to show
+        # a tier-2 node stays locked until its tier-1 prerequisite is learned.
         engine = GameEngine()
         engine.start_new_game("Cle", "cleric")
         engine.player.talent_points = 2
         available = {node.id for node in engine.available_talents()}
-        self.assertNotIn("cleric_sanctified_strikes", available)  # locked until Smite
+        self.assertNotIn("cleric_pest_p2_drain", available)  # locked until plague_bolt
 
-        engine.allocate_talent("cleric_light_l1_smite")
+        engine.allocate_talent("cleric_pest_p1_plague_bolt")
         available = {node.id for node in engine.available_talents()}
-        self.assertIn("cleric_sanctified_strikes", available)
+        self.assertIn("cleric_pest_p2_drain", available)
+        # and the starter node is already learned, never offered
+        self.assertNotIn("cleric_light_l1_smite", available)
+        self.assertIn("cleric_light_l1_smite", engine.player.learned_talent_ids)
 
     def test_passive_records_the_elemental_mod(self):
         engine = _cleric_with_holy_strikes()
@@ -82,7 +88,7 @@ class ElementalTalentTests(unittest.TestCase):
         engine = GameEngine()
         engine.start_new_game("Mage", "mage")
         engine.player.talent_points = 4
-        engine.allocate_talent("mage_pyromancer_y1_firebolt")
+        # firebolt (mage_pyromancer_y1_firebolt) is the pre-learned starter node.
         engine.allocate_talent("mage_flametongue")
         engine.allocate_talent("mage_cryomancer_c1_frostbolt")
         engine.allocate_talent("mage_rimeblade")

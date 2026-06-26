@@ -24,7 +24,6 @@ class SaveLoadTests(unittest.TestCase):
         player.mana = 7
         player.xp = 80
         player.talent_points = 2
-        engine.allocate_talent("cleric_light_l1_smite")
         engine.allocate_talent("cleric_light_l2_mend")
         player.owned_weapon_ids = ("holy_mace", "staff", "rimebrand")
         player.equipped_weapon_id = "staff"

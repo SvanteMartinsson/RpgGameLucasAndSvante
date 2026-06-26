@@ -14,7 +14,6 @@ def _cleric_with_points(points: int = 12) -> GameEngine:
 class SkillEquippingTests(unittest.TestCase):
     def test_equippable_skills_lists_unlocked_actives(self):
         engine = _cleric_with_points()
-        engine.allocate_talent("cleric_light_l1_smite")
         engine.allocate_talent("cleric_light_l2_mend")
 
         ids = {skill.id for skill in engine.equippable_skills()}
@@ -29,7 +28,6 @@ class SkillEquippingTests(unittest.TestCase):
 
     def test_equip_rejects_when_four_already_equipped(self):
         engine = _cleric_with_points()
-        engine.allocate_talent("cleric_light_l1_smite")
         engine.allocate_talent("cleric_light_l2_mend")
         engine.allocate_talent("cleric_pest_p1_plague_bolt")
         engine.allocate_talent("cleric_pest_p2_drain")
@@ -45,7 +43,6 @@ class SkillEquippingTests(unittest.TestCase):
 
     def test_unequip_then_equip_swaps_skill(self):
         engine = _cleric_with_points()
-        engine.allocate_talent("cleric_light_l1_smite")
         engine.allocate_talent("cleric_light_l2_mend")
         engine.allocate_talent("cleric_pest_p1_plague_bolt")
         engine.allocate_talent("cleric_pest_p2_drain")

@@ -279,7 +279,7 @@ class OverworldOverlayTest(unittest.TestCase):
         lines = app.talent_detail_lines(node)
 
         self.assertIn(node.name, lines)
-        self.assertIn("[CAN LEARN]", lines)
+        self.assertIn("[LEARNED]", lines)  # smite is the pre-learned starter node (B7.1)
         self.assertIn(f"Effect: {terminal.describe_talent(engine, node)}", lines)
         self.assertIn("Cost: 6 mana", lines)
         self.assertIn("Requires: none", lines)
@@ -288,12 +288,15 @@ class OverworldOverlayTest(unittest.TestCase):
         engine = GameEngine()
         engine.start_new_game("Hero", "cleric")
         app = OverworldApp(engine=engine)
-        node = engine.content.talents["cleric_light_l2_mend"]
+        # mend is now CAN LEARN (its prereq smite is the pre-learned starter), so use a
+        # deeper node still locked behind an unlearned prerequisite.
+        node = engine.content.talents["cleric_light_l3_devotion"]
 
         lines = app.talent_detail_lines(node)
 
         self.assertIn("[LOCKED]", lines)
-        self.assertIn("Requires: Smite", lines)
+        self.assertTrue(any(l.startswith("Requires: ") and l != "Requires: none" for l in lines),
+                        f"no prerequisite shown: {lines}")
 
     def test_talent_selection_works_with_keyboard_and_node_buttons(self):
         engine = GameEngine()
@@ -308,7 +311,7 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertNotEqual(first.id, second.id)
 
         app.draw()
-        smite_button = next(button for button in app.buttons if "[CAN LEARN] Smite" in button.label)
+        smite_button = next(button for button in app.buttons if "[LEARNED] Smite" in button.label)
         smite_button.on_click()
 
         self.assertEqual(app.selected_talent_id, "cleric_light_l1_smite")

@@ -47,7 +47,6 @@ class FighterClassTests(unittest.TestCase):
         engine = GameEngine(rng=SequenceRng([0.0]))
         engine.start_new_game("Fighter", "fighter")
         engine.player.talent_points = 2
-        engine.allocate_talent("fighter_berserker_b1_frenzy")
         engine.allocate_talent("fighter_berserker_b2_rage")
         enemy = make_enemy()
 
@@ -69,7 +68,6 @@ class FighterClassTests(unittest.TestCase):
         engine = GameEngine(rng=SequenceRng([0.0, 0.99]))
         engine.start_new_game("Fighter", "fighter")
         engine.player.talent_points = 3
-        engine.allocate_talent("fighter_berserker_b1_frenzy")
         engine.allocate_talent("fighter_berserker_b2_rage")
         engine.allocate_talent("fighter_berserker_b3_bloodlust")
         target = make_enemy(hp=100)

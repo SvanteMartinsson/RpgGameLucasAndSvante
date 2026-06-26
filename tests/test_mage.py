@@ -36,7 +36,6 @@ class MageClassTests(unittest.TestCase):
         engine = GameEngine(rng=ChoiceRng([0.0]))
         engine.start_new_game("Mage", "mage")
         engine.player.talent_points = 3
-        engine.allocate_talent("mage_pyromancer_y1_firebolt")
         engine.allocate_talent("mage_pyromancer_y2_ignite")
         engine.allocate_talent("mage_pyromancer_y3_combustion")
 

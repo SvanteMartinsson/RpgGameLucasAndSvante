@@ -103,17 +103,21 @@ class ClericClassTests(unittest.TestCase):
         engine.start_new_game("Cleric", "cleric")
         engine.player.talent_points = 1
 
+        # prereq enforcement: a tier-3 node is locked until its tier-2 prereq is learned
         with self.assertRaises(ValueError):
-            engine.allocate_talent("cleric_light_l2_mend")
+            engine.allocate_talent("cleric_light_l3_devotion")
 
-        self.assertEqual([talent.id for talent in engine.available_talents()], [
-            "cleric_light_l1_smite",
-            "cleric_pest_p1_plague_bolt",
-        ])
+        available = {talent.id for talent in engine.available_talents()}
+        self.assertNotIn("cleric_light_l1_smite", available)            # starter pre-learned
+        self.assertIn("cleric_light_l1_smite", engine.player.learned_talent_ids)
+        self.assertIn("cleric_light_l2_mend", available)                # prereq (smite) met free
+        self.assertIn("cleric_pest_p1_plague_bolt", available)          # other branch root
 
-        engine.allocate_talent("cleric_light_l1_smite")
+        # points enforcement: spend the one point, the next allocation is then rejected
+        engine.allocate_talent("cleric_light_l2_mend")
+        self.assertEqual(engine.player.talent_points, 0)
         with self.assertRaises(ValueError):
-            engine.allocate_talent("cleric_light_l2_mend")
+            engine.allocate_talent("cleric_pest_p1_plague_bolt")
 
     def test_max_4_equipped_skills_is_enforced(self):
         engine = GameEngine(rng=random.Random(1))

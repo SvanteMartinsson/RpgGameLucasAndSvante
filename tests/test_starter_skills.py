@@ -43,6 +43,40 @@ class StarterSkillTest(unittest.TestCase):
         for player_class in engine.content.classes.values():
             self.assertLessEqual(len(player_class.starting_skill_ids), 4)
 
+    def _starter_node(self, engine, class_id, skill_id):
+        return next(n for n in engine.content.talents.values()
+                    if n.class_id == class_id and n.node_type == "active"
+                    and n.action_id == skill_id)
+
+    def test_starter_skill_node_reads_learned_not_can_learn(self):
+        # B7.1: the starter skill's talent node is LEARNED from class selection — not
+        # offered again as "Can learn", and no talent point was spent on it.
+        from rpg_game.presentation.talent_text import talent_status
+        engine = GameEngine()
+        for class_id, skill_id in EXPECTED_STARTERS.items():
+            with self.subTest(class_id=class_id):
+                engine.start_new_game("Hero", class_id)
+                node = self._starter_node(engine, class_id, skill_id)
+                self.assertIn(node.id, engine.player.learned_talent_ids)
+                self.assertEqual(talent_status(engine, node), "[LEARNED]")
+                self.assertNotIn(node.id, {t.id for t in engine.available_talents()})
+                self.assertEqual(engine.player.talent_points, 0)  # starter was free
+
+    def test_starter_branch_continues_without_double_paying(self):
+        # The node after the starter is available immediately (its prerequisite, the
+        # starter root, is already learned) and costs exactly ONE point — not two.
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        starter = self._starter_node(engine, "fighter", "frenzy")
+        nxt = next(n for n in engine.content.talents.values()
+                   if n.class_id == "fighter" and n.branch == starter.branch
+                   and n.order == starter.order + 1)
+        self.assertIn(nxt.id, {t.id for t in engine.available_talents()})
+        engine.player.talent_points = 1
+        engine.allocate_talent(nxt.id)
+        self.assertEqual(engine.player.talent_points, 0)
+        self.assertIn(nxt.id, engine.player.learned_talent_ids)
+
 
 if __name__ == "__main__":
     unittest.main()

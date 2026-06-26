@@ -65,7 +65,6 @@ class RogueClassTests(unittest.TestCase):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Rogue", "rogue")
         engine.player.talent_points = 3
-        engine.allocate_talent("rogue_assassin_a1_backstab")
         engine.allocate_talent("rogue_assassin_a2_rupture")
         engine.allocate_talent("rogue_assassin_a3_lethality")
 

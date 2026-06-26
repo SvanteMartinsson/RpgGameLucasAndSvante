@@ -156,7 +156,6 @@ class TankClassTests(unittest.TestCase):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Tank", "tank")
         engine.player.talent_points = 7
-        engine.allocate_talent("tank_guardian_g1_block")
         engine.allocate_talent("tank_guardian_g2_thorns")
         engine.allocate_talent("tank_guardian_g3_bulwark")
         engine.allocate_talent("tank_sentinel_s1_iron_stance")

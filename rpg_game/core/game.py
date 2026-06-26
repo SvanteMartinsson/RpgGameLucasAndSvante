@@ -83,6 +83,17 @@ class GameEngine:
             equipped_gear={},
             equipped_skill_ids=player_class.starting_skill_ids,
         )
+        # The starter skill is equipped from the start, so its talent node is already
+        # unlocked — mark it LEARNED (free, no point spent). Otherwise the talents UI
+        # offers it as "Can learn" again and its branch can't continue without
+        # re-spending a point on the already-unlocked root node (B7.1).
+        player.learned_talent_ids = {
+            node.id
+            for node in self.content.talents.values()
+            if node.class_id == player.player_class
+            and node.node_type == "active"
+            and node.action_id in player_class.starting_skill_ids
+        }
         equipment.recompute_gear_modifiers(player, self.content)
         self.state = GameState(player=player, content=self.content)
         return self.state
