@@ -9,7 +9,7 @@
     "speed": 11,
     "crit_chance": 5,
     "starting_weapon_id": "sword",
-    "starting_skill_ids": []
+    "starting_skill_ids": ["frenzy"]
   },
   {
     "id": "tank",
@@ -21,7 +21,7 @@
     "speed": 7,
     "crit_chance": 0,
     "starting_weapon_id": "mace",
-    "starting_skill_ids": []
+    "starting_skill_ids": ["block"]
   },
   {
     "id": "cleric",
@@ -45,7 +45,7 @@
     "speed": 16,
     "crit_chance": 10,
     "starting_weapon_id": "dagger",
-    "starting_skill_ids": []
+    "starting_skill_ids": ["backstab"]
   },
   {
     "id": "mage",
@@ -57,7 +57,7 @@
     "speed": 9,
     "crit_chance": 0,
     "starting_weapon_id": "staff",
-    "starting_skill_ids": []
+    "starting_skill_ids": ["firebolt"]
   },
   {
     "id": "hunter",
@@ -69,6 +69,6 @@
     "speed": 13,
     "crit_chance": 8,
     "starting_weapon_id": "bow",
-    "starting_skill_ids": []
+    "starting_skill_ids": ["aimed_shot"]
   }
 ]
