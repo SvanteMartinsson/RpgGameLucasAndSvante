@@ -47,9 +47,14 @@ from rpg_game.presentation.playtest_logger import PlaytestLogger
 # in-world view sizes itself to the map via OverworldApp.view_size instead.)
 from rpg_game.presentation.pygame_battle import HEIGHT, WIDTH, BattleApp, character_creation
 from rpg_game.presentation.talent_text import talent_detail, talent_status
+from rpg_game.presentation import town_cluster
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
+BUILDINGS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "buildings")
+# Slice 1 of B8: only the start town renders as a building cluster (proof of model).
+CLUSTER_TOWN_ID = "burg_5"
+COBBLE_PLAZA = (120, 110, 96)  # plaza base tone under the cluster (cobble stand-in)
 ZONE_CONFIG = os.path.join(MAPS_DIR, "core_zone.json")
 # Anchor the save to a stable, absolute location (project root) rather than the
 # process CWD, so the start menu detects and loads it on a cold start regardless
@@ -321,6 +326,13 @@ class OverworldApp:
         self.engine = engine or self._new_engine()
         self.world = Overworld(self.zone.map_path, dict(self.zone.gates), dict(self.zone.towns))
         self.town_tile_by_place = {place_id: tile for tile, place_id in self.zone.towns.items()}
+        # B8 Slice 1: the start town renders as a building cluster. The cluster is
+        # anchored to its tile (template offsets), its footprints become solid
+        # collision, and the anchor tile stays the walkable plaza/menu trigger.
+        self._building_sprites = self._load_building_sprites()
+        self.cluster_anchor = self.town_tile_by_place.get(CLUSTER_TOWN_ID)
+        if self.cluster_anchor is not None:
+            self.world.blocked |= town_cluster.cluster_footprints(self.cluster_anchor)
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -943,6 +955,39 @@ class OverworldApp:
         bottom = min(tmx.height, (oy + view_h) // th + 2)
         return left, right, top, bottom
 
+    def _load_building_sprites(self) -> dict:
+        sprites = {}
+        for bid, *_rest in town_cluster.CLUSTER_TEMPLATE:
+            path = os.path.join(BUILDINGS_DIR, f"{bid}_128_transparent.png")
+            try:
+                sprites[bid] = pygame.image.load(path).convert_alpha()
+            except (pygame.error, FileNotFoundError):
+                sprites[bid] = None  # missing art -> plaza still renders, no crash
+        return sprites
+
+    def _draw_town_cluster(self, world: "pygame.Surface", ox: int, oy: int) -> None:
+        """Draw the start town as a plaza + building sprites, in world space, under
+        the player. Buildings are bottom-aligned to their footprint (roof overhangs
+        up) and drawn front-to-back so nearer houses overlap farther ones."""
+        if self.cluster_anchor is None:
+            return
+        tw, th = self.world.tw, self.world.th
+        cells = town_cluster.cluster_footprints(self.cluster_anchor) | {self.cluster_anchor}
+        xs = [c[0] for c in cells]
+        ys = [c[1] for c in cells]
+        pad = pygame.Rect(min(xs) * tw - ox, min(ys) * th - oy,
+                          (max(xs) - min(xs) + 1) * tw, (max(ys) - min(ys) + 1) * th)
+        pygame.draw.rect(world, COBBLE_PLAZA, pad, border_radius=6)
+        for bid, fx, fy, fw, fh in sorted(town_cluster.cluster_buildings(self.cluster_anchor),
+                                          key=lambda b: b[2]):
+            sprite = self._building_sprites.get(bid)
+            if sprite is None:
+                continue
+            sw, sh = sprite.get_size()
+            cx = fx * tw + (fw * tw) // 2     # footprint centre x
+            by = (fy + fh) * th                # footprint bottom edge y
+            world.blit(sprite, (cx - sw // 2 - ox, by - sh - oy))
+
     def _draw_map(self) -> None:
         screen_w, screen_h = self.screen.get_size()
         zoom = self._zoom_factor()
@@ -978,14 +1023,20 @@ class OverworldApp:
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
                         world.blit(image, dest)
+        # B8: building cluster(s) over the ground/decor, under the player.
+        self._draw_town_cluster(world, ox, oy)
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
+            label_xy = (self.zone.town_labels.get((tx, ty), place_id),
+                        tx * tw - ox + tw // 2, ty * th - oy - 8)
+            if place_id == CLUSTER_TOWN_ID:
+                labels.append(label_xy)   # the cluster IS the marker; keep the name
+                continue
             rect = pygame.Rect(tx * tw - ox + 4, ty * th - oy + 4, tw - 8, th - 8)
             color = TOWN_HUB if place_id == self.zone.respawn_place_id else TOWN_COLOR
             pygame.draw.rect(world, color, rect, border_radius=4)
             pygame.draw.rect(world, BG, rect, width=2, border_radius=4)
-            labels.append((self.zone.town_labels.get((tx, ty), place_id),
-                           tx * tw - ox + tw // 2, ty * th - oy - 8))
+            labels.append(label_xy)
         for (tx, ty), _msg in self.world.gate_messages.items():
             rect = pygame.Rect(tx * tw - ox + 2, ty * th - oy + 2, tw - 4, th - 4)
             pygame.draw.rect(world, GATE_COLOR, rect, border_radius=3)
