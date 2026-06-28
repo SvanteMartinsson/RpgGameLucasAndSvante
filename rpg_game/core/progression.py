@@ -29,6 +29,18 @@ REST_COST_LATER = 100
 def rest_cost(zone: int) -> int:
     return REST_COST_ZONE1 if zone <= 1 else REST_COST_LATER
 
+
+# Highest loot rarity tier an enemy of a given level may drop from the shared rare
+# table. Keeps top-end weapons (tier 5 pyre_scepter/gravewarden_blade, tier 6
+# worldsplitter) rare from LOW-tier wild enemies: a level-3 bear can't hand out a
+# tier-5 staff. Tunable. (Only applies when the enemy has rare_table_access.)
+def rare_tier_cap(level: int) -> int:
+    if level >= 8:
+        return 6
+    if level >= 5:
+        return 5
+    return 4
+
 # Global, tunable scalar on every enemy's max HP at creation (wild and arena),
 # so fights last longer without touching the per-enemy numbers or their ratios.
 # 1.0 reproduces the pre-multiplier values exactly.

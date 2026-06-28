@@ -11,7 +11,7 @@
     "id": "power",
     "name": "Power attack",
     "kind": "base_attack",
-    "hit_chance": 0.70,
+    "hit_chance": 0.7,
     "mana_cost": 0,
     "effects": [
       {
@@ -29,7 +29,7 @@
     "id": "normal",
     "name": "Normal attack",
     "kind": "base_attack",
-    "hit_chance": 0.80,
+    "hit_chance": 0.8,
     "mana_cost": 0,
     "effects": [
       {
@@ -47,7 +47,7 @@
     "id": "quick",
     "name": "Quick attack",
     "kind": "base_attack",
-    "hit_chance": 0.90,
+    "hit_chance": 0.9,
     "mana_cost": 0,
     "effects": [
       {
@@ -716,7 +716,7 @@
     "kind": "skill",
     "hit_chance": 1.0,
     "mana_cost": 6,
-    "cooldown_rounds": 2,
+    "cooldown_rounds": 3,
     "effects": [
       {
         "type": "instant_heal",

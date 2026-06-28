@@ -100,7 +100,10 @@ class CombatMathTests(unittest.TestCase):
         self.assertEqual((engine.player.hp, enemy.hp), before)
         self.assertTrue(any("Choose Attack" in event for event in result.events))
 
-    def test_smite_deals_double_damage_to_undead_holy_weakness(self):
+    def test_smite_deals_extra_damage_to_undead_holy_weakness(self):
+        # Holy weakness on undead is 1.5x (B24: capped from 2.0 so a holy build is
+        # strong vs the ~50%-undead pools without trivialising them).
+        from rpg_game.core.progression import round_half_up
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Test Cleric", "cleric")
         smite = engine.content.actions["smite"]
@@ -111,7 +114,7 @@ class CombatMathTests(unittest.TestCase):
         dummy_result = resolve_action(engine.player, dummy, smite, engine.rng, weapon=weapon)
         undead_result = resolve_action(engine.player, undead, smite, engine.rng, weapon=weapon)
 
-        self.assertEqual(undead_result.total_damage, dummy_result.total_damage * 2)
+        self.assertEqual(undead_result.total_damage, round_half_up(dummy_result.total_damage * 1.5))
 
     def test_smite_spends_mana_and_blocks_when_mana_is_missing(self):
         engine = GameEngine(rng=random.Random(1))

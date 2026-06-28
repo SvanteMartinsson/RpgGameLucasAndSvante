@@ -141,14 +141,19 @@ class TierGateTests(unittest.TestCase):
             drop = _engine(seed).roll_loot(_enemy(loot, drop_chance=1.0, rare_access=False))
             self.assertEqual(drop.item_id, "rat_pelt")
 
-    def test_rare_table_reached_only_with_access(self):
+    def test_rare_table_reached_only_with_access_and_level(self):
         engine = _engine()
         grunt_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["giant_rat"].create_enemy())}
         bear_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["cave_bear"].create_enemy())}
+        worg_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["hollow_worg"].create_enemy())}
 
         rare_ids = {str(e["item_id"]) for e in engine.content.rare_loot_table}
-        self.assertFalse(grunt_pool & rare_ids)  # grunt never sees the rare table
-        self.assertTrue(rare_ids <= bear_pool)  # archetype reaches the whole rare table
+        self.assertFalse(grunt_pool & rare_ids)            # no rare access at all
+        # B24: a low-tier (L3) rare-access enemy is capped at tier 4 — no tier 5/6
+        self.assertNotIn("pyre_scepter", bear_pool)        # tier 5
+        self.assertNotIn("worldsplitter", bear_pool)       # tier 6
+        self.assertIn("consecrated_maul", bear_pool)       # tier 4 still reachable
+        self.assertTrue(rare_ids <= worg_pool)             # L8 enemy reaches the whole table
 
 
 class GearDropDataTests(unittest.TestCase):

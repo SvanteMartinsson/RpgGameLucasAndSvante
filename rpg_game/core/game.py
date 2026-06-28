@@ -224,7 +224,10 @@ class GameEngine:
         # potions, common gear) plus its signature UNIQUE table (unique_table: the
         # item worth hunting it for), and the shared rare table when it has access.
         # One weighted pool -> a single resolution path, no parallel loot logic.
-        max_tier = 6 if enemy.rare_table_access else 3
+        # Rare-table tier is capped by the enemy's LEVEL, so low-tier wild enemies
+        # can't drop top-end (tier 5/6) weapons; the common + unique tables (<=tier 4)
+        # are unaffected (their own rarity_tier already gates them).
+        max_tier = progression.rare_tier_cap(enemy.level) if enemy.rare_table_access else 3
         pool = list(enemy.loot_table) + list(enemy.unique_table)
         if enemy.rare_table_access:
             pool += list(self.content.rare_loot_table)
