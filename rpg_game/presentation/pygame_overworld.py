@@ -52,9 +52,17 @@ from rpg_game.presentation import town_cluster
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
 BUILDINGS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "buildings")
+STONE_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "cainos",
+                           "TX Tileset Stone Ground.png")
 # Slice 1 of B8: only the start town renders as a building cluster (proof of model).
 CLUSTER_TOWN_ID = "burg_5"
-COBBLE_PLAZA = (120, 110, 96)  # plaza base tone under the cluster (cobble stand-in)
+# Building sprites are NATIVE-sized (vary per type); scale them at load time so the
+# whole town shrinks together. Tunable — bump to enlarge every building uniformly.
+BUILDING_SCALE = 0.6
+# cainos_stone framed 4x4 autotile block (firstgid 67): tile index by which grass
+# borders the cobble cell. Corridors (grass on opposite sides) fall back to centre.
+STONE_TILE = {"center": 9, "N": 1, "S": 25, "W": 8, "E": 11,
+              "NW": 0, "NE": 3, "SW": 24, "SE": 27}
 ZONE_CONFIG = os.path.join(MAPS_DIR, "core_zone.json")
 # Anchor the save to a stable, absolute location (project root) rather than the
 # process CWD, so the start menu detects and loads it on a cold start regardless
@@ -330,9 +338,16 @@ class OverworldApp:
         # anchored to its tile (template offsets), its footprints become solid
         # collision, and the anchor tile stays the walkable plaza/menu trigger.
         self._building_sprites = self._load_building_sprites()
+        self._stone_tiles = self._load_stone_tiles()
         self.cluster_anchor = self.town_tile_by_place.get(CLUSTER_TOWN_ID)
         if self.cluster_anchor is not None:
             self.world.blocked |= town_cluster.cluster_footprints(self.cluster_anchor)
+            # Route cobble around blocked terrain AND any water tile (shore water is
+            # walkable post-B19 but must not be cobbled over). The river is just SW.
+            self._cobble_net = town_cluster.cobble_network(
+                self.cluster_anchor, self.world.blocked | self._water_tiles())
+        else:
+            self._cobble_net = set()
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -956,37 +971,105 @@ class OverworldApp:
         return left, right, top, bottom
 
     def _load_building_sprites(self) -> dict:
+        """Load each building's chosen facing view and scale it once at load time by
+        BUILDING_SCALE (native sizes vary, so relative proportions are preserved)."""
         sprites = {}
-        for bid, *_rest in town_cluster.CLUSTER_TEMPLATE:
-            path = os.path.join(BUILDINGS_DIR, f"{bid}_128_transparent.png")
+        for bid, _dx, _dy, _fw, _fh, facing in town_cluster.CLUSTER_TEMPLATE:
+            path = os.path.join(BUILDINGS_DIR, f"{bid}_{facing}.png")
             try:
-                sprites[bid] = pygame.image.load(path).convert_alpha()
+                raw = pygame.image.load(path).convert_alpha()
+                w, h = raw.get_size()
+                sprites[bid] = pygame.transform.smoothscale(
+                    raw, (max(1, round(w * BUILDING_SCALE)), max(1, round(h * BUILDING_SCALE))))
             except (pygame.error, FileNotFoundError):
-                sprites[bid] = None  # missing art -> plaza still renders, no crash
+                sprites[bid] = None  # missing art -> cobble still renders, no crash
         return sprites
 
-    def _draw_town_cluster(self, world: "pygame.Surface", ox: int, oy: int) -> None:
-        """Draw the start town as a plaza + building sprites, in world space, under
-        the player. Buildings are bottom-aligned to their footprint (roof overhangs
-        up) and drawn front-to-back so nearer houses overlap farther ones."""
-        if self.cluster_anchor is None:
-            return
+    def _water_tiles(self) -> set:
+        """All water-autotile cells (blocked deep water AND walkable shore), so the
+        cobble net can route clear of every one of them."""
+        tmx = self.world.tmx
+        try:
+            walls = tmx.get_layer_by_name(COLLISION_LAYER)
+        except (ValueError, KeyError):
+            return set()
+        cells = set()
+        for x, y, _img in walls.tiles():
+            gid = walls.data[y][x]
+            ts = tmx.get_tileset_from_gid(gid) if gid else None
+            if ts is not None and ts.name == WATER_TILESET:
+                cells.add((x, y))
+        return cells
+
+    def _load_stone_tiles(self) -> dict:
+        """Slice the cainos_stone framed autotile block into 32px tiles by name."""
+        tiles = {}
+        try:
+            sheet = pygame.image.load(STONE_SHEET).convert_alpha()
+        except (pygame.error, FileNotFoundError):
+            return tiles
+        cols = sheet.get_width() // 32
+        for name, idx in STONE_TILE.items():
+            tiles[name] = sheet.subsurface(((idx % cols) * 32, (idx // cols) * 32, 32, 32))
+        return tiles
+
+    def _stone_tile_for(self, x: int, y: int) -> "pygame.Surface":
+        """Marching-tile pick: which framed cobble tile a net cell uses, from which
+        orthogonal neighbours are also cobble (grass borders get an edge/corner)."""
+        net = self._cobble_net
+        top, bot = (x, y - 1) not in net, (x, y + 1) not in net
+        left, right = (x - 1, y) not in net, (x + 1, y) not in net
+        if (top and bot) or (left and right):
+            key = "center"                       # corridor -> flat fill
+        elif top and left:
+            key = "NW"
+        elif top and right:
+            key = "NE"
+        elif bot and left:
+            key = "SW"
+        elif bot and right:
+            key = "SE"
+        elif top:
+            key = "N"
+        elif bot:
+            key = "S"
+        elif left:
+            key = "W"
+        elif right:
+            key = "E"
+        else:
+            key = "center"
+        return self._stone_tiles.get(key)
+
+    def _draw_town(self, world: "pygame.Surface", ox: int, oy: int,
+                   player_rect: "pygame.Rect") -> None:
+        """Draw the start-town cobble net (autotiled, on routes only) then the
+        buildings and the player in ONE base-y-sorted pass, so the player is hidden
+        behind houses to the north and drawn in front of houses to the south."""
         tw, th = self.world.tw, self.world.th
-        cells = town_cluster.cluster_footprints(self.cluster_anchor) | {self.cluster_anchor}
-        xs = [c[0] for c in cells]
-        ys = [c[1] for c in cells]
-        pad = pygame.Rect(min(xs) * tw - ox, min(ys) * th - oy,
-                          (max(xs) - min(xs) + 1) * tw, (max(ys) - min(ys) + 1) * th)
-        pygame.draw.rect(world, COBBLE_PLAZA, pad, border_radius=6)
-        for bid, fx, fy, fw, fh in sorted(town_cluster.cluster_buildings(self.cluster_anchor),
-                                          key=lambda b: b[2]):
-            sprite = self._building_sprites.get(bid)
-            if sprite is None:
-                continue
-            sw, sh = sprite.get_size()
-            cx = fx * tw + (fw * tw) // 2     # footprint centre x
-            by = (fy + fh) * th                # footprint bottom edge y
-            world.blit(sprite, (cx - sw // 2 - ox, by - sh - oy))
+        for (cx, cy) in self._cobble_net:        # cobble under everything
+            tile = self._stone_tile_for(cx, cy)
+            if tile is not None:
+                world.blit(tile, (cx * tw - ox, cy * th - oy))
+        # drawables: (base_y, kind, payload) sorted so nearer (larger y) draw last
+        drawables = []
+        if self.cluster_anchor is not None:
+            for bid, fx, fy, fw, fh, _facing in town_cluster.cluster_buildings(self.cluster_anchor):
+                sprite = self._building_sprites.get(bid)
+                if sprite is None:
+                    continue
+                base_y = (fy + fh) * th            # footprint bottom edge (world y)
+                cx = fx * tw + (fw * tw) // 2
+                sw, sh = sprite.get_size()
+                drawables.append((base_y, "b", (sprite, cx - sw // 2 - ox, base_y - sh - oy)))
+        drawables.append((player_rect.bottom + oy, "p", player_rect))
+        for _base_y, kind, payload in sorted(drawables, key=lambda d: d[0]):
+            if kind == "b":
+                sprite, sx, sy = payload
+                world.blit(sprite, (sx, sy))
+            else:
+                pygame.draw.rect(world, PLAYER_COLOR, payload, border_radius=4)
+                pygame.draw.rect(world, PLAYER_EDGE, payload, width=2, border_radius=4)
 
     def _draw_map(self) -> None:
         screen_w, screen_h = self.screen.get_size()
@@ -1023,8 +1106,6 @@ class OverworldApp:
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
                         world.blit(image, dest)
-        # B8: building cluster(s) over the ground/decor, under the player.
-        self._draw_town_cluster(world, ox, oy)
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),
@@ -1042,9 +1123,9 @@ class OverworldApp:
             pygame.draw.rect(world, GATE_COLOR, rect, border_radius=3)
             for gx in range(rect.left + 5, rect.right, 8):
                 pygame.draw.line(world, BG, (gx, rect.top), (gx, rect.bottom), 2)
-        player = self.world.player.move(-ox, -oy)
-        pygame.draw.rect(world, PLAYER_COLOR, player, border_radius=4)
-        pygame.draw.rect(world, PLAYER_EDGE, player, width=2, border_radius=4)
+        # B8: cobble net + buildings + player, base-y-sorted (player hides behind
+        # houses north of it, draws in front of houses south of it).
+        self._draw_town(world, ox, oy, self.world.player.move(-ox, -oy))
         # Zoom the whole world surface up by an integer factor (crisp), then blit.
         self.screen.blit(pygame.transform.scale(world, (view_w * zoom, view_h * zoom)), (0, 0))
         # Town labels in unscaled screen space at the zoomed positions (readable).
