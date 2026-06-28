@@ -86,11 +86,20 @@ class PlaytestLogger:
             # End-of-turn HP of whichever side this resolution targeted. Each
             # combatant takes at most one hit per turn, so the turn-final HP is
             # this event's post-state. Pure observation off the returned result.
+            healer_is_player = resolution.actor_name == player_name
             if resolution.target_name == player_name:
                 hp_after, max_hp = result.player_hp, snapshot.player.max_hp
             else:
                 hp_after, max_hp = result.enemy_hp, enemy_max_hp
-            self.attack(resolution, snapshot, target_hp_after=hp_after, target_max_hp=max_hp)
+            # A pure heal (no damage) is not an attack — logging it as one showed the
+            # WRONG side's HP as "target" (B16.1). Log it as its own heal row instead;
+            # a drain (damage + heal) still logs the attack AND a heal row.
+            if not (resolution.total_damage == 0 and resolution.total_healing > 0):
+                self.attack(resolution, snapshot, target_hp_after=hp_after, target_max_hp=max_hp)
+            if resolution.total_healing > 0:
+                healer_hp = result.player_hp if healer_is_player else result.enemy_hp
+                healer_max = snapshot.player.max_hp if healer_is_player else enemy_max_hp
+                self.heal(resolution, healer_is_player, healer_hp, healer_max)
         for event in result.events:
             self._maybe_log_tick(event)
         if result.loot_drop is not None:
@@ -181,6 +190,21 @@ class PlaytestLogger:
             fields["target_hp_after"] = target_hp_after
             fields["target_max_hp"] = target_max_hp
         self.write("attack", **fields)
+
+    def heal(self, resolution, healer_is_player: bool, healer_hp_after: int,
+             healer_max_hp: int) -> None:
+        """A heal reads as: who healed themselves and by how much (the healer is the
+        actor; the amount is the actual HP restored). Fixes the old confusing row
+        that logged a self-heal as an 'attack' on the other side."""
+        self.write(
+            "heal",
+            source="player" if healer_is_player else "enemy",
+            action_id=resolution.action_id,
+            healer_name=resolution.actor_name,
+            amount=resolution.total_healing,
+            healer_hp_after=healer_hp_after,
+            healer_max_hp=healer_max_hp,
+        )
 
     def drop(self, drop, enemy) -> None:
         self.write(

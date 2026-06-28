@@ -101,6 +101,7 @@ class ActionResolution:
     hit: bool = True
     events: list[str] = field(default_factory=list)
     total_damage: int = 0
+    total_healing: int = 0
     reflected_damage: int = 0
     critical_hits: int = 0
     evaded: bool = False
@@ -811,6 +812,7 @@ def apply_effect(
     if effect.type == "instant_heal":
         before = effect_target.hp
         effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + effect.magnitude)
+        result.total_healing += effect_target.hp - before
         result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
         return
 
@@ -830,6 +832,7 @@ def apply_effect(
         heal = round_half_up(total * effect.ratio)
         before = actor.hp
         actor.hp = min(effective_max_hp(actor), actor.hp + heal)
+        result.total_healing += actor.hp - before
         parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
         flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
         flag_text = f" ({', '.join(flags)})" if flags else ""
@@ -917,6 +920,7 @@ def apply_effect(
     if effect.type == "heal":
         before = actor.hp
         actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
+        result.total_healing += actor.hp - before
         result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
         return
 

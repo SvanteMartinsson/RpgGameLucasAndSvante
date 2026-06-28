@@ -74,6 +74,34 @@ class PlaytestLoggerTests(unittest.TestCase):
         self.assertEqual(death["hp_after"], 50)
         self.assertEqual(death["mana_after"], 10)
 
+    def test_self_heal_logs_a_heal_row_not_an_attack(self):
+        # B16.1: a priest healing itself must read as "who healed, how much" — not an
+        # "attack" row that showed the player's HP as the target.
+        from rpg_game.core import combat
+        with tempfile.TemporaryDirectory() as folder:
+            engine = GameEngine()
+            engine.start_new_game("Hero", "fighter")
+            enemy = engine.content.enemies["undead_priest"].create_enemy()
+            snapshot = build_snapshot(engine)
+            heal = combat.ActionResolution(
+                action_id="priest_heal", action_name="Dark Mending",
+                actor_name="Undead Priest", target_name="Hero",   # nominal target = player
+                total_damage=0, total_healing=14,
+            )
+            result = combat.CombatTurnResult(outcome="ongoing", player_hp=engine.player.hp,
+                                             enemy_hp=enemy.hp, action_resolutions=[heal])
+            logger = PlaytestLogger(folder)
+            logger.combat_result(result, enemy, snapshot, "burg_54")
+            rows = _read_jsonl(logger.path)
+
+        heal_rows = [r for r in rows if r["event"] == "heal"]
+        self.assertEqual(len(heal_rows), 1)
+        self.assertEqual(heal_rows[0]["healer_name"], "Undead Priest")
+        self.assertEqual(heal_rows[0]["amount"], 14)
+        self.assertEqual(heal_rows[0]["source"], "enemy")
+        # the confusing attack row for the pure heal is gone
+        self.assertFalse([r for r in rows if r["event"] == "attack" and r.get("action_id") == "priest_heal"])
+
     def test_equip_and_unequip_events_are_written(self):
         with tempfile.TemporaryDirectory() as folder:
             logger = PlaytestLogger(folder)
