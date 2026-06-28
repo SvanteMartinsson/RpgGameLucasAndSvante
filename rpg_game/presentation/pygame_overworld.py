@@ -88,6 +88,13 @@ WATER_BLOCK_THRESHOLD = 0.6
 # across the window (Platinum-style). Integer zoom only -> crisp pixel art. Integer
 # steps mean the actual tiles-in-width jumps in steps (12 here -> ~12-13 wide).
 ZOOM_TARGET_TILES_W = 12
+# Encounter heatmap (B12): wilderness gets safer near towns and along roads. The
+# per-step rate is the zone base scaled by distance to the nearest town — zero on
+# a town and its immediate ring, ramping to full a few tiles out — and reduced on
+# cobble path tiles (roads are travelled, less ambush). All tunable.
+ENCOUNTER_SAFE_RADIUS = 1     # town + adjacent tiles: no encounters
+ENCOUNTER_RAMP_TILES = 3      # tiles over which the rate ramps from 0 to full
+ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
 
 # Colors (shared palette with the battle shell)
 BG = (18, 20, 28)
@@ -478,9 +485,35 @@ class OverworldApp:
         """
         if self.world.town_place_id() is not None:
             return None
-        if self.engine.rng.random() < self.encounter_rate:
+        if self.engine.rng.random() < self.encounter_rate_at(self.world.current_tile):
             return self.engine.create_encounter()
         return None
+
+    def _nearest_town_dist(self, tile) -> int:
+        tx, ty = tile
+        return min((max(abs(tx - x), abs(ty - y)) for (x, y) in self.world.town_tiles),
+                   default=99)
+
+    def _on_path(self, tile) -> bool:
+        x, y = tile
+        try:
+            ground = self.world.tmx.get_layer_by_name("ground")
+        except (ValueError, KeyError):
+            return False
+        gid = ground.data[y][x]
+        return any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387))
+
+    def encounter_rate_at(self, tile) -> float:
+        """Per-step encounter chance at a tile: 0 on/next to a town, ramping to the
+        zone base a few tiles out, reduced on roads. (B12 heatmap.)"""
+        dist = self._nearest_town_dist(tile)
+        if dist <= ENCOUNTER_SAFE_RADIUS:
+            return 0.0
+        ramp = min(1.0, (dist - ENCOUNTER_SAFE_RADIUS) / ENCOUNTER_RAMP_TILES)
+        rate = self.encounter_rate * ramp
+        if self._on_path(tile):
+            rate *= ENCOUNTER_PATH_FACTOR
+        return rate
 
     def start_battle(self, enemy) -> None:
         """Hand off to the battle shell, then return to the overworld."""

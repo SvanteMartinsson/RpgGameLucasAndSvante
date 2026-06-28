@@ -68,6 +68,29 @@ class OverworldEncounterTest(unittest.TestCase):
                 break
         self.assertTrue(triggered)
 
+    # -- B12 encounter heatmap (rate by distance + roads) -------------------
+
+    def test_encounter_rate_zero_on_town_and_adjacent(self):
+        self.app.encounter_rate = 0.06
+        town = next(iter(self.app.world.town_tiles))
+        self.assertEqual(self.app.encounter_rate_at(town), 0.0)
+        self.assertEqual(self.app.encounter_rate_at((town[0] + 1, town[1])), 0.0)
+
+    def test_encounter_rate_rises_with_distance_to_full(self):
+        self.app.encounter_rate = 0.06
+        rates = [self.app.encounter_rate_at((26 + d, 18)) for d in range(0, 7)]  # east of burg_5
+        self.assertTrue(all(rates[i] <= rates[i + 1] for i in range(len(rates) - 1)))  # non-decreasing
+        self.assertEqual(rates[0], 0.0)        # on the town
+        self.assertAlmostEqual(rates[-1], 0.06)  # full base a few tiles out
+
+    def test_road_tiles_reduce_the_rate(self):
+        self.app.encounter_rate = 0.06
+        far = (30, 18)
+        base = self.app.encounter_rate_at(far)
+        self.assertGreater(base, 0.0)
+        self.app._on_path = lambda tile: True   # force the road factor
+        self.assertAlmostEqual(self.app.encounter_rate_at(far), base * 0.6)
+
     # -- battle handoff -----------------------------------------------------
 
     def test_single_battle_returns_outcome_without_quitting(self):
