@@ -123,6 +123,16 @@ class OverworldTownsTest(unittest.TestCase):
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
         self.assertEqual(self.app.mode, "walk")
 
+    # -- UI Slice A: compare-vs-equipped delta ------------------------------
+
+    def test_delta_text_computes_signed_per_stat_change(self):
+        d = self.app._delta_text
+        self.assertEqual(d({"armor": 3, "max_hp": 10}, {"armor": 2, "max_hp": 5}), "  (+1 armor, +5 hp)")
+        self.assertEqual(d({"damage": 9}, {"damage": 2}), "  (+7 dmg)")          # weapon swap
+        self.assertEqual(d({"armor": 1}, {"armor": 3}), "  (-2 armor)")          # downgrade
+        self.assertEqual(d({"armor": 2}, {"armor": 2}), "  (=)")                 # no change
+        self.assertEqual(d({"armor": 3}, {}), "  (+3 armor)")                    # empty slot
+
     # -- B29.3: outcome is logged once, not twice ---------------------------
 
     def test_flee_outcome_is_not_logged_twice(self):

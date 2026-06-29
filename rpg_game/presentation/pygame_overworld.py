@@ -1545,6 +1545,20 @@ class OverworldApp:
         items = pygame.Rect(content.x, content.y + top_h + gap, content.width, content.bottom - content.y - top_h - gap)
         return stats, slots, items
 
+    # Short stat names for the compare-vs-equipped delta on equipment options.
+    _DELTA_LABELS = {"damage": "dmg", "armor": "armor", "max_hp": "hp",
+                     "max_mana": "mana", "speed": "speed", "crit_chance": "crit"}
+
+    def _delta_text(self, candidate: dict, equipped: dict) -> str:
+        """Compare-vs-equipped: ' (+3 dmg, -1 armor)' for the net change if this
+        item replaced the one in the slot. Empty (' (=)') when nothing changes."""
+        parts = []
+        for stat in self._DELTA_LABELS:
+            diff = candidate.get(stat, 0) - equipped.get(stat, 0)
+            if diff:
+                parts.append(f"{diff:+} {self._DELTA_LABELS[stat]}")
+        return f"  ({', '.join(parts)})" if parts else "  (=)"
+
     def _overlay_character(self, panel) -> None:
         snap = build_snapshot(self.engine)
         p = snap.player
@@ -1603,11 +1617,18 @@ class OverworldApp:
                 self.screen.blit(self.font_sm.render(self._fit_text(T.weapon_preview(equipped_w), items_rect.width, self.font_sm), True, TEXT_DIM),
                                  (items_rect.x, items_rect.y))
                 options_y = items_rect.y + 24
+            equipped_bonus = equipped_w.damage_bonus if equipped_w is not None else 0
             max_weapons = max(1, (items_rect.bottom - options_y) // 34)
             for i, w in enumerate(snap.weapons[:max_weapons]):
                 rect = pygame.Rect(items_rect.x, options_y + i * 34, items_rect.width, 28)
-                suffix = " [equipped]" if w.equipped else ("" if w.equippable else f" needs Lv {w.required_level}")
-                label = f"{T.weapon_label(w)}{suffix}"
+                if w.equipped:
+                    status = " [equipped]"
+                elif not w.equippable:
+                    status = f"  needs Lv {w.required_level}"
+                else:  # compare-vs-equipped: weapons only move the damage stat
+                    status = self._delta_text({"damage": w.damage_bonus}, {"damage": equipped_bonus})
+                # Status/delta right after the name so it survives width-truncation.
+                label = f"{w.name}{status}  +{w.damage_bonus} {w.damage_type}"
                 self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
             return
 
@@ -1621,6 +1642,9 @@ class OverworldApp:
             start_y = items_rect.y + 38
         else:
             start_y = items_rect.y
+        # Stats of the gear currently in this slot, for the compare-vs-equipped delta.
+        equipped_gear = next((g for g in snap.gear if g.id == selected_slot.equipped_item_id), None)
+        equipped_mods = dict(equipped_gear.stat_modifiers) if equipped_gear is not None else {}
         choices = [
             gear for gear in snap.gear
             if gear.slot_type == selected_slot.slot_type and not gear.equipped_slot_id
@@ -1629,8 +1653,12 @@ class OverworldApp:
         for i, gear in enumerate(choices[:max_choices]):
             rect = pygame.Rect(items_rect.x, start_y + i * 34, items_rect.width, 28)
             mods = ", ".join(f"{stat} {value:+}" for stat, value in gear.stat_modifiers)
-            suffix = "" if gear.equippable else f" needs Lv {gear.required_level}"
-            label = f"{gear.name} [{gear.rarity}] {mods}{suffix}"
+            if gear.equippable:
+                suffix = self._delta_text(dict(gear.stat_modifiers), equipped_mods)
+            else:
+                suffix = f"  needs Lv {gear.required_level}"
+            # Delta right after the name so it survives width-truncation; raw mods last.
+            label = f"{gear.name}{suffix} [{gear.rarity}] {mods}"
             self._add_button(rect, label, (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)), gear.equippable)
 
     def _overlay_inventory(self, panel) -> None:
