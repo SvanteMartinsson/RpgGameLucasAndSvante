@@ -137,6 +137,37 @@ class TownClusterRuntimeTest(unittest.TestCase):
         for gate in self.app.zone.gates:
             self.assertIn(gate, seen)
 
+    def _sprite_bbox_tiles(self, bid, fx, fy, fw, fh):
+        """The tile rectangle a building's scaled sprite covers, matching how
+        _draw_town blits it (bottom-aligned, centred on the footprint)."""
+        sprite = self.app._building_sprites[bid]
+        sw, sh = sprite.get_size()
+        tw, th = self.app.world.tw, self.app.world.th
+        cx = fx * tw + (fw * tw) // 2
+        by = (fy + fh) * th
+        left = (cx - sw // 2) // tw
+        right = (cx - sw // 2 + sw - 1) // tw
+        top = (by - sh) // th
+        return left, right, top, fy + fh - 1
+
+    def test_no_entrance_sits_under_another_buildings_sprite(self):
+        # The core layout rule: a building's scaled sprite may overlap another's
+        # ROOF (packed town), but never another building's entrance tile.
+        builds = town_cluster.cluster_buildings(self.anchor)
+        ents = {b[0]: town_cluster.entrance_tile(self.anchor, b[1] - self.anchor[0],
+                                                 b[2] - self.anchor[1], b[3], b[4], b[5])
+                for b in builds}
+        bboxes = {b[0]: self._sprite_bbox_tiles(b[0], b[1], b[2], b[3], b[4]) for b in builds}
+        for bid, (ex, ey) in ents.items():
+            for other, (l, r, t, bm) in bboxes.items():
+                if other == bid:
+                    continue
+                self.assertFalse(l <= ex <= r and t <= ey <= bm,
+                                 f"{bid}'s entrance {(ex, ey)} is under {other}'s sprite")
+
+    def test_footprints_never_on_water(self):
+        self.assertEqual(town_cluster.cluster_footprints(self.anchor) & self.app._water_tiles(), set())
+
     def test_renders_without_crashing(self):
         self.app.display = pygame.Surface((960, 640))
         self.app.draw()

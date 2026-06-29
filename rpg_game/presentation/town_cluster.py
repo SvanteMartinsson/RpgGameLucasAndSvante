@@ -19,17 +19,21 @@ Pure data + tile math (no pygame) so collision/cobble/anchor rules are unit-test
 
 from collections import deque
 
-# burg_5 hub: plaza at the anchor, growing N + E (the core river is just SW). Doors
-# face inward (see facing rule above). church=respawn, inn=Rest, shop=basics/junk,
-# blacksmith=weapons, barracks=armour, town_hall=board; cottage = filler dwelling.
+# burg_5 hub: an L around the courtyard at the anchor (the core river is just SW,
+# so the L grows N + E and the open courtyard sits in the SW inner corner). The
+# precise rule: no building's scaled sprite may overlap ANOTHER building's entrance
+# tile. That means nothing stands SOUTH of a front house (its door faces south into
+# the open courtyard) and nothing stands WEST of a q1 house (its door faces west
+# into the courtyard) — so the N row is all fronts and the E column is all q1, with
+# the courtyard left clear between them. church=respawn, inn=Rest, shop=basics/junk,
+# blacksmith=weapons, barracks=armour, town_hall=board.
 CLUSTER_TEMPLATE = [
-    ("church",    -2, -5, 2, 2, "front"),   # N  — door south into plaza
-    ("town_hall",  2, -5, 3, 2, "front"),   # N
-    ("cottage",   -2, -2, 2, 2, "q2"),      # W  — door east toward plaza
-    ("inn",        2, -2, 3, 2, "q1"),      # E  — door west toward plaza
-    ("blacksmith", 6, -2, 3, 2, "q1"),      # E
-    ("shop",       2,  1, 3, 2, "q1"),      # E (south-east)
-    ("barracks",   6,  1, 3, 2, "q1"),      # E
+    ("church",    -2, -5, 2, 2, "front"),   # N row — door south into the courtyard
+    ("town_hall",  1, -5, 3, 2, "front"),   # N row
+    ("inn",        6, -3, 3, 2, "q1"),      # E column — door west into the courtyard
+    ("blacksmith", 6, -1, 3, 2, "q1"),      # E column
+    ("barracks",   6,  1, 3, 2, "q1"),      # E column
+    ("shop",       6,  3, 3, 2, "q1"),      # E column
 ]
 
 

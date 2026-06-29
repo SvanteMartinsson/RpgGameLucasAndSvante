@@ -58,7 +58,7 @@ STONE_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "
 CLUSTER_TOWN_ID = "burg_5"
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
-BUILDING_SCALE = 0.6
+BUILDING_SCALE = 0.55
 # cainos_stone framed 4x4 autotile block (firstgid 67): tile index by which grass
 # borders the cobble cell. Corridors (grass on opposite sides) fall back to centre.
 STONE_TILE = {"center": 9, "N": 1, "S": 25, "W": 8, "E": 11,
