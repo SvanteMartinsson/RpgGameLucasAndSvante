@@ -80,8 +80,10 @@ class EnemyLevelScalingTest(unittest.TestCase):
     # -- tournament opponents stay fixed -----------------------------------
 
     def test_tournament_opponents_never_roll_or_scale(self):
+        # iron_ring is outside the B13 per-instance buff, so its opponents equal the
+        # raw template — proving the wild level-roll/scale path is never used here.
         self.engine.rng = random.Random(1)
-        tournament = next(iter(self.engine.content.tournaments.values()))
+        tournament = self.engine.content.tournaments["fongorinos_iron_ring"]
         for index, enemy_id in enumerate(tournament.opponent_ids):
             template = self.engine.content.enemies[enemy_id]
             for _ in range(20):

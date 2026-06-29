@@ -49,7 +49,9 @@ class EnemyHpMultiplierTest(unittest.TestCase):
 
     def test_arena_opponents_are_multiplied_but_keep_their_order(self):
         # The hand-built arena ladder doubles but its HP ordering is unchanged.
-        tournament = next(iter(self.engine.content.tournaments.values()))
+        # iron_ring's size (4) is outside the B13 per-instance buff, so the HP
+        # multiplier is observable on its own here.
+        tournament = self.engine.content.tournaments["fongorinos_iron_ring"]
         for index, enemy_id in enumerate(tournament.opponent_ids):
             opp = self.engine.create_tournament_opponent(tournament, index)
             self.assertEqual(opp.max_hp, round_half_up(self._base_hp(enemy_id) * progression.ENEMY_HP_MULTIPLIER))

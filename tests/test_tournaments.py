@@ -30,6 +30,46 @@ class TournamentContentTests(unittest.TestCase):
         self.assertIn("hordanita_imperial_ten", available)
 
 
+class TournamentDifficultyTests(unittest.TestCase):
+    """B13: per-instance opponent buffs (Lucas's spec). Small tournaments (3
+    opponents) +50% max HP / +3 damage each; the big finale (>=10) +10 max HP each
+    and +2 damage per opponent index; other sizes (iron_ring, 4) unchanged."""
+
+    def setUp(self):
+        from rpg_game.core.progression import round_half_up
+        self.round = round_half_up
+        self.engine = GameEngine()
+        self.engine.start_new_game("Hero", "fighter")
+        self.t = self.engine.content.tournaments
+
+    def _raw(self, tour, i):
+        return self.engine.content.enemies[tour.opponent_ids[i]].create_enemy()
+
+    def test_small_tournament_opponents_get_flat_buff(self):
+        tour = self.t["hordanita_novice_cup"]
+        self.assertEqual(len(tour.opponent_ids), 3)
+        for i in range(3):
+            raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
+            self.assertEqual(buf.max_hp, self.round(raw.max_hp * 1.5))
+            self.assertEqual(buf.damage, raw.damage + 3)
+            self.assertEqual(buf.hp, buf.max_hp)
+
+    def test_big_finale_scales_damage_by_index(self):
+        tour = self.t["hordanita_imperial_ten"]
+        self.assertEqual(len(tour.opponent_ids), 10)
+        for i in range(10):
+            raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
+            self.assertEqual(buf.max_hp, raw.max_hp + 10)
+            self.assertEqual(buf.damage, raw.damage + (i + 1) * 2)
+
+    def test_iron_ring_unchanged_out_of_spec(self):
+        tour = self.t["fongorinos_iron_ring"]
+        self.assertEqual(len(tour.opponent_ids), 4)
+        for i in range(4):
+            raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
+            self.assertEqual((buf.max_hp, buf.damage), (raw.max_hp, raw.damage))
+
+
 class TournamentProgressionTests(unittest.TestCase):
     def test_start_rejects_tournament_in_another_place(self):
         engine = GameEngine()

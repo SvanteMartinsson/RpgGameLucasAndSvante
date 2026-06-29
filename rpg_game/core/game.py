@@ -194,8 +194,20 @@ class GameEngine:
         return tournaments.start_tournament(self.player, self.content, tournament_id)
 
     def create_tournament_opponent(self, tournament: Tournament, index: int) -> Enemy:
-        enemy_id = tournament.opponent_ids[index]
-        return self.content.enemies[enemy_id].create_enemy()
+        enemy = self.content.enemies[tournament.opponent_ids[index]].create_enemy()
+        # B13 difficulty (Lucas's spec), applied per tournament INSTANCE so the
+        # shared arena templates are untouched. Small tournaments (3 opponents): each
+        # opponent +50% max HP and +3 base damage. The big finale (>=10 opponents):
+        # each +10 max HP, and +2 damage per opponent index (opp 1 +2, opp 2 +4, ...).
+        count = len(tournament.opponent_ids)
+        if count >= 10:
+            enemy.max_hp += 10
+            enemy.damage += (index + 1) * 2
+        elif count == 3:
+            enemy.max_hp = progression.round_half_up(enemy.max_hp * 1.5)
+            enemy.damage += 3
+        enemy.hp = enemy.max_hp
+        return enemy
 
     def complete_tournament(self, tournament: Tournament) -> tournaments.TournamentRewardResult:
         return tournaments.complete_tournament(self.player, self.content, tournament)
