@@ -111,12 +111,12 @@ class FullscreenCenteringTest(unittest.TestCase):
 
     def test_overworld_click_maps_through_the_transform(self):
         # A click on the display maps back into canvas space (so buttons still hit
-        # after centering). Open a town menu and click its first button's center.
+        # after centering). Open the store screen and click its first button's center.
         app = OverworldApp()
         app.display = pygame.Surface(DISPLAY)
-        app.world.set_tile(14, 10)  # Hordanita
+        app.world.set_tile(26, 18)  # Hordanita (has a store)
         app.sync_location()
-        app.mode = "townmenu"
+        app.mode = "store"
         app.draw()
         self.assertTrue(app.buttons)
         ox, oy, scale = app._transform

@@ -65,8 +65,9 @@ def gate_message(key: str) -> str:
 
 # --- overworld: HUD + hints ------------------------------------------------
 
-HINT_TOWN = "Enter: town menu   C/I/K: panels   Esc: system"
+HINT_TOWN = "Step to a building's door + Enter   C/I/K: panels   Esc: system"
 HINT_WALK = "WASD/arrows to move   C/I/K: panels   Esc: system"
+BUILDING_LOCKED = "This building seems to be locked."
 BACK_TO_MAP = "Esc / Enter: back to map"
 BACK = "Back (Esc)"
 

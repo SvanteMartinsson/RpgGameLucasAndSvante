@@ -35,20 +35,20 @@ class PygameTournamentTest(unittest.TestCase):
     def setUp(self):
         self.app = OverworldApp()
 
-    def test_town_menu_shows_tournaments_only_where_available(self):
-        self.app.world.set_tile(26, 18)  # Hordanita
-        self.app.sync_location()
-        self.app.mode = "townmenu"
-        self.app.draw()
-        labels = [button.label for button in self.app.buttons]
-        self.assertIn("Tournaments", labels)
+    def test_town_hall_door_opens_tournaments_only_where_available(self):
+        # The town_hall door opens the tournament list where tournaments are held
+        # (burg_5), and reads as locked where none are (burg_117 has none).
+        th_door = next(t for t, (pid, bid) in self.app.door_index.items()
+                       if pid == "burg_5" and bid == "town_hall")
+        self.app.world.set_tile(*th_door)
+        self.app.mode = "walk"
+        self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        self.assertEqual(self.app.mode, "tournaments")
 
-        self.app.world.set_tile(10, 8)  # Yeblegali
-        self.app.sync_location()
-        self.app.mode = "townmenu"
-        self.app.draw()
-        labels = [button.label for button in self.app.buttons]
-        self.assertNotIn("Tournaments", labels)
+        self.app.mode = "walk"
+        self.app._interact_door("burg_117", "town_hall")  # Yeblegali: no tournaments
+        self.assertEqual(self.app.mode, "walk")
+        self.assertIn("locked", self.app.event_log[-1][0].lower())
 
     def test_victory_series_runs_all_opponents_and_awards_reward(self):
         fought = []

@@ -66,7 +66,7 @@ class OverworldTownsTest(unittest.TestCase):
     def test_store_gated_when_town_has_no_store(self):
         self.app.world.set_tile(10, 8)  # Yeblegali has no store
         self.app.sync_location()
-        self.app.mode = "townmenu"
+        self.app.mode = "walk"
         self.app.do_action("store")
         self.assertNotEqual(self.app.mode, "store")
 
@@ -79,12 +79,39 @@ class OverworldTownsTest(unittest.TestCase):
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
         self.assertEqual(self.app.mode, "walk")
 
-    def test_enter_on_town_opens_menu(self):
-        self.app.world.set_tile(26, 18)
-        self.app.sync_location()
+    # -- per-building door interaction (B-doors) ----------------------------
+
+    def _door(self, place_id, building_id):
+        return next(t for t, (pid, bid) in self.app.door_index.items()
+                    if pid == place_id and bid == building_id)
+
+    def test_enter_on_shop_door_opens_store(self):
+        self.app.world.set_tile(*self._door("burg_5", "shop"))
         self.app.mode = "walk"
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
-        self.assertEqual(self.app.mode, "townmenu")
+        self.assertEqual(self.app.mode, "store")
+
+    def test_enter_on_inn_door_rests(self):
+        self.app.world.set_tile(*self._door("burg_5", "inn"))
+        self.app.engine.player.hp = 1
+        self.app.mode = "walk"
+        self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        self.assertEqual(self.app.engine.player.hp, self.app.engine.player.max_hp)
+
+    def test_enter_on_plaza_without_a_door_does_nothing(self):
+        # The old single-tile menu is gone: standing on the plaza anchor (not a
+        # door) and pressing Enter opens no menu.
+        self.app.world.set_tile(26, 18)  # burg_5 plaza anchor
+        self.app.mode = "walk"
+        self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        self.assertEqual(self.app.mode, "walk")
+
+    def test_door_without_a_service_logs_locked(self):
+        before = len(self.app.event_log)
+        self.app._interact_door("burg_5", "well")  # unmapped building -> locked
+        self.assertEqual(self.app.mode, "walk")
+        self.assertGreater(len(self.app.event_log), before)
+        self.assertIn("locked", self.app.event_log[-1][0].lower())
 
     # -- gates --------------------------------------------------------------
 

@@ -5,10 +5,12 @@ state via `build_snapshot()` and mutate via existing `GameEngine` methods, same
 contract as the battle and character-creation shells.
 
 Model B = free walk (WASD) over a walkable world. Towns are tiles you step onto;
-entering one sets the engine's current location (`engine.enter_place`). Pressing
-Enter on a town opens the location menu for local services. Character,
-inventory, skills/talents and system actions are overworld overlays opened with
-hotkeys from anywhere outside battle.
+entering one sets the engine's current location (`engine.enter_place`). Each town
+building has its own door tile — standing on a door and pressing Enter opens that
+building's service (inn -> Rest, shop/blacksmith/barracks -> Store, church -> set
+respawn, town_hall -> Tournaments). Character, inventory, skills/talents and
+system actions are overworld overlays opened with hotkeys from anywhere outside
+battle.
 
 The playable core zone (around Hordanita) is data-driven via
 `rpg_game/data/maps/core_zone.json`. The rest of the world is intended but not
@@ -69,6 +71,20 @@ GRASS_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "
 # need a tiered/terrain design pass and are deliberately NOT hubs yet.
 CLUSTER_TOWN_ID = "burg_5"
 CLUSTER_TOWN_IDS = ("burg_5", "burg_67")
+# B-doors: each building's door opens ONE town service. Overlays (character /
+# inventory / skills / system) are global hotkeys, not place services, so they map
+# to no building. A door whose service is unavailable here (no store / no
+# tournaments) reads as locked. PROPOSED mapping — flagged for Lucas:
+#   - three trade buildings share the single town store (redundant by design)
+#   - church = "set respawn point" (the relocate_respawn service)
+BUILDING_FUNCTION = {
+    "inn": "rest",
+    "shop": "store",
+    "blacksmith": "store",
+    "barracks": "store",
+    "church": "relocate_respawn",
+    "town_hall": "tournaments",
+}
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
@@ -386,6 +402,12 @@ class OverworldApp:
         self._cobble_net = set()
         for anchor in self.cluster_anchors.values():
             self._cobble_net |= town_cluster.cobble_network(anchor, self.world.blocked, water)
+        # B-doors: map each hub building's door tile -> (place_id, building_id) so
+        # standing on a door and pressing Enter opens that building's service.
+        self.door_index: dict[tuple[int, int], tuple[str, str]] = {}
+        for pid, anchor in self.cluster_anchors.items():
+            for bid, ent in town_cluster.cluster_entrances(anchor).items():
+                self.door_index[ent] = (pid, bid)
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -415,7 +437,7 @@ class OverworldApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
-        self.mode = "walk"  # walk | townmenu | store | tournaments | tournament_confirm | tournament_intermission
+        self.mode = "walk"  # walk | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
         self.inventory_category = "consumables"  # selected category in the inventory overlay
         self.overlay_return_mode = ""
@@ -593,6 +615,22 @@ class OverworldApp:
         self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------
+
+    def _interact_door(self, place_id: str, building_id: str) -> None:
+        """Open the service behind a hub building's door. Sync the engine to the
+        hub first (a door tile is not itself the place tile), then dispatch the
+        building's function — or log it as locked when the service isn't offered
+        here (unmapped building, no store, no tournaments)."""
+        self.engine.enter_place(place_id)
+        func = BUILDING_FUNCTION.get(building_id)
+        if func == "store" and not self.engine.current_place().has_store:
+            func = None
+        elif func == "tournaments" and not self.engine.available_tournaments():
+            func = None
+        if func is None:
+            self.push_log(T.BUILDING_LOCKED, TEXT_DIM)
+            return
+        self.do_action(func)
 
     def do_action(self, action: str) -> None:
         if action in {"character", "inventory", "skills_talents", "system"}:
@@ -833,7 +871,7 @@ class OverworldApp:
 
     def continue_tournament(self) -> None:
         if self.tournament_run is None:
-            self.mode = "townmenu"
+            self.mode = "walk"
             return
         self.overlay = ""
         self._start_next_tournament_match()
@@ -881,7 +919,7 @@ class OverworldApp:
         self.selected_tournament_id = ""
         self.overlay = ""
         self.overlay_return_mode = ""
-        self.mode = "townmenu" if self.world.town_place_id() else "walk"
+        self.mode = "walk"
 
     # -- input --------------------------------------------------------------
 
@@ -922,13 +960,11 @@ class OverworldApp:
             if self.overlay:
                 self.close_overlay()
             elif self.mode == "store":
-                self.mode = "townmenu"
+                self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
-                self.mode = "townmenu"
+                self.mode = "walk"
             elif self.mode == "tournament_intermission":
                 self.overlay = "system"
-            elif self.mode == "townmenu":
-                self.mode = "walk"
             else:
                 self.overlay = "system"
             return
@@ -942,10 +978,10 @@ class OverworldApp:
             self.toggle_overlay("skills_talents")
             return
         if event.key in (pygame.K_RETURN, pygame.K_e):
-            if self.mode == "walk" and self.world.town_place_id():
-                self.mode = "townmenu"
-            elif self.mode == "townmenu":
-                self.mode = "walk"
+            if self.mode == "walk":
+                door = self.door_index.get(self.world.current_tile)
+                if door is not None:
+                    self._interact_door(*door)
 
     def update(self) -> None:
         if self.toast_timer > 0:
@@ -996,9 +1032,7 @@ class OverworldApp:
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
             self._draw_log()
-        if self.mode == "townmenu":
-            self._draw_town_menu()
-        elif self.mode == "store":
+        if self.mode == "store":
             self._draw_store_screen()
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
@@ -1282,28 +1316,6 @@ class OverworldApp:
             label = self.font.render(fitted, True, TEXT if b.enabled else TEXT_DIM)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
 
-    def _draw_town_menu(self) -> None:
-        panel = self._overlay_panel(self.engine.current_place().name)
-        has_store = self.engine.current_place().has_store
-        col_w = (panel.width - 60) // 2
-        actions = list(T.TOWN_ACTIONS)
-        already_respawn = False
-        if has_store:
-            zone = self.zone.zone_for_tile(self.world.current_tile)
-            cost = progression.respawn_relocation_cost(zone)
-            already_respawn = self.engine.player.respawn_place_id == self.engine.current_place().id
-            actions.append(("relocate_respawn", T.relocate_respawn_label(cost, already=already_respawn)))
-        if self.engine.available_tournaments():
-            actions.append(("tournaments", T.TOWN_TOURNAMENTS))
-        for i, (action, label) in enumerate(actions):
-            col, row = i % 2, i // 2
-            rect = pygame.Rect(panel.x + 20 + col * (col_w + 20), panel.y + 70 + row * 56, col_w, 44)
-            enabled = not (action == "store" and not has_store) and not (action == "relocate_respawn" and already_respawn)
-            self._add_button(rect, label, (lambda a=action: self.do_action(a)), enabled)
-        self.screen.blit(self.font_sm.render(T.BACK_TO_MAP, True, TEXT_DIM),
-                         (panel.x + 20, panel.bottom - 30))
-        self._draw_buttons()
-
     def _draw_tournament_list_screen(self) -> None:
         panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])
         tournaments = build_snapshot(self.engine).tournaments
@@ -1316,7 +1328,7 @@ class OverworldApp:
             rect = pygame.Rect(panel.x + 20, panel.y + 70 + i * 44, panel.width - 40, 36)
             self._add_button(rect, label, (lambda tid=tournament.id: self.select_tournament(tid)), not tournament.completed)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 
     def _draw_tournament_confirm_screen(self) -> None:
@@ -1436,7 +1448,7 @@ class OverworldApp:
         panel = self._overlay_panel(T.SCREEN_TITLES["store"])
         self._screen_store(panel)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "townmenu"))
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 
     def _character_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
