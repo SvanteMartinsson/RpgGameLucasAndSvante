@@ -93,6 +93,17 @@ STORE_CATEGORY = {
     "barracks": "armor",
     "shop": "general",
 }
+# B30: a door opens a TITLED menu (the building's name) — no service runs until the
+# player picks. These are the menu titles; the choice label/action is derived from
+# BUILDING_FUNCTION (rest/store/relocate_respawn/tournaments).
+BUILDING_TITLES = {
+    "inn": "Inn",
+    "shop": "General Store",
+    "blacksmith": "Blacksmith",
+    "barracks": "Barracks",
+    "church": "Church",
+    "town_hall": "Town Hall",
+}
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
@@ -488,6 +499,7 @@ class OverworldApp:
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
         self.store_category: str | None = None  # which trade building's store slice is open
+        self.building_menu: tuple[str, str] | None = None  # (place_id, building_id) of the open door menu
         self.buttons: list[Button] = []
         # B16 + B29: the chatbox is the ONLY on-screen text. Combat lines flow in via
         # the shared deque passed to BattleApp; world events flow in through set_toast
@@ -681,10 +693,10 @@ class OverworldApp:
     # -- town actions (all go through the engine) ---------------------------
 
     def _interact_door(self, place_id: str, building_id: str) -> None:
-        """Open the service behind a hub building's door. Sync the engine to the
-        hub first (a door tile is not itself the place tile), then dispatch the
-        building's function — or log it as locked when the service isn't offered
-        here (unmapped building, no store, no tournaments)."""
+        """B30: open a TITLED menu for a hub building's door — NO service runs until
+        the player picks. Sync the engine to the hub first (a door tile is not the
+        place tile). A building whose service isn't offered here (unmapped, no store,
+        no tournaments) logs as locked instead of opening a menu."""
         self.engine.enter_place(place_id)
         func = BUILDING_FUNCTION.get(building_id)
         if func == "store" and not self.engine.current_place().has_store:
@@ -694,8 +706,15 @@ class OverworldApp:
         if func is None:
             self.push_log(T.BUILDING_LOCKED, TEXT_DIM)
             return
-        # A trade building shows only its category slice of the town store.
-        self.store_category = STORE_CATEGORY.get(building_id)
+        self.building_menu = (place_id, building_id)
+        self.mode = "building"
+
+    def _choose_building_action(self, func: str, category: str | None = None) -> None:
+        """Run the chosen building service. Closes the menu first; store/tournaments
+        re-open their own screen, rest/respawn just log their result."""
+        self.store_category = category
+        self.building_menu = None
+        self.mode = "walk"
         self.do_action(func)
 
     def do_action(self, action: str) -> None:
@@ -1027,6 +1046,8 @@ class OverworldApp:
         if event.key == pygame.K_ESCAPE:
             if self.overlay:
                 self.close_overlay()
+            elif self.mode == "building":
+                self._close_building_menu()
             elif self.mode == "store":
                 self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
@@ -1110,7 +1131,9 @@ class OverworldApp:
         if self.mode == "walk" and not self.overlay:
             self._draw_log()
             self._draw_vitals()
-        if self.mode == "store":
+        if self.mode == "building":
+            self._draw_building_menu()
+        elif self.mode == "store":
             self._draw_store_screen()
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
@@ -1432,6 +1455,42 @@ class OverworldApp:
             fitted = self._fit_text(b.label, b.rect.width - 24, self.font)
             label = self.font.render(fitted, True, TEXT if b.enabled else TEXT_DIM)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
+
+    def _close_building_menu(self) -> None:
+        self.building_menu = None
+        self.mode = "walk"
+
+    def _draw_building_menu(self) -> None:
+        """B30: a titled menu (the building's name) with the service as a choice.
+        Mirrors the tournament screen (title panel + choice buttons + Back)."""
+        place_id, building_id = self.building_menu
+        title = BUILDING_TITLES.get(building_id, building_id.replace("_", " ").title())
+        panel = self._overlay_panel(title)
+        func = BUILDING_FUNCTION.get(building_id)
+        category = STORE_CATEGORY.get(building_id)
+        info = None
+        if func == "rest":
+            cost = progression.rest_cost(self.zone.zone_for_tile(self.world.current_tile))
+            label = f"Rest ({cost} gold)" if cost else "Rest (free)"
+        elif func == "store":
+            label = {"weapons": "Browse weapons", "armor": "Browse armour"}.get(category, "Browse goods")
+        elif func == "relocate_respawn":
+            label = "Set respawn point here"
+            current = self.engine.content.places.get(self.engine.player.respawn_place_id)
+            info = f"Current respawn: {current.name if current else 'none'}"
+        elif func == "tournaments":
+            label = "Tournaments"
+        else:
+            label = "Use"
+        y = panel.y + 80
+        if info:
+            self.screen.blit(self.font_sm.render(info, True, TEXT_DIM), (panel.x + 20, y))
+            y += 30
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
+                         (lambda f=func, c=category: self._choose_building_action(f, c)), True)
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, self._close_building_menu)
+        self._draw_buttons()
 
     def _draw_tournament_list_screen(self) -> None:
         panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])

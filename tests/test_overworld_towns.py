@@ -85,27 +85,33 @@ class OverworldTownsTest(unittest.TestCase):
         return next(t for t, (pid, bid) in self.app.door_index.items()
                     if pid == place_id and bid == building_id)
 
-    def test_enter_on_shop_door_opens_store(self):
-        self.app.world.set_tile(*self._door("burg_5", "shop"))
+    def _enter_door(self, building):
+        self.app.world.set_tile(*self._door("burg_5", building))
         self.app.mode = "walk"
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
-        self.assertEqual(self.app.mode, "store")
 
-    def test_trade_buildings_open_their_own_store_category(self):
-        # blacksmith -> weapons, barracks -> armour, shop -> general goods. Each
-        # door opens the store filtered to only that category's items.
-        cases = {"blacksmith": ("weapons", "weapon"),
-                 "barracks": ("armor", "gear"),
-                 "shop": ("general", "consumable")}
-        for building, (category, kind) in cases.items():
-            self.app.world.set_tile(*self._door("burg_5", building))
-            self.app.mode = "walk"
-            self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    def test_enter_on_a_door_opens_a_titled_menu_not_the_service(self):
+        # B30: Enter opens the building's titled menu; the service does NOT run yet.
+        from rpg_game.presentation.pygame_overworld import BUILDING_TITLES
+        for building in ("shop", "blacksmith", "barracks", "inn", "church", "town_hall"):
+            self._enter_door(building)
+            self.assertEqual(self.app.mode, "building", building)
+            self.assertEqual(self.app.building_menu, ("burg_5", building))
+            self.assertIn(building, BUILDING_TITLES)
+            self.app.mode = "walk"; self.app.building_menu = None
+
+    def test_trade_building_menu_choice_opens_its_store_category(self):
+        # The menu choice (not the door) opens the category-filtered store.
+        for building, (category, kind) in {"blacksmith": ("weapons", "weapon"),
+                                           "barracks": ("armor", "gear"),
+                                           "shop": ("general", "consumable")}.items():
+            self._enter_door(building)
+            self.assertEqual(self.app.mode, "building", building)
+            self.app._choose_building_action("store", category)   # the menu's choice
             self.assertEqual(self.app.mode, "store", building)
             self.assertEqual(self.app.store_category, category, building)
             entries = self.app.engine.store_entries(self.app.store_category)
-            self.assertTrue(entries, f"{building} store empty")
-            self.assertTrue(all(e.kind == kind for e in entries), building)
+            self.assertTrue(entries and all(e.kind == kind for e in entries), building)
             self.app.mode = "walk"
 
     # -- B29: chatbox v2 (dedupe / scroll / resize-clamp) -------------------
@@ -160,12 +166,23 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertNotIn("Gold", src)
         self.assertNotIn(".name", src)
 
-    def test_enter_on_inn_door_rests(self):
-        self.app.world.set_tile(*self._door("burg_5", "inn"))
+    def test_inn_rests_only_after_menu_choice(self):
         self.app.engine.player.hp = 1
-        self.app.mode = "walk"
-        self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        self._enter_door("inn")
+        self.assertEqual(self.app.mode, "building")
+        self.assertEqual(self.app.engine.player.hp, 1)            # opening the menu does NOT rest
+        self.app._choose_building_action("rest")                 # the menu's [Rest] choice
         self.assertEqual(self.app.engine.player.hp, self.app.engine.player.max_hp)
+
+    def test_church_sets_respawn_only_after_menu_choice(self):
+        # burg_5 is the default respawn; move it away, then confirm the Church menu
+        # sets it back only when the choice is taken, not on opening.
+        self.app.engine.player.respawn_place_id = "burg_67"
+        self._enter_door("church")
+        self.assertEqual(self.app.mode, "building")
+        self.assertEqual(self.app.engine.player.respawn_place_id, "burg_67")  # not yet
+        self.app._choose_building_action("relocate_respawn")
+        self.assertEqual(self.app.engine.player.respawn_place_id, "burg_5")
 
     def test_enter_on_plaza_without_a_door_does_nothing(self):
         # The old single-tile menu is gone: standing on the plaza anchor (not a

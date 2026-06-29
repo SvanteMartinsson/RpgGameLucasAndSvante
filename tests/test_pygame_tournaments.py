@@ -35,14 +35,18 @@ class PygameTournamentTest(unittest.TestCase):
     def setUp(self):
         self.app = OverworldApp()
 
-    def test_town_hall_door_opens_tournaments_only_where_available(self):
-        # The town_hall door opens the tournament list where tournaments are held
-        # (burg_5), and reads as locked where none are (burg_117 has none).
+    def test_town_hall_menu_opens_tournaments_only_where_available(self):
+        # B30: the town_hall door opens the "Town Hall" menu where tournaments are
+        # held (burg_5); its choice opens the list. Where none are (burg_117) the
+        # door reads as locked and no menu opens.
         th_door = next(t for t, (pid, bid) in self.app.door_index.items()
                        if pid == "burg_5" and bid == "town_hall")
         self.app.world.set_tile(*th_door)
         self.app.mode = "walk"
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        self.assertEqual(self.app.mode, "building")          # titled menu, not the list yet
+        self.assertEqual(self.app.building_menu, ("burg_5", "town_hall"))
+        self.app._choose_building_action("tournaments")      # the menu's [Tournaments] choice
         self.assertEqual(self.app.mode, "tournaments")
 
         self.app.mode = "walk"
