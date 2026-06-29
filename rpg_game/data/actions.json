@@ -403,7 +403,8 @@
         "ratio": 0.3,
         "target": "enemy"
       }
-    ]
+    ],
+    "cooldown_rounds": 2
   },
   {
     "id": "reckless",
