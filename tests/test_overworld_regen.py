@@ -185,7 +185,7 @@ class OverworldRegenTest(unittest.TestCase):
         walls = self._layer("walls")
         decor = self._layer("decor_over")
         water = {(x, y) for y in range(H) for x in range(W) if self._is_water(walls[y][x])}
-        bridges = {(x, y) for y in range(H) for x in range(W) if 4755 <= decor[y][x] <= 4778}
+        bridges = {(x, y) for y in range(H) for x in range(W) if self._is_bridge(decor[y][x])}
         self.assertGreater(len(water), 200, "no water placed")
         # gates are not drowned
         for g in self.world.gate_messages:
@@ -207,6 +207,52 @@ class OverworldRegenTest(unittest.TestCase):
         # the five bridge crossings are walkable (not blocked)
         for bx, by in [(12, 35), (57, 35), (26, 27), (44, 43), (77, 28)]:
             self.assertNotIn((bx, by), self.world.blocked, f"bridge {(bx, by)} blocked")
+
+    # -- B34: coherent bridges via half-deck pairs ---------------------------
+
+    def test_bridges_use_halfdeck_pairs_no_raw_double_deck(self):
+        decor = self._layer("decor_over")
+        EW_NORTH, EW_SOUTH, NS_WEST, NS_EAST = 4871, 4872, 4873, 4874
+        used = {decor[y][x] for y in range(H) for x in range(W) if self._is_bridge(decor[y][x])}
+        # every 2-wide bridge cell is a half-deck tile; no raw full deck (13/14) left
+        self.assertTrue(used <= {EW_NORTH, EW_SOUTH, NS_WEST, NS_EAST},
+                        f"non-halfdeck bridge gids present: {used}")
+        self.assertTrue({EW_NORTH, EW_SOUTH} <= used, "E-W bridge half-deck pair missing")
+        self.assertTrue({NS_WEST, NS_EAST} <= used, "N-S bridge half-deck pair missing")
+        # the doubled-rail look is gone: the old full deck tiles 13/14 (gid 4768/4769)
+        # appear nowhere.
+        self.assertNotIn(4768, used)
+        self.assertNotIn(4769, used)
+
+    def test_no_ramp_tiles_anywhere(self):
+        # B34: ramp tiles (water_bridge idx 15-18 -> gid 4770-4773) are not used.
+        walls, decor = self._layer("walls"), self._layer("decor_over")
+        ramps = set(range(4770, 4774))
+        for y in range(H):
+            for x in range(W):
+                self.assertNotIn(decor[y][x], ramps, f"ramp gid in decor at {(x, y)}")
+                self.assertNotIn(walls[y][x], ramps, f"ramp gid in walls at {(x, y)}")
+
+    def test_each_bridge_is_two_wide_deck_with_water_under_the_box(self):
+        # Each crossing's deck is exactly 2 cells wide across the river and the
+        # cells under it were water (carved): one coherent 2-wide bridge.
+        decor = self._layer("decor_over")
+        walls = self._layer("walls")
+        EW = {4871, 4872}   # north/south rows of an E-W bridge
+        NS = {4873, 4874}   # west/east cols of an N-S bridge
+        # E-W bridge (core inner river, rows 27-28): both rows are half-decks, deck
+        # cells walkable, flanking water blocked.
+        for x in range(24, 30):
+            if decor[27][x] in EW or decor[28][x] in EW:
+                self.assertEqual(decor[27][x], 4871, f"top row not ew_north at x={x}")
+                self.assertEqual(decor[28][x], 4872, f"bottom row not ew_south at x={x}")
+                self.assertEqual(walls[27][x], 0)
+                self.assertEqual(walls[28][x], 0)
+        # N-S bridge (seam west, cols 12-13): left col ns_west, right col ns_east.
+        for y in range(33, 39):
+            if decor[y][12] in NS or decor[y][13] in NS:
+                self.assertEqual(decor[y][12], 4873, f"left col not ns_west at y={y}")
+                self.assertEqual(decor[y][13], 4874, f"right col not ns_east at y={y}")
 
     def _plant_offset(self, gid):
         for fg in (2691, 4227):       # cainos_plant / grave_heath_plant
@@ -266,8 +312,8 @@ class OverworldRegenTest(unittest.TestCase):
     def _is_sea_or_river(self, gid):           # water_autotile gids 4739..4754
         return 4739 <= gid < 4755
 
-    def _is_bridge(self, gid):                  # water_bridge gids 4755..4778
-        return 4755 <= gid < 4779
+    def _is_bridge(self, gid):                  # water_bridge 4755..4778 + half-deck 4871..4874 (B34)
+        return 4755 <= gid < 4779 or 4871 <= gid < 4875
 
     def test_no_forest_canopy_anywhere(self):
         # The forest edge-band + inner groves are gone: NO plant-sheet canopy/crown

@@ -105,8 +105,9 @@ class OverworldTilesetTest(unittest.TestCase):
                 # placeholder + cainos(3) + 6 themes x 3 tile sheets (22)
                 # + cainos plant/props (2) + mork_skog/cursed_mire plant/props (4)
                 # + grave_heath plant/props (2, for the Verralda heath) (30)
-                # + water_autotile + water_bridge (2) + 3 cliff sheets (edge terrain) = 35.
-                self.assertEqual(len(tmx.tilesets), 35)
+                # + water_autotile + water_bridge (2) + 3 cliff sheets (edge terrain) (35)
+                # + bridge_halfdeck (B34, 2-wide bridge half-decks) = 36.
+                self.assertEqual(len(tmx.tilesets), 36)
                 ground = tmx.get_layer_by_name("ground")
                 self.assertTrue(all(img is not None for _x, _y, img in ground.tiles()))
             finally:
@@ -118,8 +119,10 @@ class OverworldTilesetTest(unittest.TestCase):
         byname = {t.name: t for t in self.tmx.tilesets}
         self.assertIn("water_autotile", byname)
         self.assertIn("water_bridge", byname)
+        self.assertIn("bridge_halfdeck", byname)   # B34: 2-wide bridge half-decks
         self.assertEqual(byname["water_autotile"].firstgid, 4739)
         self.assertEqual(byname["water_bridge"].firstgid, 4755)
+        self.assertEqual(byname["bridge_halfdeck"].firstgid, 4871)
         walls = self.tmx.get_layer_by_name("walls")
         water_cells = sum(1 for y in range(self.tmx.height) for x in range(self.tmx.width)
                           if walls.data[y][x]

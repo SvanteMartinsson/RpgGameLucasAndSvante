@@ -89,7 +89,9 @@ class WaterCollisionTest(unittest.TestCase):
         for x, y, _img in decor.tiles():
             gid = decor.data[y][x]
             ts = self.world.tmx.get_tileset_from_gid(gid) if gid else None
-            if ts is not None and ts.name == "water_bridge":
+            # B34: decks are the half-deck tiles now (full water_bridge tiles only on
+            # a hypothetical 1-wide bridge); count both as bridge cells.
+            if ts is not None and ts.name in ("water_bridge", "bridge_halfdeck"):
                 bridges.add((x, y))
         self.assertTrue(bridges)
         seen = self._reach((self.world.blocked - set(self.world.gate_messages)) | bridges)
