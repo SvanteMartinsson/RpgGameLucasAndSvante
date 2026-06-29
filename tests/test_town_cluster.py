@@ -20,7 +20,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 try:
     import pygame
-    from rpg_game.presentation.pygame_overworld import OverworldApp, CLUSTER_TOWN_ID
+    from rpg_game.presentation.pygame_overworld import OverworldApp, CLUSTER_TOWN_ID, CLUSTER_TOWN_IDS
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
@@ -189,6 +189,105 @@ class TownClusterRuntimeTest(unittest.TestCase):
     def test_renders_without_crashing(self):
         self.app.display = pygame.Surface((960, 640))
         self.app.draw()
+
+
+@unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
+class MultiHubPlacementTest(unittest.TestCase):
+    """B28: the hub model is reused on more cities. Every town in CLUSTER_TOWN_IDS
+    must pass the SAME placement properties the start town does — so a new hub can
+    only be added (to the tuple) once it satisfies all of them. Each property is
+    checked for every hub, not just burg_5."""
+
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        cls.app = OverworldApp()
+
+    @classmethod
+    def tearDownClass(cls):
+        pygame.quit()
+
+    def _anchors(self):
+        return self.app.cluster_anchors
+
+    def test_there_is_more_than_one_hub(self):
+        # B28 is about MORE cities: the start town plus at least one more.
+        self.assertGreaterEqual(len(self._anchors()), 2)
+        self.assertIn(CLUSTER_TOWN_ID, self._anchors())
+
+    def test_every_hub_is_a_real_service_city(self):
+        # The full-service template (blacksmith/store/barracks) only fits towns that
+        # actually offer services — a store city — so the visual never lies.
+        for pid in self._anchors():
+            place = self.app.engine.content.places[pid]
+            self.assertTrue(place.has_store, f"{pid} is a hub but sells nothing")
+
+    def test_every_hub_footprint_is_solid_and_clear_of_water(self):
+        water = self.app._water_tiles()
+        for pid, anchor in self._anchors().items():
+            fp = town_cluster.cluster_footprints(anchor)
+            self.assertTrue(fp <= self.app.world.blocked, f"{pid} footprints not solid")
+            self.assertEqual(fp & water, set(), f"{pid} footprint on water")
+
+    def test_every_hub_plaza_is_the_walkable_menu_trigger(self):
+        for pid, anchor in self._anchors().items():
+            self.assertNotIn(anchor, self.app.world.blocked, f"{pid} plaza blocked")
+            self.app.world.set_tile(*anchor)
+            self.assertEqual(self.app.world.town_place_id(), pid, f"{pid} plaza wrong trigger")
+
+    def test_every_hub_cobble_reaches_every_door_and_shuns_water(self):
+        water = self.app._water_tiles()
+        for pid, anchor in self._anchors().items():
+            net = town_cluster.cobble_network(anchor, self.app.world.blocked, water)
+            self.assertEqual(net & town_cluster.cluster_footprints(anchor), set(),
+                             f"{pid} cobble under a footprint")
+            for bid, ent in town_cluster.cluster_entrances(anchor).items():
+                self.assertIn(ent, net, f"{pid}: cobble does not reach {bid}")
+            for (x, y) in net:
+                self.assertNotIn((x, y), water, f"{pid} cobble on water {(x, y)}")
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    self.assertNotIn((x + dx, y + dy), water, f"{pid} cobble borders water")
+
+    def test_hubs_do_not_overlap_each_other_or_any_town_tile(self):
+        anchors = self._anchors()
+        foots = {pid: town_cluster.cluster_footprints(a) for pid, a in anchors.items()}
+        ids = list(foots)
+        for i, a in enumerate(ids):           # pairwise hub footprints disjoint
+            for b in ids[i + 1:]:
+                self.assertEqual(foots[a] & foots[b], set(), f"{a} overlaps {b}")
+        # no hub footprint covers ANY town's tile (including non-hub neighbours)
+        town_tiles = set(self.app.world.town_tiles)
+        for pid, anchor in anchors.items():
+            covered = foots[pid] & (town_tiles - {anchor})
+            self.assertEqual(covered, set(), f"{pid} footprint covers town tile(s) {covered}")
+
+    def test_all_towns_and_gates_reachable_with_every_hub_built(self):
+        blocked = self.app.world.blocked - set(self.app.world.gate_messages)
+        W, H = self.app.world.tmx.width, self.app.world.tmx.height
+        start = self.app.zone.start_tile
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if 0 <= nx < W and 0 <= ny < H and (nx, ny) not in blocked and (nx, ny) not in seen:
+                    seen.add((nx, ny))
+                    q.append((nx, ny))
+        for tile in self.app.world.town_tiles:
+            self.assertIn(tile, seen, f"town {tile} unreachable")
+        for gate in self.app.zone.gates:
+            self.assertIn(gate, seen, f"gate {gate} unreachable")
+
+    def test_hub_generation_is_idempotent(self):
+        # Regenerating a hub's footprints and cobble yields byte-identical sets —
+        # placement is pure (no RNG / order dependence), so a re-render is stable.
+        water = self.app._water_tiles()
+        for pid, anchor in self._anchors().items():
+            self.assertEqual(town_cluster.cluster_footprints(anchor),
+                             town_cluster.cluster_footprints(anchor), f"{pid} footprints not idempotent")
+            self.assertEqual(town_cluster.cobble_network(anchor, self.app.world.blocked, water),
+                             town_cluster.cobble_network(anchor, self.app.world.blocked, water),
+                             f"{pid} cobble not idempotent")
 
 
 if __name__ == "__main__":

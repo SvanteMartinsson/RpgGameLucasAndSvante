@@ -54,8 +54,18 @@ DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
 BUILDINGS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "buildings")
 STONE_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "cainos",
                            "TX Tileset Stone Ground.png")
-# Slice 1 of B8: only the start town renders as a building cluster (proof of model).
+# B8 proved the anchored building-cluster model on the start town. B28 reuses the
+# SAME hub template on more cities. A town qualifies as a hub only if it is a real
+# service city (a store town) AND the template places cleanly at its tile — on
+# land, in-bounds, footprints clear of water/walls, doors reachable, no overlap
+# with another hub (all asserted by test_town_cluster). burg_5 stays the primary
+# hub (and the start town); burg_121 (Alherralba) and burg_67 (Fongorinos) are the
+# verified zone-1/zone-2 store cities that pass every placement property. Towns
+# whose tile sits against water (e.g. Rotequero), which crowd a neighbour (the
+# hub at Alherralba would overrun nearby Salles), or which are store-less villages
+# need a tiered/terrain design pass and are deliberately NOT hubs yet.
 CLUSTER_TOWN_ID = "burg_5"
+CLUSTER_TOWN_IDS = ("burg_5", "burg_67")
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
@@ -351,16 +361,24 @@ class OverworldApp:
         # collision, and the anchor tile stays the walkable plaza/menu trigger.
         self._building_sprites = self._load_building_sprites()
         self._stone_tiles = self._load_stone_tiles()
-        self.cluster_anchor = self.town_tile_by_place.get(CLUSTER_TOWN_ID)
-        if self.cluster_anchor is not None:
-            self.world.blocked |= town_cluster.cluster_footprints(self.cluster_anchor)
-            # Comb cobble that never sits on OR borders water (shore water is walkable
-            # post-B19 but must not be cobbled over, and no cobble points SW into the
-            # river). blocked keeps it off other terrain; water drives the no-border rule.
-            self._cobble_net = town_cluster.cobble_network(
-                self.cluster_anchor, self.world.blocked, self._water_tiles())
-        else:
-            self._cobble_net = set()
+        # B28: every qualifying hub town anchors its own copy of the template. Add
+        # ALL footprints to collision first so each cluster's cobble routes around
+        # every building (its own and neighbours'), then build the cobble per hub.
+        self.cluster_anchors = {
+            pid: tile for pid in CLUSTER_TOWN_IDS
+            if (tile := self.town_tile_by_place.get(pid)) is not None
+        }
+        # Backward-compatible single-anchor handle for the primary/start hub.
+        self.cluster_anchor = self.cluster_anchors.get(CLUSTER_TOWN_ID)
+        for anchor in self.cluster_anchors.values():
+            self.world.blocked |= town_cluster.cluster_footprints(anchor)
+        # Comb cobble that never sits on OR borders water (shore water is walkable
+        # post-B19 but must not be cobbled over, and no cobble points into a river).
+        # blocked keeps it off other terrain; water drives the no-border rule.
+        water = self._water_tiles()
+        self._cobble_net = set()
+        for anchor in self.cluster_anchors.values():
+            self._cobble_net |= town_cluster.cobble_network(anchor, self.world.blocked, water)
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -1104,10 +1122,12 @@ class OverworldApp:
             tile = self._stone_tile_for(cx, cy)
             if tile is not None:
                 world.blit(tile, (cx * tw - ox, cy * th - oy))
-        # drawables: (base_y, kind, payload) sorted so nearer (larger y) draw last
+        # drawables: (base_y, kind, payload) sorted so nearer (larger y) draw last.
+        # Every hub's buildings join ONE y-sorted pass so clusters and the player
+        # occlude correctly regardless of which town the player is near.
         drawables = []
-        if self.cluster_anchor is not None:
-            for bid, fx, fy, fw, fh, _facing, flip in town_cluster.cluster_buildings(self.cluster_anchor):
+        for anchor in self.cluster_anchors.values():
+            for bid, fx, fy, fw, fh, _facing, flip in town_cluster.cluster_buildings(anchor):
                 sprite = self._building_sprites.get(bid)
                 if sprite is None:
                     continue
@@ -1165,7 +1185,7 @@ class OverworldApp:
         for (tx, ty), place_id in self.world.town_tiles.items():
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),
                         tx * tw - ox + tw // 2, ty * th - oy - 8)
-            if place_id == CLUSTER_TOWN_ID:
+            if place_id in self.cluster_anchors:
                 labels.append(label_xy)   # the cluster IS the marker; keep the name
                 continue
             rect = pygame.Rect(tx * tw - ox + 4, ty * th - oy + 4, tw - 8, th - 8)
