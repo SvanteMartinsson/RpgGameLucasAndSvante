@@ -77,19 +77,52 @@ class OverworldEncounterTest(unittest.TestCase):
         self.assertEqual(self.app.encounter_rate_at((town[0] + 1, town[1])), 0.0)
 
     def test_encounter_rate_rises_with_distance_to_full(self):
+        # Measured east of burg_117 (Yeblegali), a non-cluster pin town whose safe
+        # zone is just the 1-tile radius — so the B12 ramp is visible. (burg_5 now
+        # has a whole-cluster safe zone, B32, so its ramp starts farther out.)
         self.app.encounter_rate = 0.06
-        rates = [self.app.encounter_rate_at((26 + d, 18)) for d in range(0, 7)]  # east of burg_5
+        rates = [self.app.encounter_rate_at((10 + d, 8)) for d in range(0, 8)]
         self.assertTrue(all(rates[i] <= rates[i + 1] for i in range(len(rates) - 1)))  # non-decreasing
         self.assertEqual(rates[0], 0.0)        # on the town
         self.assertAlmostEqual(rates[-1], 0.06)  # full base a few tiles out
 
     def test_road_tiles_reduce_the_rate(self):
         self.app.encounter_rate = 0.06
-        far = (30, 18)
+        far = (15, 8)  # full-rate wilderness east of burg_117, off any cluster/road
         base = self.app.encounter_rate_at(far)
         self.assertGreater(base, 0.0)
         self.app._on_path = lambda tile: True   # force the road factor
         self.assertAlmostEqual(self.app.encounter_rate_at(far), base * 0.6)
+
+    # -- B32: a whole town cluster + margin is encounter-free ----------------
+
+    def test_no_encounters_on_any_cluster_tile_or_margin(self):
+        from rpg_game.presentation import town_cluster
+        self.app.encounter_rate = 0.06
+        for pid, anchor in self.app.cluster_anchors.items():
+            cluster = town_cluster.cluster_footprints(anchor) | {anchor}
+            cluster |= set(town_cluster.cluster_entrances(anchor).values())
+            cluster |= {t for t, p in self.app.hub_interior.items() if p == pid}
+            for (cx, cy) in cluster:
+                for dx in range(-2, 3):       # SAFE_TILE_MARGIN
+                    for dy in range(-2, 3):
+                        tile = (cx + dx, cy + dy)
+                        self.assertEqual(self.app.encounter_rate_at(tile), 0.0,
+                                         f"{pid} not safe at {tile}")
+
+    def test_sim_no_spawns_standing_on_cluster_streets(self):
+        # N>=200 rolls on each walkable cluster (door/cobble) tile -> zero encounters.
+        self.app.encounter_rate = 0.06
+        self.app.engine.rng = random.Random(7)
+        spawns = 0
+        street_tiles = [t for t in self.app.hub_interior if t != self.app.cluster_anchor]
+        for tile in street_tiles:
+            self.app.world.set_tile(*tile)
+            self.app.sync_location()
+            for _ in range(220):
+                if self.app.maybe_encounter() is not None:
+                    spawns += 1
+        self.assertEqual(spawns, 0, f"{spawns} ambushes on town streets across {len(street_tiles)} tiles")
 
     # -- battle handoff -----------------------------------------------------
 

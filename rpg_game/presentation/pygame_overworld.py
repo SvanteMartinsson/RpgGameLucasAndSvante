@@ -136,6 +136,10 @@ ZOOM_TARGET_TILES_W = 12
 ENCOUNTER_SAFE_RADIUS = 1     # town + adjacent tiles: no encounters
 ENCOUNTER_RAMP_TILES = 3      # tiles over which the rate ramps from 0 to full
 ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
+# B32: a hub is a whole CLUSTER, not one tile. Encounters are zero on every cluster
+# tile (footprints, plaza, doors, cobble) plus this many tiles of margin around it,
+# so you can never be ambushed on a town's own streets or its doorstep.
+SAFE_TILE_MARGIN = 2
 
 # Action log (B16): the bottom-left panel keeps the last few lines of combat,
 # loot, level-ups, heals and world events. Short on purpose — it's an at-a-glance
@@ -427,6 +431,17 @@ class OverworldApp:
                 self.door_index[ent] = (pid, bid)
             for tile in ({anchor} | set(entrances.values()) | cobble):
                 self.hub_interior[tile] = pid
+        # B32: zero-encounter zone = every cluster tile (footprints + plaza + doors +
+        # cobble) dilated by SAFE_TILE_MARGIN, so no ambush on a town's streets/edge.
+        self._safe_tiles: set[tuple[int, int]] = set()
+        for pid, anchor in self.cluster_anchors.items():
+            cluster = town_cluster.cluster_footprints(anchor) | {anchor}
+            cluster |= set(town_cluster.cluster_entrances(anchor).values())
+            cluster |= {t for t, p in self.hub_interior.items() if p == pid}
+            for (cx, cy) in cluster:
+                for dx in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
+                    for dy in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
+                        self._safe_tiles.add((cx + dx, cy + dy))
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -592,8 +607,11 @@ class OverworldApp:
         return any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387))
 
     def encounter_rate_at(self, tile) -> float:
-        """Per-step encounter chance at a tile: 0 on/next to a town, ramping to the
-        zone base a few tiles out, reduced on roads. (B12 heatmap.)"""
+        """Per-step encounter chance at a tile: 0 anywhere on a town cluster + its
+        margin (B32) or next to any town anchor, ramping to the zone base a few
+        tiles out, reduced on roads. (B12 heatmap.)"""
+        if tile in self._safe_tiles:
+            return 0.0
         dist = self._nearest_town_dist(tile)
         if dist <= ENCOUNTER_SAFE_RADIUS:
             return 0.0
