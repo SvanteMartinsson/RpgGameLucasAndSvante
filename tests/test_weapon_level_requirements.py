@@ -7,6 +7,16 @@ from rpg_game.core.entities import Enemy
 from rpg_game.core.game import GameEngine
 
 
+class FighterStartWeaponTest(unittest.TestCase):
+    def test_fighter_starts_with_worn_shortsword(self):
+        # B33: the fighter opens with the weak worn_shortsword (d2), not the sword.
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        self.assertEqual(engine.player.equipped_weapon_id, "worn_shortsword")
+        self.assertEqual(engine.player.owned_weapon_ids, ("worn_shortsword",))
+        self.assertEqual(engine.content.weapons["worn_shortsword"].damage_bonus, 2)
+
+
 class WeaponLevelRequirementTests(unittest.TestCase):
     def test_weapon_required_level_uses_tier_minus_2_floor_1(self):
         engine = GameEngine(rng=random.Random(1))
@@ -73,7 +83,7 @@ class WeaponLevelRequirementTests(unittest.TestCase):
 
         self.assertTrue(result.success)
         self.assertIn("pyre_scepter", engine.player.owned_weapon_ids)
-        self.assertEqual(engine.player.equipped_weapon_id, "sword")
+        self.assertEqual(engine.player.equipped_weapon_id, "worn_shortsword")  # fighter start weapon
         self.assertIn("Requires level 3", result.message)
 
     def test_store_tier_2_weapon_equips_at_level_1(self):

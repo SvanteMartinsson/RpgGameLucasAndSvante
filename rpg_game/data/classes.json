@@ -8,7 +8,7 @@
     "max_mana": 20,
     "speed": 11,
     "crit_chance": 5,
-    "starting_weapon_id": "sword",
+    "starting_weapon_id": "worn_shortsword",
     "starting_skill_ids": ["frenzy"]
   },
   {
