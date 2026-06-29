@@ -41,6 +41,23 @@ def rare_tier_cap(level: int) -> int:
         return 5
     return 4
 
+# B24-flag: a stricter ceiling on the SHARED rare table for LOW-level wild enemies.
+# rare_tier_cap (above) gates the whole pool incl. an enemy's own curated loot, where
+# a level-4 enemy is meant to keep its hand-placed tier-4 items (e.g. plague_acolyte's
+# haste_circuit). The shared rare table is different: it shouldn't hand out tier-4
+# rare weapons (consecrated_maul, venomfang) to a level-3/4 wild kill. Below
+# RARE_TABLE_LOW_LEVEL the shared table is capped at RARE_TABLE_LOW_LEVEL_TIER; at or
+# above it the general rare_tier_cap applies. Both tunable.
+RARE_TABLE_LOW_LEVEL = 5
+RARE_TABLE_LOW_LEVEL_TIER = 3
+
+
+def rare_table_tier_cap(level: int) -> int:
+    """Tier ceiling for the SHARED rare table only (not an enemy's own loot)."""
+    if level < RARE_TABLE_LOW_LEVEL:
+        return RARE_TABLE_LOW_LEVEL_TIER
+    return rare_tier_cap(level)
+
 # Global, tunable scalar on every enemy's max HP at creation (wild and arena),
 # so fights last longer without touching the per-enemy numbers or their ratios.
 # 1.0 reproduces the pre-multiplier values exactly.

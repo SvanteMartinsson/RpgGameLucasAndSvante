@@ -145,14 +145,20 @@ class TierGateTests(unittest.TestCase):
         engine = _engine()
         grunt_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["giant_rat"].create_enemy())}
         bear_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["cave_bear"].create_enemy())}
+        boar_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["wild_boar"].create_enemy())}
         worg_pool = {str(e["item_id"]) for e in engine.loot_pool(engine.content.enemies["hollow_worg"].create_enemy())}
 
         rare_ids = {str(e["item_id"]) for e in engine.content.rare_loot_table}
         self.assertFalse(grunt_pool & rare_ids)            # no rare access at all
-        # B24: a low-tier (L3) rare-access enemy is capped at tier 4 — no tier 5/6
-        self.assertNotIn("pyre_scepter", bear_pool)        # tier 5
-        self.assertNotIn("worldsplitter", bear_pool)       # tier 6
-        self.assertIn("consecrated_maul", bear_pool)       # tier 4 still reachable
+        # B24-flag: below level 5 the SHARED rare table is capped at tier 3, so a L3
+        # wild kill yields NO rare-table weapon (consecrated_maul/venomfang are tier 4).
+        self.assertFalse(bear_pool & rare_ids)             # L3: shared rare table fully gated
+        self.assertNotIn("consecrated_maul", bear_pool)    # tier 4 rare-table item gone at low level
+        # A mid-tier (L6) enemy reaches the tier-4 and tier-5 rare weapons but not
+        # the tier-6 worldsplitter (that needs L8).
+        self.assertIn("consecrated_maul", boar_pool)       # tier 4 reachable from L6
+        self.assertIn("pyre_scepter", boar_pool)           # tier 5 reachable from L6
+        self.assertNotIn("worldsplitter", boar_pool)       # tier 6 still gated below L8
         self.assertTrue(rare_ids <= worg_pool)             # L8 enemy reaches the whole table
 
 

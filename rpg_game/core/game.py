@@ -265,11 +265,18 @@ class GameEngine:
         # Rare-table tier is capped by the enemy's LEVEL, so low-tier wild enemies
         # can't drop top-end (tier 5/6) weapons; the common + unique tables (<=tier 4)
         # are unaffected (their own rarity_tier already gates them).
-        max_tier = progression.rare_tier_cap(enemy.level) if enemy.rare_table_access else 3
-        pool = list(enemy.loot_table) + list(enemy.unique_table)
+        # The enemy's OWN tables (curated per enemy) keep the general per-enemy cap;
+        # the SHARED rare table gets a stricter low-level ceiling so a level-3/4 wild
+        # kill can't hand out tier-4 rare weapons (B24-flag) while the enemy's own
+        # hand-placed tier-4 items are untouched.
+        own_max_tier = progression.rare_tier_cap(enemy.level) if enemy.rare_table_access else 3
+        pool = [entry for entry in (list(enemy.loot_table) + list(enemy.unique_table))
+                if int(entry.get("rarity_tier", 1)) <= own_max_tier]
         if enemy.rare_table_access:
-            pool += list(self.content.rare_loot_table)
-        return [entry for entry in pool if int(entry.get("rarity_tier", 1)) <= max_tier]
+            rare_max_tier = progression.rare_table_tier_cap(enemy.level)
+            pool += [entry for entry in self.content.rare_loot_table
+                     if int(entry.get("rarity_tier", 1)) <= rare_max_tier]
+        return pool
 
     def roll_loot(self, enemy: Enemy) -> LootDrop | None:
         if not (self.rng.random() < enemy.drop_chance):
