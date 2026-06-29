@@ -359,6 +359,17 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
    mätt; item-halvan (B37) väntar på Lucas designbeslut. Absorberar B25 (mage Mana-val finns nu).
 2. **Spår B — Världsexpansion #3 (B28, GUIDAD):** större karta + glesare stads-prickar +
    kluster i alla städer. STEG 0 på vad regen bryter (ankare/gates/place_ids/turneringar).
+   · ⚠️ **HALT (äkta fork, STEG 0 gjord):** hela vatten-systemet (seam y=36, två
+   flod-polylinjer CORE_PTS/HEATH_PTS, 5 BRIDGES, hav-kustlinje, LAKE) är HÅRDKODAT till
+   80×56 + nuvarande stads-koord — broarna är 2-breda lådor *assertade* på raka flod-
+   korsningar nära städer. place_ids/turneringar/respawn är tile-oberoende (remappbara),
+   men "större karta + sprid städer + ingen ny terräng" går INTE ihop: rivers/broar måste
+   re-författas (= förbjuden terräng-design), och uniform skalning spräcker bro↔flod-
+   invarianterna vid avrundning. **Designval för Lucas:** (A) parametriskt vatten-system
+   (flod/bro härledda ur stads-grafen) = ny terräng-design, eller (B) uniform skala +
+   manuell bro-omjustering (lätt terräng-tuning), eller (C) behåll 80×56, klustra bara de
+   städer som får plats (inkrementell B8 Slice 2). Byggde ingen trasig karta.
+   · **Skill-aware sim-harness KLAR** (`d79dfeb`) — låser upp B37 caster-tuning.
 3. **Innehållets syfte:** **B38** ⭐ (skill-förvärv: mage tower/belöningar) — ger B27-poolen
    en väg in. Sedan **B22** ⭐ (enchant-vendors), **B23** ⭐ (quests/notice boards).
 4. **Kollision:** ⭐**B21** (sub-tile — fixar vatten/fences/gates).
