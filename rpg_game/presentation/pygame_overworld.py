@@ -52,8 +52,11 @@ from rpg_game.presentation import town_cluster
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
 BUILDINGS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "buildings")
-STONE_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "cainos",
-                           "TX Tileset Stone Ground.png")
+# Town gangways use the SAME cobblestone road tiles as the inter-city paths drawn
+# by regenerate_overworld.py — the cainos_grass sheet's cobble half (indices 32-63)
+# — so a town's paths read as the same road texture, not a flat grey slab.
+GRASS_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "cainos",
+                           "TX Tileset Grass.png")
 # B8 proved the anchored building-cluster model on the start town. B28 reuses the
 # SAME hub template on more cities. A town qualifies as a hub only if it is a real
 # service city (a store town) AND the template places cleanly at its tile — on
@@ -69,10 +72,14 @@ CLUSTER_TOWN_IDS = ("burg_5", "burg_67")
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
-# cainos_stone framed 4x4 autotile block (firstgid 67): tile index by which grass
+# cainos's 4x4 autotile blob (cols 0-3, rows 0-3): tile index by which side grass
 # borders the cobble cell. Corridors (grass on opposite sides) fall back to centre.
-STONE_TILE = {"center": 9, "N": 1, "S": 25, "W": 8, "E": 11,
-              "NW": 0, "NE": 3, "SW": 24, "SE": 27}
+# cainos_grass shares cainos_stone's layout but puts the cobble-on-grass blob in the
+# sheet's bottom (cobble) half, so the same blob indices shifted by +32 give the
+# road cobble used between towns. COBBLE_BLOB is the grass-sheet (road) version.
+_AUTOTILE_BLOB = {"center": 9, "N": 1, "S": 25, "W": 8, "E": 11,
+                  "NW": 0, "NE": 3, "SW": 24, "SE": 27}
+COBBLE_BLOB = {name: idx + 32 for name, idx in _AUTOTILE_BLOB.items()}
 ZONE_CONFIG = os.path.join(MAPS_DIR, "core_zone.json")
 # Anchor the save to a stable, absolute location (project root) rather than the
 # process CWD, so the start menu detects and loads it on a cold start regardless
@@ -360,7 +367,7 @@ class OverworldApp:
         # anchored to its tile (template offsets), its footprints become solid
         # collision, and the anchor tile stays the walkable plaza/menu trigger.
         self._building_sprites = self._load_building_sprites()
-        self._stone_tiles = self._load_stone_tiles()
+        self._cobble_tiles = self._load_cobble_tiles()
         # B28: every qualifying hub town anchors its own copy of the template. Add
         # ALL footprints to collision first so each cluster's cobble routes around
         # every building (its own and neighbours'), then build the cobble per hub.
@@ -1072,19 +1079,20 @@ class OverworldApp:
                 cells.add((x, y))
         return cells
 
-    def _load_stone_tiles(self) -> dict:
-        """Slice the cainos_stone framed autotile block into 32px tiles by name."""
+    def _load_cobble_tiles(self) -> dict:
+        """Slice the cainos_grass cobble autotile blob (the road cobble) into 32px
+        tiles by name, so town gangways use the same cobblestone as the roads."""
         tiles = {}
         try:
-            sheet = pygame.image.load(STONE_SHEET).convert_alpha()
+            sheet = pygame.image.load(GRASS_SHEET).convert_alpha()
         except (pygame.error, FileNotFoundError):
             return tiles
         cols = sheet.get_width() // 32
-        for name, idx in STONE_TILE.items():
+        for name, idx in COBBLE_BLOB.items():
             tiles[name] = sheet.subsurface(((idx % cols) * 32, (idx // cols) * 32, 32, 32))
         return tiles
 
-    def _stone_tile_for(self, x: int, y: int) -> "pygame.Surface":
+    def _cobble_tile_for(self, x: int, y: int) -> "pygame.Surface":
         """Marching-tile pick: which framed cobble tile a net cell uses, from which
         orthogonal neighbours are also cobble (grass borders get an edge/corner)."""
         net = self._cobble_net
@@ -1110,7 +1118,7 @@ class OverworldApp:
             key = "E"
         else:
             key = "center"
-        return self._stone_tiles.get(key)
+        return self._cobble_tiles.get(key)
 
     def _draw_town(self, world: "pygame.Surface", ox: int, oy: int,
                    player_rect: "pygame.Rect") -> None:
@@ -1119,7 +1127,7 @@ class OverworldApp:
         behind houses to the north and drawn in front of houses to the south."""
         tw, th = self.world.tw, self.world.th
         for (cx, cy) in self._cobble_net:        # cobble under everything
-            tile = self._stone_tile_for(cx, cy)
+            tile = self._cobble_tile_for(cx, cy)
             if tile is not None:
                 world.blit(tile, (cx * tw - ox, cy * th - oy))
         # drawables: (base_y, kind, payload) sorted so nearer (larger y) draw last.
