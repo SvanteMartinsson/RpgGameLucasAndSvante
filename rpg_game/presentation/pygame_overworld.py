@@ -85,6 +85,14 @@ BUILDING_FUNCTION = {
     "church": "relocate_respawn",
     "town_hall": "tournaments",
 }
+# Each trade building opens its own slice of the town store (a category filter on
+# the shared inventory, see store.STORE_CATEGORIES). Applies to every hub that has
+# these building types, so the split generalises to future cities for free.
+STORE_CATEGORY = {
+    "blacksmith": "weapons",
+    "barracks": "armor",
+    "shop": "general",
+}
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
@@ -456,6 +464,7 @@ class OverworldApp:
         self.selected_talent_id = ""
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
+        self.store_category: str | None = None  # which trade building's store slice is open
         self.buttons: list[Button] = []
         self.toast = ""
         self.toast_color = TEXT
@@ -641,6 +650,8 @@ class OverworldApp:
         if func is None:
             self.push_log(T.BUILDING_LOCKED, TEXT_DIM)
             return
+        # A trade building shows only its category slice of the town store.
+        self.store_category = STORE_CATEGORY.get(building_id)
         self.do_action(func)
 
     def do_action(self, action: str) -> None:
@@ -1488,7 +1499,8 @@ class OverworldApp:
         return lines or [""]
 
     def _draw_store_screen(self) -> None:
-        panel = self._overlay_panel(T.SCREEN_TITLES["store"])
+        title = T.STORE_TITLES.get(self.store_category, T.SCREEN_TITLES["store"])
+        panel = self._overlay_panel(title)
         self._screen_store(panel)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
         self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
@@ -1729,11 +1741,11 @@ class OverworldApp:
         row_h = 38
         max_rows = max(6, (panel.bottom - (panel.y + 106) - 10) // row_h)
         self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
-        for i, entry in enumerate(eng.store_entries()[:max_rows]):
+        for i, entry in enumerate(eng.store_entries(self.store_category)[:max_rows]):
             rect = pygame.Rect(panel.x + 20, panel.y + 106 + i * row_h, col_w, 32)
             self._add_button(rect, f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
         self.screen.blit(self.font.render(T.STORE_SELL, True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
-        for i, entry in enumerate(eng.sellable_entries()[:max_rows]):
+        for i, entry in enumerate(eng.sellable_entries(self.store_category)[:max_rows]):
             rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * row_h, col_w, 32)
             self._add_button(rect, f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
 

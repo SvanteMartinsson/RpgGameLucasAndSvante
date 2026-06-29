@@ -91,6 +91,23 @@ class OverworldTownsTest(unittest.TestCase):
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
         self.assertEqual(self.app.mode, "store")
 
+    def test_trade_buildings_open_their_own_store_category(self):
+        # blacksmith -> weapons, barracks -> armour, shop -> general goods. Each
+        # door opens the store filtered to only that category's items.
+        cases = {"blacksmith": ("weapons", "weapon"),
+                 "barracks": ("armor", "gear"),
+                 "shop": ("general", "consumable")}
+        for building, (category, kind) in cases.items():
+            self.app.world.set_tile(*self._door("burg_5", building))
+            self.app.mode = "walk"
+            self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+            self.assertEqual(self.app.mode, "store", building)
+            self.assertEqual(self.app.store_category, category, building)
+            entries = self.app.engine.store_entries(self.app.store_category)
+            self.assertTrue(entries, f"{building} store empty")
+            self.assertTrue(all(e.kind == kind for e in entries), building)
+            self.app.mode = "walk"
+
     def test_enter_on_inn_door_rests(self):
         self.app.world.set_tile(*self._door("burg_5", "inn"))
         self.app.engine.player.hp = 1

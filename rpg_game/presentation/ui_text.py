@@ -104,6 +104,13 @@ SCREEN_TITLES = {
 
 TOWN_TOURNAMENTS = "Tournaments"
 
+# Per-building store titles (the trade buildings each open one category slice).
+STORE_TITLES = {
+    "weapons": "Blacksmith — Weapons",
+    "armor": "Barracks — Armour",
+    "general": "Shop — Goods",
+}
+
 
 def relocate_respawn_label(cost: int, already: bool = False) -> str:
     if already:

@@ -551,14 +551,14 @@ class GameEngine:
     def unequip_gear(self, slot_id: str) -> equipment.EquipmentResult:
         return equipment.unequip_gear(self.player, self.content, slot_id)
 
-    def store_entries(self) -> list[store.StoreEntry]:
-        return store.get_store_entries(self.content, self.player.current_place_id)
+    def store_entries(self, category: str | None = None) -> list[store.StoreEntry]:
+        return store.get_store_entries(self.content, self.player.current_place_id, category)
 
     def buy_item(self, item_id: str) -> store.PurchaseResult:
         return store.buy_item(self.player, self.content, item_id)
 
-    def sellable_entries(self) -> list[store.SellEntry]:
-        return store.get_sellables(self.player, self.content)
+    def sellable_entries(self, category: str | None = None) -> list[store.SellEntry]:
+        return store.get_sellables(self.player, self.content, category)
 
     def sell_item(self, item_id: str) -> store.SellResult:
         return store.sell_item(self.player, self.content, item_id)

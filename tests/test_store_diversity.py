@@ -67,5 +67,45 @@ class StoreDiversityTests(unittest.TestCase):
         self.assertNotIn(absent, engine.player.owned_gear_ids)
 
 
+class StoreCategoryTests(unittest.TestCase):
+    """Differentiated trade buildings: the town's single inventory is split by
+    category — blacksmith=weapons, barracks=gear/armour, shop=consumables. The full
+    (category=None) view is unchanged."""
+
+    def setUp(self):
+        self.content = load_content()
+        # Both hub store towns must carry all three categories for the split to work.
+        self.hub_store_ids = ["burg_5", "burg_67"]
+
+    def test_category_filter_returns_only_that_kind(self):
+        for pid in self.hub_store_ids:
+            weapons = store.get_store_entries(self.content, pid, "weapons")
+            armor = store.get_store_entries(self.content, pid, "armor")
+            general = store.get_store_entries(self.content, pid, "general")
+            self.assertTrue(weapons and all(e.kind == "weapon" for e in weapons), pid)
+            self.assertTrue(armor and all(e.kind == "gear" for e in armor), pid)
+            self.assertTrue(general and all(e.kind == "consumable" for e in general), pid)
+
+    def test_categories_partition_the_full_inventory(self):
+        # The three slices together equal the unsplit store (no item lost/duplicated).
+        for pid in self.hub_store_ids:
+            full = {e.id for e in store.get_store_entries(self.content, pid)}
+            split = set()
+            for cat in ("weapons", "armor", "general"):
+                split |= {e.id for e in store.get_store_entries(self.content, pid, cat)}
+            self.assertEqual(full, split, pid)
+
+    def test_sellables_filter_by_category(self):
+        engine = GameEngine(rng=random.Random(0))
+        engine.start_new_game("Hero", "fighter")  # at burg_5
+        engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "axe")  # sword is equipped
+        engine.player.owned_gear_ids = ("padded_vest",)
+        engine.player.inventory.add_consumable("rat_pelt")  # junk
+
+        self.assertEqual({e.kind for e in engine.sellable_entries("weapons")}, {"weapon"})
+        self.assertEqual({e.kind for e in engine.sellable_entries("armor")}, {"gear"})
+        self.assertEqual({e.kind for e in engine.sellable_entries("general")}, {"junk"})
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,15 @@ from rpg_game.core.progression import round_half_up
 
 
 SELL_FRACTION = 0.5
+# A town's single store_inventory is split across its trade buildings by category
+# (B-doors): the blacksmith trades weapons, the barracks armour (gear), the general
+# shop consumables. Each maps to the StoreEntry kinds it buys and the sellable kinds
+# it takes. category=None keeps the old unsplit behaviour (whole inventory).
+STORE_CATEGORIES = {
+    "weapons": {"buy": {"weapon"}, "sell": {"weapon"}},
+    "armor":   {"buy": {"gear"}, "sell": {"gear"}},
+    "general": {"buy": {"consumable"}, "sell": {"junk"}},
+}
 GEAR_RARITY_VALUE = {
     "common": 10,
     "uncommon": 18,
@@ -61,7 +70,7 @@ def gear_sell_value(gear) -> int:
     return round_half_up(gear_value(gear) * SELL_FRACTION)
 
 
-def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
+def get_store_entries(content: GameContent, place_id: str, category: str | None = None) -> list[StoreEntry]:
     place = content.places[place_id]
     if not place.has_store:
         return []
@@ -107,6 +116,9 @@ def get_store_entries(content: GameContent, place_id: str) -> list[StoreEntry]:
             )
         else:
             raise ValueError(f"unknown store item: {item_id}")
+    if category is not None:
+        kinds = STORE_CATEGORIES[category]["buy"]
+        entries = [entry for entry in entries if entry.kind in kinds]
     return entries
 
 
@@ -155,7 +167,7 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
     raise ValueError(f"unknown item: {item_id}")
 
 
-def get_sellables(player: Player, content: GameContent) -> list[SellEntry]:
+def get_sellables(player: Player, content: GameContent, category: str | None = None) -> list[SellEntry]:
     entries: list[SellEntry] = []
     for item_id, count in sorted(player.inventory.consumables.items()):
         item = content.items.get(item_id)
@@ -172,6 +184,9 @@ def get_sellables(player: Player, content: GameContent) -> list[SellEntry]:
             continue
         gear = content.gear_items[gear_id]
         entries.append(SellEntry(gear_id, gear.name, "gear", gear_sell_value(gear), 1))
+    if category is not None:
+        kinds = STORE_CATEGORIES[category]["sell"]
+        entries = [entry for entry in entries if entry.kind in kinds]
     return entries
 
 
