@@ -1761,17 +1761,33 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render(T.store_hint(gold), True, WARN),
                          (panel.x + 20, panel.y + 56))
         col_w = (panel.width - 60) // 2
-        # Rows that fit the panel — diversified stores carry more than the old 6.
-        row_h = 38
-        max_rows = max(6, (panel.bottom - (panel.y + 106) - 10) // row_h)
+        # Each row is a price button plus the item's stats (skada/tier/mods/nivå)
+        # from StoreEntry/SellEntry.description, wrapped under it. Taller rows ->
+        # fewer fit, fine since the differentiated stores carry only one category.
+        top = panel.y + 106
+        row_h = 56
+        max_rows = max(1, (panel.bottom - top - 10) // row_h)
         self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
         for i, entry in enumerate(eng.store_entries(self.store_category)[:max_rows]):
-            rect = pygame.Rect(panel.x + 20, panel.y + 106 + i * row_h, col_w, 32)
-            self._add_button(rect, f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
+            y = top + i * row_h
+            self._add_button(pygame.Rect(panel.x + 20, y, col_w, 28),
+                             f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
+            self._blit_item_stats(entry.description, panel.x + 20, y + 30, col_w)
         self.screen.blit(self.font.render(T.STORE_SELL, True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
         for i, entry in enumerate(eng.sellable_entries(self.store_category)[:max_rows]):
-            rect = pygame.Rect(panel.x + 40 + col_w, panel.y + 106 + i * row_h, col_w, 32)
-            self._add_button(rect, f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
+            y = top + i * row_h
+            self._add_button(pygame.Rect(panel.x + 40 + col_w, y, col_w, 28),
+                             f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
+            self._blit_item_stats(entry.description, panel.x + 40 + col_w, y + 30, col_w)
+
+    def _blit_item_stats(self, description: str, x: int, y: int, width: int, max_lines: int = 2) -> None:
+        """Render an item's stat line (skada/tier/mods/nivå) under a store row,
+        wrapped to the column width. Stats only — no comparison."""
+        if not description:
+            return
+        for line in self._wrapped_lines_pixels(description, width - 8, self.font_sm)[:max_lines]:
+            self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (x + 4, y))
+            y += self.font_sm.get_height() + 1
 
     def _overlay_system(self, panel) -> None:
         self.screen.blit(self.font_sm.render(T.SYSTEM_HINT, True, TEXT_DIM),

@@ -48,6 +48,7 @@ class SellEntry:
     kind: str
     value: int
     count: int
+    description: str = ""
 
 
 @dataclass(frozen=True)
@@ -172,18 +173,22 @@ def get_sellables(player: Player, content: GameContent, category: str | None = N
     for item_id, count in sorted(player.inventory.consumables.items()):
         item = content.items.get(item_id)
         if item is not None and item.kind == "junk":
-            entries.append(SellEntry(item_id, item.name, "junk", sell_value(item.price), count))
+            entries.append(SellEntry(item_id, item.name, "junk", sell_value(item.price), count,
+                                     description="Junk"))
     for weapon_id in player.owned_weapon_ids:
         if weapon_id == player.equipped_weapon_id:
             continue
         weapon = content.weapons[weapon_id]
-        entries.append(SellEntry(weapon_id, weapon.name, "weapon", sell_value(weapon.price), 1))
+        entries.append(SellEntry(weapon_id, weapon.name, "weapon", sell_value(weapon.price), 1,
+                                 description=f"+{weapon.damage_bonus} damage, tier {weapon.tier}"))
     equipped_gear_ids = set(player.equipped_gear.values())
     for gear_id in player.owned_gear_ids:
         if gear_id in equipped_gear_ids:
             continue
         gear = content.gear_items[gear_id]
-        entries.append(SellEntry(gear_id, gear.name, "gear", gear_sell_value(gear), 1))
+        mods = ", ".join(f"{stat} {value:+}" for stat, value in gear.stat_modifiers.items())
+        entries.append(SellEntry(gear_id, gear.name, "gear", gear_sell_value(gear), 1,
+                                 description=f"[{gear.rarity}] {mods}"))
     if category is not None:
         kinds = STORE_CATEGORIES[category]["sell"]
         entries = [entry for entry in entries if entry.kind in kinds]

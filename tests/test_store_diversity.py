@@ -95,6 +95,21 @@ class StoreCategoryTests(unittest.TestCase):
                 split |= {e.id for e in store.get_store_entries(self.content, pid, cat)}
             self.assertEqual(full, split, pid)
 
+    def test_store_and_sell_entries_carry_stat_descriptions(self):
+        # UI Slice A: every buy/sell row exposes its stats (skada/tier/mods/nivå)
+        # via .description so the shop screen can render them.
+        engine = GameEngine(rng=random.Random(0))
+        engine.start_new_game("Hero", "fighter")  # at burg_5
+        for entry in engine.store_entries("weapons"):
+            self.assertIn("damage", entry.description)
+            self.assertIn("tier", entry.description)
+        for entry in engine.store_entries("armor"):
+            self.assertTrue(entry.description.startswith("["))  # [rarity] mods...
+        engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "axe")
+        weapon_sell = next(e for e in engine.sellable_entries("weapons") if e.id == "axe")
+        self.assertIn("damage", weapon_sell.description)
+        self.assertIn("tier", weapon_sell.description)
+
     def test_sellables_filter_by_category(self):
         engine = GameEngine(rng=random.Random(0))
         engine.start_new_game("Hero", "fighter")  # at burg_5
