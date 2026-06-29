@@ -143,20 +143,38 @@ def award_xp(player: Player, amount: int) -> int:
     return levels_gained
 
 
+# B35: a level-up grants EVERY stat its baseline; the chosen MAIN stat takes the
+# bigger main value instead of its baseline. Universal + flat — no level scaling,
+# no per-class difference. Choices: hp / mana / damage / crit (no speed).
+LEVEL_STAT_BASELINE = {"hp": 2, "mana": 2, "damage": 1, "crit": 1}
+LEVEL_STAT_MAIN = {"hp": 8, "mana": 8, "damage": 4, "crit": 4}
+_STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit"}
+
+
+def level_up_gains(main_stat: str) -> dict[str, int]:
+    """The per-stat increase for a level-up where `main_stat` was chosen: every
+    stat gets its baseline, the main stat gets the main value instead."""
+    main = _STAT_ALIASES.get(main_stat.strip().lower(), main_stat.strip().lower())
+    if main not in LEVEL_STAT_MAIN:
+        raise ValueError("stat must be one of: hp, mana, damage, crit")
+    return {stat: (LEVEL_STAT_MAIN[stat] if stat == main else LEVEL_STAT_BASELINE[stat])
+            for stat in LEVEL_STAT_MAIN}
+
+
 def apply_stat_choice(player: Player, stat: str) -> str:
     if player.pending_stat_choices <= 0:
         raise ValueError("player has no pending stat choices")
 
-    normalized = stat.strip().lower()
-    if normalized in {"damage", "dmg"}:
-        player.base_damage += 5
-        message = f"Damage increased to {player.base_damage}."
-    elif normalized in {"hp", "health"}:
-        player.max_hp += 10
-        player.hp = min(equipment.effective_stat(player, "max_hp"), player.hp + 10)
-        message = f"Max HP increased to {player.max_hp}."
-    else:
-        raise ValueError("stat must be 'damage' or 'hp'")
+    gains = level_up_gains(stat)
+    main = _STAT_ALIASES.get(stat.strip().lower(), stat.strip().lower())
+    player.max_hp += gains["hp"]
+    player.max_mana += gains["mana"]
+    player.base_damage += gains["damage"]
+    player.crit_chance += gains["crit"]
+    # Heal into the new headroom so the level feels rewarding.
+    player.hp = min(equipment.effective_stat(player, "max_hp"), player.hp + gains["hp"])
+    player.mana = min(equipment.effective_stat(player, "max_mana"), player.mana + gains["mana"])
 
     player.pending_stat_choices -= 1
-    return message
+    return (f"Level up ({main.upper()}): HP +{gains['hp']}, Mana +{gains['mana']}, "
+            f"Damage +{gains['damage']}, Crit +{gains['crit']}.")

@@ -652,10 +652,12 @@ def resolve_pending_stat_choices(engine: GameEngine) -> None:
         print()
         print(f"Level up! You are now level {engine.player.level}.")
         choice = prompt_menu(
-            "Choose stat bonus:",
+            "Choose a main stat:",
             [
-                ("1", "damage", "+5 base damage"),
-                ("2", "hp", "+10 max HP"),
+                ("1", "hp", "+8 max HP"),
+                ("2", "mana", "+8 max Mana"),
+                ("3", "damage", "+4 damage"),
+                ("4", "crit", "+4 crit"),
             ],
         )
         print(engine.apply_stat_choice(choice))

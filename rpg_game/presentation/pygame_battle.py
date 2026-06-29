@@ -288,6 +288,7 @@ class BattleApp:
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning
+                self.banner, self.banner_color = T.LEVELUP_PROMPT, XP_COL
             elif self.standalone:
                 self.banner = T.VICTORY_NEXT
                 self.banner_color = GOOD
