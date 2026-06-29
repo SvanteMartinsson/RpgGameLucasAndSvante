@@ -69,7 +69,7 @@ class TournamentDifficultyTests(unittest.TestCase):
         # B26: a frontier beast tournament in a zone-2 city (Rotequero). Opponents are
         # drawn from the zone-2 wild pool (NOT the arena humans), it sits in a later
         # zone (not the start town), gets the small-bracket diversified buff, and pays
-        # a scaled GOLD-only reward (no signature item — that stays a design call).
+        # a NON-strong consumable reward (no gold, no signature item / power spike).
         tour = self.t["rotequero_wildblood_pit"]
         self.assertEqual(tour.place_id, "burg_146")
         self.assertLessEqual(len(tour.opponent_ids), 4)
@@ -81,9 +81,27 @@ class TournamentDifficultyTests(unittest.TestCase):
             self.assertIn(eid, zone2_pool)            # from the zone-2 wild pool
             self.assertNotIn("human", enemy.tags)     # beasts, not arena humans
             self.assertGreaterEqual(enemy.level, 5)   # zone-level band, not L1 fodder
-        self.assertGreater(tour.reward.gold, 0)
-        self.assertEqual(tour.reward.item_ids, ())    # gold-only: no item reward
+        # Reward: no gold; a neutral item + one mana + one hp potion, all consumables
+        # (no weapon/gear power spike).
+        self.assertEqual(tour.reward.gold, 0)
+        self.assertEqual(tour.reward.item_ids, ("antidote", "mana_potion", "hp_potion"))
+        for item_id in tour.reward.item_ids:
+            self.assertIn(item_id, self.engine.content.items)   # consumables, not weapons/gear
         self._check_small(tour)                       # diversified buff applies
+
+    def test_wildblood_pit_reward_grants_consumables_no_gold(self):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        tour = engine.content.tournaments["rotequero_wildblood_pit"]
+        start_gold = engine.player.gold
+        before = {i: engine.player.inventory.count(i) for i in tour.reward.item_ids}
+
+        result = engine.complete_tournament(tour)
+
+        self.assertTrue(result.success)
+        self.assertEqual(engine.player.gold, start_gold)        # no gold awarded
+        for item_id in tour.reward.item_ids:
+            self.assertEqual(engine.player.inventory.count(item_id), before[item_id] + 1)
 
     def test_big_finale_is_diversified_per_index(self):
         tour = self.t["hordanita_imperial_ten"]
