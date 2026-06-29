@@ -518,11 +518,15 @@ class OverworldApp:
         if place_id != self.engine.player.current_place_id:
             self.engine.enter_place(place_id)
 
-    def set_toast(self, message: str, color=TEXT) -> None:
+    def set_toast(self, message: str, color=TEXT, log: bool = True) -> None:
         self.toast = message
         self.toast_color = color
         self.toast_timer = FPS * 3
-        self.push_log(message, color)
+        # B29.3: some toasts mirror something the battle shell already logged
+        # (flee/victory outcomes flow into the shared event_log from BattleApp).
+        # Those pass log=False so the action log keeps ONE line per event.
+        if log:
+            self.push_log(message, color)
 
     def push_log(self, message: str, color=TEXT) -> None:
         """Append a line to the bottom-left action log (deduping immediate repeats)."""
@@ -626,12 +630,14 @@ class OverworldApp:
             self.sync_location()
             self.set_toast(T.defeat_respawn(self.engine.current_place().name), BAD)
         else:
-            # Victory or flee: stay where we are; location is still the wilds.
+            # Victory or flee: stay where we are; location is still the wilds. The
+            # battle shell already logged the outcome into the shared event_log, so
+            # these are toast-only (log=False) to avoid a duplicate log line.
             self.sync_location()
             if outcome == "fled":
-                self.set_toast(T.fled_from(enemy.name), WARN)
+                self.set_toast(T.fled_from(enemy.name), WARN, log=False)
             else:
-                self.set_toast(T.victory_over(enemy.name), GOOD)
+                self.set_toast(T.victory_over(enemy.name), GOOD, log=False)
         self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------

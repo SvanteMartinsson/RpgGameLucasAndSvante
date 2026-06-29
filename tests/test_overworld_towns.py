@@ -123,6 +123,27 @@ class OverworldTownsTest(unittest.TestCase):
         self.app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
         self.assertEqual(self.app.mode, "walk")
 
+    # -- B29.3: outcome is logged once, not twice ---------------------------
+
+    def test_flee_outcome_is_not_logged_twice(self):
+        enemy = self.app.engine.content.enemies["cave_bear"].create_enemy()
+        # The battle shell already mirrored the engine's flee line into the shared
+        # log; resolving the outcome must NOT add a second 'fled from' line.
+        self.app.push_log(f"You fled from {enemy.name}.", (235, 180, 90))
+        self.app.resolve_battle_outcome("fled", enemy)
+        fled_lines = [m for m, _c in self.app.event_log if "fled from" in m.lower()]
+        self.assertEqual(len(fled_lines), 1, self.app.event_log)
+        self.assertIn("fled", self.app.toast.lower())  # banner still shows
+
+    def test_victory_outcome_is_not_logged_twice(self):
+        enemy = self.app.engine.content.enemies["giant_rat"].create_enemy()
+        self.app.push_log("Victory!", (120, 220, 140))
+        before = len(self.app.event_log)
+        self.app.resolve_battle_outcome("victory", enemy)
+        # toast-only: no extra 'defeated the ...' log line added on top of the battle's
+        self.assertEqual(len(self.app.event_log), before)
+        self.assertIn("defeated", self.app.toast.lower())
+
     def test_door_without_a_service_logs_locked(self):
         before = len(self.app.event_log)
         self.app._interact_door("burg_5", "well")  # unmapped building -> locked
