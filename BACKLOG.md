@@ -158,7 +158,48 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (B24) trivialiserande. **Mät** pool per region (sim/räkning); justera densitet om för
   hög. Liten, sim-verifierbar, autonom-vänlig.
 
-#### B3.1 — Dual-class (main + secondary)  ⭐ designbärande
+#### B35 — Level-up: välj main-stat (Spår A)  · *nytt — progression*
+- Vid varje level-up väljer spelaren EN main-stat av **{HP, Mana, Damage, Crit}** (Speed
+  slopas som val). **Universellt + FLAT** — ingen nivå-scaling, ingen per-klass-skillnad.
+- Varje level får ALLA stats sin baslinje; den valda main-staten får sitt main-värde i st.:
+  - HP: bas **+2**, main **+8**   ·   Mana: bas **+2**, main **+8**
+  - Damage: bas **+1**, main **+4**   ·   Crit: bas **+1**, main **+4**
+  - Ex: HP main → HP+8, Mana+2, Crit+1, Damage+1.  Crit main → Crit+4, HP+2, Mana+2, Damage+1.
+- **Ersätter** de fasta HP/dmg-ökningarna. **Modal-UI** vid level-up (4 val).
+- **Absorberar B25:** mage kan välja Mana (+8/lvl) → löser den tidiga mana-bristen själv.
+
+#### B36 — Talent-ranger (upp till 3 steg)  · *nytt — progression*  · ⚠️ **HALT (designbärande) — flaggad**
+- Talents kan rankas upp i **upp till 3 steg**; **modest** ökning per rang (t.ex.
+  1.6× → 1.8× → 2.0× damage). Mindre behov av många skills/talents — investera klokt i få.
+- Talent-points spenderas på ranger; skills/talents-overlay (K) visar rang + tillåter upprankning.
+- **HALT-fynd (STEG 0):** talangmodellen matchar INTE "1.6×→2.0× damage"-exemplet. 33/51 noder är
+  **active** (ger en skill) utan power-skalnings-väg; 18 passiva spänner över 6 effekt-mekaniker
+  (stat_bonus, conditional_damage_mod-multiplikatorer, elemental_attack_mod, immunity,
+  applied_status_mod). Rankning kräver (a) per-rang-skala för var och en av dessa + (b) en HELT NY
+  per-spelare skill-power-mekanik för de 33 active-noderna = klass-bred ombalansering. **Designval
+  för Lucas:** vilka effekt-typer rankas, per-rang-skalning, och hur active/skill-talanger skalar.
+
+#### B37 — Item-damage-rebalans + epic consecrated_maul (Spår A / #2)  · *nytt — ekonomi*  · ⚠️ **HALT (designbärande) — flaggad**
+- **Sänk damage-nivån rejält** och gör tidig kurva **granulär**: dagens vapen-uppgraderingar
+  ger ~3× direkt (hårt före, trivialt efter). Behåll befintliga items men **+2 tiers på alla**,
+  och lägg **nya t1–2-fillers** (små, mindre intressanta uppgraderingar för L1–4).
+- `consecrated_maul` → **egen epic-rarity + stats som matchar namnet** (topp-belöning, ej L3-drop).
+- **Konsekvens krävs överallt:** droptables, `rare_tier_cap`, **differentierade butikers**
+  inventarier, turnerings-belöningar — alla refererar tiers.
+- **Sim:as MOT B35:s nya spelar-kurva** (kombinerad, alla 6 klasser, representativa builds, L1→7).
+  B35 + B36 + B37 är EN power-curve — verifieras ihop.
+- **STEG 0-mätning (baseline, B35-tillväxt × NUVARANDE items, attack-only):** kurvan är SPIKIG, ej
+  jämn — L3 cave_bear = vägg (tank 22% / rogue 51% / hunter 48%), L4 plague_acolyte trivial (100%),
+  L6 treant hård (0–63%), L7 hollow_worg omöjlig (0%). Bekräftar problemet; fiende-ladder själv ojämn.
+- **HALT-fynd / designval för Lucas (3 st):** (1) "+2 tiers på alla" krockar med
+  `weapon_required_level = max(1, tier-2)` och `rare_tier_cap`-trösklarna — kräver beslut om
+  required-level-formeln så tidigt spel förblir åtkomligt. (2) "Epic-rarity" är en NY rarity —
+  definition (label, gating, pris, plats vs legendary) behövs. (3) "Jämn svårighet inkl. mage med
+  Mana" kräver en **skill-medveten sim** (attack-only kan ej mäta mage-med-mana); den harnessen finns
+  ej. Full ombalansering (8+ data/kod-filer + epic-rarity + iterativ 6-klass-tuning) = stort
+  designbärande projekt → committar ingen gissning; mätningen + planen levererad för granskning.
+
+
 - Kombinera main+secondary klass; talents återanvänds. Egen design-doc. Påverkar B3,
   abilities, vapenkrav. **HALT efter — review innan B3/B7.1.**
 
@@ -257,18 +298,28 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** N nya skills/vapen, data-drivna, sim-balanserade, test-täckta; en kort
   lista över vad som lagts till + var det kan återanvändas.
 
-#### B28 — Världsexpansion: fler städer (och ev. zoner)  · *nytt (batch-kandidat, delvis)*
-- **Vad:** Fler städer i den befintliga världen, byggda på den **verifierade hub/tiered-
-  kluster-modellen** + `core_zone.json`/regen-mönstret. Lucas vill expandera världen.
-- **Autonom-vänligt NU** tack vare de automatiska kriterierna från burg_5: entré-test,
-  ingen-cobble-i-vatten, `footprints ∩ water == ∅`, reachability. Code genererar +
-  verifierar mot testerna; **rendrar för Lucas estetik-granskning** (korrekthet av tester,
-  estetik av Lucas i efterhand).
-- **Nya ZONER är tyngre** (terräng/tmx, gates, enemy-pool, tema, svårighet = designbärande)
-  → om en ny zon kräver riktig terräng-design: **HALT + förslag**, bygg inte blint. Lättare
-  zon-utökning som följer befintligt regen/json-mönster är ok.
-- **Acceptans:** X nya städer som passerar alla stads-tester + reachability, renders
-  bifogade; ev. zon-scaffold endast om det följer befintligt mönster, annars flaggat.
+#### B28 — Världsexpansion: större karta, glesare städer, kluster i alla (#3)  · *guidad (var batch-kandidat)*
+- **Vad (#3):** **Förstora kartan** (idag 80×56 → t.ex. ~120×84) och **sprid ut stads-
+  prickarna** så att de relativt stora kluster-städerna får plats utan att krocka (det var
+  därför B28-batchen fick diskvalificera Alherralba/Rotequero — för trångt), och **bygg
+  kluster i ALLA städer** med tiered storlek (hub/medium/by). = i praktiken B8 Slice 2 + större karta.
+- **Nu GUIDAD, inte obevakad:** strukturellt + visuellt, kräver render-granskning per stad.
+- **STEG 0 (kritiskt):** en regen av en större karta kan flytta befintliga koordinater —
+  kartlägg vad som bryts: burg_5:s ankare (26,18), gates, place_ids, turneringar, seam.
+- **Verifierade kriterier finns** (entré-test, ingen-cobble-i-vatten, `footprints ∩ water == ∅`,
+  reachability, multi-hub disjunkthet) → automatisk korrekthet; estetik = Lucas per stad.
+- **Nya ZONER** (terräng/tema/svårighet) = designbärande → egen runda, bygg inte blint.
+- **Acceptans:** större karta utan att bryta befintliga ankare/gates/turneringar; alla städer
+  som kluster i rätt storlek; alla stads-tester + reachability gröna; renders per stad.
+
+#### B38 — Skill-förvärv: mage tower / belöningar  ⭐ designbärande  · *nytt*
+- **Vad:** B27-poolen (8 elementala skills) finns men **ingen väg att FÅ dem**. Designrunda:
+  var/hur lär man sig dem — **mage tower-byggnad**? butik? turnerings-belöning? — och hur
+  **gateas** de (guld/nivå/klass), hur lärs de in (tome-item? meny i huset?).
+- **Kopplar:** B27 (poolen), B22 (stads-vendors), B30 (byggnads-menyer), de differentierade husen.
+- **HALT:** förvärvs-modellen är designbärande → designrunda med Lucas före bygge.
+
+
 
 
 - **Vad:** En progressions-ladder av turneringar bortom start-zonens 4, knuten till
@@ -301,22 +352,22 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
 ## Föreslagna kluster & ordning
 
-1. **Autonom batch (nu):** **B16** (overworld-logg) · **B27** (nya skills/vapen — kreativ
-   frihet m. räcken) · **B26** (turnerings-expansion) · **B28** (fler städer) · **B24-flaggan**
-   (tier-cap låg-nivå wild). Sim-/test-verifierbart; HALT på designbärande (signatur-items,
-   nya zoner som kräver terräng-design). Renders bifogas för estetik-granskning.
-2. **Guidad session:** **B8 Slice 2** (alla 17 städer + funktions-triggrar) — visuellt,
-   kräver din render-granskning per stad. Sedan vad städer *erbjuder*: **B10** (shop+
-   preview) → **B22** ⭐ (enchants) → **B23** ⭐ (quests).
-3. **Kollision & värld:** ⭐**B21** (sub-tile-kollision — fixar vatten/fences/gates).
-4. **Klassbalans:** **B25** (skill-användande sim) innan ev. fighter-justering.
-5. **Progression:** ⭐**B3.1** FÖRST (HALT) → **B3**.
-6. **Värld/utforskande:** **B11** (delar besökt-data med B12 + B23).
-7. **UI/skärmar:** CHARACTER_SCREEN (absorberar B4); **B16** (overworld-logg) + flikar
-   (B16.1-rest); **B18** (klassvals-skärm fluid).
+1. **Spår A — batch NU (progression & power-curve, sim-gated):** **B35 ✅** (level-up stat-val,
+   `c600efc`) · **B36 ⚠️ HALT** (talent-ranger — talangmodell-mismatch, designval) · **B37 ⚠️ HALT**
+   (item-rebalans — +2-tiers/required-level + epic-rarity + skill-sim = designval; baseline mätt).
+   + liten polish: **B31 stadsnamn-kontrast ✅** (`faac4ca`). Kombinerad kurva: B35-halvan klar +
+   mätt; item-halvan (B37) väntar på Lucas designbeslut. Absorberar B25 (mage Mana-val finns nu).
+2. **Spår B — Världsexpansion #3 (B28, GUIDAD):** större karta + glesare stads-prickar +
+   kluster i alla städer. STEG 0 på vad regen bryter (ankare/gates/place_ids/turneringar).
+3. **Innehållets syfte:** **B38** ⭐ (skill-förvärv: mage tower/belöningar) — ger B27-poolen
+   en väg in. Sedan **B22** ⭐ (enchant-vendors), **B23** ⭐ (quests/notice boards).
+4. **Kollision:** ⭐**B21** (sub-tile — fixar vatten/fences/gates).
+5. **Progression-djup:** ⭐**B3.1** (dual-class, HALT) → **B3**.
+6. **Värld/utforskande:** **B11** (karta + fog; delar besökt-data med B12/B23).
+7. **UI/skärmar:** **B18** (klassvals-skärm fluid); CHARACTER_SCREEN-polish.
 
-> Mät-först-punkter (B21, B23, B26) inleds med STEG 0.
-> ⭐-punkter (B8 Slice 2, B21, B22, B23, B3.1) får en designrunda/granskning — ej obevakat.
+> Mät-/designrunda-först: B35-B37 sim-gated; B21/B22/B23/B38/B3.1 ⭐ = designrunda; B28 #3 guidad.
+> Klart sedan sist (se arkiv): B16/B26/B27/B28-städer/B29/B30/B31/B32/B33/B34/Slice A/butiker.
 
 ---
 
@@ -354,4 +405,31 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   split. Fresh L1 <30%. *Expansion = B26; fighter-outlier = B25.*
 - **B8 burg_5** (`f41b13b`) — startstadens hub: 52 facings, load-tid-skala 0.55, y-sort,
   Ö-kolumn spegelvänd (skylt inåt), kam-cobble (spur/dörr, ingen cobble mot vattnet),
-  entré-kriterium. *Slice 2 (alla 17 + funktions-triggrar) kvarstår — guidad session.*
+  entré-kriterium. *Slice 2 (alla 17 + funktions-triggrar) kvarstår — guidad session.*- **B26** (`e855806`+`c3dd6b7`) — zone-2-turnering (Rotequero Wildblood Pit), opponents ur
+  zon-2-poolen, diversifierad buff; belöning = antidote+mana+hp-potion (ej guld).
+- **B27** (`4adb57c`+`df9415b`) — innehåll: ranged/magic mid-tier-vapen + caster/ranged-gear;
+  **8 elementala skills som oanvänd pool** (zap/thunder_strike/incineration/holy_strike/
+  frost_shard/earthen_smash/plague_ooze/immolate), alla ≤ fireball, kopplade till ingen klass.
+  *Förvärvs-väg = B38.*
+- **B28-städer** (`6ca427b`) — hub-modellen generaliserad; Fongorinos som andra hub;
+  `MultiHubPlacementTest`. *(Större karta + alla städer = #3, nu B28 guidad.)*
+- **Differentierade butiker** (`d32dafe`) — blacksmith→vapen, barracks→rustning, shop→allmänt.
+- **Stads-fixar** (`49c62d3`/`128624f`/`b84db91`) — cobble = riktiga vägtiles (cainos_grass),
+  per-dörr-interaktion, flytande ortsnamn bort → indikator uppe-höger.
+- **B16** (`17d5156`) — overworld-logg (deque, nere till vänster, combat/drops/level/heal).
+- **B29** (`2e10206`) — chatbox v2: all text in i loggen (inga toasts), scrollback (200),
+  skalbar 5–18 rader, dubblett-fix (`8865543`).
+- **B30** (`68a773d`) — titlade byggnads-menyer; ingen tjänst körs förrän spelaren valt.
+- **B31** (`4ba41fa`) — HUD: topp-rad + namn/guld/level bort; HP/Mana/XP-bars ovanför chatboxen;
+  stadsnamn uppe-höger utan mörk bakgrund. *(Kontrast på ljusa tiles = ev. lätt polish.)*
+- **B32** (`6680714`) — hela stadsklustret + 2 tiles marginal = encounter-fritt.
+- **B33** (`3151780`) — fighter startar med `worn_shortsword` (dmg 2), ej `sword` (dmg 5).
+- **B34** (`2859ba7`) — sammanhängande broar via genererade halv-däck-tiles (1- och 2-bred),
+  inga gamla ramper, över nytt vatten.
+- **UI Slice A** (`4ba5134`/`a124736`) — shop visar item-stats per rad; character-skärm visar
+  compare-mot-utrustat-delta. *(B10:s shop-compare avstått medvetet — bara stats i shop.)*
+- **B27 skill-pool** (`df9415b`) — 8 data-only elemental-skills (zap/thunder/incineration/
+  holy_strike/frost_shard/earthen_smash/plague_ooze/immolate), kopplade till ingen klass/talent.
+- **B35** (`c600efc`) — level-up main-stat-val (HP/Mana/Damage/Crit, ej Speed); flat universell
+  bundle (main +8/+8/+4/+4, övriga bas +2/+2/+1/+1); 4-vals-modal i battle-shellen; persist.
+- **B31-polish** (`faac4ca`) — svag halvtransparent platta bakom stadsnamnet (kontrast på ljusa tiles).
