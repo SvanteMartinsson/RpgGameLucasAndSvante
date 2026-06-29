@@ -1385,15 +1385,19 @@ class OverworldApp:
 
     def _draw_hud(self) -> None:
         # B31: no top bar, no name/gold/level text. Only the town indicator (top
-        # right, NO dark background — a thin shadow keeps it legible over the map)
-        # plus the bottom-centre control hint. Vitals are bars above the chatbox.
+        # right) plus the bottom-centre control hint. Vitals are bars above the
+        # chatbox. B31-polish: a small faint plate behind the indicator keeps it
+        # legible over bright map tiles (no full dark top bar).
         where, in_town = self._location_label()
         color = ACCENT if in_town else TEXT_DIM
-        topright = (self.screen.get_width() - 10, 8)
-        shadow = self.font_sm.render(where, True, (10, 12, 18))
-        self.screen.blit(shadow, shadow.get_rect(topright=(topright[0] + 1, topright[1] + 1)))
         label = self.font_sm.render(where, True, color)
-        self.screen.blit(label, label.get_rect(topright=topright))
+        rect = label.get_rect(topright=(self.screen.get_width() - 10, 8))
+        plate = rect.inflate(12, 8)
+        plate_surf = pygame.Surface(plate.size, pygame.SRCALPHA)
+        plate_surf.fill((10, 12, 18, 150))   # faint, semi-transparent
+        self.screen.blit(plate_surf, plate.topleft)
+        pygame.draw.rect(self.screen, (*PANEL_EDGE, 120), plate, width=1, border_radius=4)
+        self.screen.blit(label, rect)
         if self.mode == "walk":
             hint = T.HINT_TOWN if in_town else T.HINT_WALK
             hsurf = self.font_sm.render(hint, True, TEXT_DIM)
