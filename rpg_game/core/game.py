@@ -32,6 +32,21 @@ class RelocateRespawnResult:
     already_set: bool = False
 
 
+# B13 tournament difficulty (diversified, tunable). Small/mid tournaments (<=4
+# opponents): every opponent x SMALL_HP_MULT max HP, then alternating roles by index
+# — even = TANKY (+armour, +damage), odd = BURST (+crit, +damage). The big finale
+# (>=10) keeps per-index escalation, also split tanky/burst. Sized (sim, attack-only)
+# so a fresh L1 does NOT trivially clear a small tournament (<30%); it opens up with
+# levels (L5 ~25-98%, L7 ~90-100%).
+TOURNEY_SMALL_HP_MULT = 1.6
+TOURNEY_TANKY_ARMOR = 12
+TOURNEY_TANKY_DMG = 6
+TOURNEY_BURST_CRIT = 45
+TOURNEY_BURST_DMG = 9
+TOURNEY_FINALE_HP = 10
+TOURNEY_FINALE_TANKY_ARMOR = 5
+
+
 class GameEngine:
     def __init__(self, content: GameContent | None = None, rng: random.Random | None = None) -> None:
         self.content = content or load_content()
@@ -195,17 +210,28 @@ class GameEngine:
 
     def create_tournament_opponent(self, tournament: Tournament, index: int) -> Enemy:
         enemy = self.content.enemies[tournament.opponent_ids[index]].create_enemy()
-        # B13 difficulty (Lucas's spec), applied per tournament INSTANCE so the
-        # shared arena templates are untouched. Small tournaments (3 opponents): each
-        # opponent +50% max HP and +3 base damage. The big finale (>=10 opponents):
-        # each +10 max HP, and +2 damage per opponent index (opp 1 +2, opp 2 +4, ...).
+        # B13 difficulty (diversified), applied per tournament INSTANCE so the shared
+        # arena templates are untouched. Opponents alternate role by index so a series
+        # mixes tanky walls (armour, which only physical attacks must chew through)
+        # and bursty threats (crit + damage) — you can't bring one answer.
         count = len(tournament.opponent_ids)
-        if count >= 10:
-            enemy.max_hp += 10
-            enemy.damage += (index + 1) * 2
-        elif count == 3:
-            enemy.max_hp = progression.round_half_up(enemy.max_hp * 1.5)
-            enemy.damage += 3
+        tanky = index % 2 == 0
+        if count >= 10:                       # big finale: per-index escalation, split
+            enemy.max_hp += TOURNEY_FINALE_HP
+            if tanky:
+                enemy.armor += TOURNEY_FINALE_TANKY_ARMOR
+                enemy.max_hp += index
+            else:
+                enemy.crit_chance += 50
+                enemy.damage += (index + 1) * 2
+        elif count <= 4:                      # small / mid tournaments (incl. iron_ring)
+            enemy.max_hp = progression.round_half_up(enemy.max_hp * TOURNEY_SMALL_HP_MULT)
+            if tanky:
+                enemy.armor += TOURNEY_TANKY_ARMOR
+                enemy.damage += TOURNEY_TANKY_DMG
+            else:
+                enemy.crit_chance += TOURNEY_BURST_CRIT
+                enemy.damage += TOURNEY_BURST_DMG
         enemy.hp = enemy.max_hp
         return enemy
 

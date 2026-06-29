@@ -48,16 +48,16 @@ class EnemyHpMultiplierTest(unittest.TestCase):
         self.assertEqual(rat.drop_chance, rat_t.drop_chance)
 
     def test_arena_opponents_are_multiplied_but_keep_their_order(self):
-        # The hand-built arena ladder doubles but its HP ordering is unchanged.
-        # iron_ring's size (4) is outside the B13 per-instance buff, so the HP
-        # multiplier is observable on its own here.
+        # The hand-built arena ladder doubles but its HP ordering is unchanged. Tested
+        # on the raw templates (create_enemy) — every tournament now layers a B13
+        # per-instance buff on top, so the bare multiplier is read off the template.
         tournament = self.engine.content.tournaments["fongorinos_iron_ring"]
-        for index, enemy_id in enumerate(tournament.opponent_ids):
-            opp = self.engine.create_tournament_opponent(tournament, index)
+        for enemy_id in tournament.opponent_ids:
+            opp = self.engine.content.enemies[enemy_id].create_enemy()
             self.assertEqual(opp.max_hp, round_half_up(self._base_hp(enemy_id) * progression.ENEMY_HP_MULTIPLIER))
         order = [self._base_hp(eid) for eid in tournament.opponent_ids]
-        scaled = [self.engine.create_tournament_opponent(tournament, i).max_hp
-                  for i in range(len(tournament.opponent_ids))]
+        scaled = [self.engine.content.enemies[eid].create_enemy().max_hp
+                  for eid in tournament.opponent_ids]
         self.assertEqual([a < b for a, b in zip(order, order[1:])],
                          [a < b for a, b in zip(scaled, scaled[1:])])
 

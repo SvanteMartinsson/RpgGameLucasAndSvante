@@ -31,12 +31,15 @@ class TournamentContentTests(unittest.TestCase):
 
 
 class TournamentDifficultyTests(unittest.TestCase):
-    """B13: per-instance opponent buffs (Lucas's spec). Small tournaments (3
-    opponents) +50% max HP / +3 damage each; the big finale (>=10) +10 max HP each
-    and +2 damage per opponent index; other sizes (iron_ring, 4) unchanged."""
+    """B13: diversified per-instance opponent buffs. Small/mid tournaments (<=4
+    opponents, incl. iron_ring): x1.6 max HP, then alternating roles — even index
+    TANKY (+armour, +damage), odd index BURST (+crit, +damage). Big finale (>=10):
+    per-index escalation, also split tanky/burst."""
 
     def setUp(self):
+        from rpg_game.core import game
         from rpg_game.core.progression import round_half_up
+        self.G = game
         self.round = round_half_up
         self.engine = GameEngine()
         self.engine.start_new_game("Hero", "fighter")
@@ -45,29 +48,34 @@ class TournamentDifficultyTests(unittest.TestCase):
     def _raw(self, tour, i):
         return self.engine.content.enemies[tour.opponent_ids[i]].create_enemy()
 
-    def test_small_tournament_opponents_get_flat_buff(self):
-        tour = self.t["hordanita_novice_cup"]
-        self.assertEqual(len(tour.opponent_ids), 3)
-        for i in range(3):
+    def _check_small(self, tour):
+        for i in range(len(tour.opponent_ids)):
             raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
-            self.assertEqual(buf.max_hp, self.round(raw.max_hp * 1.5))
-            self.assertEqual(buf.damage, raw.damage + 3)
-            self.assertEqual(buf.hp, buf.max_hp)
+            self.assertEqual(buf.max_hp, self.round(raw.max_hp * self.G.TOURNEY_SMALL_HP_MULT))
+            if i % 2 == 0:  # tanky
+                self.assertEqual(buf.armor, raw.armor + self.G.TOURNEY_TANKY_ARMOR)
+                self.assertEqual(buf.damage, raw.damage + self.G.TOURNEY_TANKY_DMG)
+            else:           # burst
+                self.assertEqual(buf.crit_chance, raw.crit_chance + self.G.TOURNEY_BURST_CRIT)
+                self.assertEqual(buf.damage, raw.damage + self.G.TOURNEY_BURST_DMG)
 
-    def test_big_finale_scales_damage_by_index(self):
+    def test_small_and_mid_tournaments_split_tanky_and_burst(self):
+        for tid in ("hordanita_novice_cup", "alherralba_market_trials", "fongorinos_iron_ring"):
+            tour = self.t[tid]
+            self.assertLessEqual(len(tour.opponent_ids), 4)
+            self._check_small(tour)
+
+    def test_big_finale_is_diversified_per_index(self):
         tour = self.t["hordanita_imperial_ten"]
         self.assertEqual(len(tour.opponent_ids), 10)
         for i in range(10):
             raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
-            self.assertEqual(buf.max_hp, raw.max_hp + 10)
-            self.assertEqual(buf.damage, raw.damage + (i + 1) * 2)
-
-    def test_iron_ring_unchanged_out_of_spec(self):
-        tour = self.t["fongorinos_iron_ring"]
-        self.assertEqual(len(tour.opponent_ids), 4)
-        for i in range(4):
-            raw, buf = self._raw(tour, i), self.engine.create_tournament_opponent(tour, i)
-            self.assertEqual((buf.max_hp, buf.damage), (raw.max_hp, raw.damage))
+            if i % 2 == 0:  # tanky: +armour, scaling HP
+                self.assertEqual(buf.armor, raw.armor + self.G.TOURNEY_FINALE_TANKY_ARMOR)
+                self.assertEqual(buf.max_hp, raw.max_hp + self.G.TOURNEY_FINALE_HP + i)
+            else:           # burst: +crit, per-index damage
+                self.assertEqual(buf.crit_chance, raw.crit_chance + 50)
+                self.assertEqual(buf.damage, raw.damage + (i + 1) * 2)
 
 
 class TournamentProgressionTests(unittest.TestCase):
