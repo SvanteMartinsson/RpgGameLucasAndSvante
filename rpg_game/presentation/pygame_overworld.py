@@ -134,6 +134,10 @@ ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
 # feed, not a full battle log (the battle shell keeps its own scrollback).
 LOG_MAX_LINES = 7
 
+# Location indicator (top-right): within this many tiles of a hub's plaza the label
+# reads relative ("south of Hordanita") instead of the generic wilds text.
+NEAR_RADIUS = 8
+
 # Colors (shared palette with the battle shell)
 BG = (18, 20, 28)
 PANEL = (30, 34, 46)
@@ -400,14 +404,21 @@ class OverworldApp:
         # blocked keeps it off other terrain; water drives the no-border rule.
         water = self._water_tiles()
         self._cobble_net = set()
-        for anchor in self.cluster_anchors.values():
-            self._cobble_net |= town_cluster.cobble_network(anchor, self.world.blocked, water)
         # B-doors: map each hub building's door tile -> (place_id, building_id) so
         # standing on a door and pressing Enter opens that building's service.
+        # hub_interior: every standable tile that reads as "inside" a hub (its
+        # plaza, doors and cobble) -> place_id, so the location label names the city
+        # anywhere on its cluster, not only on the single anchor tile.
         self.door_index: dict[tuple[int, int], tuple[str, str]] = {}
+        self.hub_interior: dict[tuple[int, int], str] = {}
         for pid, anchor in self.cluster_anchors.items():
-            for bid, ent in town_cluster.cluster_entrances(anchor).items():
+            cobble = town_cluster.cobble_network(anchor, self.world.blocked, water)
+            self._cobble_net |= cobble
+            entrances = town_cluster.cluster_entrances(anchor)
+            for bid, ent in entrances.items():
                 self.door_index[ent] = (pid, bid)
+            for tile in ({anchor} | set(entrances.values()) | cobble):
+                self.hub_interior[tile] = pid
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -1228,8 +1239,8 @@ class OverworldApp:
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),
                         tx * tw - ox + tw // 2, ty * th - oy - 8)
             if place_id in self.cluster_anchors:
-                labels.append(label_xy)   # the cluster IS the marker; keep the name
-                continue
+                continue   # hub: no floating name (the buildings ARE the marker);
+                           # the top-right indicator names the city instead
             rect = pygame.Rect(tx * tw - ox + 4, ty * th - oy + 4, tw - 8, th - 8)
             color = TOWN_HUB if place_id == self.zone.respawn_place_id else TOWN_COLOR
             pygame.draw.rect(world, color, rect, border_radius=4)
@@ -1250,16 +1261,48 @@ class OverworldApp:
             surf = self.font_sm.render(text, True, TEXT)
             self.screen.blit(surf, surf.get_rect(center=(wx * zoom, wy * zoom)))
 
+    @staticmethod
+    def _compass(ax: int, ay: int, px: int, py: int) -> str:
+        """Cardinal/intercardinal bearing FROM an anchor (ax,ay) TO the player
+        (px,py). Map y grows downward, so dy>0 reads as south."""
+        dx, dy = px - ax, py - ay
+        ns = "north" if dy < 0 else "south" if dy > 0 else ""
+        ew = "west" if dx < 0 else "east" if dx > 0 else ""
+        # Keep only the dominant axis unless the offset is near-diagonal.
+        if ns and ew and min(abs(dx), abs(dy)) * 2 < max(abs(dx), abs(dy)):
+            if abs(dx) > abs(dy):
+                ns = ""
+            else:
+                ew = ""
+        return (ns + ew) or "near"
+
+    def _location_label(self) -> tuple[str, bool]:
+        """(text, in_town) for the top-right indicator: names the city when the
+        player stands anywhere on its cluster, a relative bearing ("south of
+        Hordanita") when near a hub, else the generic wilds text."""
+        tile = self.world.current_tile
+        pid = self.hub_interior.get(tile) or self.world.town_place_id()
+        if pid is not None:
+            return self.engine.content.places[pid].name, True
+        nearest, best = None, NEAR_RADIUS + 1
+        for hub_id, (ax, ay) in self.cluster_anchors.items():
+            d = max(abs(ax - tile[0]), abs(ay - tile[1]))   # Chebyshev distance
+            if d < best:
+                nearest, best = (hub_id, (ax, ay)), d
+        if nearest is not None:
+            hub_id, (ax, ay) = nearest
+            bearing = self._compass(ax, ay, *tile)
+            return T.near_direction(bearing, self.engine.content.places[hub_id].name), False
+        return T.wilds_near(self.engine.current_place().name), False
+
     def _draw_hud(self) -> None:
         snap = build_snapshot(self.engine)
-        place = self.engine.current_place()
-        in_town = self.world.town_place_id() is not None
+        where, in_town = self._location_label()
         # Two-line HUD: vitals row + a slim XP-progress row beneath it.
         bar = pygame.Rect(0, 0, self.screen.get_width(), 46)
         overlay = pygame.Surface(bar.size, pygame.SRCALPHA)
         overlay.fill((10, 12, 18, 200))
         self.screen.blit(overlay, (0, 0))
-        where = place.name if in_town else T.wilds_near(place.name)
         left = f"{snap.player.name}  Lv{snap.player.level}  HP {snap.player.hp}/{snap.player.max_hp}  Gold {snap.player.gold}"
         self.screen.blit(self.font_sm.render(left, True, TEXT), (8, 6))
         right = self.font_sm.render(where, True, ACCENT if in_town else TEXT_DIM)

@@ -113,6 +113,33 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertGreater(len(self.app.event_log), before)
         self.assertIn("locked", self.app.event_log[-1][0].lower())
 
+    # -- location indicator (top-right) replaces the floating town name ------
+
+    def test_indicator_names_the_city_on_its_cluster(self):
+        # On the plaza AND on a door/cobble tile, the indicator names the city.
+        self.app.world.set_tile(26, 18)              # burg_5 plaza
+        self.assertEqual(self.app._location_label(), ("Hordanita", True))
+        door = next(t for t, (pid, _b) in self.app.door_index.items() if pid == "burg_5")
+        self.app.world.set_tile(*door)
+        text, in_town = self.app._location_label()
+        self.assertEqual((text, in_town), ("Hordanita", True))
+
+    def test_indicator_is_relative_when_near_a_hub(self):
+        self.app.world.set_tile(26, 23)              # 5 tiles south of burg_5
+        text, in_town = self.app._location_label()
+        self.assertEqual(text, "south of Hordanita")
+        self.assertFalse(in_town)
+
+    def test_hub_floating_label_is_removed(self):
+        # The cluster hubs no longer emit a floating world-space name; the indicator
+        # carries the name instead. (Non-hub town pins keep their labels.)
+        self.app.display = pygame.Surface((960, 640))
+        self.app.world.set_tile(26, 18)
+        self.app.sync_location()
+        self.app.mode = "walk"
+        self.app.draw()  # must not raise; hubs contribute no floating label
+        self.assertIn("burg_5", self.app.cluster_anchors)
+
     # -- gates --------------------------------------------------------------
 
     def test_gate_blocks_and_shows_its_message(self):

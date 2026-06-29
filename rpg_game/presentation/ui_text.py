@@ -76,6 +76,11 @@ def wilds_near(place_name: str) -> str:
     return f"Wilds near {place_name}"
 
 
+def near_direction(bearing: str, place_name: str) -> str:
+    """Relative location near a town, e.g. 'south of Hordanita'."""
+    return f"{bearing} of {place_name}"
+
+
 # --- overworld: town menu --------------------------------------------------
 
 # (action id, button label) — labels are player-facing.
