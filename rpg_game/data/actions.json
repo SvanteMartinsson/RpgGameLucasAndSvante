@@ -966,5 +966,158 @@
         "target": "enemy"
       }
     ]
+  },
+
+  {
+    "id": "zap",
+    "name": "Zap",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 4,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.1,
+        "damage_type": "lightning",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "thunder_strike",
+    "name": "Thunder Strike",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 9,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.7,
+        "damage_type": "lightning",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "incineration",
+    "name": "Incineration",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 13,
+    "cooldown_rounds": 1,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 2.2,
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "holy_strike",
+    "name": "Holy Strike",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.6,
+        "damage_type": "holy",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "frost_shard",
+    "name": "Frost Shard",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.5,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "speed",
+        "magnitude": -3,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "tag": "chill",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "earthen_smash",
+    "name": "Earthen Smash",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 6,
+    "requires_weapon_category": "melee",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy",
+        "armor_pen": 6
+      }
+    ]
+  },
+  {
+    "id": "plague_ooze",
+    "name": "Plague Ooze",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tag": "poison",
+        "magnitude": 8,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "poison",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "immolate",
+    "name": "Immolate",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 9,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
   }
 ]

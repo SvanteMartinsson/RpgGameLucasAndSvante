@@ -57,6 +57,13 @@ class WeaponGatingTests(unittest.TestCase):
             "ice_lance": "magic",
             "aimed_shot": "ranged",
             "piercing_shot": "ranged",
+            # B27 skill pool (data-only, attached to no class/talent yet)
+            "zap": "magic",
+            "thunder_strike": "magic",
+            "incineration": "magic",
+            "holy_strike": "magic",
+            "frost_shard": "magic",
+            "earthen_smash": "melee",
         }
         actual = {
             action_id: action.requires_weapon_category
