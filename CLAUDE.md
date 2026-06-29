@@ -192,6 +192,57 @@ python3 -m unittest discover -s tests
 python3 -m compileall -q rpg_game tests
 ```
 
+
+## Autonomt Batch-Arbete
+
+Detta gäller när en prompt ber dig "jobba backloggen" eller en namngiven batch
+(t.ex. "kör B1, B2, B16") **enligt batch-protokollet**. Då arbetar du på flera
+punkter i följd utan att vänta på en ny prompt per punkt — men med checkpoints
+som skyddar Lucas.
+
+### Ordning
+- Följ kluster-/beroendeordningen i `BACKLOG.md` ("Föreslagna kluster & ordning").
+  Hårda beroenden gäller alltid: **B3.1 före B3**, itempool före B5, **B8 före
+  B10**. Bygg aldrig en punkt vars beroende inte är klart.
+
+### Per punkt (samma loop varje gång)
+1. **STEG 0 — mät, gissa inte.** Inspektera den faktiska koden/datan punkten rör.
+   Skriv fynden i rapporten. Bekräfta eller dementera backloggens antagande.
+2. **Bygg minsta korrekta ändring.** Datadrivet i `rpg_game/data/` där det går
+   (se Datafiler + Arkitekturkontrakt). Rör inte en parallell damage-/skill-väg.
+   `round_half_up` där det gäller. `rpg_game/core/` förblir fri från `print()`,
+   `input()`, Pygame.
+3. **Lås med tester.** Lägg/utöka fokuserade tester för den nya regeln. Kör:
+   ```sh
+   python3 -m unittest discover -s tests
+   python3 -m compileall -q rpg_game tests
+   ```
+4. **Verifiera mot punktens Acceptanskriterier i `BACKLOG.md`** (definition av
+   "klart"). För balans-/feel-punkter: kör seedade körningar via
+   `rpg_game/core/simulation.py` och rapportera siffermatrisen mot målet — trimma
+   data tills matrisen matchar. Inte "känns rätt" utan "vinst-rate X% mot mål Y%".
+5. **En commit per backlog-punkt.** Meddelande börjar med ID:t, t.ex.
+   `B6: per-enemy droptables`. Pusha. Determinism bevaras (rör ej seedade strömmar
+   som styr karta/sim utöver det punkten avser).
+
+### Stanna och rapportera (fortsätt INTE) endast vid äkta forks
+- En STEG 0 som **motsäger** backloggens antagande på ett sätt som ändrar designen.
+- Ett designval som inte är specificerat i punkten eller dess Acceptanskriterier.
+- Röda tester du inte kan göra gröna utan att gissa.
+- En konflikt med ett arkitekturkontrakt eller en Regel Som Måste Bevaras.
+Annars: skriv valet/fyndet i rapporten och kör vidare.
+
+### Designbärande punkter (⭐)
+Implementera punkten, men **HALT:a beroende-kedjan efteråt** och rapportera för
+review innan du bygger punkter som beror på den (t.ex. bygg B3.1, stanna sedan —
+bygg INTE B3/B7.1 i samma körning). Foundation granskas innan annat byggs ovanpå.
+
+### Slutrapport (en, samlad)
+Per punkt: STEG 0-fynd · vad som ändrades · Acceptans-resultat (inkl. sim-matriser
+för balans) · commit-hash · testantal. Plus en lista över punkter som stoppades
+eller hoppades och varför. Lucas klistrar rapporten till arkitekten; visuella
+punkter renderas och granskas från klonen efteråt.
+
 5. Kontrollera att `rpg_game/core/` fortfarande saknar `print()` och `input()`.
 
 ## Kända Begränsningar
