@@ -60,7 +60,7 @@ class OverworldTownsTest(unittest.TestCase):
 
     def test_save_action_writes_via_engine(self):
         self.app.do_action("save")
-        self.assertIn("saved", self.app.toast.lower())
+        self.assertIn("saved", self.app.event_log[-1][0].lower())  # logged, no floating toast
         self.addCleanup(lambda: os.path.exists("savegame.json") and os.remove("savegame.json"))
 
     def test_store_gated_when_town_has_no_store(self):
@@ -108,6 +108,40 @@ class OverworldTownsTest(unittest.TestCase):
             self.assertTrue(all(e.kind == kind for e in entries), building)
             self.app.mode = "walk"
 
+    # -- B29: chatbox v2 (dedupe / scroll / resize-clamp) -------------------
+
+    def test_log_dedupes_immediate_repeats(self):
+        n = len(self.app.event_log)
+        self.app.push_log("Rested.", (1, 2, 3))
+        self.app.push_log("Rested.", (1, 2, 3))   # immediate repeat -> ignored
+        self.app.push_log("Moved on.", (1, 2, 3))
+        self.assertEqual(len(self.app.event_log), n + 2)
+
+    def test_resize_log_clamps_to_min_and_max(self):
+        from rpg_game.presentation.pygame_overworld import LOG_VISIBLE_MIN, LOG_VISIBLE_MAX
+        for _ in range(50):
+            self.app.resize_log(1)
+        self.assertEqual(self.app.log_visible, LOG_VISIBLE_MAX)
+        for _ in range(50):
+            self.app.resize_log(-1)
+        self.assertEqual(self.app.log_visible, LOG_VISIBLE_MIN)
+
+    def test_scroll_log_clamps_to_history(self):
+        self.app.log_visible = 5
+        for i in range(12):
+            self.app.push_log(f"line {i}", (1, 2, 3))
+        self.app.scroll_log(-100)                  # can't scroll below newest
+        self.assertEqual(self.app.log_scroll, 0)
+        self.app.scroll_log(100)                   # clamps to history - visible
+        self.assertEqual(self.app.log_scroll, self.app._log_scroll_max())
+        self.assertEqual(self.app.log_scroll, len(self.app.event_log) - 5)
+
+    def test_set_toast_only_logs_no_floating_state(self):
+        # B29: set_toast routes to the log; there is no on-screen toast state.
+        self.app.set_toast("Hello", (1, 2, 3))
+        self.assertEqual(self.app.event_log[-1][0], "Hello")
+        self.assertFalse(hasattr(self.app, "toast"))
+
     def test_enter_on_inn_door_rests(self):
         self.app.world.set_tile(*self._door("burg_5", "inn"))
         self.app.engine.player.hp = 1
@@ -142,17 +176,15 @@ class OverworldTownsTest(unittest.TestCase):
         self.app.push_log(f"You fled from {enemy.name}.", (235, 180, 90))
         self.app.resolve_battle_outcome("fled", enemy)
         fled_lines = [m for m, _c in self.app.event_log if "fled from" in m.lower()]
-        self.assertEqual(len(fled_lines), 1, self.app.event_log)
-        self.assertIn("fled", self.app.toast.lower())  # banner still shows
+        self.assertEqual(len(fled_lines), 1, self.app.event_log)  # logged once, no duplicate
 
     def test_victory_outcome_is_not_logged_twice(self):
         enemy = self.app.engine.content.enemies["giant_rat"].create_enemy()
         self.app.push_log("Victory!", (120, 220, 140))
         before = len(self.app.event_log)
         self.app.resolve_battle_outcome("victory", enemy)
-        # toast-only: no extra 'defeated the ...' log line added on top of the battle's
+        # the battle already logged the outcome; resolve adds no extra line
         self.assertEqual(len(self.app.event_log), before)
-        self.assertIn("defeated", self.app.toast.lower())
 
     def test_door_without_a_service_logs_locked(self):
         before = len(self.app.event_log)

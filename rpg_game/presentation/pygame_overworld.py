@@ -141,10 +141,15 @@ ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
 # so you can never be ambushed on a town's own streets or its doorstep.
 SAFE_TILE_MARGIN = 2
 
-# Action log (B16): the bottom-left panel keeps the last few lines of combat,
-# loot, level-ups, heals and world events. Short on purpose — it's an at-a-glance
-# feed, not a full battle log (the battle shell keeps its own scrollback).
-LOG_MAX_LINES = 7
+# Action log / chatbox (B16 + B29): the bottom-left panel is the SINGLE place all
+# on-screen text goes (no floating toasts). It keeps deep scrollback, shows a
+# resizable number of lines (player grows/shrinks it, clamped), and can be scrolled
+# up to read older lines.
+LOG_HISTORY_MAX = 200       # how many lines are retained for scrollback
+LOG_VISIBLE_DEFAULT = 10    # visible lines by default (bigger than the old 7)
+LOG_VISIBLE_MIN = 5
+LOG_VISIBLE_MAX = 18
+LOG_SCROLL_STEP = 2         # lines per mouse-wheel notch
 
 # Location indicator (top-right): within this many tiles of a hub's plaza the label
 # reads relative ("south of Hordanita") instead of the generic wilds text.
@@ -481,13 +486,13 @@ class OverworldApp:
         self.tournament_run: TournamentRun | None = None
         self.store_category: str | None = None  # which trade building's store slice is open
         self.buttons: list[Button] = []
-        self.toast = ""
-        self.toast_color = TEXT
-        self.toast_timer = 0
-        # B16: rolling action log shown bottom-left. Combat lines flow in via the
-        # shared deque passed to BattleApp; world events (rest/store/relocate/
-        # encounter outcomes) flow in through set_toast. Kept short on purpose.
-        self.event_log: "collections.deque" = collections.deque(maxlen=LOG_MAX_LINES)
+        # B16 + B29: the chatbox is the ONLY on-screen text. Combat lines flow in via
+        # the shared deque passed to BattleApp; world events flow in through set_toast
+        # -> push_log. Deep scrollback (LOG_HISTORY_MAX), a player-resizable visible
+        # height (log_visible), and a scroll offset for reading older lines.
+        self.event_log: "collections.deque" = collections.deque(maxlen=LOG_HISTORY_MAX)
+        self.log_visible = LOG_VISIBLE_DEFAULT
+        self.log_scroll = 0      # lines scrolled up from the bottom (0 = newest visible)
         self.running = True
         self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
@@ -534,20 +539,32 @@ class OverworldApp:
             self.engine.enter_place(place_id)
 
     def set_toast(self, message: str, color=TEXT, log: bool = True) -> None:
-        self.toast = message
-        self.toast_color = color
-        self.toast_timer = FPS * 3
-        # B29.3: some toasts mirror something the battle shell already logged
-        # (flee/victory outcomes flow into the shared event_log from BattleApp).
-        # Those pass log=False so the action log keeps ONE line per event.
+        # B29: no floating toasts — every on-screen message goes to the chatbox log.
+        # log=False keeps the B29.3 contract: a message the battle shell already
+        # logged into the shared event_log is dropped here so it appears only once.
         if log:
             self.push_log(message, color)
 
     def push_log(self, message: str, color=TEXT) -> None:
-        """Append a line to the bottom-left action log (deduping immediate repeats)."""
+        """Append a line to the chatbox log (deduping immediate repeats). Stays
+        pinned to the newest line unless the player has scrolled up to read history."""
         if self.event_log and self.event_log[-1][0] == message:
             return
         self.event_log.append((message, color))
+        if self.log_scroll:        # reading history: hold position relative to newest
+            self.log_scroll = min(self.log_scroll + 1, self._log_scroll_max())
+
+    def _log_scroll_max(self) -> int:
+        return max(0, len(self.event_log) - self.log_visible)
+
+    def scroll_log(self, lines: int) -> None:
+        """Scroll the chatbox: +lines = older (up), -lines = newer (down)."""
+        self.log_scroll = max(0, min(self.log_scroll + lines, self._log_scroll_max()))
+
+    def resize_log(self, delta: int) -> None:
+        """Grow/shrink the chatbox by `delta` visible lines, clamped."""
+        self.log_visible = max(LOG_VISIBLE_MIN, min(self.log_visible + delta, LOG_VISIBLE_MAX))
+        self.log_scroll = min(self.log_scroll, self._log_scroll_max())
 
     # -- display mode -------------------------------------------------------
 
@@ -979,6 +996,8 @@ class OverworldApp:
                 self.windowed_size = (event.w, event.h)
                 self.display = set_display_mode(self.windowed_size)
                 self._log_display("resize")
+            elif event.type == pygame.MOUSEWHEEL:
+                self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1023,6 +1042,19 @@ class OverworldApp:
         if event.key == pygame.K_k:
             self.toggle_overlay("skills_talents")
             return
+        # Chatbox resize: '+' grows, '-' shrinks (clamped). PageUp/PageDown scroll.
+        if event.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
+            self.resize_log(1)
+            return
+        if event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+            self.resize_log(-1)
+            return
+        if event.key == pygame.K_PAGEUP:
+            self.scroll_log(LOG_SCROLL_STEP)
+            return
+        if event.key == pygame.K_PAGEDOWN:
+            self.scroll_log(-LOG_SCROLL_STEP)
+            return
         if event.key in (pygame.K_RETURN, pygame.K_e):
             if self.mode == "walk":
                 door = self.door_index.get(self.world.current_tile)
@@ -1030,10 +1062,6 @@ class OverworldApp:
                     self._interact_door(*door)
 
     def update(self) -> None:
-        if self.toast_timer > 0:
-            self.toast_timer -= 1
-            if self.toast_timer == 0:
-                self.toast = ""
         if self.overlay or self.mode != "walk":
             return
         keys = pygame.key.get_pressed()
@@ -1088,8 +1116,6 @@ class OverworldApp:
             self._draw_tournament_intermission_screen()
         if self.overlay:
             self._draw_overlay_screen()
-        if self.toast:
-            self._draw_toast()
         self._transform = present(self.display, self.screen, BG)
         # Edge-triggered: log only when the fills-state flips (window starts/stops
         # filling), so an anchoring glitch is captured with no per-frame spam.
@@ -1838,39 +1864,43 @@ class OverworldApp:
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
             self._add_button(rect, f"{node.name}", (lambda nid=node.id: self.learn_talent(nid)), points > 0)
 
+    def _log_rect(self) -> pygame.Rect:
+        """Geometry of the chatbox panel (bottom-left). Height tracks log_visible so
+        the player can grow/shrink it; width scales gently with the window."""
+        line_h = self.font_sm.get_height() + 3
+        pad = 8
+        panel_w = min(max(360, self.screen.get_width() // 3), self.screen.get_width() - 16)
+        panel_h = pad * 2 + line_h * self.log_visible
+        return pygame.Rect(8, self.screen.get_height() - panel_h - 8, panel_w, panel_h)
+
     def _draw_log(self) -> None:
-        """B16: semi-transparent action feed in the bottom-left corner. Shows the
-        last few combat/loot/level-up/heal/world-event lines; oldest fade dimmer so
-        the newest line reads first. Unscaled screen space, like the HUD/toast."""
+        """B29 chatbox: the single on-screen text surface. Semi-transparent panel,
+        bottom-left, showing log_visible lines ending at the scroll position; oldest
+        fade dimmer. A '... N more' hint and a scrollbar appear when scrolled up."""
         if not self.event_log:
             return
         lines = list(self.event_log)
+        n = len(lines)
         line_h = self.font_sm.get_height() + 3
         pad = 8
-        panel_w = min(430, self.screen.get_width() - 16)
-        panel_h = pad * 2 + line_h * len(lines)
-        # Sit just above the bottom edge; leave room for the centered walk hint.
-        x, y = 8, self.screen.get_height() - panel_h - 8
-        overlay = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        rect = self._log_rect()
+        overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
         overlay.fill((10, 12, 18, 180))
-        self.screen.blit(overlay, (x, y))
-        pygame.draw.rect(self.screen, PANEL_EDGE, pygame.Rect(x, y, panel_w, panel_h), width=1, border_radius=4)
-        n = len(lines)
-        for i, (text, color) in enumerate(lines):
-            # Newest line at full color; older lines blended halfway to dim.
-            shade = color if i == n - 1 else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
-            surf = self.font_sm.render(self._fit_text(text, panel_w - pad * 2, self.font_sm), True, shade)
-            self.screen.blit(surf, (x + pad, y + pad + i * line_h))
-
-    def _draw_toast(self) -> None:
-        surf = self.font.render(self.toast, True, self.toast_color)
-        rect = surf.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() - 40))
-        bg = rect.inflate(28, 16)
-        overlay = pygame.Surface(bg.size, pygame.SRCALPHA)
-        overlay.fill((10, 12, 18, 230))
-        self.screen.blit(overlay, bg.topleft)
-        pygame.draw.rect(self.screen, PANEL_EDGE, bg, width=1, border_radius=6)
-        self.screen.blit(surf, rect)
+        self.screen.blit(overlay, rect.topleft)
+        pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=4)
+        # Window of visible lines, clamped, honoring the scroll offset from the bottom.
+        self.log_scroll = min(self.log_scroll, self._log_scroll_max())
+        end = n - self.log_scroll
+        start = max(0, end - self.log_visible)
+        window = lines[start:end]
+        for i, (text, color) in enumerate(window):
+            newest_shown = (start + i) == n - 1
+            shade = color if newest_shown else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
+            surf = self.font_sm.render(self._fit_text(text, rect.width - pad * 2, self.font_sm), True, shade)
+            self.screen.blit(surf, (rect.x + pad, rect.y + pad + i * line_h))
+        if self.log_scroll:        # show there is newer text below the view
+            hint = self.font_sm.render(f"v {self.log_scroll} more v", True, ACCENT)
+            self.screen.blit(hint, hint.get_rect(bottomright=(rect.right - pad, rect.bottom - 2)))
 
     # -- main loop ----------------------------------------------------------
 

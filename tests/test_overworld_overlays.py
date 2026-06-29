@@ -64,7 +64,7 @@ class OverworldOverlayTest(unittest.TestCase):
         self.app.save_game()
 
         self.assertTrue(os.path.exists(SAVE_PATH))
-        self.assertIn("saved", self.app.toast.lower())
+        self.assertIn("saved", self.app.event_log[-1][0].lower())
 
     def test_inventory_overlay_use_consumable_goes_through_engine(self):
         self.app.engine.player.inventory.add_consumable("hp_potion")
@@ -82,7 +82,7 @@ class OverworldOverlayTest(unittest.TestCase):
         self.app.equip_weapon("worldsplitter")
 
         self.assertEqual(self.app.engine.player.equipped_weapon_id, "sword")
-        self.assertIn("needs level", self.app.toast.lower())
+        self.assertIn("needs level", self.app.event_log[-1][0].lower())
 
     def test_character_panel_equip_and_unequip_gear_updates_effective_stats(self):
         self.app.engine.player.owned_gear_ids = ("padded_vest",)
@@ -133,11 +133,11 @@ class OverworldOverlayTest(unittest.TestCase):
 
         self.app.equip_gear_to_slot("training_cap", "chest")
         self.assertNotIn("chest", self.app.engine.player.equipped_gear)
-        self.assertIn("cannot be equipped", self.app.toast.lower())
+        self.assertIn("cannot be equipped", self.app.event_log[-1][0].lower())
 
         self.app.equip_gear_to_slot("veteran_ring", "ring_1")
         self.assertNotIn("ring_1", self.app.engine.player.equipped_gear)
-        self.assertIn("requires level", self.app.toast.lower())
+        self.assertIn("requires level", self.app.event_log[-1][0].lower())
 
     def test_character_panel_draws_slots_and_stat_breakdown(self):
         self.app.engine.player.owned_gear_ids = ("padded_vest",)
