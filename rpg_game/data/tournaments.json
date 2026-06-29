@@ -49,6 +49,22 @@
     }
   },
   {
+    "id": "rotequero_wildblood_pit",
+    "name": "Rotequero Wildblood Pit",
+    "place_id": "burg_146",
+    "rank": "frontier",
+    "description": "A frontier beast-pit: the Mork-Skog's own predators, baited and loosed one after another. No quarter once the gate drops.",
+    "opponent_ids": [
+      "wild_boar",
+      "dire_wolf",
+      "bog_wraith"
+    ],
+    "reward": {
+      "gold": 300,
+      "item_ids": []
+    }
+  },
+  {
     "id": "hordanita_imperial_ten",
     "name": "Hordanita Imperial Ten",
     "place_id": "burg_5",

@@ -65,6 +65,26 @@ class TournamentDifficultyTests(unittest.TestCase):
             self.assertLessEqual(len(tour.opponent_ids), 4)
             self._check_small(tour)
 
+    def test_zone2_wildblood_pit_is_a_late_zone_beast_bracket(self):
+        # B26: a frontier beast tournament in a zone-2 city (Rotequero). Opponents are
+        # drawn from the zone-2 wild pool (NOT the arena humans), it sits in a later
+        # zone (not the start town), gets the small-bracket diversified buff, and pays
+        # a scaled GOLD-only reward (no signature item — that stays a design call).
+        tour = self.t["rotequero_wildblood_pit"]
+        self.assertEqual(tour.place_id, "burg_146")
+        self.assertLessEqual(len(tour.opponent_ids), 4)
+        rotequero_pool = set(self.engine.content.places["burg_146"].encounters)
+        parguillas_pool = set(self.engine.content.places["burg_320"].encounters)
+        zone2_pool = rotequero_pool | parguillas_pool
+        for eid in tour.opponent_ids:
+            enemy = self.engine.content.enemies[eid]
+            self.assertIn(eid, zone2_pool)            # from the zone-2 wild pool
+            self.assertNotIn("human", enemy.tags)     # beasts, not arena humans
+            self.assertGreaterEqual(enemy.level, 5)   # zone-level band, not L1 fodder
+        self.assertGreater(tour.reward.gold, 0)
+        self.assertEqual(tour.reward.item_ids, ())    # gold-only: no item reward
+        self._check_small(tour)                       # diversified buff applies
+
     def test_big_finale_is_diversified_per_index(self):
         tour = self.t["hordanita_imperial_ten"]
         self.assertEqual(len(tour.opponent_ids), 10)
