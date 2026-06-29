@@ -155,6 +155,10 @@ class BattleApp:
     allow_flee: bool = True
     allow_swap: bool = True
     _transform: tuple[int, int, float] = (0, 0, 1.0)  # canvas->display offset+scale
+    # B16: optional shared action log (a deque owned by the overworld). When set,
+    # every push_log line is mirrored into it so the overworld can surface combat,
+    # drops, level-ups and heals after the battle hands control back.
+    event_log: object | None = None
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -232,6 +236,8 @@ class BattleApp:
     def push_log(self, text: str, color: tuple[int, int, int] = TEXT) -> None:
         self.log.append((text, color))
         del self.log[:-300]
+        if self.event_log is not None:
+            self.event_log.append((text, color))
 
     # -- command dispatch ---------------------------------------------------
 

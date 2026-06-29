@@ -96,6 +96,11 @@ ENCOUNTER_SAFE_RADIUS = 1     # town + adjacent tiles: no encounters
 ENCOUNTER_RAMP_TILES = 3      # tiles over which the rate ramps from 0 to full
 ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
 
+# Action log (B16): the bottom-left panel keeps the last few lines of combat,
+# loot, level-ups, heals and world events. Short on purpose — it's an at-a-glance
+# feed, not a full battle log (the battle shell keeps its own scrollback).
+LOG_MAX_LINES = 7
+
 # Colors (shared palette with the battle shell)
 BG = (18, 20, 28)
 PANEL = (30, 34, 46)
@@ -397,6 +402,10 @@ class OverworldApp:
         self.toast = ""
         self.toast_color = TEXT
         self.toast_timer = 0
+        # B16: rolling action log shown bottom-left. Combat lines flow in via the
+        # shared deque passed to BattleApp; world events (rest/store/relocate/
+        # encounter outcomes) flow in through set_toast. Kept short on purpose.
+        self.event_log: "collections.deque" = collections.deque(maxlen=LOG_MAX_LINES)
         self.running = True
         self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
@@ -446,6 +455,13 @@ class OverworldApp:
         self.toast = message
         self.toast_color = color
         self.toast_timer = FPS * 3
+        self.push_log(message, color)
+
+    def push_log(self, message: str, color=TEXT) -> None:
+        """Append a line to the bottom-left action log (deduping immediate repeats)."""
+        if self.event_log and self.event_log[-1][0] == message:
+            return
+        self.event_log.append((message, color))
 
     # -- display mode -------------------------------------------------------
 
@@ -525,6 +541,7 @@ class OverworldApp:
             standalone=False,
             playtest_logger=self.playtest_logger,
             location_id=location_id,
+            event_log=self.event_log,  # B16: mirror combat/drops/level-ups into the overworld log
         ).run()
         # Re-assert the overworld display (preserves window/fullscreen state).
         self._apply_display_mode()
@@ -952,6 +969,8 @@ class OverworldApp:
         self.screen.fill(BG)
         self._draw_map()
         self._draw_hud()
+        if self.mode == "walk" and not self.overlay:
+            self._draw_log()
         if self.mode == "townmenu":
             self._draw_town_menu()
         elif self.mode == "store":
@@ -1655,6 +1674,30 @@ class OverworldApp:
         for i, node in enumerate(nodes[:8]):
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
             self._add_button(rect, f"{node.name}", (lambda nid=node.id: self.learn_talent(nid)), points > 0)
+
+    def _draw_log(self) -> None:
+        """B16: semi-transparent action feed in the bottom-left corner. Shows the
+        last few combat/loot/level-up/heal/world-event lines; oldest fade dimmer so
+        the newest line reads first. Unscaled screen space, like the HUD/toast."""
+        if not self.event_log:
+            return
+        lines = list(self.event_log)
+        line_h = self.font_sm.get_height() + 3
+        pad = 8
+        panel_w = min(430, self.screen.get_width() - 16)
+        panel_h = pad * 2 + line_h * len(lines)
+        # Sit just above the bottom edge; leave room for the centered walk hint.
+        x, y = 8, self.screen.get_height() - panel_h - 8
+        overlay = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        overlay.fill((10, 12, 18, 180))
+        self.screen.blit(overlay, (x, y))
+        pygame.draw.rect(self.screen, PANEL_EDGE, pygame.Rect(x, y, panel_w, panel_h), width=1, border_radius=4)
+        n = len(lines)
+        for i, (text, color) in enumerate(lines):
+            # Newest line at full color; older lines blended halfway to dim.
+            shade = color if i == n - 1 else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
+            surf = self.font_sm.render(self._fit_text(text, panel_w - pad * 2, self.font_sm), True, shade)
+            self.screen.blit(surf, (x + pad, y + pad + i * line_h))
 
     def _draw_toast(self) -> None:
         surf = self.font.render(self.toast, True, self.toast_color)
