@@ -38,5 +38,8 @@
   { "id": "heartwood_ring", "name": "Heartwood Ring", "slot_type": "ring", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "max_hp": 12, "armor": 1 } },
   { "id": "carapace_plate", "name": "Carapace Plate", "slot_type": "chest", "tier": 3, "rarity": "rare", "level_req": 1, "stat_modifiers": { "armor": 5, "max_hp": 6 } },
   { "id": "wraithlight_band", "name": "Wraithlight Band", "slot_type": "ring", "tier": 4, "rarity": "rare", "level_req": 2, "stat_modifiers": { "max_mana": 14, "crit_chance": 2 } },
-  { "id": "tarheart_amulet", "name": "Tarheart Amulet", "slot_type": "amulet", "tier": 4, "rarity": "rare", "level_req": 2, "stat_modifiers": { "max_hp": 18, "armor": 2 } }
+  { "id": "tarheart_amulet", "name": "Tarheart Amulet", "slot_type": "amulet", "tier": 4, "rarity": "rare", "level_req": 2, "stat_modifiers": { "max_hp": 18, "armor": 2 } },
+
+  { "id": "apprentice_cowl", "name": "Apprentice Cowl", "slot_type": "head", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "max_mana": 10, "armor": 1 } },
+  { "id": "hunters_jerkin", "name": "Hunter's Jerkin", "slot_type": "chest", "tier": 2, "rarity": "uncommon", "level_req": 1, "stat_modifiers": { "armor": 2, "crit_chance": 2, "speed": 1 } }
 ]

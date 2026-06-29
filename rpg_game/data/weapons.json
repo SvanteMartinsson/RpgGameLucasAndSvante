@@ -187,5 +187,32 @@
     "damage_type": "physical",
     "category": "melee",
     "tier": 4
+  },
+  {
+    "id": "recurve_bow",
+    "name": "Recurve Bow",
+    "damage_bonus": 8,
+    "price": 160,
+    "damage_type": "physical",
+    "category": "ranged",
+    "tier": 2
+  },
+  {
+    "id": "yew_longbow",
+    "name": "Yew Longbow",
+    "damage_bonus": 16,
+    "price": 430,
+    "damage_type": "physical",
+    "category": "ranged",
+    "tier": 3
+  },
+  {
+    "id": "apprentice_wand",
+    "name": "Apprentice Wand",
+    "damage_bonus": 8,
+    "price": 160,
+    "damage_type": "fire",
+    "category": "magic",
+    "tier": 2
   }
 ]
