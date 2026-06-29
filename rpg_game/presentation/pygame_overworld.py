@@ -170,6 +170,9 @@ BTN_HOVER = (66, 76, 102)
 BTN_DISABLED = (34, 38, 50)
 BTN_EDGE = (90, 100, 130)
 XP_COL = (180, 150, 240)  # matches the battle HUD's XP bar
+HP_COL = (96, 200, 120)   # vitals bars (B31), matching the battle HUD
+MANA_COL = (90, 140, 230)
+BAR_TRACK = (24, 26, 34)
 PLAYER_COLOR = (235, 200, 90)
 PLAYER_EDGE = (40, 36, 16)
 TOWN_COLOR = (90, 150, 230)
@@ -1106,6 +1109,7 @@ class OverworldApp:
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
             self._draw_log()
+            self._draw_vitals()
         if self.mode == "store":
             self._draw_store_screen()
         elif self.mode == "tournaments":
@@ -1357,37 +1361,46 @@ class OverworldApp:
         return T.wilds_near(self.engine.current_place().name), False
 
     def _draw_hud(self) -> None:
-        snap = build_snapshot(self.engine)
+        # B31: no top bar, no name/gold/level text. Only the town indicator (top
+        # right, NO dark background — a thin shadow keeps it legible over the map)
+        # plus the bottom-centre control hint. Vitals are bars above the chatbox.
         where, in_town = self._location_label()
-        # Two-line HUD: vitals row + a slim XP-progress row beneath it.
-        bar = pygame.Rect(0, 0, self.screen.get_width(), 46)
-        overlay = pygame.Surface(bar.size, pygame.SRCALPHA)
-        overlay.fill((10, 12, 18, 200))
-        self.screen.blit(overlay, (0, 0))
-        left = f"{snap.player.name}  Lv{snap.player.level}  HP {snap.player.hp}/{snap.player.max_hp}  Gold {snap.player.gold}"
-        self.screen.blit(self.font_sm.render(left, True, TEXT), (8, 6))
-        right = self.font_sm.render(where, True, ACCENT if in_town else TEXT_DIM)
-        self.screen.blit(right, right.get_rect(topright=(self.screen.get_width() - 8, 6)))
-        self._draw_xp_bar(snap.player)
+        color = ACCENT if in_town else TEXT_DIM
+        topright = (self.screen.get_width() - 10, 8)
+        shadow = self.font_sm.render(where, True, (10, 12, 18))
+        self.screen.blit(shadow, shadow.get_rect(topright=(topright[0] + 1, topright[1] + 1)))
+        label = self.font_sm.render(where, True, color)
+        self.screen.blit(label, label.get_rect(topright=topright))
         if self.mode == "walk":
             hint = T.HINT_TOWN if in_town else T.HINT_WALK
             hsurf = self.font_sm.render(hint, True, TEXT_DIM)
             self.screen.blit(hsurf, hsurf.get_rect(midbottom=(self.screen.get_width() // 2, self.screen.get_height() - 6)))
 
-    def _draw_xp_bar(self, player) -> None:
-        """Compact progress bar toward the next level. Reads the snapshot's
-        existing xp / xp_required (same numbers as the Character screen); no
-        recompute. Guards xp_required == 0 (max level / unset) against div-by-0."""
-        required = player.xp_required
-        ratio = max(0.0, min(1.0, player.xp / required)) if required else 0.0
-        track = pygame.Rect(8, 28, 170, 8)
-        pygame.draw.rect(self.screen, (24, 26, 34), track, border_radius=3)
-        if ratio > 0:
-            fill = pygame.Rect(track.x, track.y, max(1, int(track.width * ratio)), track.height)
-            pygame.draw.rect(self.screen, XP_COL, fill, border_radius=3)
-        pygame.draw.rect(self.screen, PANEL_EDGE, track, width=1, border_radius=3)
-        label = f"XP {player.xp}/{required}" if required else f"XP {player.xp}"
-        self.screen.blit(self.font_sm.render(label, True, TEXT_DIM), (track.right + 8, track.y - 3))
+    def _draw_vitals(self) -> None:
+        """B31: HP / Mana / XP bars stacked just ABOVE the chatbox (no name/gold).
+        Aligned to the chatbox width; each bar shows current/max as small text."""
+        p = build_snapshot(self.engine).player
+        log = self._log_rect()
+        bar_h, gap = 12, 3
+        rows = [
+            ("HP", p.hp, p.max_hp, HP_COL),
+            ("Mana", p.mana, p.max_mana, MANA_COL),
+            ("XP", p.xp, p.xp_required, XP_COL),
+        ]
+        total = len(rows) * (bar_h + gap)
+        x, w = log.x, log.width
+        y = log.y - total - 4
+        for name, cur, mx, col in rows:
+            ratio = max(0.0, min(1.0, cur / mx)) if mx else 0.0
+            track = pygame.Rect(x, y, w, bar_h)
+            pygame.draw.rect(self.screen, BAR_TRACK, track, border_radius=3)
+            if ratio > 0:
+                pygame.draw.rect(self.screen, col,
+                                 pygame.Rect(x, y, max(2, int(w * ratio)), bar_h), border_radius=3)
+            pygame.draw.rect(self.screen, PANEL_EDGE, track, width=1, border_radius=3)
+            text = f"{name} {cur}/{mx}" if mx else f"{name} {cur}"
+            self.screen.blit(self.font_sm.render(text, True, TEXT), (x + 6, y - 1))
+            y += bar_h + gap
 
     def _overlay_panel(self, title: str) -> pygame.Rect:
         w, h = self.screen.get_size()
@@ -1877,8 +1890,6 @@ class OverworldApp:
         """B29 chatbox: the single on-screen text surface. Semi-transparent panel,
         bottom-left, showing log_visible lines ending at the scroll position; oldest
         fade dimmer. A '... N more' hint and a scrollbar appear when scrolled up."""
-        if not self.event_log:
-            return
         lines = list(self.event_log)
         n = len(lines)
         line_h = self.font_sm.get_height() + 3
@@ -1888,6 +1899,8 @@ class OverworldApp:
         overlay.fill((10, 12, 18, 180))
         self.screen.blit(overlay, rect.topleft)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=4)
+        if not lines:        # always show the panel (it's the primary HUD now)
+            return
         # Window of visible lines, clamped, honoring the scroll offset from the bottom.
         self.log_scroll = min(self.log_scroll, self._log_scroll_max())
         end = n - self.log_scroll

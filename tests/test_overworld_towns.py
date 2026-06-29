@@ -142,6 +142,24 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual(self.app.event_log[-1][0], "Hello")
         self.assertFalse(hasattr(self.app, "toast"))
 
+    # -- B31: HUD bars (no top bar, vitals above the chatbox) ---------------
+
+    def test_vitals_bars_sit_above_the_chatbox(self):
+        self.app.display = pygame.Surface((960, 640))
+        log = self.app._log_rect()
+        # the three stacked bars (HP/Mana/XP) occupy the band directly above the log
+        self.assertLess(log.y - (3 * (12 + 3) + 4), log.y)
+        self.app.mode = "walk"; self.app.overlay = ""
+        self.app.draw()  # must render HUD + vitals + chatbox without error
+        self.assertFalse(hasattr(self.app, "_draw_xp_bar"))  # old top XP bar gone
+
+    def test_hud_shows_no_name_or_gold(self):
+        # B31 removed the name/level/gold top-left text; the HUD no longer reads them.
+        import inspect
+        src = inspect.getsource(type(self.app)._draw_hud)
+        self.assertNotIn("Gold", src)
+        self.assertNotIn(".name", src)
+
     def test_enter_on_inn_door_rests(self):
         self.app.world.set_tile(*self._door("burg_5", "inn"))
         self.app.engine.player.hp = 1
