@@ -349,10 +349,11 @@ class OverworldApp:
         self.cluster_anchor = self.town_tile_by_place.get(CLUSTER_TOWN_ID)
         if self.cluster_anchor is not None:
             self.world.blocked |= town_cluster.cluster_footprints(self.cluster_anchor)
-            # Route cobble around blocked terrain AND any water tile (shore water is
-            # walkable post-B19 but must not be cobbled over). The river is just SW.
+            # Comb cobble that never sits on OR borders water (shore water is walkable
+            # post-B19 but must not be cobbled over, and no cobble points SW into the
+            # river). blocked keeps it off other terrain; water drives the no-border rule.
             self._cobble_net = town_cluster.cobble_network(
-                self.cluster_anchor, self.world.blocked | self._water_tiles())
+                self.cluster_anchor, self.world.blocked, self._water_tiles())
         else:
             self._cobble_net = set()
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
@@ -1007,7 +1008,7 @@ class OverworldApp:
         """Load each building's chosen facing view and scale it once at load time by
         BUILDING_SCALE (native sizes vary, so relative proportions are preserved)."""
         sprites = {}
-        for bid, _dx, _dy, _fw, _fh, facing in town_cluster.CLUSTER_TEMPLATE:
+        for bid, _dx, _dy, _fw, _fh, facing, _flip in town_cluster.CLUSTER_TEMPLATE:
             path = os.path.join(BUILDINGS_DIR, f"{bid}_{facing}.png")
             try:
                 raw = pygame.image.load(path).convert_alpha()
@@ -1087,10 +1088,12 @@ class OverworldApp:
         # drawables: (base_y, kind, payload) sorted so nearer (larger y) draw last
         drawables = []
         if self.cluster_anchor is not None:
-            for bid, fx, fy, fw, fh, _facing in town_cluster.cluster_buildings(self.cluster_anchor):
+            for bid, fx, fy, fw, fh, _facing, flip in town_cluster.cluster_buildings(self.cluster_anchor):
                 sprite = self._building_sprites.get(bid)
                 if sprite is None:
                     continue
+                if flip:               # mirror so the door/sign faces in toward the courtyard
+                    sprite = pygame.transform.flip(sprite, True, False)
                 base_y = (fy + fh) * th            # footprint bottom edge (world y)
                 cx = fx * tw + (fw * tw) // 2
                 sw, sh = sprite.get_size()

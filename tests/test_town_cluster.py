@@ -46,35 +46,44 @@ class TownClusterTemplateTest(unittest.TestCase):
 
     def test_buildings_do_not_overlap_each_other(self):
         seen, overlap = set(), set()
-        for bid, dx, dy, fw, fh, _facing in town_cluster.CLUSTER_TEMPLATE:
+        for bid, dx, dy, fw, fh, _facing, _flip in town_cluster.CLUSTER_TEMPLATE:
             cells = town_cluster.building_footprint((0, 0), dx, dy, fw, fh)
             overlap |= seen & cells
             seen |= cells
         self.assertEqual(overlap, set())
 
+    def test_east_column_sprites_are_flipped_west(self):
+        # The q1 (east) column mirrors its sprite so the door/sign reads west, in
+        # toward the courtyard; the north fronts are not flipped.
+        for _bid, _dx, _dy, _fw, _fh, facing, flip in town_cluster.CLUSTER_TEMPLATE:
+            self.assertEqual(flip, facing == "q1")
+
     def test_each_facing_points_its_entrance_inward(self):
-        # The chosen facing must put the door on the plaza side: the entrance tile is
-        # closer to the anchor than the building's centre, and is walkable (not a
-        # footprint). Covers the front/q1/q2 per-position rule.
         anchor = (26, 18)
         foot = town_cluster.cluster_footprints(anchor)
-        for bid, dx, dy, fw, fh, facing in town_cluster.CLUSTER_TEMPLATE:
+        for bid, dx, dy, fw, fh, facing, _flip in town_cluster.CLUSTER_TEMPLATE:
             ent = town_cluster.entrance_tile(anchor, dx, dy, fw, fh, facing)
             cx, cy = anchor[0] + dx + (fw - 1) / 2, anchor[1] + dy + (fh - 1) / 2
-            d_ent = math.dist(ent, anchor)
-            d_centre = math.dist((cx, cy), anchor)
-            self.assertLess(d_ent, d_centre, f"{bid} ({facing}) entrance not inward")
+            self.assertLess(math.dist(ent, anchor), math.dist((cx, cy), anchor),
+                            f"{bid} ({facing}) entrance not inward")
             self.assertNotIn(ent, foot, f"{bid} entrance is inside a footprint")
 
-    def test_cobble_routes_reach_every_entrance_and_avoid_footprints(self):
+    def test_cobble_reaches_every_entrance_avoids_footprints(self):
         anchor = (26, 18)
         net = town_cluster.cobble_network(anchor)
-        foot = town_cluster.cluster_footprints(anchor)
-        self.assertEqual(net & foot, set(), "cobble runs under a building")
+        self.assertEqual(net & town_cluster.cluster_footprints(anchor), set())
         self.assertIn(anchor, net)
-        for bid, dx, dy, fw, fh, facing in town_cluster.CLUSTER_TEMPLATE:
-            ent = town_cluster.entrance_tile(anchor, dx, dy, fw, fh, facing)
+        for bid, ent in town_cluster.cluster_entrances(anchor).items():
             self.assertIn(ent, net, f"cobble does not reach {bid}'s entrance")
+
+    def test_each_entrance_is_a_spur_tip_one_cobble_neighbour(self):
+        # Comb shape: a door is the tip of its own spur — exactly one adjacent cobble
+        # tile — so the net reads as roads to each door, not a paved slab.
+        anchor = (26, 18)
+        net = town_cluster.cobble_network(anchor)
+        for bid, (ex, ey) in town_cluster.cluster_entrances(anchor).items():
+            neighbours = sum(((ex + dx, ey + dy) in net) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            self.assertEqual(neighbours, 1, f"{bid}'s entrance has {neighbours} cobble neighbours")
 
 
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
@@ -167,6 +176,15 @@ class TownClusterRuntimeTest(unittest.TestCase):
 
     def test_footprints_never_on_water(self):
         self.assertEqual(town_cluster.cluster_footprints(self.anchor) & self.app._water_tiles(), set())
+
+    def test_no_cobble_tile_borders_water(self):
+        # "No town in the water": no cobble cell sits on, or even next to, water — so
+        # nothing points SW into the river.
+        water = self.app._water_tiles()
+        for (x, y) in self.app._cobble_net:
+            self.assertNotIn((x, y), water)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                self.assertNotIn((x + dx, y + dy), water, f"cobble {(x, y)} borders water")
 
     def test_renders_without_crashing(self):
         self.app.display = pygame.Surface((960, 640))
