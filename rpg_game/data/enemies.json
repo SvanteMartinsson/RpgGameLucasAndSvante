@@ -277,6 +277,11 @@
         "item_id": "greater_mana_potion",
         "weight": 12,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "blessed_ash",
+        "weight": 12,
+        "rarity_tier": 2
       }
     ],
     "unique_table": [
@@ -352,6 +357,11 @@
         "item_id": "emberwand",
         "weight": 30,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "blessed_ash",
+        "weight": 12,
+        "rarity_tier": 2
       }
     ],
     "unique_table": [
@@ -785,6 +795,11 @@
         "item_id": "crimson_signet",
         "weight": 6,
         "rarity_tier": 4
+      },
+      {
+        "item_id": "worg_tooth",
+        "weight": 14,
+        "rarity_tier": 2
       }
     ],
     "unique_table": [
@@ -1284,6 +1299,16 @@
         "item_id": "pyre_scepter",
         "weight": 8,
         "rarity_tier": 5
+      },
+      {
+        "item_id": "worg_tooth",
+        "weight": 18,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "worg_claw",
+        "weight": 8,
+        "rarity_tier": 4
       }
     ],
     "unique_table": [
@@ -1448,6 +1473,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "iron_scrap",
+        "weight": 18,
+        "rarity_tier": 1
       }
     ],
     "unique_table": []
@@ -1570,6 +1600,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 12,
+        "rarity_tier": 2
       }
     ],
     "unique_table": []
@@ -1610,6 +1645,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "chill_crystal",
+        "weight": 12,
+        "rarity_tier": 3
       }
     ],
     "unique_table": []
@@ -1652,6 +1692,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "chill_crystal",
+        "weight": 10,
+        "rarity_tier": 3
       }
     ],
     "unique_table": []
@@ -1692,6 +1737,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 14,
+        "rarity_tier": 2
       }
     ],
     "unique_table": []
@@ -1733,6 +1783,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "worg_tooth",
+        "weight": 12,
+        "rarity_tier": 2
       }
     ],
     "unique_table": []
@@ -1773,6 +1828,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "chill_crystal",
+        "weight": 12,
+        "rarity_tier": 3
       }
     ],
     "unique_table": []
@@ -1814,6 +1874,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 14,
+        "rarity_tier": 3
       }
     ],
     "unique_table": []
@@ -1867,6 +1932,16 @@
       {
         "item_id": "hp_potion",
         "weight": 30,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 16,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "iron_scrap",
+        "weight": 20,
         "rarity_tier": 1
       }
     ],

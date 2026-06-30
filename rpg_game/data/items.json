@@ -92,5 +92,53 @@
     "heal_amount": 0,
     "price": 8,
     "tier": 1
+  },
+  {
+    "id": "worg_tooth",
+    "name": "Worg Tooth",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 12,
+    "tier": 1
+  },
+  {
+    "id": "worg_claw",
+    "name": "Worg Claw",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 30,
+    "tier": 1
+  },
+  {
+    "id": "grave_iron",
+    "name": "Grave Iron",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 16,
+    "tier": 1
+  },
+  {
+    "id": "chill_crystal",
+    "name": "Chill Crystal",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 28,
+    "tier": 1
+  },
+  {
+    "id": "blessed_ash",
+    "name": "Blessed Ash",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 20,
+    "tier": 1
+  },
+  {
+    "id": "iron_scrap",
+    "name": "Iron Scrap",
+    "kind": "miscellaneous",
+    "heal_amount": 0,
+    "price": 8,
+    "tier": 1
   }
 ]
