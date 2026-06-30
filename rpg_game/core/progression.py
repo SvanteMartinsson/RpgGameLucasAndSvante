@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 
-from rpg_game.core import equipment
+from rpg_game.core import equipment, entities
 from rpg_game.core.entities import Player
 
 # Gold lost on death scales with level: level * GOLD_LOSS_PER_LEVEL.
@@ -143,21 +143,23 @@ def award_xp(player: Player, amount: int) -> int:
     return levels_gained
 
 
-# B35: a level-up grants EVERY stat its baseline; the chosen MAIN stat takes the
-# bigger main value instead of its baseline. Universal + flat — no level scaling,
-# no per-class difference. Choices: hp / mana / damage / crit (no speed).
-LEVEL_STAT_BASELINE = {"hp": 2, "mana": 2, "damage": 1, "crit": 1}
-LEVEL_STAT_MAIN = {"hp": 8, "mana": 8, "damage": 4, "crit": 4}
-_STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit"}
+# B35 + Wisdom slice: a level-up grants EVERY stat its baseline; the chosen MAIN
+# stat takes the bigger main value instead. Universal + flat — no level scaling, no
+# per-class difference. Choices: hp / wisdom / damage / crit (no speed, no mana —
+# mana is derived from wisdom). Wisdom has no baseline; its main value is a
+# PLACEHOLDER (tuned in Wisdom Slice B against the B37 sim).
+LEVEL_STAT_BASELINE = {"hp": 2, "damage": 1, "crit": 1}
+LEVEL_STAT_MAIN = {"hp": 8, "damage": 4, "crit": 4, "wisdom": 1}
+_STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit", "wis": "wisdom"}
 
 
 def level_up_gains(main_stat: str) -> dict[str, int]:
     """The per-stat increase for a level-up where `main_stat` was chosen: every
-    stat gets its baseline, the main stat gets the main value instead."""
+    stat gets its baseline (wisdom has none), the main stat gets the main value."""
     main = _STAT_ALIASES.get(main_stat.strip().lower(), main_stat.strip().lower())
     if main not in LEVEL_STAT_MAIN:
-        raise ValueError("stat must be one of: hp, mana, damage, crit")
-    return {stat: (LEVEL_STAT_MAIN[stat] if stat == main else LEVEL_STAT_BASELINE[stat])
+        raise ValueError("stat must be one of: hp, wisdom, damage, crit")
+    return {stat: (LEVEL_STAT_MAIN[stat] if stat == main else LEVEL_STAT_BASELINE.get(stat, 0))
             for stat in LEVEL_STAT_MAIN}
 
 
@@ -168,13 +170,14 @@ def apply_stat_choice(player: Player, stat: str) -> str:
     gains = level_up_gains(stat)
     main = _STAT_ALIASES.get(stat.strip().lower(), stat.strip().lower())
     player.max_hp += gains["hp"]
-    player.max_mana += gains["mana"]
     player.base_damage += gains["damage"]
     player.crit_chance += gains["crit"]
+    player.wisdom += gains["wisdom"]            # raises derived max_mana by wisdom*MANA_PER_WISDOM
     # Heal into the new headroom so the level feels rewarding.
     player.hp = min(equipment.effective_stat(player, "max_hp"), player.hp + gains["hp"])
-    player.mana = min(equipment.effective_stat(player, "max_mana"), player.mana + gains["mana"])
+    player.mana = min(equipment.effective_stat(player, "max_mana"),
+                      player.mana + gains["wisdom"] * entities.MANA_PER_WISDOM)
 
     player.pending_stat_choices -= 1
-    return (f"Level up ({main.upper()}): HP +{gains['hp']}, Mana +{gains['mana']}, "
+    return (f"Level up ({main.upper()}): HP +{gains['hp']}, Wisdom +{gains['wisdom']}, "
             f"Damage +{gains['damage']}, Crit +{gains['crit']}.")

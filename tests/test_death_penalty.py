@@ -16,12 +16,12 @@ class DeathPenaltyTest(unittest.TestCase):
     def test_respawn_restores_full_hp_and_mana(self):
         engine = _engine()
         p = engine.player
-        p.max_hp, p.max_mana, p.gold, p.xp, p.level = 101, 51, 0, 0, 1
+        p.max_hp, p.wisdom, p.gold, p.xp, p.level = 101, 10, 0, 0, 1  # wisdom 10 -> 50 mana
         p.hp, p.mana = 1, 0
         result = progression.apply_death_penalty(p)
         self.assertEqual(p.hp, 101)   # full, no soft-lock at half HP
-        self.assertEqual(p.mana, 51)
-        self.assertEqual((result.hp, result.mana), (101, 51))
+        self.assertEqual(p.mana, 50)  # derived max_mana = wisdom * 5
+        self.assertEqual((result.hp, result.mana), (101, 50))
 
     def test_xp_resets_to_floor_level_unchanged(self):
         engine = _engine()

@@ -24,7 +24,7 @@ from typing import Callable
 
 import pygame
 
-from rpg_game.core import combat
+from rpg_game.core import combat, entities
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
@@ -720,7 +720,7 @@ def _class_stat_lines(engine: GameEngine, cls) -> list[str]:
         f"Max HP      {cls.max_hp}",
         f"Base damage {cls.base_damage}",
         f"Armor       {cls.armor}",
-        f"Max mana    {cls.max_mana}",
+        f"Wisdom      {cls.wisdom}  (Mana {cls.wisdom * entities.MANA_PER_WISDOM})",
         f"Speed       {cls.speed}",
         f"Crit chance {cls.crit_chance}%",
         "",

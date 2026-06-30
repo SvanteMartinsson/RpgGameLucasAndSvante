@@ -99,7 +99,7 @@ class PygameTournamentTest(unittest.TestCase):
 
         self.assertEqual(self.app.mode, "tournament_intermission")
         self.assertEqual(self.app.engine.player.hp, self.app.engine.player.max_hp)
-        self.assertEqual(self.app.engine.player.mana, self.app.engine.player.max_mana)
+        self.assertEqual(self.app.engine.player.mana, self.app.engine.effective_stat('max_mana'))
 
     def test_tournament_battle_hides_flee_and_swap(self):
         engine = GameEngine()

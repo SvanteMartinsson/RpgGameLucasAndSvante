@@ -141,7 +141,7 @@ def show_stats(engine: GameEngine) -> None:
     print(f"Level: {player.level}")
     print(f"XP: {player.xp}/{player.xp_required}")
     print(f"HP: {player.hp}/{player.max_hp}")
-    print(f"Mana: {player.mana}/{player.max_mana}")
+    print(f"Mana: {player.mana}/{engine.effective_stat('max_mana')}  (Wisdom {player.wisdom})")
     print(f"Base damage: {player.base_damage}")
     print(f"Weapon: {weapon.name} (+{weapon.damage_bonus}, tier {weapon.tier})")
     print(f"Total damage: {total_damage}")
@@ -308,7 +308,7 @@ def print_combat_status(engine: GameEngine, enemy) -> None:
     player = engine.player
     print()
     print(
-        f"You: HP {player.hp}/{player.max_hp} | Mana {player.mana}/{player.max_mana}"
+        f"You: HP {player.hp}/{player.max_hp} | Mana {player.mana}/{engine.effective_stat('max_mana')}"
         f"{status_suffix(engine, player)}"
     )
     for line in enemy_status_lines(engine, enemy):

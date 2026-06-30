@@ -5,11 +5,13 @@
     "max_hp": 100,
     "base_damage": 15,
     "armor": 0,
-    "max_mana": 20,
+    "wisdom": 4,
     "speed": 11,
     "crit_chance": 5,
     "starting_weapon_id": "worn_shortsword",
-    "starting_skill_ids": ["frenzy"]
+    "starting_skill_ids": [
+      "frenzy"
+    ]
   },
   {
     "id": "tank",
@@ -17,11 +19,13 @@
     "max_hp": 130,
     "base_damage": 8,
     "armor": 4,
-    "max_mana": 15,
+    "wisdom": 3,
     "speed": 7,
     "crit_chance": 0,
     "starting_weapon_id": "mace",
-    "starting_skill_ids": ["block"]
+    "starting_skill_ids": [
+      "block"
+    ]
   },
   {
     "id": "cleric",
@@ -29,11 +33,13 @@
     "max_hp": 90,
     "base_damage": 10,
     "armor": 0,
-    "max_mana": 30,
+    "wisdom": 6,
     "speed": 10,
     "crit_chance": 0,
     "starting_weapon_id": "holy_mace",
-    "starting_skill_ids": ["smite"]
+    "starting_skill_ids": [
+      "smite"
+    ]
   },
   {
     "id": "rogue",
@@ -41,11 +47,13 @@
     "max_hp": 80,
     "base_damage": 13,
     "armor": 0,
-    "max_mana": 20,
+    "wisdom": 4,
     "speed": 16,
     "crit_chance": 10,
     "starting_weapon_id": "dagger",
-    "starting_skill_ids": ["backstab"]
+    "starting_skill_ids": [
+      "backstab"
+    ]
   },
   {
     "id": "mage",
@@ -53,11 +61,13 @@
     "max_hp": 75,
     "base_damage": 12,
     "armor": 0,
-    "max_mana": 40,
+    "wisdom": 8,
     "speed": 9,
     "crit_chance": 0,
     "starting_weapon_id": "staff",
-    "starting_skill_ids": ["firebolt"]
+    "starting_skill_ids": [
+      "firebolt"
+    ]
   },
   {
     "id": "hunter",
@@ -65,10 +75,12 @@
     "max_hp": 85,
     "base_damage": 13,
     "armor": 1,
-    "max_mana": 25,
+    "wisdom": 5,
     "speed": 13,
     "crit_chance": 8,
     "starting_weapon_id": "bow",
-    "starting_skill_ids": ["aimed_shot"]
+    "starting_skill_ids": [
+      "aimed_shot"
+    ]
   }
 ]

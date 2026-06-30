@@ -94,7 +94,8 @@ class EquipmentCoreTests(unittest.TestCase):
         self.assertEqual(engine.player.hp, 50)
         self.assertEqual(engine.player.mana, 5)
         self.assertEqual(engine.effective_stat("max_hp"), engine.player.max_hp + 5)
-        self.assertEqual(engine.effective_stat("max_mana"), engine.player.max_mana + 10)
+        # max_mana is derived: wisdom*5 (base) + focus_band's +10 max_mana gear bonus.
+        self.assertEqual(engine.effective_stat("max_mana"), engine.player.wisdom * 5 + 10)
 
         engine.player.hp = engine.effective_stat("max_hp")
         engine.player.mana = engine.effective_stat("max_mana")
@@ -102,7 +103,7 @@ class EquipmentCoreTests(unittest.TestCase):
         engine.unequip_gear("ring_1")
 
         self.assertEqual(engine.player.hp, engine.player.max_hp)
-        self.assertEqual(engine.player.mana, engine.player.max_mana)
+        self.assertEqual(engine.player.mana, engine.effective_stat("max_mana"))
 
     def test_save_load_preserves_owned_and_equipped_gear(self):
         engine = self.make_engine()

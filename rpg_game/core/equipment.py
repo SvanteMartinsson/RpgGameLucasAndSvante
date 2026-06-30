@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from rpg_game.core.entities import GameContent, GearItem, Player
 
 
-ALLOWED_GEAR_STATS = {"max_hp", "max_mana", "armor", "speed", "crit_chance", "damage"}
+ALLOWED_GEAR_STATS = {"max_hp", "max_mana", "armor", "speed", "crit_chance", "damage", "wisdom"}
 
 
 @dataclass(frozen=True)

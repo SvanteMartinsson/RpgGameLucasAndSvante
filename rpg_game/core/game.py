@@ -82,8 +82,9 @@ class GameEngine:
             xp_required=progression.xp_required_for_level(1),
             hp=player_class.max_hp,
             max_hp=player_class.max_hp,
-            mana=player_class.max_mana,
-            max_mana=player_class.max_mana,
+            mana=0,                       # set to derived max below
+            max_mana=0,                   # derived from wisdom, never a stored base
+            wisdom=player_class.wisdom,
             base_damage=player_class.base_damage,
             armor=player_class.armor,
             speed=player_class.speed,
@@ -110,6 +111,7 @@ class GameEngine:
             and node.action_id in player_class.starting_skill_ids
         }
         equipment.recompute_gear_modifiers(player, self.content)
+        player.mana = equipment.effective_stat(player, "max_mana")  # start full (derived)
         # One free rest, carried as an inventory item (B20). The voucher IS the
         # free-rest grant — no separate "first rest free" flag — and persists with
         # the inventory like any other item.

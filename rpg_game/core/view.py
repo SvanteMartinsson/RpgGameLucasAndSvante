@@ -102,6 +102,7 @@ class PlayerSnapshot:
     max_hp: int
     mana: int
     max_mana: int
+    wisdom: int
     base_damage: int
     weapon_damage_bonus: int
     total_damage: int
@@ -155,6 +156,7 @@ def build_snapshot(engine: "GameEngine") -> GameSnapshot:
             max_hp=engine.effective_stat("max_hp"),
             mana=player.mana,
             max_mana=engine.effective_stat("max_mana"),
+            wisdom=engine.effective_stat("wisdom"),
             base_damage=player.base_damage,
             weapon_damage_bonus=weapon.damage_bonus,
             total_damage=engine.effective_stat("damage") + weapon.damage_bonus,

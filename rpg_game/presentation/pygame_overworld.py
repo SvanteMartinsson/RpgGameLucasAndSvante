@@ -1723,7 +1723,9 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render("Stats  base -> +gear -> total", True, TEXT_DIM), (stats_rect.x, stats_rect.y - 24))
         stat_rows = [
             ("max_hp", "HP", self.engine.player.max_hp),
-            ("max_mana", "Mana", self.engine.player.max_mana),
+            # Mana is derived from Wisdom (shown in the header); the stats grid shows
+            # Wisdom itself (base -> +gear -> total).
+            ("wisdom", "Wisdom", self.engine.player.wisdom),
             ("damage", "Damage", self.engine.player.base_damage),
             ("armor", "Armor", self.engine.player.armor),
             ("speed", "Speed", self.engine.player.speed),

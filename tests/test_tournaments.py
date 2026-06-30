@@ -167,9 +167,9 @@ class TournamentProgressionTests(unittest.TestCase):
         result = engine.recover_between_tournament_matches()
 
         self.assertEqual(engine.player.hp, engine.player.max_hp)
-        self.assertEqual(engine.player.mana, engine.player.max_mana)
+        self.assertEqual(engine.player.mana, engine.effective_stat('max_mana'))
         self.assertEqual(result.player_hp, engine.player.max_hp)
-        self.assertEqual(result.player_mana, engine.player.max_mana)
+        self.assertEqual(result.player_mana, engine.effective_stat('max_mana'))
 
     def test_tournament_completion_survives_save_load(self):
         engine = GameEngine()

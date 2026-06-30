@@ -18,7 +18,7 @@ from rpg_game.core.game import GameEngine
 # so a mana-mage is measured with the resource its skills need.
 _DEFAULT_MAIN = {
     "fighter": "damage", "tank": "hp", "rogue": "damage",
-    "mage": "mana", "cleric": "mana", "hunter": "damage",
+    "mage": "wisdom", "cleric": "wisdom", "hunter": "damage",
 }
 
 

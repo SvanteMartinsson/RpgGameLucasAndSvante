@@ -35,7 +35,7 @@ class SkillSimTests(unittest.TestCase):
         self.assertIsNone(S._choose_skill(engine))            # broke -> no skill, will attack
 
     def test_default_main_stat_makes_casters_take_mana(self):
-        self.assertEqual(S._DEFAULT_MAIN["mage"], "mana")
+        self.assertEqual(S._DEFAULT_MAIN["mage"], "wisdom")
         self.assertEqual(S._DEFAULT_MAIN["fighter"], "damage")
 
 

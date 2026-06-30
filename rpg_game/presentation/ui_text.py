@@ -261,7 +261,7 @@ CONTINUE_HINT = "Press any key / click to continue"
 LEVELUP_TITLE = "LEVEL UP — choose a bonus"
 # B35: pick a main stat at level-up (no speed). Main +8/+8/+4/+4; all others get
 # their baseline (+2/+2/+1/+1).
-STAT_CHOICES = [("+8 max HP", "hp"), ("+8 max Mana", "mana"),
+STAT_CHOICES = [("+8 max HP", "hp"), ("+1 Wisdom (+5 Mana)", "wisdom"),
                 ("+4 damage", "damage"), ("+4 crit", "crit")]
 LEVELUP_PROMPT = "Level up! Choose a main stat."
 

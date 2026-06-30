@@ -18,21 +18,28 @@ class LevelUpStatTests(unittest.TestCase):
 
     def _baseline(self):
         p = self.engine.player
-        return (p.max_hp, p.max_mana, p.base_damage, p.crit_chance)
+        return (p.max_hp, p.wisdom, p.base_damage, p.crit_chance)
 
     def _apply(self, stat):
         self.engine.player.pending_stat_choices += 1
         before = self._baseline()
         self.engine.apply_stat_choice(stat)
         after = self._baseline()
-        return tuple(a - b for a, b in zip(after, before))  # (dhp, dmana, ddmg, dcrit)
+        return tuple(a - b for a, b in zip(after, before))  # (dhp, dwisdom, ddmg, dcrit)
 
     def test_each_main_choice_applies_baseline_plus_main(self):
-        # (HP, Mana, Damage, Crit) deltas — main +8/+8/+4/+4, others +2/+2/+1/+1.
-        self.assertEqual(self._apply("hp"), (8, 2, 1, 1))
-        self.assertEqual(self._apply("mana"), (2, 8, 1, 1))
-        self.assertEqual(self._apply("damage"), (2, 2, 4, 1))
-        self.assertEqual(self._apply("crit"), (2, 2, 1, 4))
+        # (HP, Wisdom, Damage, Crit) deltas. Mana is gone (derived from wisdom);
+        # wisdom has no baseline, so non-wisdom picks raise it by 0.
+        self.assertEqual(self._apply("hp"), (8, 0, 1, 1))
+        self.assertEqual(self._apply("wisdom"), (2, 1, 1, 1))
+        self.assertEqual(self._apply("damage"), (2, 0, 4, 1))
+        self.assertEqual(self._apply("crit"), (2, 0, 1, 4))
+
+    def test_choosing_wisdom_raises_derived_max_mana(self):
+        before = self.engine.effective_stat("max_mana")
+        self.engine.player.pending_stat_choices = 1
+        self.engine.apply_stat_choice("wisdom")
+        self.assertEqual(self.engine.effective_stat("max_mana"), before + 5)
 
     def test_no_level_scaling_or_per_class_difference(self):
         # The bundle is identical at any level and for any class.
@@ -40,11 +47,11 @@ class LevelUpStatTests(unittest.TestCase):
             eng = GameEngine(); eng.start_new_game("H", class_id)
             eng.player.level = 6
             eng.player.pending_stat_choices = 1
-            base = (eng.player.max_hp, eng.player.max_mana, eng.player.base_damage, eng.player.crit_chance)
+            base = (eng.player.max_hp, eng.player.wisdom, eng.player.base_damage, eng.player.crit_chance)
             eng.apply_stat_choice("damage")
-            delta = (eng.player.max_hp - base[0], eng.player.max_mana - base[1],
+            delta = (eng.player.max_hp - base[0], eng.player.wisdom - base[1],
                      eng.player.base_damage - base[2], eng.player.crit_chance - base[3])
-            self.assertEqual(delta, (2, 2, 4, 1), class_id)
+            self.assertEqual(delta, (2, 0, 4, 1), class_id)
 
     def test_speed_is_not_a_choice(self):
         self.assertNotIn("speed", progression.LEVEL_STAT_MAIN)
@@ -62,14 +69,14 @@ class LevelUpStatTests(unittest.TestCase):
     def test_chosen_stats_persist_through_save_load(self):
         self.engine.player.pending_stat_choices = 1
         self.engine.apply_stat_choice("crit")
-        snapshot = (self.engine.player.max_hp, self.engine.player.max_mana,
+        snapshot = (self.engine.player.max_hp, self.engine.player.wisdom,
                     self.engine.player.base_damage, self.engine.player.crit_chance)
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, "save.json")
             self.engine.save(path)
             loaded = GameEngine(content=self.engine.content)
             loaded.load(path)
-        self.assertEqual((loaded.player.max_hp, loaded.player.max_mana,
+        self.assertEqual((loaded.player.max_hp, loaded.player.wisdom,
                           loaded.player.base_damage, loaded.player.crit_chance), snapshot)
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import entities
 from rpg_game.core.entities import ActiveStatus, GameState, Inventory, Player
 
 
@@ -88,7 +89,7 @@ def serialize_player(player: Player) -> dict:
         "owned_gear_ids": list(player.owned_gear_ids),
         "equipped_gear": dict(player.equipped_gear),
         "mana": player.mana,
-        "max_mana": player.max_mana,
+        "wisdom": player.wisdom,
         "speed": player.speed,
         "crit_chance": player.crit_chance,
         "crit_mult": player.crit_mult,
@@ -146,7 +147,9 @@ def deserialize_player(data: dict, default_place_id: str = "") -> Player:
         owned_gear_ids=tuple(data.get("owned_gear_ids", ())),
         equipped_gear={key: str(value) for key, value in data.get("equipped_gear", {}).items()},
         mana=data.get("mana", 0),
-        max_mana=data.get("max_mana", 0),
+        # max_mana is derived from wisdom; old saves only stored max_mana, so fall
+        # back to max_mana // MANA_PER_WISDOM when wisdom is absent.
+        wisdom=data.get("wisdom", data.get("max_mana", 0) // entities.MANA_PER_WISDOM),
         speed=data.get("speed", 0),
         crit_chance=data.get("crit_chance", 0),
         crit_mult=data.get("crit_mult", 2.0),

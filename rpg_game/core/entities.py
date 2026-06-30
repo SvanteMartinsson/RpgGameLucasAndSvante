@@ -9,6 +9,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# Wisdom drives mana: effective max_mana = wisdom * MANA_PER_WISDOM + gear(max_mana).
+# Placeholder ratio, tuned in Wisdom Slice B against the B37 sim.
+MANA_PER_WISDOM = 5
+
 
 @dataclass(frozen=True)
 class PlayerClass:
@@ -17,7 +21,7 @@ class PlayerClass:
     max_hp: int
     base_damage: int
     armor: int
-    max_mana: int
+    wisdom: int          # start wisdom; max_mana is derived (wisdom * MANA_PER_WISDOM)
     speed: int
     crit_chance: int
     starting_weapon_id: str
@@ -343,7 +347,8 @@ class Player:
     equipped_gear: dict[str, str] = field(default_factory=dict)
     gear_stat_modifiers: dict[str, int] = field(default_factory=dict)
     mana: int = 0
-    max_mana: int = 0
+    max_mana: int = 0          # NOT a stored base: max_mana is derived from wisdom
+    wisdom: int = 0
     speed: int = 0
     crit_chance: int = 0
     crit_mult: float = 2.0
@@ -371,6 +376,11 @@ class Player:
         return self.hp > 0
 
     def effective_stat(self, stat: str) -> int:
+        # max_mana is DERIVED from wisdom (no stored base): effective wisdom (base +
+        # gear) * MANA_PER_WISDOM, plus any direct max_mana gear bonus.
+        if stat == "max_mana":
+            wisdom = self.wisdom + self.gear_stat_modifiers.get("wisdom", 0)
+            return int(wisdom * MANA_PER_WISDOM + self.gear_stat_modifiers.get("max_mana", 0))
         value = getattr(self, "base_damage" if stat == "damage" else stat)
         return int(value + self.gear_stat_modifiers.get(stat, 0))
 

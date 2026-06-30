@@ -166,7 +166,7 @@ class WeaponGatingTests(unittest.TestCase):
             weapon=tank_engine.content.weapons["staff"],
         )
         self.assertTrue(blocked.blocked)
-        self.assertEqual(tank_engine.player.mana, tank_engine.player.max_mana)
+        self.assertEqual(tank_engine.player.mana, tank_engine.effective_stat('max_mana'))
 
         combat.resolve_action(
             tank_engine.player,

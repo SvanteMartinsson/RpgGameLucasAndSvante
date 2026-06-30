@@ -49,7 +49,7 @@ def load_content() -> GameContent:
             max_hp=row["max_hp"],
             base_damage=row["base_damage"],
             armor=row["armor"],
-            max_mana=row["max_mana"],
+            wisdom=row["wisdom"],
             speed=row["speed"],
             crit_chance=row.get("crit_chance", 0),
             starting_weapon_id=row["starting_weapon_id"],

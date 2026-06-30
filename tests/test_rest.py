@@ -30,7 +30,7 @@ class RestTests(unittest.TestCase):
 
         self.assertEqual(result.outcome, "rested")
         self.assertEqual(engine.player.hp, engine.player.max_hp)
-        self.assertEqual(engine.player.mana, engine.player.max_mana)
+        self.assertEqual(engine.player.mana, engine.effective_stat('max_mana'))
 
     def test_rest_outside_town_is_rejected_and_does_not_mutate_state(self):
         engine = GameEngine()
