@@ -27,14 +27,17 @@ class SpellScalingTests(unittest.TestCase):
         self.assertEqual(combat.spell_source_value(e.player, mace), expected)
 
     def test_smite_uses_spell_scale(self):
-        # cleric (dmg 10, wisdom 6), holy_mace +0 -> source 8; smite x1.5 -> 12 vs a
-        # neutral target (giant_rat: holy 1.0, armor 0).
+        # smite damage = spell source x its (sim-tuned) multiplier, vs a neutral
+        # target (giant_rat: holy 1.0, armor 0). Read the multiplier from data so
+        # the relation holds whatever Slice B tuned it to.
         e = self._cleric()
         rat = e.content.enemies["giant_rat"].create_enemy(); rat.hp = 999
-        result = combat.resolve_action(e.player, rat, e.content.actions["smite"], e.rng,
+        smite = e.content.actions["smite"]
+        mult = next(eff.multiplier for eff in smite.effects if eff.type == "instant_damage")
+        result = combat.resolve_action(e.player, rat, smite, e.rng,
                                        weapon=e.content.weapons["holy_mace"])
         src = combat.spell_source_value(e.player, e.content.weapons["holy_mace"])
-        self.assertEqual(result.total_damage, round_half_up(src * 1.5))
+        self.assertEqual(result.total_damage, round_half_up(src * mult))
 
     def test_smite_scales_with_wisdom(self):
         e = self._cleric()

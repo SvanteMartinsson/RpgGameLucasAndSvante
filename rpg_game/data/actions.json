@@ -72,7 +72,7 @@
       {
         "type": "instant_damage",
         "scale": "spell",
-        "multiplier": 1.5,
+        "multiplier": 1.8,
         "damage_type": "holy",
         "target": "enemy"
       }

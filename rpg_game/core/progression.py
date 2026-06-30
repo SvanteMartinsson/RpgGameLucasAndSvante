@@ -146,10 +146,11 @@ def award_xp(player: Player, amount: int) -> int:
 # B35 + Wisdom slice: a level-up grants EVERY stat its baseline; the chosen MAIN
 # stat takes the bigger main value instead. Universal + flat — no level scaling, no
 # per-class difference. Choices: hp / wisdom / damage / crit (no speed, no mana —
-# mana is derived from wisdom). Wisdom has no baseline; its main value is a
-# PLACEHOLDER (tuned in Wisdom Slice B against the B37 sim).
+# mana is derived from wisdom). Wisdom has no baseline; its main value is +2 (Wisdom
+# Slice B, sim-tuned): it both scales spell damage with level toward TTK parity and
+# makes the wisdom level-up choice competitive with damage +4.
 LEVEL_STAT_BASELINE = {"hp": 2, "damage": 1, "crit": 1}
-LEVEL_STAT_MAIN = {"hp": 8, "damage": 4, "crit": 4, "wisdom": 1}
+LEVEL_STAT_MAIN = {"hp": 8, "damage": 4, "crit": 4, "wisdom": 2}
 _STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit", "wis": "wisdom"}
 
 

@@ -2,7 +2,7 @@ import random
 import tempfile
 import unittest
 
-from rpg_game.core import combat
+from rpg_game.core import combat, entities
 from rpg_game.core.entities import EffectSpec, Weapon
 from rpg_game.core.game import GameEngine
 
@@ -94,8 +94,9 @@ class EquipmentCoreTests(unittest.TestCase):
         self.assertEqual(engine.player.hp, 50)
         self.assertEqual(engine.player.mana, 5)
         self.assertEqual(engine.effective_stat("max_hp"), engine.player.max_hp + 5)
-        # max_mana is derived: wisdom*5 (base) + focus_band's +10 max_mana gear bonus.
-        self.assertEqual(engine.effective_stat("max_mana"), engine.player.wisdom * 5 + 10)
+        # max_mana is derived: wisdom*MANA_PER_WISDOM + focus_band's +10 max_mana gear bonus.
+        self.assertEqual(engine.effective_stat("max_mana"),
+                         engine.player.wisdom * entities.MANA_PER_WISDOM + 10)
 
         engine.player.hp = engine.effective_stat("max_hp")
         engine.player.mana = engine.effective_stat("max_mana")

@@ -7,7 +7,7 @@ import os
 import tempfile
 import unittest
 
-from rpg_game.core import progression
+from rpg_game.core import entities, progression
 from rpg_game.core.game import GameEngine
 
 
@@ -29,9 +29,11 @@ class LevelUpStatTests(unittest.TestCase):
 
     def test_each_main_choice_applies_baseline_plus_main(self):
         # (HP, Wisdom, Damage, Crit) deltas. Mana is gone (derived from wisdom);
-        # wisdom has no baseline, so non-wisdom picks raise it by 0.
+        # wisdom has no baseline, so non-wisdom picks raise it by 0. The wisdom
+        # main step is sim-tuned (Slice B) -> read it from the table, not a literal.
+        wis = progression.LEVEL_STAT_MAIN["wisdom"]
         self.assertEqual(self._apply("hp"), (8, 0, 1, 1))
-        self.assertEqual(self._apply("wisdom"), (2, 1, 1, 1))
+        self.assertEqual(self._apply("wisdom"), (2, wis, 1, 1))
         self.assertEqual(self._apply("damage"), (2, 0, 4, 1))
         self.assertEqual(self._apply("crit"), (2, 0, 1, 4))
 
@@ -39,7 +41,8 @@ class LevelUpStatTests(unittest.TestCase):
         before = self.engine.effective_stat("max_mana")
         self.engine.player.pending_stat_choices = 1
         self.engine.apply_stat_choice("wisdom")
-        self.assertEqual(self.engine.effective_stat("max_mana"), before + 5)
+        gained = progression.LEVEL_STAT_MAIN["wisdom"] * entities.MANA_PER_WISDOM
+        self.assertEqual(self.engine.effective_stat("max_mana"), before + gained)
 
     def test_no_level_scaling_or_per_class_difference(self):
         # The bundle is identical at any level and for any class.

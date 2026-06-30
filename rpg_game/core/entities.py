@@ -10,8 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 # Wisdom drives mana: effective max_mana = wisdom * MANA_PER_WISDOM + gear(max_mana).
-# Placeholder ratio, tuned in Wisdom Slice B against the B37 sim.
-MANA_PER_WISDOM = 5
+# Wisdom Slice B (sim-tuned): 4 keeps the per-encounter mana cadence (~1.5-6 fights
+# per rest) steady now that wisdom grows +2/level, instead of ballooning the pool.
+MANA_PER_WISDOM = 4
 
 
 @dataclass(frozen=True)

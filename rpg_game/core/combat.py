@@ -331,8 +331,9 @@ def effectiveness_label(resist: float) -> str:
     return ""
 
 
-# Wisdom slice: player magic effects scale off WISDOM as well as damage. The split
-# (0.4/0.6) and the per-spell multipliers are PLACEHOLDERS tuned in Wisdom Slice B.
+# Wisdom slice: player magic effects scale off WISDOM as well as damage. Wisdom
+# Slice B validated the 0.4/0.6 split against the B37 sim and kept it; caster TTK is
+# scaled toward parity via wisdom +2/level (progression) rather than reweighting.
 SPELL_DAMAGE_WEIGHT = 0.4
 SPELL_WISDOM_WEIGHT = 0.6
 
