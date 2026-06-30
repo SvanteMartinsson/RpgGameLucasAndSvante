@@ -148,6 +148,24 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual(self.app.event_log[-1][0], "Hello")
         self.assertFalse(hasattr(self.app, "toast"))
 
+    # -- B39: chatbox word-wrap (no truncation) -----------------------------
+
+    def test_long_log_line_wraps_to_several_visual_lines_without_ellipsis(self):
+        self.app.display = pygame.Surface((960, 640))
+        long_line = ("The ancient hollow worg lunges from the treeline and "
+                     "savages you for a tremendous amount of physical damage!")
+        self.app.push_log(long_line, (1, 2, 3))
+        visual = [t for t, _c, _newest in self.app._visual_log_lines()]
+        pieces = [t for t in visual if t and t in long_line]
+        self.assertGreater(len(pieces), 1, visual)            # wrapped, not one line
+        self.assertFalse(any("..." in t for t in visual), visual)  # never truncated
+        self.assertEqual(" ".join(pieces), long_line)         # full text preserved
+
+    def test_short_line_stays_one_visual_line(self):
+        self.app.push_log("Victory!", (1, 2, 3))
+        matches = [t for t, _c, _n in self.app._visual_log_lines() if t == "Victory!"]
+        self.assertEqual(len(matches), 1)
+
     # -- B31: HUD bars (no top bar, vitals above the chatbox) ---------------
 
     def test_vitals_bars_sit_above_the_chatbox(self):

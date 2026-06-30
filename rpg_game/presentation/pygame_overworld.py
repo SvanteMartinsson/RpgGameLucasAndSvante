@@ -570,7 +570,9 @@ class OverworldApp:
             self.log_scroll = min(self.log_scroll + 1, self._log_scroll_max())
 
     def _log_scroll_max(self) -> int:
-        return max(0, len(self.event_log) - self.log_visible)
+        # In VISUAL-line units (a wrapped entry counts as its rendered rows), so
+        # scrolling never strands wrapped text half-off the panel.
+        return max(0, len(self._visual_log_lines()) - self.log_visible)
 
     def scroll_log(self, lines: int) -> None:
         """Scroll the chatbox: +lines = older (up), -lines = newer (down)."""
@@ -1949,12 +1951,24 @@ class OverworldApp:
         panel_h = pad * 2 + line_h * self.log_visible
         return pygame.Rect(8, self.screen.get_height() - panel_h - 8, panel_w, panel_h)
 
+    def _visual_log_lines(self) -> list[tuple[str, tuple, bool]]:
+        """B39: the event log flattened into word-wrapped visual lines (no
+        truncation). Each entry becomes >=1 line via _wrapped_lines_pixels; the
+        bool flags lines from the newest entry so the renderer keeps them bright."""
+        width = self._log_rect().width - 8 * 2  # both-side padding
+        entries = list(self.event_log)
+        out: list[tuple[str, tuple, bool]] = []
+        for idx, (text, color) in enumerate(entries):
+            newest = idx == len(entries) - 1
+            for piece in self._wrapped_lines_pixels(text, width, self.font_sm):
+                out.append((piece, color, newest))
+        return out
+
     def _draw_log(self) -> None:
         """B29 chatbox: the single on-screen text surface. Semi-transparent panel,
-        bottom-left, showing log_visible lines ending at the scroll position; oldest
-        fade dimmer. A '... N more' hint and a scrollbar appear when scrolled up."""
-        lines = list(self.event_log)
-        n = len(lines)
+        bottom-left, showing log_visible VISUAL lines ending at the scroll position;
+        long lines word-wrap (never truncated). Oldest fade dimmer; a '... N more'
+        hint appears when scrolled up."""
         line_h = self.font_sm.get_height() + 3
         pad = 8
         rect = self._log_rect()
@@ -1962,17 +1976,17 @@ class OverworldApp:
         overlay.fill((10, 12, 18, 180))
         self.screen.blit(overlay, rect.topleft)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=4)
+        lines = self._visual_log_lines()
+        n = len(lines)
         if not lines:        # always show the panel (it's the primary HUD now)
             return
-        # Window of visible lines, clamped, honoring the scroll offset from the bottom.
-        self.log_scroll = min(self.log_scroll, self._log_scroll_max())
+        # Window of visible visual lines, clamped, honoring the scroll offset.
+        self.log_scroll = min(self.log_scroll, max(0, n - self.log_visible))
         end = n - self.log_scroll
         start = max(0, end - self.log_visible)
-        window = lines[start:end]
-        for i, (text, color) in enumerate(window):
-            newest_shown = (start + i) == n - 1
-            shade = color if newest_shown else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
-            surf = self.font_sm.render(self._fit_text(text, rect.width - pad * 2, self.font_sm), True, shade)
+        for i, (text, color, newest) in enumerate(lines[start:end]):
+            shade = color if newest else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
+            surf = self.font_sm.render(text, True, shade)
             self.screen.blit(surf, (rect.x + pad, rect.y + pad + i * line_h))
         if self.log_scroll:        # show there is newer text below the view
             hint = self.font_sm.render(f"v {self.log_scroll} more v", True, ACCENT)
