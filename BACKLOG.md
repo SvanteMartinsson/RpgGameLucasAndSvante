@@ -179,7 +179,24 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   per-spelare skill-power-mekanik för de 33 active-noderna = klass-bred ombalansering. **Designval
   för Lucas:** vilka effekt-typer rankas, per-rang-skalning, och hur active/skill-talanger skalar.
 
-#### B37 — Item-damage-rebalans + epic consecrated_maul (Spår A / #2)  · *nytt — ekonomi*  · ⚠️ **HALT (designbärande) — flaggad**
+#### B37 — Item-damage-rebalans + epic consecrated_maul (Spår A / #2)  · *nytt — ekonomi*  · 🟢 **Slice 1 KLAR** (vapen-omarbetning) · Slice 2 (epic-rarity + socket) kvar
+- **Slice 1 KLAR** (`ba5af71`/`2f7733b`/`ad5cf9d`/`05a83b8`): tier HÄRLEDS ur damage (ceil/5, ingen
+  hand-satt tier), required_level FRIKOPPLAD (t0-2→L1, t3→L3, t4→L5, t5→L8, t6→L11, t7+→L14).
+  worn_shortsword 2→0 (osåld), venomfang→poison(25), worgfang→25; 8 materialstege-fillers
+  (iron/steel-svärd, willow/maple/yew-bågar, adept_wand) → granulär tidig stege 0→3→5→8→9→13→14.
+  Weapon-aware sim tillagd (`best_weapon_for`).
+  - **Sim-resultat (200 trials, best-weapon+skills+B35+trait-matris, L1→10):** jämn ~100% on-level,
+    inga spiky-väggar kvar (gamla L3 22-51% / L7 0% borta). Vapenstege fighter L6 vs treant:
+    steg ≤4pp (94→95→95→95→96→100), inga 3×-hopp. Mage-med-mana **livsduglig** (L3 vs cave_bear:
+    attack-only 98%, skills 100% — mot gamla 0%). Holy mot undead: cleric smite dödar undead på
+    **3 rundor** men 0% mot neutral cave_bear utan dmg-vapen → stark specialist, ej trivialiserande
+    (alla 6 klasser slår undead on-level → ej holy-gated). **Ingen data-nudge behövdes.**
+  - **Kvar (flaggat, ej gissat):** de 8 fillers är ännu **ej åtkomliga** (ej i butiker/loot) —
+    placering per ort/drop = world-design, görs i en placerings-pass. `consecrated_maul` epic-rarity
+    + socket + droptable/`rare_tier_cap`/butik-konsekvens = **Slice 2**.
+
+##### B37 (ursprunglig HALT-kontext — bevarad)  · ⚠️
+
 - **Sänk damage-nivån rejält** och gör tidig kurva **granulär**: dagens vapen-uppgraderingar
   ger ~3× direkt (hårt före, trivialt efter). Behåll befintliga items men **+2 tiers på alla**,
   och lägg **nya t1–2-fillers** (små, mindre intressanta uppgraderingar för L1–4).
@@ -460,3 +477,6 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   vid load (core/traits.py); pipelinen oförändrad. Avsiktliga feel-flips (cave_bear/mudcrab/tar_beast/…).
 - **B39** (`416c997`/`c1e6a50`/`f0eb6dd`) — chatbox v3: battle-end dedup (en uppsättning rader, "dropped:"
   bort), word-wrap utan trunkering, HUD "Lv/Gold"-rad ovanför tjockare (18px) HP/Mana/XP-barer.
+- **B37 Slice 1** (`ba5af71`/`2f7733b`/`ad5cf9d`/`05a83b8`) — vapen-omarbetning: tier härleds ur damage,
+  required_level frikopplad (t-stege), worn=0/osåld, venomfang→poison, 8 materialstege-fillers,
+  weapon-aware sim. Curve verifierad jämn; mage-med-mana livsduglig; holy stark-ej-trivial mot undead.
