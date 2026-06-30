@@ -255,10 +255,33 @@ class BattleApp:
         result = self.engine.attempt_flee(self.enemy)
         self._consume_result(result, fled_action=True)
 
+    def _suppressed_narration(self, result: combat.CombatTurnResult) -> set[str]:
+        """Exact core victory-narration strings the chatbox must NOT echo, since the
+        presentation re-emits short equivalents (and the verbose "X dropped: ..."
+        line is dropped entirely in favour of the "Loot:" line). Reconstructed to
+        match game._handle_victory; "Gained N level(s)." is kept (not duplicated)."""
+        if result.outcome != "victory" or self.enemy is None:
+            return set()
+        lines = {
+            f"{self.enemy.name} was defeated.",
+            f"Gained {result.xp_gained} XP and {result.gold_gained} gold.",
+        }
+        drop = result.loot_drop
+        if drop is not None:
+            lines.add(f"{self.enemy.name} dropped: {drop.name} [{drop.rarity}] (tier {drop.tier})!")
+        return lines
+
     def _consume_result(self, result: combat.CombatTurnResult, fled_action: bool = False) -> None:
         if self.playtest_logger is not None and self.enemy is not None:
             self.playtest_logger.combat_result(result, self.enemy, build_snapshot(self.engine), self.location_id)
+        # B39: the core still RETURNS its battle-end narration (kept for tests), but
+        # the chatbox shows only the short presentation lines below ("Victory!" /
+        # "+N XP" / "+N gold" / "Loot: ..."). Suppress the core duplicates so each
+        # outcome logs exactly one set of lines.
+        suppressed = self._suppressed_narration(result)
         for event in result.events:
+            if event in suppressed:
+                continue
             self.push_log(event)
         if result.enemy_reveal is not None:
             for line in _reveal_lines(result.enemy_reveal):
