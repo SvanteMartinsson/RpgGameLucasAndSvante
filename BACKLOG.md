@@ -327,7 +327,20 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** N nya skills/vapen, data-drivna, sim-balanserade, test-täckta; en kort
   lista över vad som lagts till + var det kan återanvändas.
 
-#### B28 — Världsexpansion: större karta, glesare städer, kluster i alla (#3)  · *guidad (var batch-kandidat)*
+#### B28 — Världsexpansion: större karta, glesare städer, kluster i alla (#3)  · 🟢 **Karta KLAR (240×208)** · kluster-i-ALLA = B8 Slice 2 kvar
+- **KLART (`960d0a3`/`1985e10`):** kartan expanderad 80×56 → **240×208 med parametrisk terräng
+  (option A)** — `overworld_layout.py` härleder zon-band (cainos/mork_skog/cursed_mire nord,
+  grave_heath söder om seam y≈100), organisk kust som tätar kanten utom gate-mynningar, seam-kanal,
+  EN nordfödd flod → central hed-sjö, och **broar härledda ur verkliga inter-stads-rutter** (fyra
+  seam-övergångar spridda V→Ö, inkl. två östliga). `regenerate_overworld.py` målar layouten i TMX:en;
+  `core_zone.json` bär de 17 städerna på godkända koordinater + remappade gates/ground_themes/
+  wild_regions. B8-klustren (burg_5, burg_67) är procedurella → följde med + renderar intakt.
+  Verifierat: alla 17 städer + 3 gates nåbara (spel-sidans kollision), ingen stad i vatten, zoner rätt,
+  vatten ett sammanhängande område, TMX-laddtid ~0.55s. world.json (meny-resa) orört. 630 tester gröna.
+- **Kvar:** kluster i ALLA städer med tiered storlek (hub/medium/by) = **B8 Slice 2** (egen guidad pass,
+  render per stad). Nya ZONER (tema/svårighet per band) = designbärande, egen runda.
+
+##### B28 ursprunglig kontext (bevarad)
 - **Vad (#3):** **Förstora kartan** (idag 80×56 → t.ex. ~120×84) och **sprid ut stads-
   prickarna** så att de relativt stora kluster-städerna får plats utan att krocka (det var
   därför B28-batchen fick diskvalificera Alherralba/Rotequero — för trångt), och **bygg
@@ -480,3 +493,6 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **B37 Slice 1** (`ba5af71`/`2f7733b`/`ad5cf9d`/`05a83b8`) — vapen-omarbetning: tier härleds ur damage,
   required_level frikopplad (t-stege), worn=0/osåld, venomfang→poison, 8 materialstege-fillers,
   weapon-aware sim. Curve verifierad jämn; mage-med-mana livsduglig; holy stark-ej-trivial mot undead.
+- **#3 världsexpansion 240×208** (`960d0a3`/`1985e10`) — parametrisk terräng (option A): härledda zon-band,
+  kust, seam-kanal, nordfödd flod→sjö, broar ur rutter (4 seam-övergångar). 17 städer på nya koordinater,
+  klustren följde med intakt. All reachability/zon/vatten verifierad; 630 tester gröna. Kvar: B8 Slice 2.
