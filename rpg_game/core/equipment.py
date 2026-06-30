@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import upgrades
 from rpg_game.core.entities import GameContent, GearItem, Player
 
 
@@ -25,6 +26,9 @@ def recompute_gear_modifiers(player: Player, content: GameContent) -> None:
         for stat, value in gear.stat_modifiers.items():
             totals[stat] = totals.get(stat, 0) + value
     player.gear_stat_modifiers = {stat: value for stat, value in totals.items() if value}
+    # B37 Slice 2: fold in the equipped items' upgrade deltas (flats + the weapon's
+    # elemental component) before clamping, so raised HP/mana caps count.
+    upgrades.recompute_upgrade_modifiers(player, content)
     clamp_resource_caps(player)
 
 

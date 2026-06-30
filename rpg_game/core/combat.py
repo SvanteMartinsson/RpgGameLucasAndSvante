@@ -427,9 +427,12 @@ def _raw_damage_components(
 def _elemental_attack_components(actor: Actor, effect: EffectSpec, multiplier: float) -> list[tuple[int, str]]:
     if effect.scale != "basic_attack" or not isinstance(actor, Player):
         return []
+    # Passive elemental mods (talents) plus the equipped weapon's upgrade element
+    # (B37 Slice 2) both add a damage component of their type to the hit.
+    mods = list(actor.elemental_attack_mods) + list(actor.weapon_upgrade_components)
     return [
         (round_half_up(multiplier * int(mod["mod_value"])), str(mod["damage_type"]))
-        for mod in actor.elemental_attack_mods
+        for mod in mods
     ]
 
 

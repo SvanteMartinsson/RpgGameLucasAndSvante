@@ -818,6 +818,7 @@ class OverworldApp:
             # text ("... needs level N for Swap weapon.").
             self.set_toast(T.weapon_needs_level(weapon.name, combat.weapon_required_level(weapon)), BAD)
         else:
+            self.engine.recompute_equipment()   # reattach the new weapon's upgrade deltas
             self.set_toast(T.equipped_weapon(weapon.name), GOOD)
             self.playtest_logger.equip("weapon", weapon.id, damage_type=weapon.damage_type)
 

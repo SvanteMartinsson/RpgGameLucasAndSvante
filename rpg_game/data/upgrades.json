@@ -1,0 +1,83 @@
+{
+  "steel_greatsword": {
+    "category": "weapon",
+    "variants": [
+      {
+        "id": "honed",
+        "name": "Honed Greatsword",
+        "description": "Reground for raw cutting power and a keener edge.",
+        "mods": [
+          { "type": "flat", "stat": "damage", "value": 5 },
+          { "type": "flat", "stat": "crit_chance", "value": 3 }
+        ],
+        "gold": 220,
+        "materials": { "iron_scrap": 4, "grave_iron": 2 }
+      },
+      {
+        "id": "frostforged",
+        "name": "Frostforged Greatsword",
+        "description": "Quenched in rime so every blow carries biting frost.",
+        "mods": [
+          { "type": "element", "damage_type": "frost", "value": 6 },
+          { "type": "flat", "stat": "crit_chance", "value": 2 }
+        ],
+        "gold": 260,
+        "materials": { "chill_crystal": 1, "iron_scrap": 2 }
+      }
+    ]
+  },
+  "worgfang": {
+    "category": "weapon",
+    "variants": [
+      {
+        "id": "frostfang",
+        "name": "Frostfang Edge",
+        "description": "The fang sheathed in frost — physical bite plus a frozen wound.",
+        "mods": [
+          { "type": "element", "damage_type": "frost", "value": 7 },
+          { "type": "flat", "stat": "damage", "value": 2 }
+        ],
+        "gold": 300,
+        "materials": { "worg_tooth": 4, "chill_crystal": 1 }
+      },
+      {
+        "id": "savage",
+        "name": "Savage Edge",
+        "description": "Serrated with worg claws for brutal, crit-hungry strikes.",
+        "mods": [
+          { "type": "flat", "stat": "damage", "value": 6 },
+          { "type": "flat", "stat": "crit_chance", "value": 4 }
+        ],
+        "gold": 280,
+        "materials": { "worg_claw": 3 }
+      }
+    ]
+  },
+  "iron_cuirass": {
+    "category": "armour",
+    "variants": [
+      {
+        "id": "bulwark",
+        "name": "Bulwark Plating",
+        "description": "Reinforced plates trade nothing for solid, balanced defence.",
+        "mods": [
+          { "type": "flat", "stat": "armor", "value": 3 },
+          { "type": "flat", "stat": "max_hp", "value": 10 }
+        ],
+        "gold": 200,
+        "materials": { "iron_scrap": 5, "grave_iron": 2 }
+      },
+      {
+        "id": "warded",
+        "name": "Warded Plating",
+        "description": "Grave-iron wards swell the wearer's vitality above all else.",
+        "mods": [
+          { "type": "flat", "stat": "max_hp", "value": 20 },
+          { "type": "flat", "stat": "armor", "value": 1 }
+        ],
+        "gold": 220,
+        "materials": { "grave_iron": 4 }
+      }
+    ]
+  }
+}

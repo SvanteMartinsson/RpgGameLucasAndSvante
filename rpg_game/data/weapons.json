@@ -77,7 +77,8 @@
     "damage_bonus": 18,
     "price": 450,
     "damage_type": "physical",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "rare"
   },
   {
     "id": "emberwand",
@@ -101,7 +102,8 @@
     "damage_bonus": 24,
     "price": 800,
     "damage_type": "holy",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "rare"
   },
   {
     "id": "venomfang",
@@ -109,7 +111,8 @@
     "damage_bonus": 25,
     "price": 760,
     "damage_type": "poison",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "rare"
   },
   {
     "id": "pyre_scepter",
@@ -117,7 +120,8 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "fire",
-    "category": "magic"
+    "category": "magic",
+    "rarity": "rare"
   },
   {
     "id": "gravewarden_blade",
@@ -125,7 +129,8 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "holy",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "rare"
   },
   {
     "id": "worldsplitter",
@@ -133,7 +138,8 @@
     "damage_bonus": 38,
     "price": 2200,
     "damage_type": "physical",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "legendary"
   },
   {
     "id": "worn_shortsword",
@@ -165,7 +171,8 @@
     "damage_bonus": 25,
     "price": 740,
     "damage_type": "physical",
-    "category": "melee"
+    "category": "melee",
+    "rarity": "rare"
   },
   {
     "id": "recurve_bow",

@@ -26,6 +26,9 @@ from rpg_game.core.entities import (
     TalentNode,
     Tournament,
     TournamentReward,
+    UpgradeMod,
+    UpgradeRecipe,
+    UpgradeVariant,
     Weapon,
 )
 from rpg_game.core.equipment import ALLOWED_GEAR_STATS
@@ -39,6 +42,32 @@ DEFAULT_STORE_INVENTORY = ("hp_potion", "sword", "axe", "longsword")
 def _read_json(filename: str) -> Any:
     with (DATA_DIR / filename).open(encoding="utf-8") as file:
         return json.load(file)
+
+
+def _load_upgrade_recipes() -> dict[str, UpgradeRecipe]:
+    recipes: dict[str, UpgradeRecipe] = {}
+    for item_id, row in _read_json("upgrades.json").items():
+        variants = tuple(
+            UpgradeVariant(
+                id=v["id"],
+                name=v["name"],
+                description=v.get("description", ""),
+                mods=tuple(
+                    UpgradeMod(
+                        type=m["type"],
+                        stat=m.get("stat", ""),
+                        damage_type=m.get("damage_type", ""),
+                        value=int(m.get("value", 0)),
+                    )
+                    for m in v.get("mods", ())
+                ),
+                gold=int(v.get("gold", 0)),
+                materials=tuple((mid, int(count)) for mid, count in v.get("materials", {}).items()),
+            )
+            for v in row.get("variants", ())
+        )
+        recipes[item_id] = UpgradeRecipe(item_id=item_id, category=row["category"], variants=variants)
+    return recipes
 
 
 def load_content() -> GameContent:
@@ -72,6 +101,7 @@ def load_content() -> GameContent:
             # JSON is ignored.
             tier=combat.weapon_tier_from_damage(row["damage_bonus"]),
             category=row.get("category", "melee"),
+            rarity=row.get("rarity", "common"),
         )
         for row in _read_json("weapons.json")
     }
@@ -200,6 +230,7 @@ def load_content() -> GameContent:
     }
 
     rare_loot_table = tuple(_read_json("loot.json").get("rare_table", ()))
+    upgrade_recipes = _load_upgrade_recipes()
 
     world = _read_json("world.json")
     places = {}
@@ -252,6 +283,7 @@ def load_content() -> GameContent:
         enemies=enemies,
         places=places,
         rare_loot_table=rare_loot_table,
+        upgrade_recipes=upgrade_recipes,
     )
 
 

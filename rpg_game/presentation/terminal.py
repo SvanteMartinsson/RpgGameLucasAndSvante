@@ -643,6 +643,7 @@ def handle_equip_weapon(engine: GameEngine) -> None:
         for event in result.events:
             print(event)
     else:
+        engine.recompute_equipment()   # reattach the new weapon's upgrade deltas
         print(f"Equipped {weapon.name}.")
 
 

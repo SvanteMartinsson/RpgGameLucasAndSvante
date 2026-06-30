@@ -38,6 +38,37 @@ class Weapon:
     damage_type: str = "physical"
     tier: int = 1
     category: str = "melee"
+    # B37 Slice 2: rarity gates upgradability (>= rare). Tier stays derived from
+    # the BASE damage_bonus; an upgrade never touches tier or damage_bonus.
+    rarity: str = "common"
+
+
+@dataclass(frozen=True)
+class UpgradeMod:
+    """One stat change a chosen upgrade variant applies. `type` is "element" (adds
+    a damage component of `damage_type` on hit — weapon only) or "flat" (adds
+    `value` to the effective `stat`)."""
+    type: str
+    stat: str = ""
+    damage_type: str = ""
+    value: int = 0
+
+
+@dataclass(frozen=True)
+class UpgradeVariant:
+    id: str
+    name: str
+    description: str
+    mods: tuple[UpgradeMod, ...] = ()
+    gold: int = 0
+    materials: tuple[tuple[str, int], ...] = ()   # (material_item_id, count)
+
+
+@dataclass(frozen=True)
+class UpgradeRecipe:
+    item_id: str
+    category: str                                  # "weapon" | "armour"
+    variants: tuple[UpgradeVariant, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -382,6 +413,12 @@ class Player:
     elemental_attack_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
     completed_tournament_ids: set[str] = field(default_factory=set)
+    # B37 Slice 2: permanent one-time upgrades. item_id -> chosen variant id
+    # (presence == upgraded). The applied deltas live in upgrade_stat_bonuses /
+    # weapon_upgrade_components (derived, NOT persisted) — never in damage_bonus.
+    item_upgrades: dict[str, str] = field(default_factory=dict)
+    upgrade_stat_bonuses: dict[str, int] = field(default_factory=dict)
+    weapon_upgrade_components: list[dict[str, object]] = field(default_factory=list)
 
     @property
     def is_alive(self) -> bool:
@@ -389,12 +426,16 @@ class Player:
 
     def effective_stat(self, stat: str) -> int:
         # max_mana is DERIVED from wisdom (no stored base): effective wisdom (base +
-        # gear) * MANA_PER_WISDOM, plus any direct max_mana gear bonus.
+        # gear + upgrade) * MANA_PER_WISDOM, plus any direct max_mana bonus.
         if stat == "max_mana":
-            wisdom = self.wisdom + self.gear_stat_modifiers.get("wisdom", 0)
-            return int(wisdom * MANA_PER_WISDOM + self.gear_stat_modifiers.get("max_mana", 0))
+            wisdom = (self.wisdom + self.gear_stat_modifiers.get("wisdom", 0)
+                      + self.upgrade_stat_bonuses.get("wisdom", 0))
+            return int(wisdom * MANA_PER_WISDOM
+                       + self.gear_stat_modifiers.get("max_mana", 0)
+                       + self.upgrade_stat_bonuses.get("max_mana", 0))
         value = getattr(self, "base_damage" if stat == "damage" else stat)
-        return int(value + self.gear_stat_modifiers.get(stat, 0))
+        return int(value + self.gear_stat_modifiers.get(stat, 0)
+                   + self.upgrade_stat_bonuses.get(stat, 0))
 
 
 @dataclass(frozen=True)
@@ -411,6 +452,7 @@ class GameContent:
     enemies: dict[str, EnemyTemplate]
     places: dict[str, Place]
     rare_loot_table: tuple[dict[str, object], ...] = ()
+    upgrade_recipes: dict[str, UpgradeRecipe] = field(default_factory=dict)
 
 
 @dataclass

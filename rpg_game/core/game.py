@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tournaments, world
+from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -562,11 +562,34 @@ class GameEngine:
     def unequip_gear(self, slot_id: str) -> equipment.EquipmentResult:
         return equipment.unequip_gear(self.player, self.content, slot_id)
 
+    def recompute_equipment(self) -> None:
+        """Refresh derived gear + upgrade modifiers. Call after any weapon swap
+        (the swap goes through combat, which has no content to recompute with)."""
+        equipment.recompute_gear_modifiers(self.player, self.content)
+
+    # -- B37 Slice 2: item upgrades ----------------------------------------
+
+    def upgrade_recipe(self, item_id: str):
+        return upgrades.recipe_for(self.content, item_id)
+
+    def is_upgradable(self, item_id: str) -> bool:
+        return upgrades.is_upgradable(self.content, item_id)
+
+    def apply_item_upgrade(self, item_id: str, variant_id: str) -> upgrades.UpgradeResult:
+        result = upgrades.apply_upgrade(self.player, self.content, item_id, variant_id)
+        if result.success:
+            equipment.recompute_gear_modifiers(self.player, self.content)
+        return result
+
     def store_entries(self, category: str | None = None) -> list[store.StoreEntry]:
         return store.get_store_entries(self.content, self.player.current_place_id, category)
 
     def buy_item(self, item_id: str) -> store.PurchaseResult:
-        return store.buy_item(self.player, self.content, item_id)
+        result = store.buy_item(self.player, self.content, item_id)
+        # A weapon buy auto-equips; refresh derived gear/upgrade modifiers so an
+        # already-upgraded weapon's deltas reattach on re-equip.
+        self.recompute_equipment()
+        return result
 
     def sellable_entries(self, category: str | None = None) -> list[store.SellEntry]:
         return store.get_sellables(self.player, self.content, category)
