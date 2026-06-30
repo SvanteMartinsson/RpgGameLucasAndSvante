@@ -967,7 +967,6 @@
       }
     ]
   },
-
   {
     "id": "zap",
     "name": "Zap",
@@ -1116,6 +1115,50 @@
         "duration": 3,
         "tick_timing": "round_end",
         "damage_type": "fire",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "frostfire_strike",
+    "name": "Frostfire Strike",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.4,
+        "damage_type": "fire",
+        "target": "enemy"
+      },
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 9,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "fire",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "armor",
+        "tag": "sunder",
+        "magnitude": -6,
+        "duration": 2,
+        "tick_timing": "round_end",
         "target": "enemy"
       }
     ]
