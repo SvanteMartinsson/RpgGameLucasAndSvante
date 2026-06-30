@@ -100,8 +100,9 @@ class OverworldEncounterTest(unittest.TestCase):
         from rpg_game.presentation import town_cluster
         self.app.encounter_rate = 0.06
         for pid, anchor in self.app.cluster_anchors.items():
-            cluster = town_cluster.cluster_footprints(anchor) | {anchor}
-            cluster |= set(town_cluster.cluster_entrances(anchor).values())
+            tmpl = self.app.cluster_templates[pid]
+            cluster = town_cluster.cluster_footprints(anchor, tmpl) | {anchor}
+            cluster |= set(town_cluster.cluster_entrances(anchor, tmpl).values())
             cluster |= {t for t, p in self.app.hub_interior.items() if p == pid}
             for (cx, cy) in cluster:
                 for dx in range(-2, 3):       # SAFE_TILE_MARGIN

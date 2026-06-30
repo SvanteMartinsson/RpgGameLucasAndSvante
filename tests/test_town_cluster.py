@@ -122,8 +122,11 @@ class TownClusterRuntimeTest(unittest.TestCase):
             self.assertFalse(ts is not None and ts.name == "water_autotile", f"cobble on water {(x, y)}")
 
     def test_buildings_loaded_for_every_template_entry(self):
-        for bid, *_ in town_cluster.CLUSTER_TEMPLATE:
-            self.assertIsNotNone(self.app._building_sprites.get(bid), f"{bid} sprite missing")
+        # B8 Slice 2a: sprites are keyed by (building, facing) across all tiers.
+        pairs = {(b[0], b[5]) for tmpl in self.app.cluster_templates.values() for b in tmpl}
+        for bid, facing in pairs:
+            self.assertIsNotNone(self.app._building_sprites.get((bid, facing)),
+                                 f"{bid}/{facing} sprite missing")
 
     def test_no_overlap_with_water_or_neighbour_towns(self):
         fp = town_cluster.cluster_footprints(self.anchor)
@@ -146,10 +149,10 @@ class TownClusterRuntimeTest(unittest.TestCase):
         for gate in self.app.zone.gates:
             self.assertIn(gate, seen)
 
-    def _sprite_bbox_tiles(self, bid, fx, fy, fw, fh):
+    def _sprite_bbox_tiles(self, bid, facing, fx, fy, fw, fh):
         """The tile rectangle a building's scaled sprite covers, matching how
         _draw_town blits it (bottom-aligned, centred on the footprint)."""
-        sprite = self.app._building_sprites[bid]
+        sprite = self.app._building_sprites[(bid, facing)]
         sw, sh = sprite.get_size()
         tw, th = self.app.world.tw, self.app.world.th
         cx = fx * tw + (fw * tw) // 2
@@ -162,11 +165,10 @@ class TownClusterRuntimeTest(unittest.TestCase):
     def test_no_entrance_sits_under_another_buildings_sprite(self):
         # The core layout rule: a building's scaled sprite may overlap another's
         # ROOF (packed town), but never another building's entrance tile.
-        builds = town_cluster.cluster_buildings(self.anchor)
-        ents = {b[0]: town_cluster.entrance_tile(self.anchor, b[1] - self.anchor[0],
-                                                 b[2] - self.anchor[1], b[3], b[4], b[5])
-                for b in builds}
-        bboxes = {b[0]: self._sprite_bbox_tiles(b[0], b[1], b[2], b[3], b[4]) for b in builds}
+        tmpl = self.app.cluster_templates[CLUSTER_TOWN_ID]
+        builds = town_cluster.cluster_buildings(self.anchor, tmpl)
+        ents = town_cluster.cluster_entrances(self.anchor, tmpl)
+        bboxes = {b[0]: self._sprite_bbox_tiles(b[0], b[5], b[1], b[2], b[3], b[4]) for b in builds}
         for bid, (ex, ey) in ents.items():
             for other, (l, r, t, bm) in bboxes.items():
                 if other == bid:
@@ -216,17 +218,19 @@ class MultiHubPlacementTest(unittest.TestCase):
         self.assertGreaterEqual(len(self._anchors()), 2)
         self.assertIn(CLUSTER_TOWN_ID, self._anchors())
 
-    def test_every_hub_is_a_real_service_city(self):
-        # The full-service template (blacksmith/store/barracks) only fits towns that
-        # actually offer services — a store city — so the visual never lies.
+    def test_every_cluster_town_has_exactly_one_rest_door(self):
+        # B8 Slice 2a: every town (all tiers) has exactly one bed — inn, or cottage
+        # in a village. (Villages may be store-less; only the rest door is universal.)
+        from rpg_game.presentation.pygame_overworld import BUILDING_FUNCTION
         for pid in self._anchors():
-            place = self.app.engine.content.places[pid]
-            self.assertTrue(place.has_store, f"{pid} is a hub but sells nothing")
+            tmpl = self.app.cluster_templates[pid]
+            rests = [b[0] for b in tmpl if BUILDING_FUNCTION.get(b[0]) == "rest"]
+            self.assertEqual(len(rests), 1, f"{pid} rest doors: {rests}")
 
     def test_every_hub_footprint_is_solid_and_clear_of_water(self):
         water = self.app._water_tiles()
         for pid, anchor in self._anchors().items():
-            fp = town_cluster.cluster_footprints(anchor)
+            fp = town_cluster.cluster_footprints(anchor, self.app.cluster_templates[pid])
             self.assertTrue(fp <= self.app.world.blocked, f"{pid} footprints not solid")
             self.assertEqual(fp & water, set(), f"{pid} footprint on water")
 
@@ -239,10 +243,11 @@ class MultiHubPlacementTest(unittest.TestCase):
     def test_every_hub_cobble_reaches_every_door_and_shuns_water(self):
         water = self.app._water_tiles()
         for pid, anchor in self._anchors().items():
-            net = town_cluster.cobble_network(anchor, self.app.world.blocked, water)
-            self.assertEqual(net & town_cluster.cluster_footprints(anchor), set(),
+            tmpl = self.app.cluster_templates[pid]
+            net = town_cluster.cobble_network(anchor, self.app.world.blocked, water, tmpl)
+            self.assertEqual(net & town_cluster.cluster_footprints(anchor, tmpl), set(),
                              f"{pid} cobble under a footprint")
-            for bid, ent in town_cluster.cluster_entrances(anchor).items():
+            for bid, ent in town_cluster.cluster_entrances(anchor, tmpl).items():
                 self.assertIn(ent, net, f"{pid}: cobble does not reach {bid}")
             for (x, y) in net:
                 self.assertNotIn((x, y), water, f"{pid} cobble on water {(x, y)}")
@@ -251,7 +256,8 @@ class MultiHubPlacementTest(unittest.TestCase):
 
     def test_hubs_do_not_overlap_each_other_or_any_town_tile(self):
         anchors = self._anchors()
-        foots = {pid: town_cluster.cluster_footprints(a) for pid, a in anchors.items()}
+        foots = {pid: town_cluster.cluster_footprints(a, self.app.cluster_templates[pid])
+                 for pid, a in anchors.items()}
         ids = list(foots)
         for i, a in enumerate(ids):           # pairwise hub footprints disjoint
             for b in ids[i + 1:]:
@@ -283,10 +289,11 @@ class MultiHubPlacementTest(unittest.TestCase):
         # placement is pure (no RNG / order dependence), so a re-render is stable.
         water = self.app._water_tiles()
         for pid, anchor in self._anchors().items():
-            self.assertEqual(town_cluster.cluster_footprints(anchor),
-                             town_cluster.cluster_footprints(anchor), f"{pid} footprints not idempotent")
-            self.assertEqual(town_cluster.cobble_network(anchor, self.app.world.blocked, water),
-                             town_cluster.cobble_network(anchor, self.app.world.blocked, water),
+            tmpl = self.app.cluster_templates[pid]
+            self.assertEqual(town_cluster.cluster_footprints(anchor, tmpl),
+                             town_cluster.cluster_footprints(anchor, tmpl), f"{pid} footprints not idempotent")
+            self.assertEqual(town_cluster.cobble_network(anchor, self.app.world.blocked, water, tmpl),
+                             town_cluster.cobble_network(anchor, self.app.world.blocked, water, tmpl),
                              f"{pid} cobble not idempotent")
 
 

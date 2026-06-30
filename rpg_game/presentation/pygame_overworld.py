@@ -79,6 +79,7 @@ CLUSTER_TOWN_IDS = ("burg_5", "burg_67")
 #   - church = "set respawn point" (the relocate_respawn service)
 BUILDING_FUNCTION = {
     "inn": "rest",
+    "cottage": "rest",          # B8 Slice 2a: the village bed
     "shop": "store",
     "blacksmith": "store",
     "barracks": "store",
@@ -98,6 +99,7 @@ STORE_CATEGORY = {
 # BUILDING_FUNCTION (rest/store/relocate_respawn/tournaments).
 BUILDING_TITLES = {
     "inn": "Inn",
+    "cottage": "Cottage",
     "shop": "General Store",
     "blacksmith": "Blacksmith",
     "barracks": "Barracks",
@@ -427,19 +429,28 @@ class OverworldApp:
         # B8 Slice 1: the start town renders as a building cluster. The cluster is
         # anchored to its tile (template offsets), its footprints become solid
         # collision, and the anchor tile stays the walkable plaza/menu trigger.
-        self._building_sprites = self._load_building_sprites()
         self._cobble_tiles = self._load_cobble_tiles()
-        # B28: every qualifying hub town anchors its own copy of the template. Add
-        # ALL footprints to collision first so each cluster's cobble routes around
-        # every building (its own and neighbours'), then build the cobble per hub.
+        # B8 Slice 2a: EVERY town anchors its own cluster, sized by its tier (read
+        # from core_zone). town_hall appears only where a tournament lives. Resolve a
+        # concrete template per town, then add ALL footprints to collision first so
+        # each cluster's cobble routes around every building (its own and neighbours').
+        tournament_places = {t.place_id for t in self.engine.content.tournaments.values()}
         self.cluster_anchors = {
-            pid: tile for pid in CLUSTER_TOWN_IDS
+            pid: tile for pid in self.town_tile_by_place
             if (tile := self.town_tile_by_place.get(pid)) is not None
         }
+        self.cluster_templates = {
+            pid: self._resolve_town_template(pid, pid in tournament_places)
+            for pid in self.cluster_anchors
+        }
+        # Sprites are loaded for every (building, facing) that appears across all the
+        # resolved templates (a building can face differently per tier, e.g. inn is
+        # q1 in a capital but front in a town).
+        self._building_sprites = self._load_building_sprites()
         # Backward-compatible single-anchor handle for the primary/start hub.
         self.cluster_anchor = self.cluster_anchors.get(CLUSTER_TOWN_ID)
-        for anchor in self.cluster_anchors.values():
-            self.world.blocked |= town_cluster.cluster_footprints(anchor)
+        for pid, anchor in self.cluster_anchors.items():
+            self.world.blocked |= town_cluster.cluster_footprints(anchor, self.cluster_templates[pid])
         # Comb cobble that never sits on OR borders water (shore water is walkable
         # post-B19 but must not be cobbled over, and no cobble points into a river).
         # blocked keeps it off other terrain; water drives the no-border rule.
@@ -453,9 +464,10 @@ class OverworldApp:
         self.door_index: dict[tuple[int, int], tuple[str, str]] = {}
         self.hub_interior: dict[tuple[int, int], str] = {}
         for pid, anchor in self.cluster_anchors.items():
-            cobble = town_cluster.cobble_network(anchor, self.world.blocked, water)
+            tmpl = self.cluster_templates[pid]
+            cobble = town_cluster.cobble_network(anchor, self.world.blocked, water, tmpl)
             self._cobble_net |= cobble
-            entrances = town_cluster.cluster_entrances(anchor)
+            entrances = town_cluster.cluster_entrances(anchor, tmpl)
             for bid, ent in entrances.items():
                 self.door_index[ent] = (pid, bid)
             for tile in ({anchor} | set(entrances.values()) | cobble):
@@ -464,8 +476,9 @@ class OverworldApp:
         # cobble) dilated by SAFE_TILE_MARGIN, so no ambush on a town's streets/edge.
         self._safe_tiles: set[tuple[int, int]] = set()
         for pid, anchor in self.cluster_anchors.items():
-            cluster = town_cluster.cluster_footprints(anchor) | {anchor}
-            cluster |= set(town_cluster.cluster_entrances(anchor).values())
+            tmpl = self.cluster_templates[pid]
+            cluster = town_cluster.cluster_footprints(anchor, tmpl) | {anchor}
+            cluster |= set(town_cluster.cluster_entrances(anchor, tmpl).values())
             cluster |= {t for t, p in self.hub_interior.items() if p == pid}
             for (cx, cy) in cluster:
                 for dx in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
@@ -1193,19 +1206,32 @@ class OverworldApp:
         bottom = min(tmx.height, (oy + view_h) // th + 2)
         return left, right, top, bottom
 
+    def _resolve_town_template(self, place_id: str, has_tournament: bool):
+        """Concrete building list for a town from its core_zone tier/shop_category/
+        prop (provisional data) + whether a tournament lives here (town_hall gate)."""
+        meta = (self.zone.town_meta or {}).get(place_id, {})
+        return town_cluster.resolve_template(
+            meta.get("tier", "village"),
+            shop_category=meta.get("shop_category"),
+            prop=meta.get("prop"),
+            has_tournament=has_tournament,
+        )
+
     def _load_building_sprites(self) -> dict:
-        """Load each building's chosen facing view and scale it once at load time by
-        BUILDING_SCALE (native sizes vary, so relative proportions are preserved)."""
+        """Load every (building, facing) view that appears across the resolved
+        templates, scaled once by BUILDING_SCALE. Keyed by (bid, facing): a building
+        can face differently per tier (inn is q1 in a capital, front in a town)."""
         sprites = {}
-        for bid, _dx, _dy, _fw, _fh, facing, _flip in town_cluster.CLUSTER_TEMPLATE:
+        pairs = {(b[0], b[5]) for tmpl in self.cluster_templates.values() for b in tmpl}
+        for bid, facing in pairs:
             path = os.path.join(BUILDINGS_DIR, f"{bid}_{facing}.png")
             try:
                 raw = pygame.image.load(path).convert_alpha()
                 w, h = raw.get_size()
-                sprites[bid] = pygame.transform.smoothscale(
+                sprites[(bid, facing)] = pygame.transform.smoothscale(
                     raw, (max(1, round(w * BUILDING_SCALE)), max(1, round(h * BUILDING_SCALE))))
             except (pygame.error, FileNotFoundError):
-                sprites[bid] = None  # missing art -> cobble still renders, no crash
+                sprites[(bid, facing)] = None  # missing art -> cobble still renders, no crash
         return sprites
 
     def _water_tiles(self) -> set:
@@ -1279,9 +1305,9 @@ class OverworldApp:
         # Every hub's buildings join ONE y-sorted pass so clusters and the player
         # occlude correctly regardless of which town the player is near.
         drawables = []
-        for anchor in self.cluster_anchors.values():
-            for bid, fx, fy, fw, fh, _facing, flip in town_cluster.cluster_buildings(anchor):
-                sprite = self._building_sprites.get(bid)
+        for pid, anchor in self.cluster_anchors.items():
+            for bid, fx, fy, fw, fh, facing, flip in town_cluster.cluster_buildings(anchor, self.cluster_templates[pid]):
+                sprite = self._building_sprites.get((bid, facing))
                 if sprite is None:
                     continue
                 if flip:               # mirror so the door/sign faces in toward the courtyard
