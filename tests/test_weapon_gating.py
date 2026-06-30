@@ -34,6 +34,14 @@ class WeaponGatingTests(unittest.TestCase):
             "recurve_bow": "ranged",
             "yew_longbow": "ranged",
             "apprentice_wand": "magic",
+            "iron_shortsword": "melee",
+            "iron_longsword": "melee",
+            "steel_longsword": "melee",
+            "maple_shortbow": "ranged",
+            "willow_bow": "ranged",
+            "willow_longbow": "ranged",
+            "yew_warbow": "ranged",
+            "adept_wand": "magic",
         }
         self.assertEqual(
             {weapon_id: weapon.category for weapon_id, weapon in engine.content.weapons.items()},

@@ -190,5 +190,69 @@
     "price": 160,
     "damage_type": "fire",
     "category": "magic"
+  },
+  {
+    "id": "iron_shortsword",
+    "name": "Iron Shortsword",
+    "damage_bonus": 3,
+    "price": 35,
+    "damage_type": "physical",
+    "category": "melee"
+  },
+  {
+    "id": "iron_longsword",
+    "name": "Iron Longsword",
+    "damage_bonus": 8,
+    "price": 150,
+    "damage_type": "physical",
+    "category": "melee"
+  },
+  {
+    "id": "steel_longsword",
+    "name": "Steel Longsword",
+    "damage_bonus": 13,
+    "price": 320,
+    "damage_type": "physical",
+    "category": "melee"
+  },
+  {
+    "id": "maple_shortbow",
+    "name": "Maple Shortbow",
+    "damage_bonus": 3,
+    "price": 30,
+    "damage_type": "physical",
+    "category": "ranged"
+  },
+  {
+    "id": "willow_bow",
+    "name": "Willow Bow",
+    "damage_bonus": 8,
+    "price": 160,
+    "damage_type": "physical",
+    "category": "ranged"
+  },
+  {
+    "id": "willow_longbow",
+    "name": "Willow Longbow",
+    "damage_bonus": 13,
+    "price": 330,
+    "damage_type": "physical",
+    "category": "ranged"
+  },
+  {
+    "id": "yew_warbow",
+    "name": "Yew Warbow",
+    "damage_bonus": 23,
+    "price": 700,
+    "damage_type": "physical",
+    "category": "ranged"
+  },
+  {
+    "id": "adept_wand",
+    "name": "Adept Wand",
+    "damage_bonus": 12,
+    "price": 280,
+    "damage_type": "fire",
+    "category": "magic"
   }
 ]

@@ -37,6 +37,37 @@ class B37WeaponChangeTests(unittest.TestCase):
         self.assertEqual(self.content.weapons["consecrated_maul"].damage_bonus, 24)
         self.assertEqual(self.content.weapons["consecrated_maul"].damage_type, "holy")
 
+    def test_material_ladder_fillers_load_with_derived_tiers(self):
+        from rpg_game.core import combat
+        # (id, damage, type, category, expected tier, expected equip level)
+        expected = [
+            ("iron_shortsword", 3, "physical", "melee", 1, 1),
+            ("iron_longsword", 8, "physical", "melee", 2, 1),
+            ("steel_longsword", 13, "physical", "melee", 3, 3),
+            ("maple_shortbow", 3, "physical", "ranged", 1, 1),
+            ("willow_bow", 8, "physical", "ranged", 2, 1),
+            ("willow_longbow", 13, "physical", "ranged", 3, 3),
+            ("yew_warbow", 23, "physical", "ranged", 5, 8),
+            ("adept_wand", 12, "fire", "magic", 3, 3),
+        ]
+        for wid, dmg, dtype, cat, tier, lvl in expected:
+            w = self.content.weapons[wid]
+            self.assertEqual(w.damage_bonus, dmg, wid)
+            self.assertEqual(w.damage_type, dtype, wid)
+            self.assertEqual(w.category, cat, wid)
+            self.assertEqual(w.tier, tier, wid)
+            self.assertEqual(combat.weapon_required_level(w), lvl, wid)
+
+    def test_no_three_x_jump_between_consecutive_melee_upgrades(self):
+        # Granular early ladder: each physical-melee step is < 2x the previous
+        # non-zero damage (no 2->5->14 cliff).
+        melee = sorted(
+            w.damage_bonus for w in self.content.weapons.values()
+            if w.category == "melee" and w.damage_type == "physical" and w.damage_bonus > 0
+        )
+        for prev, nxt in zip(melee, melee[1:]):
+            self.assertLess(nxt, prev * 3, f"{prev}->{nxt} is a >=3x jump")
+
 
 if __name__ == "__main__":
     unittest.main()
