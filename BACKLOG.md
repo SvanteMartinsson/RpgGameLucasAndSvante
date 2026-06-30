@@ -232,6 +232,18 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
 ### Städer & UI
 
+#### B39 — Chatbox-logg v3 (dedup + word-wrap) + HUD Lv/Gold + tjockare barer  · ✅ **KLAR** (`416c997`, `c1e6a50`, `f0eb6dd`)
+- **Dedup:** battle-end loggade dubbelt (core-narration *och* presentations-rader). Suppress
+  core-dubbletterna i `BattleApp._consume_result` och ta bort verbose "X dropped: …" → loggen
+  visar exakt: Victory! / +N XP / +N gold / Loot: item [rarity]. Core RETURNERAR fortsatt sina
+  events (tester orörda); "Gained N level(s)." behålls (ingen dubblett).
+- **Word-wrap:** `_draw_log` radbryter via `_wrapped_lines_pixels` (ingen `_fit_text`-trunkering);
+  synliga rader + `_log_scroll_max` räknas i *visuella* rader (en wrappad rad = sina renderade rader).
+- **HUD:** `_draw_vitals` ritar "Lv N    Gold G" (inget namn) ovanför HP/Mana/XP-barerna; bar_h 12→18
+  så inline-texten ryms centrerad. Läser `snapshot.player.level/.gold`.
+- **Tester:** drop → en "Loot:"-rad, ingen "dropped:"-rad, battle-end ej dubblerad; lång rad → >1
+  visuell rad utan "…"; vitals visar Lv/Gold + bandet ryms ovanför chatboxen. 622 OK (system + venv).
+
 #### B10 — Stads-/vendor-skärm + SHOP i character-interface med stat-preview  · *utökad (#6 + playtest)*
 - **Vad:** Skärm med vendors per husfunktion. **Utökning:** själva **shoppen ska ligga
   i character-interfacet** (samma yta som equip), så man **förstår vad man köper** —
@@ -444,3 +456,7 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **B35** (`c600efc`) — level-up main-stat-val (HP/Mana/Damage/Crit, ej Speed); flat universell
   bundle (main +8/+8/+4/+4, övriga bas +2/+2/+1/+1); 4-vals-modal i battle-shellen; persist.
 - **B31-polish** (`faac4ca`) — svag halvtransparent platta bakom stadsnamnet (kontrast på ljusa tiles).
+- **trait-resistanser** (`03fc905`) — fiende-`traits` (max 2) = sanningskälla; `resistances` härleds
+  vid load (core/traits.py); pipelinen oförändrad. Avsiktliga feel-flips (cave_bear/mudcrab/tar_beast/…).
+- **B39** (`416c997`/`c1e6a50`/`f0eb6dd`) — chatbox v3: battle-end dedup (en uppsättning rader, "dropped:"
+  bort), word-wrap utan trunkering, HUD "Lv/Gold"-rad ovanför tjockare (18px) HP/Mana/XP-barer.
