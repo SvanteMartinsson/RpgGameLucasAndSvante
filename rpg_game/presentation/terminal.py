@@ -208,12 +208,19 @@ def handle_talents(engine: GameEngine) -> None:
         if player.talent_points <= 0:
             print("You have no talent points to spend.")
             return
-        purchasable = engine.available_talents()
+        learnable = engine.available_talents()
+        upgradable = engine.upgradable_talents()
+        purchasable = learnable + upgradable
         if not purchasable:
-            print("No talents are available to learn right now.")
+            print("No talents are available to learn or upgrade right now.")
             return
 
-        options = [(str(index), node.id, node.name) for index, node in enumerate(purchasable, start=1)]
+        options = []
+        for index, node in enumerate(learnable, start=1):
+            options.append((str(index), node.id, f"Learn {node.name}"))
+        for index, node in enumerate(upgradable, start=len(learnable) + 1):
+            rank = player.talent_ranks.get(node.id, 0)
+            options.append((str(index), node.id, f"Upgrade {node.name} (rank {rank}/{node.max_rank})"))
         options.append(("b", "back", "Back"))
 
         choice = prompt_menu("Spend a talent point on which node?", options, allow_label=False)
@@ -238,8 +245,9 @@ def print_talent_tree(engine: GameEngine) -> None:
         if node.branch != current_branch:
             current_branch = node.branch
             print(f"-- {node.branch} --")
-        if node.id in player.learned_talent_ids:
-            status = "[LEARNED] "
+        rank = player.talent_ranks.get(node.id, 0)
+        if rank >= 1:
+            status = f"[rank {rank}/{node.max_rank}]"
         elif node.id in available_ids:
             status = "[CAN LEARN]"
         else:

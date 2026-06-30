@@ -48,7 +48,13 @@ from rpg_game.presentation.playtest_logger import PlaytestLogger
 # screen the start menu flows into — one source, no hardcoded duplicate. (The
 # in-world view sizes itself to the map via OverworldApp.view_size instead.)
 from rpg_game.presentation.pygame_battle import HEIGHT, WIDTH, BattleApp, character_creation
-from rpg_game.presentation.talent_text import talent_detail, talent_status
+from rpg_game.presentation.talent_text import (
+    talent_action_label,
+    talent_can_allocate,
+    talent_detail,
+    talent_rank_label,
+    talent_status,
+)
 from rpg_game.presentation import town_cluster
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
@@ -964,13 +970,19 @@ class OverworldApp:
 
     def talent_detail_lines(self, node) -> list[str]:
         detail = talent_detail(self.engine, node)
-        return [
+        lines = [
             detail.name,
             detail.status,
+            f"Rank: {detail.rank}/{detail.max_rank}",
             f"Effect: {detail.effect}",
+        ]
+        if detail.next_rank not in ("at max rank", ""):
+            lines.append(f"Next: {detail.next_rank}")
+        lines.extend([
             f"Cost: {detail.cost}",
             f"Requires: {detail.prerequisite}",
-        ]
+        ])
+        return lines
 
     # -- tournament flow ----------------------------------------------------
 
@@ -1919,9 +1931,11 @@ class OverworldApp:
         max_nodes = max(1, (middle.height - 32) // 32)
         for i, node in enumerate(class_nodes[:max_nodes]):
             status = talent_status(eng, node)
+            rank = talent_rank_label(eng, node)
             rect = pygame.Rect(middle.x, middle.y + 30 + i * 32, middle.width, 26)
             marker = "> " if selected is not None and node.id == selected.id else "  "
-            label = f"{marker}{status} {node.name} ({node.branch} t{node.order})"
+            rank_suffix = f" {rank}" if rank else ""
+            label = f"{marker}{status} {node.name}{rank_suffix} ({node.branch} t{node.order})"
             self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True)
 
         self._draw_talent_detail(right, selected)
@@ -1949,9 +1963,10 @@ class OverworldApp:
             self.screen.blit(self.font_sm.render(line, True, color), (rect.x + 10, y))
             y += line_height
 
-        can_learn = talent_status(self.engine, node) == "[CAN LEARN]" and self.engine.player.talent_points > 0
+        can_allocate = talent_can_allocate(self.engine, node)
+        verb = talent_action_label(self.engine, node)
         learn_rect = pygame.Rect(rect.x + 10, rect.bottom - 42, rect.width - 20, 32)
-        self._add_button(learn_rect, "Learn selected", self.learn_selected_talent, can_learn)
+        self._add_button(learn_rect, f"{verb} selected (1 point)", self.learn_selected_talent, can_allocate)
 
     def _screen_store(self, panel) -> None:
         eng = self.engine
@@ -2004,13 +2019,18 @@ class OverworldApp:
         points = build_snapshot(eng).player.talent_points
         self.screen.blit(self.font_sm.render(T.talents_hint(points), True, WARN),
                          (panel.x + 20, panel.y + 56))
-        nodes = eng.available_talents()
+        # Both fresh nodes (Learn) and owned-but-not-maxed nodes (Upgrade).
+        nodes = eng.available_talents() + eng.upgradable_talents()
         if not nodes:
             self._lines(panel, [T.NO_TALENTS], TEXT_DIM, start=88)
             return
         for i, node in enumerate(nodes[:8]):
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
-            self._add_button(rect, f"{node.name}", (lambda nid=node.id: self.learn_talent(nid)), points > 0)
+            verb = talent_action_label(eng, node)
+            rank = talent_rank_label(eng, node)
+            suffix = f" ({rank})" if rank else ""
+            self._add_button(rect, f"{verb}: {node.name}{suffix}",
+                             (lambda nid=node.id: self.learn_talent(nid)), points > 0)
 
     def _log_visible_now(self) -> int:
         """Visible chatbox lines for the current mode: the player-set size in free

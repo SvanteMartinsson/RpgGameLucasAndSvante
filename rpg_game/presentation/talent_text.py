@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from rpg_game.core import combat, talents
 from rpg_game.core.game import GameEngine
 
 
@@ -18,6 +19,9 @@ class TalentDetail:
     effect: str
     cost: str
     prerequisite: str
+    rank: int = 0
+    max_rank: int = 1
+    next_rank: str = ""
 
 
 def describe_effect(effect) -> str:
@@ -97,6 +101,49 @@ def talent_status(engine: GameEngine, node) -> str:
     return "[LOCKED]"
 
 
+def talent_rank(engine: GameEngine, node) -> int:
+    return engine.player.talent_ranks.get(node.id, 0)
+
+
+def talent_rank_label(engine: GameEngine, node) -> str:
+    """A short rank tag for an owned node, e.g. 'rank 2/3'; '' if not owned."""
+    rank = talent_rank(engine, node)
+    return f"rank {rank}/{talents.talent_max_rank(node)}" if rank >= 1 else ""
+
+
+def talent_action_label(engine: GameEngine, node) -> str:
+    """The button verb for this node: Learn (rank 0), Upgrade (1..max-1), Max."""
+    rank = talent_rank(engine, node)
+    if rank == 0:
+        return "Learn"
+    return "Upgrade" if rank < talents.talent_max_rank(node) else "Max"
+
+
+def talent_can_allocate(engine: GameEngine, node) -> bool:
+    rank = talent_rank(engine, node)
+    if engine.player.talent_points <= 0:
+        return False
+    if rank == 0:
+        return node.id in {available.id for available in engine.available_talents()}
+    return rank < talents.talent_max_rank(node)
+
+
+def talent_next_rank_text(engine: GameEngine, node) -> str:
+    """Describe what the next point buys: the magnitude step (and the +1 round of
+    duration an active skill gains at rank 3)."""
+    rank = talent_rank(engine, node)
+    max_rank = talents.talent_max_rank(node)
+    if rank == 0:
+        return "learn at rank 1"
+    if rank >= max_rank:
+        return "at max rank"
+    nxt = rank + 1
+    parts = [f"x{combat.TALENT_RANK_MULT.get(nxt, 1.0):g} magnitude"]
+    if node.node_type == "active" and nxt >= combat.TALENT_RANK_DURATION_BONUS_AT:
+        parts.append("+1 round duration")
+    return f"rank {nxt}: " + ", ".join(parts)
+
+
 def talent_detail(engine: GameEngine, node) -> TalentDetail:
     action = engine.content.actions.get(node.action_id) if node.action_id else None
     return TalentDetail(
@@ -105,4 +152,7 @@ def talent_detail(engine: GameEngine, node) -> TalentDetail:
         effect=describe_talent(engine, node),
         cost=skill_cost_text(action) if action is not None else "passive",
         prerequisite=talent_prereq_name(engine, node),
+        rank=talent_rank(engine, node),
+        max_rank=talents.talent_max_rank(node),
+        next_rank=talent_next_rank_text(engine, node),
     )

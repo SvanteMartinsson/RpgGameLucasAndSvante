@@ -514,6 +514,9 @@ class GameEngine:
     def available_talents(self):
         return talents.available_talents(self.player, self.content)
 
+    def upgradable_talents(self):
+        return talents.upgradable_talents(self.player, self.content)
+
     def allocate_talent(self, node_id: str) -> str:
         return talents.allocate_talent(self.player, self.content, node_id)
 

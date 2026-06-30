@@ -236,6 +236,39 @@ class TalentActiveRankTest(unittest.TestCase):
         self.assertEqual(result.action_id, "ignite")
 
 
+class TalentTextUiTest(unittest.TestCase):
+    """The shared presentation helpers expose rank + Learn/Upgrade for both UIs."""
+
+    def _cleric(self, points=10):
+        engine = GameEngine()
+        engine.start_new_game("Hero", "cleric")
+        engine.player.talent_points = points
+        return engine
+
+    def test_action_label_is_learn_then_upgrade_then_max(self):
+        from rpg_game.presentation import talent_text as TT
+        engine = self._cleric()
+        mend = engine.content.talents["cleric_light_l2_mend"]
+        self.assertEqual(TT.talent_action_label(engine, mend), "Learn")
+        engine.allocate_talent("cleric_light_l2_mend")
+        self.assertEqual(TT.talent_action_label(engine, mend), "Upgrade")
+        self.assertEqual(TT.talent_rank_label(engine, mend), "rank 1/3")
+        engine.allocate_talent("cleric_light_l2_mend")
+        engine.allocate_talent("cleric_light_l2_mend")
+        self.assertEqual(TT.talent_action_label(engine, mend), "Max")
+
+    def test_binary_node_action_label_caps_at_learn_then_max(self):
+        from rpg_game.presentation import talent_text as TT
+        engine = self._cleric()
+        for nid in ("cleric_pest_p1_plague_bolt", "cleric_pest_p2_drain",
+                    "cleric_pest_p3_virulence", "cleric_pest_p4_curse"):
+            engine.allocate_talent(nid)
+        curse = engine.content.talents["cleric_pest_p4_curse"]
+        self.assertEqual(TT.talent_rank_label(engine, curse), "rank 1/1")
+        self.assertEqual(TT.talent_action_label(engine, curse), "Max")
+        self.assertFalse(TT.talent_can_allocate(engine, curse))
+
+
 class TalentRankWisdomCompositionTest(unittest.TestCase):
     def test_spell_dot_rank_composes_with_wisdom_without_double_count(self):
         # plague_bolt is wisdom-scaled (scale="spell"). Rank 1 must equal the
