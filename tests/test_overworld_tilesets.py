@@ -63,21 +63,22 @@ class OverworldTilesetTest(unittest.TestCase):
             gid = ground.data[y][x]
             self.assertEqual(self.tmx.get_tileset_from_gid(gid).name, expected, (x, y))
 
-    def test_ground_uses_cainos_core_and_grave_heath_south(self):
+    def test_ground_uses_the_four_zone_themes(self):
+        # #3 expansion: the north is three x-bands (cainos / mork_skog / cursed_mire)
+        # and the south is grave_heath. All four grass themes are painted.
         ground = self.tmx.get_layer_by_name("ground")
         used = {self.tmx.get_tileset_from_gid(ground.data[y][x]).name
                 for y in range(self.tmx.height) for x in range(self.tmx.width)}
-        # Core (y<20) stays uniform cainos; the southern Verralda heath is grave_heath.
-        self.assertEqual(used, {"cainos_grass", "grave_heath_grass"})
-        # Reserved themes stay registered as sources, so re-theming later is trivial.
+        self.assertEqual(used, {"cainos_grass", "mork_skog_grass",
+                                "cursed_mire_grass", "grave_heath_grass"})
+        # The remaining themes stay registered as sources for later zones.
         names = {ts.name for ts in self.tmx.tilesets}
-        for reserved in ("mork_skog_grass", "cursed_mire_grass",
-                         "frostfell_grass", "ash_waste_grass", "karr_grass"):
+        for reserved in ("frostfell_grass", "ash_waste_grass", "karr_grass"):
             self.assertIn(reserved, names)
 
     def test_southern_heath_ground_is_grave_heath(self):
         ground = self.tmx.get_layer_by_name("ground")
-        for (x, y) in [(5, 47), (24, 47), (40, 50)]:  # pure heath, south of the transition band (y>44)
+        for (x, y) in [(40, 150), (72, 160), (150, 150)]:  # interior heath, south of the seam
             name = self.tmx.get_tileset_from_gid(ground.data[y][x]).name
             self.assertEqual(name, "grave_heath_grass", (x, y))
 
@@ -130,24 +131,23 @@ class OverworldTilesetTest(unittest.TestCase):
         self.assertGreater(water_cells, 200, "water not placed in walls")
 
     def test_collision_and_spawns_unchanged(self):
-        # edge terrain blocks; spawn walkable; region bands intact on the 80x56 map
-        self.assertIn((0, 10), self.app.world.blocked)       # left forest edge band
-        self.assertNotIn((26, 18), self.app.world.blocked)   # Hordanita start tile walkable
-        self.assertEqual(self.app.zone.wild_region_at((20, 8)), "burg_54")
-        self.assertEqual(self.app.zone.wild_region_at((50, 8)), "burg_146")
-        self.assertEqual(self.app.zone.wild_region_at((72, 8)), "burg_320")
+        # sea frames the border (blocks); spawn walkable; region bands intact.
+        self.assertIn((0, 10), self.app.world.blocked)       # sea border
+        self.assertNotIn((51, 52), self.app.world.blocked)   # Hordanita start tile walkable
+        self.assertEqual(self.app.zone.wild_region_at((20, 8)), "burg_54")    # cainos NW
+        self.assertEqual(self.app.zone.wild_region_at((100, 8)), "burg_146")  # mork_skog (x>=83)
+        self.assertEqual(self.app.zone.wild_region_at((170, 8)), "burg_320")  # cursed_mire (x>=159)
 
     def test_zone_for_tile_maps_ground_theme_bands(self):
         # Zone number (for respawn-relocation cost) derives from the tile-x band:
-        # cainos=1, mork_skog=2, cursed_mire=3. Rest towns: burg_5 z1, burg_67/
-        # burg_146 z2.
+        # cainos<=82 -> 1, mork_skog 83-158 -> 2, cursed_mire>=159 -> 3.
         z = self.app.zone
-        self.assertEqual(z.zone_for_tile((26, 18)), 1)  # Hordanita (core)
-        self.assertEqual(z.zone_for_tile((45, 18)), 1)
-        self.assertEqual(z.zone_for_tile((46, 18)), 2)
-        self.assertEqual(z.zone_for_tile((66, 18)), 2)  # Rotequero
-        self.assertEqual(z.zone_for_tile((69, 18)), 3)
-        self.assertEqual(z.zone_for_tile((74, 18)), 3)
+        self.assertEqual(z.zone_for_tile((51, 52)), 1)   # Hordanita (cainos)
+        self.assertEqual(z.zone_for_tile((82, 18)), 1)
+        self.assertEqual(z.zone_for_tile((83, 18)), 2)
+        self.assertEqual(z.zone_for_tile((152, 36)), 2)  # Rotequero
+        self.assertEqual(z.zone_for_tile((159, 18)), 3)
+        self.assertEqual(z.zone_for_tile((200, 18)), 3)
 
 
 if __name__ == "__main__":

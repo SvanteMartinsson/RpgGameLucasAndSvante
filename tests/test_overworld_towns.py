@@ -39,7 +39,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual(self.app.engine.player.current_place_id, "burg_5")
 
     def test_stepping_onto_town_sets_location(self):
-        self.app.world.set_tile(10, 8)  # Yeblegali
+        self.app.world.set_tile(24, 24)  # Yeblegali (new coords)
         self.app.sync_location()
         self.assertEqual(self.app.engine.player.current_place_id, "burg_117")
 
@@ -52,7 +52,7 @@ class OverworldTownsTest(unittest.TestCase):
     # -- town menu actions go through the engine ----------------------------
 
     def test_rest_in_hub_heals_via_engine(self):
-        self.app.world.set_tile(26, 18)
+        self.app.world.set_tile(51, 52)
         self.app.sync_location()
         self.app.engine.player.hp = 1
         self.app.do_action("rest")
@@ -277,7 +277,7 @@ class OverworldTownsTest(unittest.TestCase):
 
     def test_indicator_names_the_city_on_its_cluster(self):
         # On the plaza AND on a door/cobble tile, the indicator names the city.
-        self.app.world.set_tile(26, 18)              # burg_5 plaza
+        self.app.world.set_tile(51, 52)              # burg_5 plaza (new coords)
         self.assertEqual(self.app._location_label(), ("Hordanita", True))
         door = next(t for t, (pid, _b) in self.app.door_index.items() if pid == "burg_5")
         self.app.world.set_tile(*door)
@@ -285,7 +285,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.assertEqual((text, in_town), ("Hordanita", True))
 
     def test_indicator_is_relative_when_near_a_hub(self):
-        self.app.world.set_tile(26, 23)              # 5 tiles south of burg_5
+        self.app.world.set_tile(51, 57)              # 5 tiles south of burg_5 (51,52)
         text, in_town = self.app._location_label()
         self.assertEqual(text, "south of Hordanita")
         self.assertFalse(in_town)
@@ -303,7 +303,7 @@ class OverworldTownsTest(unittest.TestCase):
     # -- gates --------------------------------------------------------------
 
     def test_gate_blocks_and_shows_its_message(self):
-        self.app.world.set_tile(26, 2)  # below the north gate at (26, 0)
+        self.app.world.set_tile(51, 2)  # below the north gate at (51, 0)
         message = ""
         for _ in range(40):
             hit = self.app.world.try_move(0, -3)

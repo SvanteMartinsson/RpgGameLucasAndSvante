@@ -25,7 +25,7 @@ try:
 except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
-W, H, SEAM_Y = 80, 56, 36
+W, H, SEAM_Y = 240, 208, 100
 
 
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
@@ -56,19 +56,18 @@ class VerraldaSkeletonTest(unittest.TestCase):
                     q.append((nx, ny))
         return seen
 
-    def test_map_is_80x56(self):
+    def test_map_is_240x208(self):
         self.assertEqual((self.world.tmx.width, self.world.tmx.height), (W, H))
 
     def test_gate_verralda_south_on_the_south_edge(self):
         gates = self.world.gate_messages
-        self.assertNotIn((13, 31), gates)        # old frontier gate removed
-        self.assertIn((24, 55), gates)           # new south frontier gate
-        self.assertIn((24, 55), self.world.blocked)
+        self.assertIn((51, 207), gates)          # south frontier gate (new coords)
+        self.assertIn((51, 207), self.world.blocked)
 
     def test_heath_reachable_from_core_through_the_seam(self):
         seen = self._reachable_from_start()
-        self.assertIn((24, 47), seen)            # Alherralba (heath hub)
-        self.assertIn((24, 40), seen)            # open heath, through the seam
+        self.assertIn((72, 180), seen)           # Alherralba (heath hub)
+        self.assertIn((72, 150), seen)           # open heath, through the seam
         for tile in self.world.town_tiles:       # nothing walled in
             self.assertIn(tile, seen)
 
@@ -76,19 +75,19 @@ class VerraldaSkeletonTest(unittest.TestCase):
         alherralba = self.app.engine.content.places["burg_121"]
         self.assertTrue(alherralba.has_store)
         self.assertTrue(alherralba.respawn)
-        self.assertEqual(self.zone.towns.get((24, 47)), "burg_121")
+        self.assertEqual(self.zone.towns.get((72, 180)), "burg_121")
 
     def test_heath_is_enemy_free(self):
-        self.assertEqual(self.zone.wild_region_at((24, 40)), "burg_121")
+        self.assertEqual(self.zone.wild_region_at((72, 150)), "burg_121")
         self.app.engine.enter_place("burg_121")
         self.app.engine.rng = random.Random(1)
         self.assertTrue(all(self.app.engine.create_encounter() is None for _ in range(60)))
 
     def test_region_at_respects_x_and_y(self):
-        self.assertEqual(self.zone.wild_region_at((20, 8)), "burg_54")    # core
-        self.assertEqual(self.zone.wild_region_at((50, 8)), "burg_146")   # mid-west band
-        self.assertEqual(self.zone.wild_region_at((44, 40)), "burg_121")  # south wins over band
-        self.assertEqual(self.zone.wild_region_at((13, 40)), "burg_121")  # heath
+        self.assertEqual(self.zone.wild_region_at((20, 8)), "burg_54")    # core (cainos NW)
+        self.assertEqual(self.zone.wild_region_at((100, 8)), "burg_146")  # mork_skog band (x>=83)
+        self.assertEqual(self.zone.wild_region_at((100, 150)), "burg_121")  # south wins over band
+        self.assertEqual(self.zone.wild_region_at((20, 150)), "burg_121")  # heath
 
     def test_dying_in_heath_respawns_at_hordanita_unless_relocated(self):
         # Respawn no longer auto-moves: entering the heath leaves it at Hordanita.

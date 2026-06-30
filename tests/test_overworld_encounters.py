@@ -41,7 +41,7 @@ class OverworldEncounterTest(unittest.TestCase):
     # -- the roll -----------------------------------------------------------
 
     def test_no_encounter_in_town(self):
-        self.app.world.set_tile(26, 18)  # Hordanita
+        self.app.world.set_tile(51, 52)  # Hordanita (new coords)
         self.app.sync_location()
         self.app.encounter_rate = 1.0
         self.assertIsNone(self.app.maybe_encounter())
@@ -81,7 +81,7 @@ class OverworldEncounterTest(unittest.TestCase):
         # zone is just the 1-tile radius — so the B12 ramp is visible. (burg_5 now
         # has a whole-cluster safe zone, B32, so its ramp starts farther out.)
         self.app.encounter_rate = 0.06
-        rates = [self.app.encounter_rate_at((10 + d, 8)) for d in range(0, 8)]
+        rates = [self.app.encounter_rate_at((24 + d, 24)) for d in range(0, 8)]  # east of burg_117 (24,24)
         self.assertTrue(all(rates[i] <= rates[i + 1] for i in range(len(rates) - 1)))  # non-decreasing
         self.assertEqual(rates[0], 0.0)        # on the town
         self.assertAlmostEqual(rates[-1], 0.06)  # full base a few tiles out
@@ -158,7 +158,7 @@ class OverworldEncounterTest(unittest.TestCase):
         enemy = self.app.engine.create_encounter()
         self.app.engine.player.current_place_id = "burg_5"  # engine respawn already happened
         self.app.resolve_battle_outcome("defeat", enemy)
-        self.assertEqual(self.app.world.current_tile, (26, 18))
+        self.assertEqual(self.app.world.current_tile, (51, 52))
         self.assertEqual(self.app.engine.player.current_place_id, "burg_5")
 
 

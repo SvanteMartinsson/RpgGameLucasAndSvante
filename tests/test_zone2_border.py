@@ -18,14 +18,15 @@ try:
 except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
+# The "western" zone-2 towns at their #3-expansion coords (mork_skog + cursed_mire).
 WESTERN_TOWNS = {
-    (50, 16): "burg_235",  # Jinosa
-    (57, 7): "burg_379",   # Condillosca
-    (66, 12): "burg_146",  # Rotequero (hub, respawn)
-    (60, 26): "burg_67",   # Fongorinos
-    (73, 6): "burg_200",   # Estables
-    (70, 31): "burg_320",  # Parguillas
-    (74, 17): "burg_219",  # Tierva
+    (106, 44): "burg_235",  # Jinosa
+    (126, 18): "burg_379",  # Condillosca
+    (152, 36): "burg_146",  # Rotequero (hub, respawn)
+    (136, 84): "burg_67",   # Fongorinos
+    (198, 22): "burg_200",  # Estables
+    (186, 92): "burg_320",  # Parguillas
+    (218, 60): "burg_219",  # Tierva
 }
 
 
@@ -77,7 +78,7 @@ class Zone2BorderTest(unittest.TestCase):
                         "cannot reach the west from the core side")
 
     def test_far_west_edge_is_still_gated(self):
-        self.assertIn((79, 28), self.app.world.gate_messages)
+        self.assertIn((239, 60), self.app.world.gate_messages)   # deep-east frontier gate
 
     # -- western places reachable & playable -------------------------------
 
@@ -98,14 +99,14 @@ class Zone2BorderTest(unittest.TestCase):
         self.assertEqual(self.app.engine.player.respawn_place_id, "burg_5")
 
     def test_western_wilderness_uses_zone2_region_but_respawn_unchanged(self):
-        self.app.world.set_tile(50, 8)  # western wilderness (mid-west band)
+        self.app.world.set_tile(100, 8)  # mork_skog band (x>=83)
         self.app.sync_location()
         self.assertEqual(self.app.engine.player.current_place_id, "burg_146")
         # Region drives encounters, but respawn never auto-moves: still Hordanita.
         self.assertEqual(self.app.engine.player.respawn_place_id, "burg_5")
 
     def test_western_encounters_come_from_zone2_pool(self):
-        self.app.world.set_tile(50, 8)
+        self.app.world.set_tile(100, 8)
         self.app.sync_location()
         self.app.encounter_rate = 1.0
         seen = {self.app.maybe_encounter().id for _ in range(80)}
@@ -113,12 +114,12 @@ class Zone2BorderTest(unittest.TestCase):
         self.assertNotIn("giant_rat", seen)  # rat is a core-zone enemy
 
     def test_defeat_in_west_respawns_at_rotequero_tile(self):
-        self.app.world.set_tile(50, 8)
+        self.app.world.set_tile(100, 8)
         self.app.sync_location()
         self.app.engine.player.current_place_id = "burg_146"  # engine respawn already ran
         enemy = self.app.engine.create_encounter()
         self.app.resolve_battle_outcome("defeat", enemy)
-        self.assertEqual(self.app.world.current_tile, (66, 12))  # Rotequero tile
+        self.assertEqual(self.app.world.current_tile, (152, 36))  # Rotequero tile (new coords)
 
 
 if __name__ == "__main__":
