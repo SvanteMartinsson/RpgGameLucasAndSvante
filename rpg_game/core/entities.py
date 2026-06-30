@@ -362,6 +362,13 @@ class Player:
     equipped_skill_ids: tuple[str, ...] = ()
     talent_points: int = 0
     learned_talent_ids: set[str] = field(default_factory=set)
+    # B36: per-node rank (1..max_rank). Source of truth for what is owned; the
+    # invariant is `id in learned_talent_ids` iff `talent_ranks[id] >= 1`.
+    talent_ranks: dict[str, int] = field(default_factory=dict)
+    # Derived (NOT persisted): active skill action_id -> rank, rebuilt from
+    # talent_ranks so combat can scale a talent skill's magnitude by its rank
+    # without a content lookup. See talents.sync_runtime / combat.resolve_action.
+    talent_skill_ranks: dict[str, int] = field(default_factory=dict)
     resistances: dict[str, float] = field(default_factory=dict)
     active_statuses: list["ActiveStatus"] = field(default_factory=list)
     stat_bonuses: dict[str, int] = field(default_factory=dict)

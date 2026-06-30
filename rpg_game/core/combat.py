@@ -28,6 +28,21 @@ from rpg_game.core.progression import RespawnResult, round_half_up
 
 DAMAGE_TYPES = {"physical", "fire", "frost", "holy", "poison"}
 
+# B36 talent ranks: a talent skill's damage/heal/DoT magnitude is multiplied by
+# its rank; at rank 3 its DoT/buff/debuff durations also gain +1 round. These are
+# placeholder values, sim-tuned later (out of B36 scope).
+TALENT_RANK_MULT = {1: 1.0, 2: 1.25, 3: 1.5}
+TALENT_RANK_DURATION_BONUS_AT = 3
+
+
+def talent_rank_scaling(rank: int) -> tuple[float, int]:
+    """(magnitude multiplier, extra duration rounds) for a talent skill at `rank`.
+    Rank 0/1 -> (1.0, 0): unchanged from the authored skill."""
+    if rank <= 1:
+        return 1.0, 0
+    return TALENT_RANK_MULT.get(rank, 1.0), 1 if rank >= TALENT_RANK_DURATION_BONUS_AT else 0
+
+
 CRIT_FLOOR = 0.25
 CRIT_BONUS_MAX = 1.0
 PLAYER_ATTACK_ID = "attack"

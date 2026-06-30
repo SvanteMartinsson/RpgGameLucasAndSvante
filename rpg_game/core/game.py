@@ -110,6 +110,9 @@ class GameEngine:
             and node.node_type == "active"
             and node.action_id in player_class.starting_skill_ids
         }
+        # B36: a learned node is rank 1 (starter skills are free rank-1 grants).
+        player.talent_ranks = {tid: 1 for tid in player.learned_talent_ids}
+        talents.sync_runtime(player, self.content)
         equipment.recompute_gear_modifiers(player, self.content)
         player.mana = equipment.effective_stat(player, "max_mana")  # start full (derived)
         # One free rest, carried as an inventory item (B20). The voucher IS the
@@ -138,6 +141,9 @@ class GameEngine:
         player_data = data.get("player", data)
         player = persistence.deserialize_player(player_data, self.content.start_place_id)
         equipment.recompute_gear_modifiers(player, self.content)
+        # B36: re-derive talent_skill_ranks (not persisted) and reconcile passive
+        # contributions to the loaded ranks, migrating old rank-1 saves.
+        talents.sync_runtime(player, self.content)
         self.state = GameState(player=player, content=self.content)
         return persistence.LoadResult(True, "Game loaded.")
 

@@ -99,6 +99,7 @@ def serialize_player(player: Player) -> dict:
         "equipped_skill_ids": list(player.equipped_skill_ids),
         "talent_points": player.talent_points,
         "learned_talent_ids": sorted(player.learned_talent_ids),
+        "talent_ranks": dict(player.talent_ranks),
         "resistances": dict(player.resistances),
         "active_statuses": [serialize_status(status) for status in player.active_statuses],
         "stat_bonuses": dict(player.stat_bonuses),
@@ -113,6 +114,20 @@ def serialize_player(player: Player) -> dict:
         "completed_tournament_ids": sorted(player.completed_tournament_ids),
         "inventory": {"consumables": dict(player.inventory.consumables)},
     }
+
+
+def _migrate_talent_ranks(data: dict) -> dict[str, int]:
+    """B36: prefer the stored per-node ranks; migrate an older save (only
+    learned_talent_ids) by granting every previously-learned node rank 1."""
+    ranks = data.get("talent_ranks")
+    if ranks:
+        return {key: int(value) for key, value in ranks.items() if int(value) >= 1}
+    return {tid: 1 for tid in data.get("learned_talent_ids", ())}
+
+
+def _migrate_learned_ids(data: dict) -> set[str]:
+    """Keep the invariant: learned == the set of nodes at rank >= 1."""
+    return set(_migrate_talent_ranks(data))
 
 
 def deserialize_player(data: dict, default_place_id: str = "") -> Player:
@@ -158,7 +173,8 @@ def deserialize_player(data: dict, default_place_id: str = "") -> Player:
         damage_taken_mod=data.get("damage_taken_mod", 0),
         equipped_skill_ids=tuple(data.get("equipped_skill_ids", ())),
         talent_points=data.get("talent_points", 0),
-        learned_talent_ids=set(data.get("learned_talent_ids", ())),
+        learned_talent_ids=_migrate_learned_ids(data),
+        talent_ranks=_migrate_talent_ranks(data),
         resistances={key: float(value) for key, value in data.get("resistances", {}).items()},
         active_statuses=[deserialize_status(status) for status in data.get("active_statuses", ())],
         stat_bonuses={key: int(value) for key, value in data.get("stat_bonuses", {}).items()},
