@@ -34,6 +34,7 @@ TRAIT_PROFILES: dict[str, dict[str, object]] = {
     "undead": {"holy": 3, "poison": IMMUNE, "frost": -1},
     "spirit": {"holy": 2, "physical": -1},
     "cursed": {"holy": 2, "physical": -1},
+    "vermin": {"fire": 1, "poison": -1},
 }
 
 

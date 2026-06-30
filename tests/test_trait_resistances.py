@@ -85,6 +85,19 @@ class TraitCombinationTests(unittest.TestCase):
     def test_empty_traits_is_fully_neutral(self):
         self.assertEqual(traits.resistances_from_traits([]), {})
 
+    def test_vermin_is_fire_weak_and_poison_resistant(self):
+        r = traits.resistances_from_traits(["vermin"])
+        self.assertEqual(r["fire"], 1.25)    # +1
+        self.assertEqual(r["poison"], 0.65)  # -1
+
+    def test_vermin_swamp_combines(self):
+        # fire: +1 (vermin) -1 (swamp) = 0 -> neutral; frost: +3 (swamp) -> 2.0;
+        # poison: -1 (vermin) -1 (swamp) = -2 clamped to -1 -> 0.65
+        r = traits.resistances_from_traits(["vermin", "swamp"])
+        self.assertEqual(r.get("fire", 1.0), 1.0)
+        self.assertEqual(r["frost"], 2.0)
+        self.assertEqual(r["poison"], 0.65)
+
 
 if __name__ == "__main__":
     unittest.main()
