@@ -375,12 +375,14 @@ def compute_damage_components(
     rng: random.Random | None = None,
     result: ActionResolution | None = None,
     weapon_scaled: bool = False,
+    rank_mult: float = 1.0,
 ) -> tuple[list[DamageComponent], int, bool]:
     """Resolve one damage instance into per-type components plus a floored total.
 
     Each component is mitigated against its own resistance (armor reduces only
     physical); the same rolled+crit multiplier scales every component. Flat
-    mitigation applies once to the summed components.
+    mitigation applies once to the summed components. `rank_mult` is the B36
+    talent-rank magnitude multiplier applied to the skill's source damage.
     """
     multiplier = roll_multiplier(effect, rng)
     crit = rolls_crit(actor, effect, rng)
@@ -389,7 +391,7 @@ def compute_damage_components(
         if result is not None:
             result.critical_hits += 1
 
-    raw_components = _raw_damage_components(actor, target, weapon, effect, multiplier, weapon_scaled)
+    raw_components = _raw_damage_components(actor, target, weapon, effect, multiplier, weapon_scaled, rank_mult)
 
     components: list[DamageComponent] = []
     for amount, damage_type in raw_components:
@@ -410,9 +412,10 @@ def _raw_damage_components(
     effect: EffectSpec,
     multiplier: float,
     weapon_scaled: bool,
+    rank_mult: float = 1.0,
 ) -> list[tuple[int, str]]:
     source = _effect_source_value(actor, weapon, effect, weapon_scaled)
-    primary = round_half_up(source * multiplier)
+    primary = round_half_up(source * multiplier * rank_mult)
     primary = apply_conditional(primary, actor, target, effect)
     primary = apply_damage_dealt_mod(primary, actor)
     components = [(primary, _effect_damage_type(actor, weapon, effect))]
@@ -635,6 +638,14 @@ def resolve_action(
     if action.kind == "skill" and not action_can_be_evaded(action):
         result.events.append(f"{actor_name(actor)} used {action.name}.")
 
+    # B36: if a talent granted this skill, scale its magnitude (and, at rank 3,
+    # its DoT/buff/debuff durations) by the player's rank in that talent. Wisdom
+    # already sets the spell base inside the effect source, so the rank multiplier
+    # composes on top without double-counting. Basic attacks and enemy actions are
+    # never talent skills, so they stay at rank 0 -> (1.0, 0).
+    skill_rank = actor.talent_skill_ranks.get(action.id, 0) if isinstance(actor, Player) else 0
+    rank_mult, rank_duration_bonus = talent_rank_scaling(skill_rank)
+
     for effect in action.effects:
         apply_effect(
             actor,
@@ -644,6 +655,8 @@ def resolve_action(
             weapon=weapon,
             rng=rng,
             weapon_scaled=action_uses_weapon_scaling(action),
+            rank_mult=rank_mult,
+            rank_duration_bonus=rank_duration_bonus,
         )
 
     if action.cooldown_rounds:
@@ -839,6 +852,8 @@ def apply_effect(
     weapon: Weapon | None,
     rng: random.Random | None = None,
     weapon_scaled: bool = False,
+    rank_mult: float = 1.0,
+    rank_duration_bonus: int = 0,
 ) -> None:
     effect_target = actor if effect.target == "self" else target
 
@@ -852,6 +867,7 @@ def apply_effect(
                 rng=rng,
                 result=result,
                 weapon_scaled=weapon_scaled,
+                rank_mult=rank_mult,
             )
             result.damage_components.extend(components)
             primary_type = components[0].damage_type
@@ -865,6 +881,7 @@ def apply_effect(
         amount = effect.magnitude
         if effect.scale == "spell":   # wisdom-scaled heal (e.g. mend) instead of flat
             amount = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
+        amount = round_half_up(amount * rank_mult)   # B36 talent rank magnitude
         before = effect_target.hp
         effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + amount)
         result.total_healing += effect_target.hp - before
@@ -880,6 +897,7 @@ def apply_effect(
             rng=rng,
             result=result,
             weapon_scaled=weapon_scaled,
+            rank_mult=rank_mult,
         )
         result.damage_components.extend(components)
         primary_type = components[0].damage_type
@@ -907,7 +925,8 @@ def apply_effect(
         magnitude = effect.magnitude
         if effect.scale == "spell":   # wisdom-scaled player DoT (e.g. plague_bolt) instead of flat
             magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
-        duration = effect.duration
+        magnitude = round_half_up(magnitude * rank_mult)   # B36 talent rank magnitude
+        duration = effect.duration + rank_duration_bonus   # B36: +1 round at rank 3
         if isinstance(actor, Player):
             status_mod = actor.applied_status_mods.get(status_type, {})
             magnitude += status_mod.get("magnitude", 0)
@@ -976,7 +995,7 @@ def apply_effect(
 
     if effect.type == "heal":
         before = actor.hp
-        actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
+        actor.hp = min(effective_max_hp(actor), actor.hp + round_half_up(effect.magnitude * rank_mult))
         result.total_healing += actor.hp - before
         result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
         return

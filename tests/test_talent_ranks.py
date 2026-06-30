@@ -5,6 +5,7 @@ binary nodes cap at rank 1) and the deterministic node classification, not the
 placeholder multiplier values themselves.
 """
 
+import random
 import unittest
 
 from rpg_game.core import combat, data_loader, persistence, progression
@@ -184,6 +185,76 @@ class TalentPassiveRankTest(unittest.TestCase):
         talents.sync_runtime(engine.player, engine.content)
         talents.sync_runtime(engine.player, engine.content)
         self.assertEqual(engine.player.stat_bonuses, before)
+
+
+class TalentActiveRankTest(unittest.TestCase):
+    """Rank scales the skill the talent grants: more magnitude every rank, and at
+    rank 3 also +1 round of duration. Lock the relations, not the numbers."""
+
+    def _mage_with_ignite(self, rank):
+        engine = GameEngine(rng=random.Random(7))
+        engine.start_new_game("M", "mage")
+        engine.player.talent_points = 10
+        for _ in range(rank):
+            engine.allocate_talent("mage_pyromancer_y2_ignite")
+        return engine
+
+    def _cast_ignite_burn(self, engine):
+        action = engine.content.actions["ignite"]
+        weapon = engine.content.weapons[engine.player.equipped_weapon_id]
+        enemy = next(iter(engine.content.enemies.values())).create_enemy()
+        combat.resolve_action(engine.player, enemy, action, random.Random(1), weapon=weapon)
+        return next(s for s in enemy.active_statuses if s.tag == "burn" or s.type == "fire")
+
+    def test_dot_magnitude_scales_but_duration_holds_until_rank_3(self):
+        burn1 = self._cast_ignite_burn(self._mage_with_ignite(1))
+        burn2 = self._cast_ignite_burn(self._mage_with_ignite(2))
+        burn3 = self._cast_ignite_burn(self._mage_with_ignite(3))
+        # magnitude grows by the rank multiplier
+        self.assertEqual(burn2.magnitude, progression.round_half_up(burn1.magnitude * combat.TALENT_RANK_MULT[2]))
+        self.assertEqual(burn3.magnitude, progression.round_half_up(burn1.magnitude * combat.TALENT_RANK_MULT[3]))
+        # duration: unchanged at rank 2, +1 round at rank 3
+        self.assertEqual(burn2.duration, burn1.duration)
+        self.assertEqual(burn3.duration, burn1.duration + 1)
+
+    def test_rank_only_scales_the_granted_skill_not_other_skills(self):
+        # Upgrading ignite must not change firebolt (a different talent).
+        engine = self._mage_with_ignite(3)
+        self.assertEqual(engine.player.talent_skill_ranks.get("ignite"), 3)
+        self.assertEqual(engine.player.talent_skill_ranks.get("firebolt"), 1)
+
+    def test_enemy_casters_never_get_a_rank_multiplier(self):
+        # Shared arena skills resolved by an enemy stay at rank 0 (mult 1.0).
+        engine = GameEngine(rng=random.Random(7))
+        engine.start_new_game("M", "mage")
+        enemy = next(iter(engine.content.enemies.values())).create_enemy()
+        # Enemies have no talent_skill_ranks attribute; the Player guard must keep
+        # resolve_action from ever touching it (no AttributeError, mult stays 1.0).
+        enemy.mana = enemy.max_mana = 50
+        action = engine.content.actions["ignite"]
+        result = combat.resolve_action(enemy, engine.player, action, random.Random(1))
+        self.assertEqual(result.action_id, "ignite")
+
+
+class TalentRankWisdomCompositionTest(unittest.TestCase):
+    def test_spell_dot_rank_composes_with_wisdom_without_double_count(self):
+        # plague_bolt is wisdom-scaled (scale="spell"). Rank 1 must equal the
+        # pre-rank value (no double count); rank 2 is exactly 1.25x that.
+        def poison_magnitude(rank):
+            engine = GameEngine(rng=random.Random(3))
+            engine.start_new_game("C", "cleric")
+            engine.player.talent_points = 10
+            for _ in range(rank):
+                engine.allocate_talent("cleric_pest_p1_plague_bolt")
+            action = engine.content.actions["plague_bolt"]
+            weapon = engine.content.weapons[engine.player.equipped_weapon_id]
+            enemy = next(iter(engine.content.enemies.values())).create_enemy()
+            combat.resolve_action(engine.player, enemy, action, random.Random(1), weapon=weapon)
+            return next(s for s in enemy.active_statuses if s.type == "poison").magnitude
+
+        rank1 = poison_magnitude(1)
+        rank2 = poison_magnitude(2)
+        self.assertEqual(rank2, progression.round_half_up(rank1 * combat.TALENT_RANK_MULT[2]))
 
 
 if __name__ == "__main__":
