@@ -45,7 +45,7 @@ class ViewSnapshotTests(unittest.TestCase):
         # data is exposed on the snapshot
         self.assertEqual(weapons["staff"].category, "magic")
         self.assertEqual(weapons["venomfang"].category, "melee")
-        self.assertEqual(weapons["venomfang"].damage_type, "physical")
+        self.assertEqual(weapons["venomfang"].damage_type, "poison")  # B37: name now matches the type
 
         # presentation surfaces the type + stats in the visible strings
         label = T.weapon_label(weapons["venomfang"])

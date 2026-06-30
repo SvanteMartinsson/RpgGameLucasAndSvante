@@ -9,12 +9,14 @@ from rpg_game.core.game import GameEngine
 
 class FighterStartWeaponTest(unittest.TestCase):
     def test_fighter_starts_with_worn_shortsword(self):
-        # B33: the fighter opens with the weak worn_shortsword (d2), not the sword.
+        # B33/B37: the fighter opens with the worn_shortsword, now a pure tier-0
+        # starter (d0) — no damage bonus over the bare stat.
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")
         self.assertEqual(engine.player.equipped_weapon_id, "worn_shortsword")
         self.assertEqual(engine.player.owned_weapon_ids, ("worn_shortsword",))
-        self.assertEqual(engine.content.weapons["worn_shortsword"].damage_bonus, 2)
+        self.assertEqual(engine.content.weapons["worn_shortsword"].damage_bonus, 0)
+        self.assertEqual(engine.content.weapons["worn_shortsword"].tier, 0)
 
 
 class WeaponLevelRequirementTests(unittest.TestCase):

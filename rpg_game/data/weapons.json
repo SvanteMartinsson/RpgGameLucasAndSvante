@@ -106,9 +106,9 @@
   {
     "id": "venomfang",
     "name": "Venomfang",
-    "damage_bonus": 22,
+    "damage_bonus": 25,
     "price": 760,
-    "damage_type": "physical",
+    "damage_type": "poison",
     "category": "melee"
   },
   {
@@ -138,7 +138,7 @@
   {
     "id": "worn_shortsword",
     "name": "Worn Shortsword",
-    "damage_bonus": 2,
+    "damage_bonus": 0,
     "price": 20,
     "damage_type": "physical",
     "category": "melee"
@@ -162,7 +162,7 @@
   {
     "id": "worgfang",
     "name": "Worgfang",
-    "damage_bonus": 20,
+    "damage_bonus": 25,
     "price": 740,
     "damage_type": "physical",
     "category": "melee"
