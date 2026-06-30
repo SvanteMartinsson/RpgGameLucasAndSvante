@@ -1,44 +1,243 @@
 {
   "_comment": "Spelbar overworld (fri-gång, Modell B). #3-expansion: kartan är 240x208 (option A, parametrisk terräng). Nord (y<100): cainos x<=82, mork_skog 83-158, cursed_mire >=159. Söder om seamen (y>=100) är grave_heath. Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark. Gates spärrar vägen ut mot ospelbara zoner. Allt här är data/tunbart. Terrängen genereras av overworld_layout.py + regenerate_overworld.py.",
   "map": "overworld.tmx",
-  "start_tile": [51, 52],
+  "start_tile": [
+    51,
+    52
+  ],
   "encounter_rate_per_step": 0.06,
   "wild_region_place_id": "burg_54",
   "wild_regions": [
-    {"place_id": "burg_121", "min_tile_y": 100},
-    {"place_id": "burg_320", "min_tile_x": 159},
-    {"place_id": "burg_146", "min_tile_x": 83}
+    {
+      "place_id": "burg_121",
+      "min_tile_y": 100
+    },
+    {
+      "place_id": "burg_320",
+      "min_tile_x": 159
+    },
+    {
+      "place_id": "burg_146",
+      "min_tile_x": 83
+    }
   ],
   "_ground_themes_comment": "Presentation + respawn-zon: vilken tile-theme som målar varje zons basmark. Nordbanden driver zone_for_tile (respawn-kostnad) och alignar med wild_regions; grave_heath (y>=100) överrider söderut. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets finns registrerade.",
   "ground_themes": [
-    {"theme": "cainos", "max_tile_x": 82},
-    {"theme": "mork_skog", "min_tile_x": 83, "max_tile_x": 158},
-    {"theme": "cursed_mire", "min_tile_x": 159},
-    {"theme": "grave_heath", "min_tile_y": 100}
+    {
+      "theme": "cainos",
+      "max_tile_x": 82
+    },
+    {
+      "theme": "mork_skog",
+      "min_tile_x": 83,
+      "max_tile_x": 158
+    },
+    {
+      "theme": "cursed_mire",
+      "min_tile_x": 159
+    },
+    {
+      "theme": "grave_heath",
+      "min_tile_y": 100
+    }
   ],
   "respawn_place_id": "burg_5",
   "towns": [
-    {"tile": [51, 52], "place_id": "burg_5", "label": "Hordanita"},
-    {"tile": [24, 24], "place_id": "burg_117", "label": "Yeblegali"},
-    {"tile": [72, 88], "place_id": "burg_160", "label": "Gaste"},
-    {"tile": [106, 44], "place_id": "burg_235", "label": "Jinosa"},
-    {"tile": [126, 18], "place_id": "burg_379", "label": "Condillosca"},
-    {"tile": [152, 36], "place_id": "burg_146", "label": "Rotequero"},
-    {"tile": [136, 84], "place_id": "burg_67", "label": "Fongorinos"},
-    {"tile": [198, 22], "place_id": "burg_200", "label": "Estables"},
-    {"tile": [186, 92], "place_id": "burg_320", "label": "Parguillas"},
-    {"tile": [218, 60], "place_id": "burg_219", "label": "Tierva"},
-    {"tile": [72, 180], "place_id": "burg_121", "label": "Alherralba"},
-    {"tile": [38, 132], "place_id": "burg_54", "label": "Guaredama"},
-    {"tile": [27, 192], "place_id": "burg_385", "label": "Cantida"},
-    {"tile": [99, 140], "place_id": "burg_149", "label": "Salles"},
-    {"tile": [162, 118], "place_id": "burg_293", "label": "Urrequena"},
-    {"tile": [181, 164], "place_id": "burg_105", "label": "Chuequeroma"},
-    {"tile": [216, 194], "place_id": "burg_53", "label": "Barroncami"}
+    {
+      "tile": [
+        51,
+        52
+      ],
+      "place_id": "burg_5",
+      "label": "Hordanita",
+      "tier": "capital"
+    },
+    {
+      "tile": [
+        24,
+        24
+      ],
+      "place_id": "burg_117",
+      "label": "Yeblegali",
+      "tier": "town",
+      "shop_category": "weapons",
+      "prop": "shrine"
+    },
+    {
+      "tile": [
+        72,
+        88
+      ],
+      "place_id": "burg_160",
+      "label": "Gaste",
+      "tier": "village",
+      "shop_category": "general"
+    },
+    {
+      "tile": [
+        106,
+        44
+      ],
+      "place_id": "burg_235",
+      "label": "Jinosa",
+      "tier": "village",
+      "prop": "stable"
+    },
+    {
+      "tile": [
+        126,
+        18
+      ],
+      "place_id": "burg_379",
+      "label": "Condillosca",
+      "tier": "village",
+      "shop_category": "weapons"
+    },
+    {
+      "tile": [
+        152,
+        36
+      ],
+      "place_id": "burg_146",
+      "label": "Rotequero",
+      "tier": "town",
+      "shop_category": "armor"
+    },
+    {
+      "tile": [
+        136,
+        84
+      ],
+      "place_id": "burg_67",
+      "label": "Fongorinos",
+      "tier": "city",
+      "prop": "warehouse"
+    },
+    {
+      "tile": [
+        198,
+        22
+      ],
+      "place_id": "burg_200",
+      "label": "Estables",
+      "tier": "city",
+      "prop": "tower"
+    },
+    {
+      "tile": [
+        186,
+        92
+      ],
+      "place_id": "burg_320",
+      "label": "Parguillas",
+      "tier": "village",
+      "prop": "shrine"
+    },
+    {
+      "tile": [
+        218,
+        60
+      ],
+      "place_id": "burg_219",
+      "label": "Tierva",
+      "tier": "town",
+      "shop_category": "general",
+      "prop": "stable"
+    },
+    {
+      "tile": [
+        72,
+        180
+      ],
+      "place_id": "burg_121",
+      "label": "Alherralba",
+      "tier": "village"
+    },
+    {
+      "tile": [
+        38,
+        132
+      ],
+      "place_id": "burg_54",
+      "label": "Guaredama",
+      "tier": "town",
+      "shop_category": "armor",
+      "prop": "shrine"
+    },
+    {
+      "tile": [
+        27,
+        192
+      ],
+      "place_id": "burg_385",
+      "label": "Cantida",
+      "tier": "village",
+      "shop_category": "general"
+    },
+    {
+      "tile": [
+        99,
+        140
+      ],
+      "place_id": "burg_149",
+      "label": "Salles",
+      "tier": "city",
+      "prop": "apothecary"
+    },
+    {
+      "tile": [
+        162,
+        118
+      ],
+      "place_id": "burg_293",
+      "label": "Urrequena",
+      "tier": "town",
+      "shop_category": "weapons",
+      "prop": "shrine"
+    },
+    {
+      "tile": [
+        181,
+        164
+      ],
+      "place_id": "burg_105",
+      "label": "Chuequeroma",
+      "tier": "town",
+      "shop_category": "general",
+      "prop": "stable"
+    },
+    {
+      "tile": [
+        216,
+        194
+      ],
+      "place_id": "burg_53",
+      "label": "Barroncami",
+      "tier": "village",
+      "prop": "stable"
+    }
   ],
   "gates": [
-    {"tile": [51, 0], "message_key": "gate_north"},
-    {"tile": [239, 60], "message_key": "gate_deep_east"},
-    {"tile": [51, 207], "message_key": "gate_verralda_south"}
+    {
+      "tile": [
+        51,
+        0
+      ],
+      "message_key": "gate_north"
+    },
+    {
+      "tile": [
+        239,
+        60
+      ],
+      "message_key": "gate_deep_east"
+    },
+    {
+      "tile": [
+        51,
+        207
+      ],
+      "message_key": "gate_verralda_south"
+    }
   ]
 }

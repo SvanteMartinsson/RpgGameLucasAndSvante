@@ -206,6 +206,7 @@ class ZoneConfig:
     gates: dict  # (tx, ty) -> message
     wild_regions: tuple = ()  # ((place_id, min_x, max_x), ...) by tile x; else default
     ground_themes: tuple = ()  # ((theme, min_x, max_x), ...) in order; zone = index+1
+    town_meta: dict = None  # place_id -> {"tier","shop_category","prop"} (B8 Slice 2a)
 
     @staticmethod
     def load(path: str = ZONE_CONFIG) -> "ZoneConfig":
@@ -213,6 +214,14 @@ class ZoneConfig:
             data = json.load(handle)
         towns = {tuple(t["tile"]): t["place_id"] for t in data.get("towns", [])}
         labels = {tuple(t["tile"]): t.get("label", t["place_id"]) for t in data.get("towns", [])}
+        # B8 Slice 2a: per-town cluster tier + provisional shop category / cosmetic
+        # prop (Lucas tunes the values in 2b; the code only reads them).
+        town_meta = {
+            t["place_id"]: {"tier": t.get("tier", "village"),
+                            "shop_category": t.get("shop_category"),
+                            "prop": t.get("prop")}
+            for t in data.get("towns", [])
+        }
         # Gate copy lives in ui_text; JSON references it by message_key (inline
         # "message" still honored as a fallback).
         gates = {
@@ -243,6 +252,7 @@ class ZoneConfig:
             gates=gates,
             wild_regions=wild_regions,
             ground_themes=ground_themes,
+            town_meta=town_meta,
         )
 
     def wild_region_at(self, tile: tuple[int, int]) -> str:
