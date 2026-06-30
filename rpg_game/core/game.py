@@ -575,6 +575,27 @@ class GameEngine:
     def is_upgradable(self, item_id: str) -> bool:
         return upgrades.is_upgradable(self.content, item_id)
 
+    def is_item_upgraded(self, item_id: str) -> bool:
+        return upgrades.is_upgraded(self.player, item_id)
+
+    def station_category(self, building_id: str) -> str | None:
+        return upgrades.station_category(building_id)
+
+    def station_upgradable_items(self, building_id: str) -> list[str]:
+        """Owned items the given station (blacksmith/mage tower) can offer to
+        upgrade: its category, upgradable, with a recipe."""
+        category = upgrades.station_category(building_id)
+        if category is None:
+            return []
+        return upgrades.owned_upgradable(self.player, self.content, category)
+
+    def upgrade_variant(self, item_id: str, variant_id: str):
+        return upgrades.variant_for(self.content, item_id, variant_id)
+
+    def can_afford_upgrade(self, item_id: str, variant_id: str) -> bool:
+        variant = upgrades.variant_for(self.content, item_id, variant_id)
+        return variant is not None and upgrades.can_afford(self.player, variant)
+
     def apply_item_upgrade(self, item_id: str, variant_id: str) -> upgrades.UpgradeResult:
         result = upgrades.apply_upgrade(self.player, self.content, item_id, variant_id)
         if result.success:

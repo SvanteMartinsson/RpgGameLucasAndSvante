@@ -174,5 +174,34 @@ class UpgradeRuleTest(unittest.TestCase):
         self.assertEqual(loaded.player.item_upgrades["worgfang"], "savage")
 
 
+class StationRoutingTest(unittest.TestCase):
+    def test_blacksmith_routes_weapons_mage_tower_and_barracks_route_armour(self):
+        content = data_loader.load_content()
+        self.assertEqual(upgrades.station_category("blacksmith"), "weapon")
+        self.assertEqual(upgrades.station_category("mage_tower"), "armour")
+        self.assertEqual(upgrades.station_category("barracks"), "armour")
+        self.assertIsNone(upgrades.station_category("inn"))
+        # category match is enforced both ways
+        self.assertTrue(upgrades.station_can_upgrade("blacksmith", content, "worgfang"))
+        self.assertFalse(upgrades.station_can_upgrade("blacksmith", content, "iron_cuirass"))
+        self.assertTrue(upgrades.station_can_upgrade("mage_tower", content, "iron_cuirass"))
+        self.assertFalse(upgrades.station_can_upgrade("mage_tower", content, "worgfang"))
+
+    def test_station_tier_is_max_noop_so_any_tier_is_handled(self):
+        content = data_loader.load_content()
+        # worldsplitter is the highest-tier weapon; the no-op tier gate still passes
+        # the tier check (it's only excluded by the exclusion list, not by tier).
+        self.assertGreaterEqual(upgrades.station_tier("blacksmith"), upgrades.item_tier(content, "worldsplitter"))
+
+    def test_station_lists_only_owned_upgradable_items_of_its_category(self):
+        engine = _stocked()
+        engine.player.owned_weapon_ids = ("knife", "worgfang", "steel_greatsword")  # knife is common
+        engine.player.owned_gear_ids = ("iron_cuirass", "training_cap")             # cap is common
+        weapons = engine.station_upgradable_items("blacksmith")
+        armour = engine.station_upgradable_items("barracks")
+        self.assertEqual(set(weapons), {"worgfang", "steel_greatsword"})
+        self.assertEqual(set(armour), {"iron_cuirass"})
+
+
 if __name__ == "__main__":
     unittest.main()

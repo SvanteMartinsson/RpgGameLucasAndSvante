@@ -31,6 +31,23 @@ UPGRADE_EXCLUSIONS: set[str] = {"worldsplitter"}
 RARITY_RANK = {"common": 0, "uncommon": 1, "rare": 2, "mega rare": 3, "legendary": 4}
 MIN_UPGRADE_RARITY = "rare"
 
+# Upgrade stations: the blacksmith reforges weapons, the mage tower enchants
+# armour (the barracks hosts armour upgrades until a dedicated mage-tower building
+# ships — same mechanic, different door). Each station has a `tier` it can handle,
+# wired for future town-size gating but pinned to MAX now (upgrades everything).
+STATION_CATEGORY = {"blacksmith": "weapon", "mage_tower": "armour", "barracks": "armour"}
+STATION_MAX_TIER = 99
+
+
+def station_category(building_id: str) -> str | None:
+    return STATION_CATEGORY.get(building_id)
+
+
+def station_tier(building_id: str) -> int:
+    # No-op gating hook: every station is MAX tier in v1. A future town-size pass
+    # can lower this per building without touching the rest of the system.
+    return STATION_MAX_TIER
+
 # Flat stats an upgrade variant may add to the effective stat. Element mods are
 # handled separately (a damage component on hit), weapons only.
 UPGRADE_FLAT_STATS = {"damage", "crit_chance", "wisdom", "armor", "max_hp", "speed", "max_mana"}
@@ -54,6 +71,34 @@ def item_category(content: GameContent, item_id: str) -> str | None:
     if item_id in content.gear_items:
         return "armour"
     return None
+
+
+def item_tier(content: GameContent, item_id: str) -> int:
+    if item_id in content.weapons:
+        return content.weapons[item_id].tier
+    if item_id in content.gear_items:
+        return content.gear_items[item_id].tier
+    return 0
+
+
+def station_can_upgrade(building_id: str, content: GameContent, item_id: str) -> bool:
+    """A station handles an item if the categories match and the item's tier is
+    within the station's tier (no-op now: STATION_MAX_TIER covers everything)."""
+    category = station_category(building_id)
+    if category is None or item_category(content, item_id) != category:
+        return False
+    return item_tier(content, item_id) <= station_tier(building_id)
+
+
+def owned_upgradable(player: Player, content: GameContent, category: str) -> list[str]:
+    """Owned items of `category` that are upgradable AND have an authored recipe
+    (so a station has something concrete to offer). Includes already-upgraded
+    items so the UI can show their locked state."""
+    owned = (player.owned_weapon_ids if category == "weapon" else player.owned_gear_ids)
+    return [
+        item_id for item_id in owned
+        if is_upgradable(content, item_id) and recipe_for(content, item_id) is not None
+    ]
 
 
 def is_upgradable(content: GameContent, item_id: str) -> bool:
