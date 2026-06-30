@@ -509,3 +509,10 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **B8 Slice 2a** (`78cbce0`/`e74ffd2`/`17f6207`, Lucas-godkänd) — tier-styrt kluster i alla 17 städer
   (capital/city/town/village ur core_zone), resolve_template, en rest-dörr/stad, town_hall vid turnering,
   kuliss utan dörr, sprites (id,facing). 637 tester gröna. Kvar: 2b-tuning + tjänste-triggrar.
+- **nya fiender + frostfire** (`1316ccc`/`02e6f90`) — 14 fiender registrerade som data (härledda
+  resistanser, platshållar-stats, skeleton_warrior-elit), frostfire_strike-action, 14 sprite-PNG:er.
+- **Wisdom Slice A (system)** (Lucas-godkänd) — ny `wisdom`-stat driver HÄRLEDD mana (wisdom×5+gear,
+  ingen lagrad max_mana-bas); level-up-valet Mana→Wisdom; ny combat-scale `spell` =
+  round(0.4×(dmg+magic-vapen) + 0.6×wisdom)×mod för spelar-magi (smite/firebolt/.../mend/DoTs + B27-pool).
+  Fiender (ingen wisdom) → power-ekvivalent, oförändrade; ignite lämnad platt (delas med arena_mira).
+  650 tester gröna (system + venv). **Slice B (balans):** MANA_PER_WISDOM, wisdom/val, 0.4/0.6, per-spell-mods via B37-sim.
