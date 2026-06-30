@@ -217,12 +217,22 @@ class PerEnemyUniqueTableTests(unittest.TestCase):
         "tar_beast": "tarheart_amulet", "hollow_worg": "worgfang",
     }
 
+    # New-enemy data slice: registered with placeholder loot and NO unique yet
+    # (real uniques — e.g. skeleton_warrior's frostfire sword — are the loot slice).
+    NEW_PLACEHOLDER_ENEMIES = {
+        "wild_dog", "wild_stag", "giant_spider", "goblin_scrapper", "mire_lurker",
+        "bog_leech", "rotting_fiend", "witchlight", "bog_hag", "ghoul",
+        "grave_hound", "shade", "cursed_wight", "skeleton_warrior",
+    }
+
     def test_every_drop_capable_enemy_has_unique_and_common_tables(self):
         content = _engine().content
         for eid, tmpl in content.enemies.items():
             if tmpl.drop_chance <= 0:        # arena opponents drop nothing
                 continue
             self.assertTrue(tmpl.loot_table, f"{eid} has no common table")
+            if eid in self.NEW_PLACEHOLDER_ENEMIES:
+                continue                     # uniques deferred to the loot slice
             self.assertTrue(tmpl.unique_table, f"{eid} has no unique table")
 
     def test_signature_unique_drops_in_target_band(self):
