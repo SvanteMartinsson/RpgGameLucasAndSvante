@@ -63,14 +63,16 @@
     "name": "Antidote",
     "kind": "consumable",
     "heal_amount": 0,
-    "cures": ["poison"],
+    "cures": [
+      "poison"
+    ],
     "price": 80,
     "tier": 2
   },
   {
     "id": "rat_pelt",
     "name": "Rat Pelt",
-    "kind": "junk",
+    "kind": "miscellaneous",
     "heal_amount": 0,
     "price": 6,
     "tier": 1
@@ -78,7 +80,7 @@
   {
     "id": "bone_dust",
     "name": "Bone Dust",
-    "kind": "junk",
+    "kind": "miscellaneous",
     "heal_amount": 0,
     "price": 10,
     "tier": 1
@@ -86,7 +88,7 @@
   {
     "id": "tattered_cloth",
     "name": "Tattered Cloth",
-    "kind": "junk",
+    "kind": "miscellaneous",
     "heal_amount": 0,
     "price": 8,
     "tier": 1

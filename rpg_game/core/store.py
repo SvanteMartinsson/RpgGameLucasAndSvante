@@ -15,7 +15,7 @@ SELL_FRACTION = 0.5
 STORE_CATEGORIES = {
     "weapons": {"buy": {"weapon"}, "sell": {"weapon"}},
     "armor":   {"buy": {"gear"}, "sell": {"gear"}},
-    "general": {"buy": {"consumable"}, "sell": {"junk"}},
+    "general": {"buy": {"consumable"}, "sell": {"miscellaneous"}},
 }
 GEAR_RARITY_VALUE = {
     "common": 10,
@@ -172,9 +172,9 @@ def get_sellables(player: Player, content: GameContent, category: str | None = N
     entries: list[SellEntry] = []
     for item_id, count in sorted(player.inventory.consumables.items()):
         item = content.items.get(item_id)
-        if item is not None and item.kind == "junk":
-            entries.append(SellEntry(item_id, item.name, "junk", sell_value(item.price), count,
-                                     description="Junk"))
+        if item is not None and item.kind == "miscellaneous":
+            entries.append(SellEntry(item_id, item.name, "miscellaneous", sell_value(item.price), count,
+                                     description="Miscellaneous"))
     for weapon_id in player.owned_weapon_ids:
         if weapon_id == player.equipped_weapon_id:
             continue
@@ -223,8 +223,8 @@ def sell_item(player: Player, content: GameContent, item_id: str) -> SellResult:
 
     if player.inventory.count(normalized) > 0:
         item = content.items[normalized]
-        if item.kind != "junk":
-            return SellResult(False, "You can only sell junk and unequipped weapons.")
+        if item.kind != "miscellaneous":
+            return SellResult(False, "You can only sell miscellaneous items and unequipped weapons.")
         value = sell_value(item.price)
         player.inventory.remove_consumable(normalized)
         player.gold += value

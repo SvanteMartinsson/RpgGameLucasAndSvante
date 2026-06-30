@@ -18,7 +18,7 @@ except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
 ALL_CATEGORIES = {
-    "consumables", "junk", "weapon",
+    "consumables", "miscellaneous", "weapon",
     "head", "chest", "hands", "legs", "feet", "amulet", "ring",
 }
 
@@ -77,7 +77,7 @@ class InventoryOverviewTest(unittest.TestCase):
         self.eng.player.inventory.add_consumable("bone_dust")
         counts = self.app.inventory_counts()
         self.assertEqual(counts["consumables"], 2)
-        self.assertEqual(counts["junk"], 1)
+        self.assertEqual(counts["miscellaneous"], 1)
 
     # -- routing to Character (no equip logic in inventory) ----------------
 
@@ -112,9 +112,9 @@ class InventoryOverviewTest(unittest.TestCase):
         self.assertGreater(self.eng.player.hp, 1)
         self.assertEqual(self.eng.player.inventory.count("hp_potion"), 0)
 
-    def test_junk_is_listed_but_inert(self):
+    def test_miscellaneous_is_listed_but_inert(self):
         self.eng.player.inventory.add_consumable("bone_dust")
-        rows = self.app.inventory_category_items("junk")
+        rows = self.app.inventory_category_items("miscellaneous")
         bone = next(r for r in rows if r[0] == "bone_dust")
         self.assertIsNone(bone[2])  # no on_click — not usable
 

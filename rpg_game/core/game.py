@@ -266,7 +266,7 @@ class GameEngine:
         return world.create_encounter(self.player, self.content, self.rng)
 
     def loot_pool(self, enemy: Enemy) -> list[dict[str, object]]:
-        # Each enemy resolves from its own COMMON table (loot_table: shared junk,
+        # Each enemy resolves from its own COMMON table (loot_table: shared miscellaneous,
         # potions, common gear) plus its signature UNIQUE table (unique_table: the
         # item worth hunting it for), and the shared rare table when it has access.
         # One weighted pool -> a single resolution path, no parallel loot logic.

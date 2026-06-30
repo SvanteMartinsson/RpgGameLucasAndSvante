@@ -848,13 +848,13 @@ class OverworldApp:
     def inventory_counts(self) -> dict:
         """Count of everything owned, per category, from the same source the
         equip path reads (owned weapons/gear + the consumables bag). Consumables
-        and junk count total quantity; equipment counts owned items."""
+        and miscellaneous count total quantity; equipment counts owned items."""
         snap = build_snapshot(self.engine)
         items = self.engine.content.items
         bag = self.engine.player.inventory.consumables
         counts = {
             "consumables": sum(c for i, c in bag.items() if c > 0 and items[i].kind == "consumable"),
-            "junk": sum(c for i, c in bag.items() if c > 0 and items[i].kind != "consumable"),
+            "miscellaneous": sum(c for i, c in bag.items() if c > 0 and items[i].kind != "consumable"),
             "weapon": len(snap.weapons),
         }
         gear_by_type = collections.Counter(g.slot_type for g in snap.gear)
@@ -872,13 +872,13 @@ class OverworldApp:
 
     def inventory_category_items(self, category: str):
         """Items in a category for display: (item_id, label, on_click) tuples.
-        Equippable items hand off to the Character panel; consumables use; junk
-        is inert."""
+        Equippable items hand off to the Character panel; consumables use;
+        miscellaneous is inert."""
         snap = build_snapshot(self.engine)
         items = self.engine.content.items
         bag = self.engine.player.inventory.consumables
         rows = []
-        if category in ("consumables", "junk"):
+        if category in ("consumables", "miscellaneous"):
             want_consumable = category == "consumables"
             for item_id, count in sorted(bag.items()):
                 if count <= 0 or (items[item_id].kind == "consumable") != want_consumable:

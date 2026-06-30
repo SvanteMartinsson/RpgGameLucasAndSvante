@@ -26,7 +26,7 @@ Pure data + tile math (no pygame) so collision/cobble/anchor rules are unit-test
 # tile. That means nothing stands SOUTH of a front house (its door faces south into
 # the open courtyard) and nothing stands WEST of a q1 house (its door faces west
 # into the courtyard) — so the N row is all fronts and the E column is all q1, with
-# the courtyard left clear between them. church=respawn, inn=Rest, shop=basics/junk,
+# the courtyard left clear between them. church=respawn, inn=Rest, shop=basics/misc,
 # blacksmith=weapons, barracks=armour, town_hall=board.
 # B8 Slice 2a: tier-driven templates. Each tier is a fixed offset layout growing
 # N (fronts, door south) + E (q1, door west) around the SW courtyard, same as the

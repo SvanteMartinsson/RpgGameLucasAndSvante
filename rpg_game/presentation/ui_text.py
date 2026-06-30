@@ -185,7 +185,7 @@ def fled_from(enemy_name: str) -> str:
 # --- overworld: sub-screen copy -------------------------------------------
 
 INV_HEADER_CONSUMABLES = "Consumables:"
-INV_HEADER_JUNK = "Junk:"
+INV_HEADER_MISC = "Miscellaneous:"
 INV_HEADER_WEAPONS = "Weapons:"
 INV_NONE = "  (none)"
 EQUIP_HINT = "Click a weapon to equip (level permitting)."
@@ -193,7 +193,7 @@ INVENTORY_HINT = "Everything you own. Pick a category; click a weapon/gear to eq
 INV_EQUIP_HINT = "Click to equip in Character."
 INV_CATEGORY_LABELS = {
     "consumables": "Consumables",
-    "junk": "Junk",
+    "miscellaneous": "Miscellaneous",
     "weapon": "Weapons",
     "head": "Head",
     "chest": "Chest",

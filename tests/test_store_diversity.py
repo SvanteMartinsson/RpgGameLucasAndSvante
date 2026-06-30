@@ -115,11 +115,11 @@ class StoreCategoryTests(unittest.TestCase):
         engine.start_new_game("Hero", "fighter")  # at burg_5
         engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "axe")  # sword is equipped
         engine.player.owned_gear_ids = ("padded_vest",)
-        engine.player.inventory.add_consumable("rat_pelt")  # junk
+        engine.player.inventory.add_consumable("rat_pelt")  # miscellaneous
 
         self.assertEqual({e.kind for e in engine.sellable_entries("weapons")}, {"weapon"})
         self.assertEqual({e.kind for e in engine.sellable_entries("armor")}, {"gear"})
-        self.assertEqual({e.kind for e in engine.sellable_entries("general")}, {"junk"})
+        self.assertEqual({e.kind for e in engine.sellable_entries("general")}, {"miscellaneous"})
 
 
 if __name__ == "__main__":

@@ -283,11 +283,11 @@ class PickupTests(unittest.TestCase):
 
         self.assertEqual(engine.player.owned_weapon_ids.count("steel_greatsword"), 1)
 
-    def test_picked_up_consumable_and_junk_stack(self):
+    def test_picked_up_consumable_and_miscellaneous_stack(self):
         engine = _engine()
         engine.collect_loot(LootDrop("hp_potion", "HP Potion", "consumable", 1))
         engine.collect_loot(LootDrop("hp_potion", "HP Potion", "consumable", 1))
-        engine.collect_loot(LootDrop("rat_pelt", "Rat Pelt", "junk", 1))
+        engine.collect_loot(LootDrop("rat_pelt", "Rat Pelt", "miscellaneous", 1))
 
         self.assertEqual(engine.player.inventory.count("hp_potion"), 2)
         self.assertEqual(engine.player.inventory.count("rat_pelt"), 1)

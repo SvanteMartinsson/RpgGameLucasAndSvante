@@ -737,14 +737,14 @@ def handle_buy(engine: GameEngine) -> None:
 def handle_sell(engine: GameEngine) -> None:
     entries = engine.sellable_entries()
     if not entries:
-        print("You have nothing to sell (junk and unequipped weapons only).")
+        print("You have nothing to sell (miscellaneous items and unequipped weapons only).")
         return
 
     options = []
     print()
     print(f"Sell | Gold: {engine.player.gold}")
     for index, entry in enumerate(entries, start=1):
-        count = f" x{entry.count}" if entry.kind == "junk" and entry.count > 1 else ""
+        count = f" x{entry.count}" if entry.kind == "miscellaneous" and entry.count > 1 else ""
         print(f"{index}: {entry.name} ({entry.kind}){count} - sells for {entry.value} gold")
         options.append((str(index), entry.id, entry.name))
     options.append(("b", "back", "Back"))
@@ -754,7 +754,7 @@ def handle_sell(engine: GameEngine) -> None:
         return
 
     chosen = next(entry for entry in entries if entry.id == item_id)
-    if chosen.kind == "junk" and chosen.count > 1:
+    if chosen.kind == "miscellaneous" and chosen.count > 1:
         quantity = prompt_quantity("How many?", chosen.count)
         gold_before = engine.player.gold
         sold = 0
