@@ -1,382 +1,68 @@
 #!/usr/bin/env python3
-"""regenerate_overworld.py — rebuild overworld.tmx at the approved 80x56 FOUNDATION:
-open roamable wilderness as default, organic forest masses to weave around, and
-the 17 towns at their approved scattered coords. NO rivers/mountains/houses
-(edge phase). Combat/RNG/encounter pools (world.json) untouched.
+"""regenerate_overworld.py — rebuild overworld.tmx for the #3 expansion (240x208,
+option A: parametric terrain).
 
-Paradigm vs the old beautify (scatter-props-protect-paths): here the default is
-OPEN. Ground is uniform cainos (core) + grave_heath (heath y>=36). Walls hold
-only the map border (gid 2) with gate holes + a few organic forest-mass blobs
-(solid trunk tiles, never on a town margin, gate halo, or the two zone-crossing
-lines). decor_over holds the canopies. Reachability flood-fill asserts every town
-+ gate is reachable from spawn. Tilesets (incl. the registered water_autotile)
-are left intact — only map dims + the three layer CSVs are rewritten.
+All geometry is DERIVED by overworld_layout.build_layout() — zone bands, an organic
+coastline, the seam channel, the one north-born river -> central heath lake, and
+bridges carved on real inter-town routes. This script paints that layout into the
+three TMX layers (ground / walls / decor_over) and autotiles the water with the SAME
+corner field the layout used, so the rendered water matches reachability exactly.
 
-Deterministic (seeded). Reads core_zone.json for the town/gate/seam data.
+Reads town/gate/seam data from core_zone.json (single source of truth). Tilesets in
+the TMX are left intact — only map dims + the three layer CSVs are rewritten.
+Deterministic (seeded). NO combat/encounter-pool (world.json) changes.
 """
-import collections
 import json
-import math
 import random
 import re
 
-random.seed(80)
+import overworld_layout as L
+
 TMX = "rpg_game/data/maps/overworld.tmx"
-ZONE = "rpg_game/data/maps/core_zone.json"
 WORLD = "rpg_game/data/world.json"
-W, H = 80, 56
-SEAM_Y = 36                       # core rows 0..35, Verralda heath 36..55
-BORDER_GID = 2                    # placeholder solid block (matches old border)
 
-GRASS = {"cainos": 3, "grave_heath": 387}   # ground firstgids (uniform per band)
-# Grass-sheet tile indices (all within the grass tileset, so ground stays
-# {cainos_grass, grave_heath_grass}). idx 0-31 are grass; 32-63 are cobble.
+# Ground grass firstgids per zone (the 64-tile grass sheets; idx 0-31 grass, 32-63
+# cobble — same layout in every zone, so detail/cobble indices are zone-agnostic).
+GRASS = {"cainos": 3, "mork_skog": 1923, "cursed_mire": 771, "grave_heath": 387}
 GBASE = 0
-# Only tiles with a genuinely VISIBLE mark count (measured: idx 1-27 grass "tufts"
-# are pixel-identical to base at zoom). Stone/pebble tiles read as earthy ground
-# texture; flowers add colour sparingly so it stays wilderness, not a meadow.
-GROUND_STONE = [6, 12, 13, 21, 28, 31, 7, 22, 30]               # pale pebbles/stones
-GROUND_FLOWER = [14, 20, 23, 29]                                # yellow/orange flowers
-DETAIL_DENSITY = 0.18      # share of cells carrying a visible detail mark
-FLOWER_SHARE = 0.28        # of those, how many are flowers (rest stones)
-# Broken/overgrown path remnants: fuller cobble near towns, scattered cobble mid-way.
-PATH_NEAR = [44, 45, 36, 37]      # a path-stub leaving a town
-PATH_FAR = [52, 53, 60, 61]       # scattered cobble in grass -> overgrown remnant
+GROUND_STONE = [6, 12, 13, 21, 28, 31, 7, 22, 30]   # pale pebbles/stones
+GROUND_FLOWER = [14, 20, 23, 29]                    # flowers (sparse colour)
+DETAIL_DENSITY = 0.18
+FLOWER_SHARE = 0.28
+PATH_NEAR = [44, 45, 36, 37]      # denser cobble stub leaving a town
+PATH_FAR = [52, 53, 60, 61]       # scattered overgrown cobble mid-route
+
+WATER_FG = 4739                   # water_autotile firstgid (WIDX offsets)
+BRIDGE_FG = 4755                  # water_bridge firstgid
+PLANK_H, PLANK_V = 13, 14         # full self-railed decks: E-W deck / N-S deck
 
 
-# Organic forest masses (cx, cy, r) placed BETWEEN towns. Minority terrain you
-# weave around; kept off town margins + the two zone-crossing lines.
-FORESTS = [(20, 28, 5), (44, 10, 4), (52, 31, 4), (67, 21, 4),
-           (40, 50, 5), (8, 50, 3), (33, 14, 3), (58, 40, 3), (30, 6, 3)]
+def _csv(grid, W):
+    return ",\n".join(",".join(str(grid[y][x]) for x in range(W)) for y in range(len(grid)))
 
 
-# Gradual core<->heath transition: instead of a hard line at the seam, a band
-# (BAND_N..BAND_S) dithers BOTH ground grass and flora between the two themes by a
-# share that rises monotonically with y (10% heath at the north edge -> 50% at the
-# seam -> 90% at the south edge). Outside the band the theme is pure. The dither is
-# a deterministic per-cell hash, so it never perturbs the seeded RNG stream (paths
-# / forest blobs / water stay byte-identical). General over any adjacent pair.
-BAND_N, BAND_S = 28, 44
-
-
-def _hash01(x, y):
-    v = math.sin(x * 127.1 + y * 311.7) * 43758.5453
-    return v - math.floor(v)
-
-
-NOISE_CELL = 5  # coarse lattice spacing -> patches ~5 tiles wide (coastline feel)
-
-
-def _vnoise(x, y):
-    """Deterministic smooth value noise in [0,1): hashed lattice + smoothstep
-    bilinear interpolation. Neighbouring cells get similar values, so a threshold
-    of it yields coherent organic patches, not per-cell salt-and-pepper."""
-    gx, gy = x / NOISE_CELL, y / NOISE_CELL
-    x0, y0 = math.floor(gx), math.floor(gy)
-    fx, fy = gx - x0, gy - y0
-    sx, sy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)  # smoothstep
-    v00, v10 = _hash01(x0, y0), _hash01(x0 + 1, y0)
-    v01, v11 = _hash01(x0, y0 + 1), _hash01(x0 + 1, y0 + 1)
-    return (v00 * (1 - sx) + v10 * sx) * (1 - sy) + (v01 * (1 - sx) + v11 * sx) * sy
-
-
-def heath_share(y):
-    if y <= BAND_N:
-        return 0.0
-    if y >= BAND_S:
-        return 1.0
-    return 0.1 + 0.8 * (y - BAND_N) / (BAND_S - BAND_N)   # 0.1 -> 0.5 (seam) -> 0.9
-
-
-def theme_at(x, y):
-    """Zone theme for a cell. In the band, a coherent value-noise field thresholded
-    by the (monotonic) heath share -> the two grasses interfinger as organic
-    patches with a moving coastline, never a checkerboard."""
-    return "grave_heath" if _vnoise(x, y) < heath_share(y) else "cainos"
-
-
-def theme_ground(x, y):
-    return theme_at(x, y)
-
-
-def theme_plant(y, x=0):
-    return theme_at(x, y)
-
-
-def read_layer_csv(src, name):
-    m = re.search(r'<layer id="\d+" name="%s"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>' % name, src, re.S)
-    rows = m.group(1).strip().split("\n")
-    return [[int(v) for v in r.rstrip(",").split(",")] for r in rows]
-
-
-# ===================== WATER (edge phase v3) =========================
-WATER_FG = 4739
-WIDX = {"full": 0, "edge_N": 1, "edge_E": 2, "edge_S": 3, "edge_W": 4,
-        "out_NW": 5, "out_NE": 6, "out_SE": 7, "out_SW": 8,
-        "in_NW": 9, "in_NE": 10, "in_SE": 11, "in_SW": 12, "chan_H": 13, "chan_V": 14}
-# Corner pattern (nw,ne,se,sw water?) -> tile. Adjacent tiles share two corners,
-# so touching borders match by construction (seamless). Saddles -> full.
-CORNER_MAP = {
-    (1, 1, 1, 1): "full", (0, 0, 1, 1): "edge_N", (1, 1, 0, 0): "edge_S",
-    (1, 0, 0, 1): "edge_E", (0, 1, 1, 0): "edge_W", (0, 0, 1, 0): "out_NW",
-    (0, 0, 0, 1): "out_NE", (0, 1, 0, 0): "out_SW", (1, 0, 0, 0): "out_SE",
-    (0, 1, 1, 1): "in_NW", (1, 0, 1, 1): "in_NE", (1, 1, 1, 0): "in_SW", (1, 1, 0, 1): "in_SE",
-}
-BRIDGE_FG = 4755
-PLANK_H, PLANK_V = 13, 14            # full single-tile decks (1-wide bridges): EW / NS
-# B34: half-deck tiles (own tileset, firstgid 4871) so a 2-wide bridge reads as ONE
-# bridge — rail only on the OUTER edge, no doubled middle rail. Indices in the 4x1
-# sheet: 0 ew_north, 1 ew_south (E-W bridge top/bottom rows); 2 ns_west, 3 ns_east
-# (N-S bridge left/right cols). Generated by generate_bridge_halfdecks.py.
-HALFDECK_FG = 4871
-EW_NORTH, EW_SOUTH, NS_WEST, NS_EAST = (HALFDECK_FG + i for i in range(4))
-LAKE = (72, 55, 12, 7)               # cx, cy, rx, ry
-LANDTUNGA = (73, 51, 2.3, 1.6)       # Barroncami land (not water)
-SEAM_CY, SEAM_AMP = 36.0, 1.3
-SEAM_FLAT = ((10, 15), (55, 60))     # straighten the seam near its two bridges
-CORE_PTS = [(20, 2), (18, 10), (23, 19), (27, 24), (27, 31), (24, 35)]
-HEATH_PTS = [(46, 37), (45, 42), (45, 47), (45, 52), (53, 54), (63, 54)]
-RIVER_HALF = 1.0
-# Bridges as boxes that carve ALL water they cross (full body + soft shores),
-# so the deck reaches dry bank to dry bank. The deck is 2-wide (the lane); the
-# river is straight under it. (x0,x1,y0,y1 inclusive, plank, flow axis of river).
-# flow 'EW' = river runs east-west (seam) -> 2-wide lane in x; 'NS' = river runs
-# north-south (inner/edge) -> 2-wide lane in y.
-BRIDGES = [
-    (12, 13, 33, 38, PLANK_V, "EW"),   # seam west  (core<->heath)
-    (57, 58, 33, 38, PLANK_V, "EW"),   # seam east  (core<->heath)
-    (24, 29, 27, 28, PLANK_H, "NS"),   # core inner river
-    (42, 47, 43, 44, PLANK_H, "NS"),   # heath inner river (W<->E heath)
-    (75, 78, 27, 28, PLANK_H, "NS"),   # right edge river (deep_west gate)
-]
-
-
-def _seg_d(px, py, ax, ay, bx, by):
-    dx, dy = bx - ax, by - ay
-    if dx == 0 and dy == 0:
-        return math.hypot(px - ax, py - ay)
-    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
-    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
-
-
-def _poly_d(pts, gx, gy):
-    return min(_seg_d(gx, gy, *pts[i], *pts[i + 1]) for i in range(len(pts) - 1))
-
-
-def _seam_y(gx):
-    for a, b in SEAM_FLAT:
-        if a <= gx <= b:
-            return SEAM_CY
-    return SEAM_CY + SEAM_AMP * math.sin(gx / 5.0)
-
-
-def _in_landtunga(gx, gy):
-    # ellipse + a short north neck so Barroncami connects to the east-heath shore.
-    if ((gx - LANDTUNGA[0]) / LANDTUNGA[2]) ** 2 + ((gy - LANDTUNGA[1]) / LANDTUNGA[3]) ** 2 <= 1.0:
-        return True
-    return 72 <= gx <= 74 and 46 <= gy <= 53
-
-
-# ---- SEA: an organic coastline that frames the map (replaces the forest band) ----
-# A corner is sea when its distance to the nearest map edge is below a wavy coast
-# depth (base + two sines + a hash term -> never a straight rectangle). The coast is
-# pulled BACK toward the edge around dry anchors (gates + coastal towns) so a gate
-# keeps a dry mouth to the edge and no town is drowned. Same corner-based autotile as
-# the lake/rivers (water_corner feeds the one CORNER_MAP field), so it is seamless and
-# merges with the rivers + lake into a single water body.
-SEA_BASE = 3.0
-SEA_EDGE = {"N": (0.0, 11.0), "S": (2.3, 23.0), "W": (4.1, 37.0), "E": (1.2, 53.0)}  # phase, hash salt
-
-
-def _sea_depth(t, edge):
-    ph, salt = SEA_EDGE[edge]
-    return (SEA_BASE + 1.5 * math.sin(t / 5.0 + ph) + 0.8 * math.sin(t / 2.3 + ph * 1.7)
-            + (_hash01(t * 1.7, salt) - 0.5) * 2.0)
-
-
-def _nearest_edge(gx, gy):
-    dN, dS, dW, dE = gy, H - gy, gx, W - gx
-    m = min(dN, dS, dW, dE)
-    if m == dN:
-        return m, gx, "N"
-    if m == dS:
-        return m, gx, "S"
-    if m == dW:
-        return m, gy, "W"
-    return m, gy, "E"
-
-
-def sea_corner(gx, gy, dry_points):
-    m, t, edge = _nearest_edge(gx, gy)
-    depth = _sea_depth(t, edge)
-    for (ax, ay, rad) in dry_points:          # indent the coast around gates/towns
-        depth = min(depth, math.hypot(gx - ax, gy - ay) - rad)
-    return m < depth
-
-
-def water_corner(gx, gy, dry_points=()):
-    if _in_landtunga(gx, gy):
-        return False
-    # sea frame (organic coastline)
-    if dry_points and sea_corner(gx, gy, dry_points):
-        return True
-    # lake
-    if ((gx - LAKE[0]) / LAKE[2]) ** 2 + ((gy - LAKE[1]) / LAKE[3]) ** 2 <= 1.0:
-        return True
-    # seam flood (straightened near the two bridges)
-    if 1 <= gx <= 78 and abs(gy - _seam_y(gx)) <= RIVER_HALF:
-        return True
-    # core + heath inner rivers
-    if _poly_d(CORE_PTS, gx, gy) <= RIVER_HALF:
-        return True
-    if _poly_d(HEATH_PTS, gx, gy) <= RIVER_HALF:
-        return True
-    # right edge river (gentle meander around x=77), down into the lake. Capped at
-    # gx<=78 so the deep_west gate column (x=79) stays dry + reachable via its bridge.
-    if 2 <= gy <= 49 and gx <= 78 and abs(gx - (77.0 + 0.6 * math.sin(gy / 4.0))) <= 1.0:
-        return True
-    return False
-
-
-def bridge_deck_gid(flow, x, y, x0, x1, y0, y1):
-    """Deck tile gid for a bridge cell. A 2-wide deck uses the half-deck PAIR
-    (outer-rail-only) so it reads as ONE bridge; a 1-wide deck uses the full
-    self-railed tile. flow 'EW' (river east-west) => N-S bridge, 2-wide across x;
-    flow 'NS' (river north-south) => E-W bridge, 2-wide across y."""
-    if flow == "EW":                         # N-S bridge: outer rails are W/E
-        if x1 == x0:                         # 1-wide -> full N-S deck (tile 14)
-            return BRIDGE_FG + PLANK_V
-        return NS_WEST if x == x0 else NS_EAST
-    # flow 'NS' -> E-W bridge: outer rails are N/S
-    if y1 == y0:                             # 1-wide -> full E-W deck (tile 13)
-        return BRIDGE_FG + PLANK_H
-    return EW_NORTH if y == y0 else EW_SOUTH
-
-
-def build_water(ground, walls, decor, dry_points=()):
-    """Autotile the water field into walls (visible + collision), carve bridges
-    into ground (walkable). Returns (placed water cells, lake cells)."""
-    cw = [[water_corner(gx, gy, dry_points) for gx in range(W + 1)] for gy in range(H + 1)]
-    placed = {}
-    for y in range(H):
-        for x in range(W):
-            pat = (int(cw[y][x]), int(cw[y][x + 1]), int(cw[y + 1][x + 1]), int(cw[y + 1][x]))
-            if sum(pat) == 0:
-                continue
-            placed[(x, y)] = CORNER_MAP.get(pat, "full")  # saddle -> full water
-    # bridge cells = every water cell inside a bridge box (carve the whole crossing)
-    bridge_cells = set()
-    for x0, x1, y0, y1, plank, _flow in BRIDGES:
-        for y in range(y0, y1 + 1):
-            for x in range(x0, x1 + 1):
-                if (x, y) in placed:
-                    bridge_cells.add((x, y))
-    for (x, y), name in placed.items():
-        if (x, y) in bridge_cells:
-            continue
-        walls[y][x] = WATER_FG + WIDX[name]   # water: visible under player + blocks
-        decor[y][x] = 0                       # no canopy floating on water
-    for x0, x1, y0, y1, _plank, flow in BRIDGES:
-        for y in range(y0, y1 + 1):
-            for x in range(x0, x1 + 1):
-                if (x, y) in placed:
-                    decor[y][x] = bridge_deck_gid(flow, x, y, x0, x1, y0, y1)  # over grass, under player
-                    walls[y][x] = 0                  # walkable (no collision)
-    # the right edge river IS the east boundary where it runs -> drop the wall ring
-    for y in range(2, 50):
-        if walls[y][W - 1] == BORDER_GID:
-            walls[y][W - 1] = 0
-    lake = {(x, y) for (x, y) in placed
-            if ((x - LAKE[0]) / LAKE[2]) ** 2 + ((y - LAKE[1]) / LAKE[3]) ** 2 <= 1.0}
-    return placed, bridge_cells, lake
-
-
-def assert_water_invariants(placed, bridge_cells, lake, gates):
-    # 1) every water cell connects to the lake (no dead river ends)
-    water = set(placed)
-    seen = set(lake)
-    dq = collections.deque(lake)
-    while dq:
-        x, y = dq.popleft()
-        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-            if (nx, ny) in water and (nx, ny) not in seen:
-                seen.add((nx, ny))
-                dq.append((nx, ny))
-    orphan = water - seen
-    assert not orphan, f"water not connected to lake: {sorted(orphan)[:8]} ({len(orphan)})"
-    # 2) bridges: 2-wide deck on a straight segment, river continues both ends,
-    #    dry land on both banks (no bend under bridge).
-    for x0, x1, y0, y1, plank, flow in BRIDGES:
-        if flow == "EW":       # river east-west; deck 2-wide in x; banks N/S
-            assert x1 == x0 + 1, f"seam bridge deck not 2-wide: {(x0, x1)}"
-            # river continues straight west and east of the deck at the full rows
-            wet_rows = [y for y in range(y0, y1 + 1) if (x0, y) in water]
-            assert wet_rows, f"seam bridge {x0} has no water"
-            for ry in wet_rows:
-                assert (x0 - 1, ry) in water and (x1 + 1, ry) in water, \
-                    f"seam bridge x={x0} not on straight channel at y={ry}"
-        else:                  # river north-south; deck 2-wide in y; banks W/E
-            assert y1 == y0 + 1, f"bridge deck not 2-wide: {(y0, y1)}"
-            wet_cols = [x for x in range(x0, x1 + 1) if (x, y0) in water]
-            assert wet_cols, f"bridge rows {y0}-{y1} cross no water"
-            for rx in wet_cols:
-                assert (rx, y0 - 1) in water and (rx, y1 + 1) in water, \
-                    f"bridge y={y0} not on straight channel at x={rx}"
-    # 3) gates not drowned
-    for g in gates:
-        assert g not in water, f"gate drowned: {g}"
-
-
-def line_cells(a, b):
-    (ax, ay), (bx, by) = a, b
-    steps = max(abs(ax - bx), abs(ay - by)) or 1
-    cells = set()
-    for i in range(steps + 1):
-        x = round(ax + (bx - ax) * i / steps)
-        y = round(ay + (by - ay) * i / steps)
-        for dx in (-1, 0, 1):
-            cells.add((x + dx, y))
-    return cells
+def _deck_gid(x, y):
+    """Full-deck plank for a bridge cell: N-S deck (walk N-S) over the E-W seam
+    channel; E-W deck (walk E-W) over the N-S river/lake."""
+    on_seam = abs(y - L.seam_y(x)) <= L.RIVER_HALF + 1.5
+    return BRIDGE_FG + (PLANK_V if on_seam else PLANK_H)
 
 
 def main():
-    zone = json.load(open(ZONE, encoding="utf-8"))
-    towns = {t["place_id"]: tuple(t["tile"]) for t in zone["towns"]}
+    lay = L.build_layout()
+    W, H = lay["W"], lay["H"]
+    towns = {pid: (t[0], t[1]) for pid, t in lay["towns"].items()}
     town_tiles = set(towns.values())
-    gates = [tuple(g["tile"]) for g in zone["gates"]]
-    start = tuple(zone["start_tile"])
+    gates = list(lay["gates"].values())
+    start = lay["start"]
+    water, cell_name, bridges = lay["water"], lay["cell_name"], lay["bridges"]
 
-    # protected = towns (+2-ring open margin), start, gate halos, and the two
-    # zone-crossing corridors-of-intent (kept clear so the seam stays passable).
-    protected = set()
-    for (tx, ty) in town_tiles | {start}:
-        for dx in range(-2, 3):
-            for dy in range(-2, 3):
-                protected.add((tx + dx, ty + dy))
-    for (gx, gy) in gates:
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                protected.add((gx + dx, gy + dy))
-    for a, b in (("burg_117", "burg_54"), ("burg_149", "burg_67")):
-        protected |= line_cells(towns[a], towns[b])
-    # Keep the bridge bank->town corridors forest-free (forests yield to them just
-    # as they yield to towns/paths). Each line stays within ONE river-bounded
-    # region so it never needs an extra crossing -> all towns reach a bridge bank.
-    for (bx, by), pid in [((23, 27), "burg_117"), ((30, 27), "burg_5"),
-                          ((12, 32), "burg_117"), ((12, 39), "burg_54"),
-                          ((57, 32), "burg_67"), ((57, 39), "burg_293"),
-                          ((41, 43), "burg_149"), ((48, 43), "burg_293"),
-                          ((74, 27), "burg_320")]:
-        protected |= line_cells((bx, by), towns[pid])
-
-    # ---- GROUND: textured open grass (visible detail, not monochrome) ----
-    # Dedicated RNG so detail-density tuning never perturbs the (approved) path
-    # hints + forest masses, which keep using the module RNG.
+    # ---- GROUND: themed grass with sparse visible detail ----
     gd = random.Random(81)
     ground = [[0] * W for _ in range(H)]
     for y in range(H):
         for x in range(W):
-            base = GRASS[theme_ground(x, y)]
+            base = GRASS[L.zone_at(x, y)]
             if gd.random() < DETAIL_DENSITY:
                 pool = GROUND_FLOWER if gd.random() < FLOWER_SHARE else GROUND_STONE
                 idx = gd.choice(pool)
@@ -384,11 +70,7 @@ def main():
                 idx = GBASE
             ground[y][x] = base + idx
 
-    # ---- broken PATH HINTS toward neighbour towns (ground layer, no collision) ----
-    # For each world.json connection between two on-map towns, lay sparse cobble
-    # along the line: a denser stub leaving each town, tapering to scattered,
-    # overgrown remnants (with gaps) in the middle. Reads "a road ran this way",
-    # not a paved corridor. Town tiles themselves stay clear.
+    # ---- broken PATH HINTS along town<->town connections (cobble, no collision) ----
     world = json.load(open(WORLD, encoding="utf-8"))
     places = {p["id"]: p for p in world["places"]}
     edges, seen_e = [], set()
@@ -400,6 +82,7 @@ def main():
                 continue
             seen_e.add(key)
             edges.append((a, b))
+    pr = random.Random(82)
     for a, b in edges:
         (ax, ay), (bx, by) = towns[a], towns[b]
         steps = max(abs(ax - bx), abs(ay - by)) or 1
@@ -409,38 +92,27 @@ def main():
             y = round(ay + (by - ay) * t)
             if (x, y) in town_tiles or not (0 < x < W - 1 and 0 < y < H - 1):
                 continue
-            mid = 2 * min(t, 1 - t)                  # 0 at a town, 1 at the midpoint
-            if random.random() < 0.85 - 0.7 * mid:   # dense at ends, sparse + gappy mid
+            if (x, y) in water and (x, y) not in bridges:
+                continue  # don't paint cobble onto open water
+            mid = 2 * min(t, 1 - t)
+            if pr.random() < 0.85 - 0.7 * mid:
                 pool = PATH_NEAR if mid < 0.4 else PATH_FAR
-                ground[y][x] = GRASS[theme_ground(x, y)] + random.choice(pool)
+                ground[y][x] = GRASS[L.zone_at(x, y)] + pr.choice(pool)
 
-    # ---- WALLS: the SEA frames the map; rivers + lake live inside ----
-    # The old forest edge-band + cliff corners are gone: the perimeter is now an
-    # organic sea coastline (built by build_water from the same autotile as the lake/
-    # rivers), so the boundary reads as a coast, not a square wall.
+    # ---- WALLS (water + collision) + DECOR (bridge decks) ----
     walls = [[0] * W for _ in range(H)]
     decor = [[0] * W for _ in range(H)]
+    for (x, y), name in cell_name.items():
+        if (x, y) in bridges:
+            continue
+        walls[y][x] = WATER_FG + L.WIDX[name]   # water: rendered + blocks (per threshold)
+    for (x, y) in bridges:
+        decor[y][x] = _deck_gid(x, y)           # deck over grass, under player
+        walls[y][x] = 0                         # walkable
 
-    # inner_forest is still COMPUTED (then discarded) ONLY to preserve the seeded
-    # random.uniform draws — it was the last consumer of the module RNG stream, so
-    # keeping the draws guarantees ground/paths/water stay byte-identical to before.
-    for cx, cy, r in FORESTS:
-        for y in range(max(1, cy - r - 1), min(H - 1, cy + r + 2)):
-            for x in range(max(1, cx - r - 1), min(W - 1, cx + r + 2)):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= (r + random.uniform(-1.2, 0.4)) ** 2:
-                    pass  # groves removed; draw consumed for determinism
-
-    # Dry anchors: the coast is pulled back around each gate (a wide dry MOUTH that
-    # reaches the edge = the zone opening) and each town (so no settlement is drowned).
-    dry_points = [(gx, gy, 4.5) for (gx, gy) in gates]
-    dry_points += [(tx, ty, 3.5) for (tx, ty) in town_tiles]
-
-    # ---- WATER + SEA: coastline frame + rivers + lake + bridges ----
-    placed, bridge_cells, lake = build_water(ground, walls, decor, dry_points)
-    assert_water_invariants(placed, bridge_cells, lake, gates)
-
-    # ---- reachability: flood-fill from start over walls==0 ----
+    # ---- reachability: conservative flood-fill (every water cell blocks) ----
     blocked = {(x, y) for y in range(H) for x in range(W) if walls[y][x] != 0}
+    import collections
     seen = {start}
     dq = collections.deque([start])
     while dq:
@@ -456,25 +128,18 @@ def main():
 
     # ---- writeback: map dims + the three layer CSVs (tilesets untouched) ----
     src = open(TMX, encoding="utf-8").read()
-
-    def csv(grid):
-        return ",\n".join(",".join(str(grid[y][x]) for x in range(W)) for y in range(H))
-
     src = re.sub(r'(<map [^>]*?)\bwidth="\d+" height="\d+"',
                  lambda m: f'{m.group(1)}width="{W}" height="{H}"', src, count=1)
     for lid, name, grid in (("1", "ground", ground), ("2", "walls", walls), ("3", "decor_over", decor)):
         src = re.sub(r'(<layer id="%s" name="%s")[^>]*(>)' % (lid, name),
                      lambda m: f'{m.group(1)} width="{W}" height="{H}"{m.group(2)}', src, count=1)
-        # Consume surrounding whitespace OUTSIDE the capture groups so the data
-        # block is rewritten to a fixed shape every run (idempotent — no blank
-        # line creeps in before </data> on re-runs).
         src = re.sub(r'(<layer id="%s" name="%s"[^>]*>\s*<data encoding="csv">)\s*.*?\s*(</data>)' % (lid, name),
-                     lambda m: m.group(1) + "\n" + csv(grid) + "\n  " + m.group(2), src, count=1, flags=re.S)
-
+                     lambda m: m.group(1) + "\n" + _csv(grid, W) + "\n  " + m.group(2), src, count=1, flags=re.S)
     open(TMX, "w", encoding="utf-8").write(src)
-    print(f"OK 80x56: {len(town_tiles)} towns + {len(gates)} gates reachable; "
-          f"{len(placed)} water cells (sea coast + rivers + lake); walkable ~"
-          f"{100*(1 - len(blocked)/(W*H)):.1f}% (incl. sea)")
+
+    walkable = 100 * (1 - len(blocked) / (W * H))
+    print(f"OK {W}x{H}: {len(town_tiles)} towns + {len(gates)} gates reachable; "
+          f"{len(water)} water cells ({len(bridges)} bridge), walkable ~{walkable:.1f}%")
 
 
 if __name__ == "__main__":
