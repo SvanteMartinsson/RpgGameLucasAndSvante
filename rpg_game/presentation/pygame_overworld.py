@@ -522,6 +522,7 @@ class OverworldApp:
         self.font = pygame.font.SysFont("menlo,consolas,monospace", 16)
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
+        self.font_italic = pygame.font.SysFont("menlo,consolas,monospace", 13, italic=True)
         self.mode = "walk"  # walk | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
         self.inventory_category = "consumables"  # selected category in the inventory overlay
@@ -532,6 +533,9 @@ class OverworldApp:
         self.tournament_run: TournamentRun | None = None
         self.store_category: str | None = None  # which trade building's store slice is open
         self.building_menu: tuple[str, str] | None = None  # (place_id, building_id) of the open door menu
+        self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
+        self.selected_upgrade_item: str | None = None  # item being inspected at the station
+        self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.buttons: list[Button] = []
         # B16 + B29: the chatbox is the ONLY on-screen text. Combat lines flow in via
         # the shared deque passed to BattleApp; world events flow in through set_toast
@@ -1097,6 +1101,8 @@ class OverworldApp:
                 self.close_overlay()
             elif self.mode == "building":
                 self._close_building_menu()
+            elif self.mode == "upgrade_station":
+                self._close_upgrade_station()
             elif self.mode == "store":
                 self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
@@ -1183,6 +1189,8 @@ class OverworldApp:
             self._draw_vitals()
         if self.mode == "building":
             self._draw_building_menu()
+        elif self.mode == "upgrade_station":
+            self._draw_upgrade_station()
         elif self.mode == "store":
             self._draw_store_screen()
         elif self.mode == "tournaments":
@@ -1517,6 +1525,16 @@ class OverworldApp:
     def _add_button(self, rect, label, cb, enabled=True, restricted=False) -> None:
         self.buttons.append(Button(rect, label, cb, enabled, restricted))
 
+    def _blit_upgradable_tag(self, rect: pygame.Rect, item_id: str) -> None:
+        """B37 Slice 2: an italic 'Upgradable'/'Upgraded' tag on a rare+ item row.
+        Just the flag — the actual reforge options live at the blacksmith/mage
+        tower, not here."""
+        if not self.engine.is_upgradable(item_id):
+            return
+        # Queue it; drawn AFTER the buttons (which paint over their whole rect) so
+        # the tag stays visible on top of the row.
+        self._pending_tags.append((pygame.Rect(rect), item_id))
+
     def _draw_buttons(self) -> None:
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         for b in self.buttons:
@@ -1532,6 +1550,17 @@ class OverworldApp:
             fitted = self._fit_text(b.label, b.rect.width - 24, self.font)
             label = self.font.render(fitted, True, TEXT_DIM if dim else TEXT)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
+        # B37 Slice 2: 'Upgradable'/'Upgraded' italic tags ride on top of the rows,
+        # on a small chip so they stay legible over the label tail.
+        for rect, item_id in self._pending_tags:
+            tag = "Upgraded" if self.engine.is_item_upgraded(item_id) else "Upgradable"
+            surf = self.font_italic.render(tag, True, ACCENT)
+            chip = pygame.Rect(0, 0, surf.get_width() + 10, surf.get_height() + 4)
+            chip.midright = (rect.right - 6, rect.centery)
+            pygame.draw.rect(self.screen, BTN, chip, border_radius=4)
+            pygame.draw.rect(self.screen, PANEL_EDGE, chip, width=1, border_radius=4)
+            self.screen.blit(surf, surf.get_rect(center=chip.center))
+        self._pending_tags = []
 
     def _close_building_menu(self) -> None:
         self.building_menu = None
@@ -1565,9 +1594,124 @@ class OverworldApp:
             y += 30
         self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
                          (lambda f=func, c=category: self._choose_building_action(f, c)), True)
+        # B37 Slice 2: a station building (blacksmith / mage tower / barracks) also
+        # offers item upgrades as a second choice in the same door menu.
+        if self.engine.station_category(building_id) is not None:
+            station_cat = self.engine.station_category(building_id)
+            up_label = "Upgrade weapon" if station_cat == "weapon" else "Upgrade armour"
+            y += 52
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), up_label,
+                             (lambda b=building_id: self._open_upgrade_station(b)), True)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
         self._add_button(back, T.BACK, self._close_building_menu)
         self._draw_buttons()
+
+    # -- B37 Slice 2: upgrade station ---------------------------------------
+
+    def _open_upgrade_station(self, building_id: str) -> None:
+        self.building_menu = None
+        self.upgrade_building = building_id
+        items = self.engine.station_upgradable_items(building_id)
+        self.selected_upgrade_item = items[0] if items else None
+        self.mode = "upgrade_station"
+
+    def select_upgrade_item(self, item_id: str) -> None:
+        self.selected_upgrade_item = item_id
+
+    def apply_upgrade(self, item_id: str, variant_id: str) -> None:
+        result = self.engine.apply_item_upgrade(item_id, variant_id)
+        self.push_log(result.message, GOOD if result.success else BAD)
+
+    def _item_display_name(self, item_id: str) -> str:
+        if item_id in self.engine.content.weapons:
+            return self.engine.content.weapons[item_id].name
+        if item_id in self.engine.content.gear_items:
+            return self.engine.content.gear_items[item_id].name
+        return item_id
+
+    def _upgrade_mod_text(self, mod) -> str:
+        if mod.type == "element":
+            return f"+{mod.value} {mod.damage_type} damage (on hit)"
+        return f"{mod.stat} {mod.value:+}"
+
+    def _draw_upgrade_station(self) -> None:
+        building = self.upgrade_building
+        category = self.engine.station_category(building)
+        title = f"{BUILDING_TITLES.get(building, building.title())} — {'Weapon' if category == 'weapon' else 'Armour'} Upgrades"
+        panel = self._overlay_panel(title)
+        items = self.engine.station_upgradable_items(building)
+        gold = self.engine.player.gold
+        self.screen.blit(self.font_sm.render(
+            f"Pick an item to reforge (one permanent upgrade each).  Gold {gold}", True, TEXT_DIM),
+            (panel.x + 20, panel.y + 56))
+
+        left = pygame.Rect(panel.x + 20, panel.y + 86, 220, panel.bottom - panel.y - 140)
+        right = pygame.Rect(left.right + 16, panel.y + 86, panel.right - left.right - 36, left.height)
+        if not items:
+            self.screen.blit(self.font.render("You own nothing to upgrade here.", True, TEXT_DIM),
+                             (left.x, left.y))
+        if self.selected_upgrade_item not in items:
+            self.selected_upgrade_item = items[0] if items else None
+        for i, item_id in enumerate(items):
+            rect = pygame.Rect(left.x, left.y + i * 34, left.width, 30)
+            marker = "> " if item_id == self.selected_upgrade_item else "  "
+            done = " [upgraded]" if self.engine.is_item_upgraded(item_id) else ""
+            self._add_button(rect, f"{marker}{self._item_display_name(item_id)}{done}",
+                             (lambda iid=item_id: self.select_upgrade_item(iid)), True)
+
+        if self.selected_upgrade_item is not None:
+            self._draw_upgrade_variants(right, self.selected_upgrade_item)
+
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, self._close_upgrade_station)
+        self._draw_buttons()
+
+    def _draw_upgrade_variants(self, rect: pygame.Rect, item_id: str) -> None:
+        recipe = self.engine.upgrade_recipe(item_id)
+        already = self.engine.is_item_upgraded(item_id)
+        name = self._item_display_name(item_id)
+        y = rect.y
+        self.screen.blit(self.font.render(name, True, TEXT), (rect.x, y)); y += 26
+        if already:
+            variant = self.engine.upgrade_variant(item_id, self.engine.player.item_upgrades[item_id])
+            self.screen.blit(self.font_sm.render(
+                f"Already upgraded: {variant.name if variant else '?'} — cannot upgrade again.",
+                True, BAD), (rect.x, y))
+            return
+        if recipe is None:
+            self.screen.blit(self.font_sm.render("No reforge known for this item yet.", True, TEXT_DIM), (rect.x, y))
+            return
+        col_w = (rect.width - 16) // 2
+        for v_index, variant in enumerate(recipe.variants):
+            vx = rect.x + v_index * (col_w + 16)
+            vy = y
+            self.screen.blit(self.font.render(self._fit_text(variant.name, col_w, self.font), True, ACCENT), (vx, vy))
+            vy += 22
+            for mod in variant.mods:
+                self.screen.blit(self.font_sm.render(self._fit_text(self._upgrade_mod_text(mod), col_w, self.font_sm), True, TEXT), (vx, vy))
+                vy += 18
+            vy += 4
+            # gold (red if short) + each material with have/need
+            gold_ok = self.engine.player.gold >= variant.gold
+            self.screen.blit(self.font_sm.render(f"Gold: {variant.gold}", True, TEXT if gold_ok else BAD), (vx, vy)); vy += 18
+            short = False
+            for material_id, need in variant.materials:
+                have = self.engine.player.inventory.count(material_id)
+                ok = have >= need
+                short = short or not ok
+                mat_name = self.engine.content.items[material_id].name if material_id in self.engine.content.items else material_id
+                self.screen.blit(self.font_sm.render(self._fit_text(f"{mat_name} {have}/{need}", col_w, self.font_sm),
+                                                     True, TEXT if ok else BAD), (vx, vy)); vy += 18
+            affordable = gold_ok and not short
+            btn = pygame.Rect(vx, rect.bottom - 40, col_w, 32)
+            # Clickable-but-restricted when unaffordable: the click logs why.
+            self._add_button(btn, "Reforge" if affordable else "Reforge (need more)",
+                             (lambda iid=item_id, vid=variant.id: self.apply_upgrade(iid, vid)),
+                             enabled=True, restricted=not affordable)
+
+    def _close_upgrade_station(self) -> None:
+        self.upgrade_building = None
+        self.mode = "walk"
 
     def _draw_tournament_list_screen(self) -> None:
         panel = self._overlay_panel(T.SCREEN_TITLES["tournaments"])
@@ -1811,6 +1955,7 @@ class OverworldApp:
                 # no-op ("already equipped").
                 self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)),
                                  enabled=True, restricted=not w.equippable)
+                self._blit_upgradable_tag(rect, w.id)
             return
 
         if selected_slot.equipped_item_id:
@@ -1843,6 +1988,7 @@ class OverworldApp:
             self._add_button(rect, label,
                              (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)),
                              enabled=True, restricted=not gear.equippable)
+            self._blit_upgradable_tag(rect, gear.id)
 
     def _overlay_inventory(self, panel) -> None:
         content = self._content_rect(panel)
@@ -1882,6 +2028,7 @@ class OverworldApp:
                                  (rect.x, rect.y + 4))
             else:
                 self._add_button(rect, self._fit_text(text, items_rect.width - 24, self.font), on_click, enabled)
+                self._blit_upgradable_tag(rect, _item_id)
 
     def _skills_talents_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
         content = self._content_rect(panel)

@@ -174,6 +174,78 @@ class UpgradeRuleTest(unittest.TestCase):
         self.assertEqual(loaded.player.item_upgrades["worgfang"], "savage")
 
 
+try:
+    import pygame
+    from rpg_game.presentation.pygame_overworld import OverworldApp
+    DEPS_OK = True
+except Exception:  # pragma: no cover - import guard
+    DEPS_OK = False
+
+
+@unittest.skipUnless(DEPS_OK, "pygame not installed")
+class UpgradeStationUiTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1180, 760))
+
+    @classmethod
+    def tearDownClass(cls):
+        pygame.quit()
+
+    def _app(self):
+        app = OverworldApp()
+        p = app.engine.player
+        p.level = 11
+        p.gold = 1000
+        p.owned_weapon_ids = (*p.owned_weapon_ids, "worgfang", "steel_greatsword")
+        p.owned_gear_ids = (*p.owned_gear_ids, "iron_cuirass")
+        p.inventory.consumables.update(
+            {"worg_tooth": 5, "worg_claw": 4, "chill_crystal": 3, "iron_scrap": 8, "grave_iron": 6}
+        )
+        app.engine.recompute_equipment()
+        return app
+
+    def test_blacksmith_station_opens_with_weapons_and_renders(self):
+        app = self._app()
+        app._open_upgrade_station("blacksmith")
+        self.assertEqual(app.mode, "upgrade_station")
+        self.assertIn(app.selected_upgrade_item, ("worgfang", "steel_greatsword"))
+        app.draw()  # must not raise
+        labels = [b.label for b in app.buttons]
+        self.assertTrue(any("Reforge" in l for l in labels))
+
+    def test_reforge_button_applies_upgrade_and_spends_resources(self):
+        app = self._app()
+        gold_before = app.engine.player.gold
+        app._open_upgrade_station("blacksmith")
+        app.select_upgrade_item("worgfang")
+        app.apply_upgrade("worgfang", "savage")   # needs worg_claw:3, gold 280
+        self.assertTrue(app.engine.is_item_upgraded("worgfang"))
+        self.assertEqual(app.engine.player.gold, gold_before - 280)
+
+    def test_insufficient_materials_marks_reforge_restricted(self):
+        app = self._app()
+        app.engine.player.inventory.consumables.update(
+            {"worg_tooth": 0, "worg_claw": 0, "chill_crystal": 0}
+        )
+        app._open_upgrade_station("blacksmith")
+        app.select_upgrade_item("worgfang")
+        app.draw()
+        reforge = [b for b in app.buttons if "Reforge" in b.label]
+        self.assertTrue(reforge)
+        self.assertTrue(all(b.restricted for b in reforge))   # clickable but sperred
+
+    def test_character_panel_tags_a_rare_weapon_as_upgradable(self):
+        app = self._app()
+        app.overlay = "character"
+        app.selected_equipment_slot = "weapon"
+        app.draw()  # must not raise; tags are queued + flushed during the draw
+        # The rare weapon is tagged Upgradable; the common starter weapon is not.
+        self.assertTrue(app.engine.is_upgradable("worgfang"))
+        self.assertFalse(app.engine.is_upgradable("worn_shortsword"))
+
+
 class StationRoutingTest(unittest.TestCase):
     def test_blacksmith_routes_weapons_mage_tower_and_barracks_route_armour(self):
         content = data_loader.load_content()
