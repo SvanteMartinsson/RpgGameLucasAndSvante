@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import progression
+from rpg_game.core import combat, progression
 from rpg_game.core.game import GameEngine
 
 
@@ -57,6 +57,21 @@ def _take_turn(engine: GameEngine, enemy, use_skills: bool):
             if result.outcome != "blocked":   # blocked = mana/cooldown/weapon: no-op, retry
                 return result
     return engine.run_combat_turn(enemy, "attack")
+
+
+def best_weapon_for(content, category: str, level: int, damage_type: str | None = None):
+    """Highest-damage weapon of `category` the player could equip at `level`
+    (B37 weapon-aware sim). Models a player who upgrades as soon as the equip
+    gate allows. Returns a weapon id, or None if nothing qualifies."""
+    candidates = [
+        w for w in content.weapons.values()
+        if w.category == category
+        and combat.weapon_required_level(w) <= level
+        and (damage_type is None or w.damage_type == damage_type)
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda w: w.damage_bonus).id
 
 
 def _level_player(engine: GameEngine, level: int, main_stat: str) -> None:
@@ -108,12 +123,17 @@ def simulate_fight(
     use_skills: bool = False,
     level: int = 1,
     main_stat: str | None = None,
+    weapon_id: str | None = None,
 ) -> FightSimulation:
     """Run one fight and return a compact result. Defaults reproduce the old
     attack-only L1 fight exactly; use_skills lets the player cast skills (mana +
-    cooldown aware) and level>1 grows it via the B35 level-up path."""
+    cooldown aware), level>1 grows it via the B35 level-up path, and weapon_id
+    equips a specific weapon (B37 weapon-aware curve)."""
     engine = GameEngine(rng=random.Random(seed))
     engine.start_new_game(f"{class_id.title()} Sim", class_id)
+    if weapon_id is not None:
+        engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, weapon_id)
+        engine.player.equipped_weapon_id = weapon_id
     if level > 1:
         _level_player(engine, level, main_stat or _DEFAULT_MAIN.get(class_id, "damage"))
         engine.player.hp = engine.effective_stat("max_hp")    # start the fight full
@@ -153,11 +173,13 @@ def simulate_matchup(
     use_skills: bool = False,
     level: int = 1,
     main_stat: str | None = None,
+    weapon_id: str | None = None,
 ) -> MatchupSimulation:
     """Run many seeded fights for one class/enemy matchup."""
     fights = [
         simulate_fight(class_id, enemy_id, seed=seed + index, max_turns=max_turns,
-                       use_skills=use_skills, level=level, main_stat=main_stat)
+                       use_skills=use_skills, level=level, main_stat=main_stat,
+                       weapon_id=weapon_id)
         for index in range(trials)
     ]
     victories = [fight for fight in fights if fight.outcome == "victory"]
@@ -186,6 +208,7 @@ def simulate_matrix(
     use_skills: bool = False,
     level: int = 1,
     main_stat: str | None = None,
+    weapon_id: str | None = None,
 ) -> list[MatchupSimulation]:
     """Run a class-by-enemy matrix with stable per-cell seeds."""
     results = []
@@ -202,6 +225,7 @@ def simulate_matrix(
                     use_skills=use_skills,
                     level=level,
                     main_stat=main_stat,
+                    weapon_id=weapon_id,
                 )
             )
     return results
