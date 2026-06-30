@@ -398,6 +398,9 @@ class Button:
     label: str
     on_click: object
     enabled: bool = True
+    # Visually sperred but still clickable: a level-locked item reads as restricted
+    # yet a click still fires (so the player gets a "needs level N" explanation).
+    restricted: bool = False
 
 
 @dataclass
@@ -596,6 +599,11 @@ class OverworldApp:
         # In VISUAL-line units (a wrapped entry counts as its rendered rows), so
         # scrolling never strands wrapped text half-off the panel.
         return max(0, len(self._visual_log_lines()) - self.log_visible)
+
+    def _log_interactive(self) -> bool:
+        """The chatbox accepts scroll/resize only in free-walk; under menus/overlays
+        it is drawn but read-only."""
+        return self.mode == "walk" and not self.overlay
 
     def scroll_log(self, lines: int) -> None:
         """Scroll the chatbox: +lines = older (up), -lines = newer (down)."""
@@ -800,7 +808,9 @@ class OverworldApp:
         action = combat.create_weapon_swap_action(weapon)
         result = combat.resolve_action(player, player, action, self.engine.rng, weapon=weapon)
         if result.blocked:
-            self.set_toast(" ".join(result.events) or T.CANNOT_EQUIP, BAD)
+            # Name the weapon ("Rimebrand needs level 5.") instead of the raw action
+            # text ("... needs level N for Swap weapon.").
+            self.set_toast(T.weapon_needs_level(weapon.name, combat.weapon_required_level(weapon)), BAD)
         else:
             self.set_toast(T.equipped_weapon(weapon.name), GOOD)
             self.playtest_logger.equip("weapon", weapon.id, damage_type=weapon.damage_type)
@@ -1044,7 +1054,8 @@ class OverworldApp:
                 self.display = set_display_mode(self.windowed_size)
                 self._log_display("resize")
             elif event.type == pygame.MOUSEWHEEL:
-                self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
+                if self._log_interactive():   # scroll only in walk; read-only under menus
+                    self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1091,19 +1102,21 @@ class OverworldApp:
         if event.key == pygame.K_k:
             self.toggle_overlay("skills_talents")
             return
-        # Chatbox resize: '+' grows, '-' shrinks (clamped). PageUp/PageDown scroll.
-        if event.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
-            self.resize_log(1)
-            return
-        if event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-            self.resize_log(-1)
-            return
-        if event.key == pygame.K_PAGEUP:
-            self.scroll_log(LOG_SCROLL_STEP)
-            return
-        if event.key == pygame.K_PAGEDOWN:
-            self.scroll_log(-LOG_SCROLL_STEP)
-            return
+        # Chatbox resize/scroll: walk-only. Under menus the chatbox is visible but
+        # read-only ('+' grows, '-' shrinks; PageUp/PageDown scroll).
+        if self._log_interactive():
+            if event.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
+                self.resize_log(1)
+                return
+            if event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                self.resize_log(-1)
+                return
+            if event.key == pygame.K_PAGEUP:
+                self.scroll_log(LOG_SCROLL_STEP)
+                return
+            if event.key == pygame.K_PAGEDOWN:
+                self.scroll_log(-LOG_SCROLL_STEP)
+                return
         if event.key in (pygame.K_RETURN, pygame.K_e):
             if self.mode == "walk":
                 door = self.door_index.get(self.world.current_tile)
@@ -1154,7 +1167,6 @@ class OverworldApp:
         self._draw_map()
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
-            self._draw_log()
             self._draw_vitals()
         if self.mode == "building":
             self._draw_building_menu()
@@ -1168,6 +1180,9 @@ class OverworldApp:
             self._draw_tournament_intermission_screen()
         if self.overlay:
             self._draw_overlay_screen()
+        # Chatbox LAST so it stays visible (read-only) over overlays and menus, not
+        # only in walk — the player always sees why an action was blocked.
+        self._draw_log()
         self._transform = present(self.display, self.screen, BG)
         # Edge-triggered: log only when the fills-state flips (window starts/stops
         # filling), so an anchoring glitch is captured with no per-frame spam.
@@ -1486,13 +1501,14 @@ class OverworldApp:
         self.screen.blit(self.font_lg.render(title, True, ACCENT), (panel.x + 20, panel.y + 16))
         return panel
 
-    def _add_button(self, rect, label, cb, enabled=True) -> None:
-        self.buttons.append(Button(rect, label, cb, enabled))
+    def _add_button(self, rect, label, cb, enabled=True, restricted=False) -> None:
+        self.buttons.append(Button(rect, label, cb, enabled, restricted))
 
     def _draw_buttons(self) -> None:
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         for b in self.buttons:
-            if not b.enabled:
+            dim = (not b.enabled) or b.restricted   # restricted = clickable but sperred-looking
+            if dim:
                 color = BTN_DISABLED
             elif b.rect.collidepoint(mouse):
                 color = BTN_HOVER
@@ -1501,7 +1517,7 @@ class OverworldApp:
             pygame.draw.rect(self.screen, color, b.rect, border_radius=6)
             pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=6)
             fitted = self._fit_text(b.label, b.rect.width - 24, self.font)
-            label = self.font.render(fitted, True, TEXT if b.enabled else TEXT_DIM)
+            label = self.font.render(fitted, True, TEXT_DIM if dim else TEXT)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
 
     def _close_building_menu(self) -> None:
@@ -1777,7 +1793,11 @@ class OverworldApp:
                     status = self._delta_text({"damage": w.damage_bonus}, {"damage": equipped_bonus})
                 # Status/delta right after the name so it survives width-truncation.
                 label = f"{w.name}{status}  +{w.damage_bonus} {w.damage_type}"
-                self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)), w.equippable and not w.equipped)
+                # Always clickable: a level-locked weapon is restricted (dimmed) but a
+                # click still explains why it can't be equipped. The equipped one is a
+                # no-op ("already equipped").
+                self._add_button(rect, label, (lambda wid=w.id: self.equip_weapon(wid)),
+                                 enabled=True, restricted=not w.equippable)
             return
 
         if selected_slot.equipped_item_id:
@@ -1807,7 +1827,9 @@ class OverworldApp:
                 suffix = f"  needs Lv {gear.required_level}"
             # Delta right after the name so it survives width-truncation; raw mods last.
             label = f"{gear.name}{suffix} [{gear.rarity}] {mods}"
-            self._add_button(rect, label, (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)), gear.equippable)
+            self._add_button(rect, label,
+                             (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)),
+                             enabled=True, restricted=not gear.equippable)
 
     def _overlay_inventory(self, panel) -> None:
         content = self._content_rect(panel)
@@ -1943,8 +1965,12 @@ class OverworldApp:
         top = panel.y + 106
         row_h = 56
         max_rows = max(1, (panel.bottom - top - 10) // row_h)
+        # The BUY column (left) shares the bottom-left corner with the chatbox; stop
+        # its rows above the log rect so no item hides under the chatbox.
+        buy_bottom = min(panel.bottom, self._log_rect().top)
+        buy_rows = max(1, (buy_bottom - top - 10) // row_h)
         self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
-        for i, entry in enumerate(eng.store_entries(self.store_category)[:max_rows]):
+        for i, entry in enumerate(eng.store_entries(self.store_category)[:buy_rows]):
             y = top + i * row_h
             self._add_button(pygame.Rect(panel.x + 20, y, col_w, 28),
                              f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
@@ -1986,13 +2012,21 @@ class OverworldApp:
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
             self._add_button(rect, f"{node.name}", (lambda nid=node.id: self.learn_talent(nid)), points > 0)
 
+    def _log_visible_now(self) -> int:
+        """Visible chatbox lines for the current mode: the player-set size in free
+        walk, a compact read-only strip under menus/overlays (so it shows the latest
+        lines without burying menu content)."""
+        if self._log_interactive():
+            return self.log_visible
+        return min(self.log_visible, LOG_VISIBLE_MIN)
+
     def _log_rect(self) -> pygame.Rect:
-        """Geometry of the chatbox panel (bottom-left). Height tracks log_visible so
-        the player can grow/shrink it; width scales gently with the window."""
+        """Geometry of the chatbox panel (bottom-left). Height tracks the visible
+        line count (compact under menus); width scales gently with the window."""
         line_h = self.font_sm.get_height() + 3
         pad = 8
         panel_w = min(max(360, self.screen.get_width() // 3), self.screen.get_width() - 16)
-        panel_h = pad * 2 + line_h * self.log_visible
+        panel_h = pad * 2 + line_h * self._log_visible_now()
         return pygame.Rect(8, self.screen.get_height() - panel_h - 8, panel_w, panel_h)
 
     def _visual_log_lines(self) -> list[tuple[str, tuple, bool]]:
@@ -2016,8 +2050,10 @@ class OverworldApp:
         line_h = self.font_sm.get_height() + 3
         pad = 8
         rect = self._log_rect()
+        vis = self._log_visible_now()
         overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
-        overlay.fill((10, 12, 18, 180))
+        # More opaque under menus so it stays readable over the overlay dim.
+        overlay.fill((10, 12, 18, 180 if self._log_interactive() else 220))
         self.screen.blit(overlay, rect.topleft)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=4)
         lines = self._visual_log_lines()
@@ -2025,9 +2061,9 @@ class OverworldApp:
         if not lines:        # always show the panel (it's the primary HUD now)
             return
         # Window of visible visual lines, clamped, honoring the scroll offset.
-        self.log_scroll = min(self.log_scroll, max(0, n - self.log_visible))
+        self.log_scroll = min(self.log_scroll, max(0, n - vis))
         end = n - self.log_scroll
-        start = max(0, end - self.log_visible)
+        start = max(0, end - vis)
         for i, (text, color, newest) in enumerate(lines[start:end]):
             shade = color if newest else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
             surf = self.font_sm.render(text, True, shade)

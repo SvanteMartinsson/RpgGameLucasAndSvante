@@ -144,6 +144,10 @@ def equipped_weapon(name: str) -> str:
     return f"Equipped {name}."
 
 
+def weapon_needs_level(name: str, level: int) -> str:
+    return f"{name} needs level {level}."
+
+
 # --- weapon type + preview (B4) -------------------------------------------
 # Weapon "type" is the gameplay category (drives weapon-gated skills); it is the
 # field abilities check, so it is the type the player needs to see.
