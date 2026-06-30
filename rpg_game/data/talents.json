@@ -6,6 +6,7 @@
     "order": 1,
     "name": "Smite",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "smite",
     "effects": []
   },
@@ -16,6 +17,7 @@
     "order": 2,
     "name": "Mend",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "mend",
     "effects": []
   },
@@ -26,6 +28,7 @@
     "order": 3,
     "name": "Devotion",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -42,6 +45,7 @@
     "order": 4,
     "name": "Sanctuary",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "sanctuary",
     "effects": []
   },
@@ -52,6 +56,7 @@
     "order": 1,
     "name": "Plague Bolt",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "plague_bolt",
     "effects": []
   },
@@ -62,6 +67,7 @@
     "order": 2,
     "name": "Drain",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "drain",
     "effects": []
   },
@@ -72,6 +78,7 @@
     "order": 3,
     "name": "Virulence",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "applied_status_mod",
@@ -89,6 +96,7 @@
     "order": 4,
     "name": "Curse",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "curse",
     "effects": []
   },
@@ -99,6 +107,7 @@
     "order": 1,
     "name": "Block",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "block",
     "effects": []
   },
@@ -109,6 +118,7 @@
     "order": 2,
     "name": "Thorns",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "thorns",
     "effects": []
   },
@@ -119,6 +129,7 @@
     "order": 3,
     "name": "Bulwark",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -141,6 +152,7 @@
     "order": 4,
     "name": "Taunt",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "taunt",
     "effects": []
   },
@@ -151,6 +163,7 @@
     "order": 1,
     "name": "Iron Stance",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "iron_stance",
     "effects": []
   },
@@ -161,6 +174,7 @@
     "order": 2,
     "name": "Counter",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "counter",
     "effects": []
   },
@@ -171,6 +185,7 @@
     "order": 3,
     "name": "Resolve",
     "node_type": "passive",
+    "max_rank": 1,
     "effects": [
       {
         "type": "immunity",
@@ -191,6 +206,7 @@
     "order": 4,
     "name": "Fortitude",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -213,6 +229,7 @@
     "order": 1,
     "name": "Backstab",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "backstab",
     "effects": []
   },
@@ -223,6 +240,7 @@
     "order": 2,
     "name": "Rupture",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "rupture",
     "effects": []
   },
@@ -233,6 +251,7 @@
     "order": 3,
     "name": "Lethality",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -249,6 +268,7 @@
     "order": 4,
     "name": "Execute",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "execute",
     "effects": []
   },
@@ -259,6 +279,7 @@
     "order": 1,
     "name": "Evasion",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "evasion",
     "effects": []
   },
@@ -269,6 +290,7 @@
     "order": 2,
     "name": "Riposte",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "riposte",
     "effects": []
   },
@@ -279,6 +301,7 @@
     "order": 3,
     "name": "Finesse",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -301,6 +324,7 @@
     "order": 4,
     "name": "Deadly Precision",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "deadly_precision",
     "effects": []
   },
@@ -311,6 +335,7 @@
     "order": 1,
     "name": "Frenzy",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "frenzy",
     "effects": []
   },
@@ -321,6 +346,7 @@
     "order": 2,
     "name": "Rage",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "apply_status",
@@ -342,6 +368,7 @@
     "order": 3,
     "name": "Bloodlust",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "conditional_damage_mod",
@@ -362,6 +389,7 @@
     "order": 4,
     "name": "Reckless",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "reckless",
     "effects": []
   },
@@ -372,6 +400,7 @@
     "order": 1,
     "name": "Precision",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "precision",
     "effects": []
   },
@@ -382,6 +411,7 @@
     "order": 2,
     "name": "Sunder",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "sunder",
     "effects": []
   },
@@ -392,6 +422,7 @@
     "order": 3,
     "name": "Mastery",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -408,6 +439,7 @@
     "order": 4,
     "name": "Combo",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "combo",
     "effects": []
   },
@@ -418,6 +450,7 @@
     "order": 1,
     "name": "Firebolt",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "firebolt",
     "effects": []
   },
@@ -428,6 +461,7 @@
     "order": 2,
     "name": "Ignite",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "ignite",
     "effects": []
   },
@@ -438,6 +472,7 @@
     "order": 3,
     "name": "Combustion",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "conditional_damage_mod",
@@ -459,6 +494,7 @@
     "order": 4,
     "name": "Fireball",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "fireball",
     "effects": []
   },
@@ -469,6 +505,7 @@
     "order": 1,
     "name": "Frostbolt",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "frostbolt",
     "effects": []
   },
@@ -479,6 +516,7 @@
     "order": 2,
     "name": "Freeze",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "freeze",
     "effects": []
   },
@@ -489,13 +527,17 @@
     "order": 3,
     "name": "Frostbite",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "conditional_damage_mod",
         "conditional": {
           "subject": "target",
           "predicate": "has_status",
-          "status_types": ["freeze", "chill"],
+          "status_types": [
+            "freeze",
+            "chill"
+          ],
           "damage_type": "frost",
           "multiplier": 1.25
         },
@@ -510,6 +552,7 @@
     "order": 4,
     "name": "Ice Lance",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "ice_lance",
     "effects": []
   },
@@ -520,6 +563,7 @@
     "order": 1,
     "name": "Aimed Shot",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "aimed_shot",
     "effects": []
   },
@@ -530,6 +574,7 @@
     "order": 2,
     "name": "Hunter's Mark",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "hunters_mark",
     "effects": []
   },
@@ -540,6 +585,7 @@
     "order": 3,
     "name": "Precision",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "stat_bonus",
@@ -556,6 +602,7 @@
     "order": 4,
     "name": "Piercing Shot",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "piercing_shot",
     "effects": []
   },
@@ -566,6 +613,7 @@
     "order": 1,
     "name": "Snare",
     "node_type": "active",
+    "max_rank": 1,
     "action_id": "snare",
     "effects": []
   },
@@ -576,6 +624,7 @@
     "order": 2,
     "name": "Venom Trap",
     "node_type": "active",
+    "max_rank": 3,
     "action_id": "venom_trap",
     "effects": []
   },
@@ -586,6 +635,7 @@
     "order": 3,
     "name": "Exploit Weakness",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "conditional_damage_mod",
@@ -605,6 +655,7 @@
     "order": 4,
     "name": "Beast Slayer",
     "node_type": "passive",
+    "max_rank": 3,
     "effects": [
       {
         "type": "conditional_damage_mod",
@@ -625,6 +676,7 @@
     "order": 1,
     "name": "Sanctified Strikes",
     "node_type": "passive",
+    "max_rank": 3,
     "requires": "cleric_light_l1_smite",
     "effects": [
       {
@@ -642,6 +694,7 @@
     "order": 1,
     "name": "Flametongue",
     "node_type": "passive",
+    "max_rank": 3,
     "requires": "mage_pyromancer_y1_firebolt",
     "effects": [
       {
@@ -659,6 +712,7 @@
     "order": 1,
     "name": "Rimeblade",
     "node_type": "passive",
+    "max_rank": 3,
     "requires": "mage_cryomancer_c1_frostbolt",
     "effects": [
       {

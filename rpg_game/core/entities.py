@@ -108,6 +108,10 @@ class TalentNode:
     order: int
     name: str
     node_type: str
+    # B36: how many ranks this node can hold. 3 for scalable nodes (passive with a
+    # numeric magnitude, or active whose skill has a dmg/heal/DoT-tick magnitude),
+    # 1 for binary nodes (pure unlock / toggle / immunity / stat-only utility).
+    max_rank: int = 1
     action_id: str = ""
     requires: str = ""
     effects: tuple[EffectSpec, ...] = ()

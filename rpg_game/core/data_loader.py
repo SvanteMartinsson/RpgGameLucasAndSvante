@@ -126,6 +126,7 @@ def load_content() -> GameContent:
             order=row["order"],
             name=row["name"],
             node_type=row["node_type"],
+            max_rank=row.get("max_rank", 1),
             action_id=row.get("action_id", ""),
             requires=row.get("requires", ""),
             effects=tuple(
