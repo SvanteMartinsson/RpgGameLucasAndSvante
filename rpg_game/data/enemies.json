@@ -9,13 +9,7 @@
     "damage": 6,
     "armor": 0,
     "speed": 8,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "beast"
     ],
@@ -79,13 +73,9 @@
     "damage": 4,
     "armor": 1,
     "speed": 6,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.5,
-      "poison": 0.0
-    },
+    "traits": [
+      "undead"
+    ],
     "tags": [
       "undead"
     ],
@@ -149,13 +139,9 @@
     "damage": 10,
     "armor": 0,
     "speed": 6,
-    "resistances": {
-      "physical": 0.9,
-      "fire": 1.25,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.25
-    },
+    "traits": [
+      "beast"
+    ],
     "tags": [
       "beast"
     ],
@@ -231,13 +217,9 @@
     "damage": 5,
     "armor": 0,
     "speed": 9,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.5,
-      "poison": 0.0
-    },
+    "traits": [
+      "undead"
+    ],
     "tags": [
       "undead"
     ],
@@ -315,13 +297,9 @@
     "damage": 7,
     "armor": 0,
     "speed": 14,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 0.5
-    },
+    "traits": [
+      "cursed"
+    ],
     "tags": [
       "cultist"
     ],
@@ -392,13 +370,7 @@
     "damage": 6,
     "armor": 0,
     "speed": 13,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "duelist"
@@ -422,13 +394,7 @@
     "damage": 5,
     "armor": 2,
     "speed": 7,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "guard"
@@ -467,13 +433,7 @@
     "damage": 7,
     "armor": 0,
     "speed": 10,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 0.8,
-      "frost": 1.25,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "mage"
@@ -513,13 +473,7 @@
     "damage": 7,
     "armor": 1,
     "speed": 9,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "swordsman"
@@ -544,13 +498,7 @@
     "damage": 8,
     "armor": 0,
     "speed": 12,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "archer"
@@ -589,13 +537,7 @@
     "damage": 9,
     "armor": 2,
     "speed": 8,
-    "resistances": {
-      "physical": 0.95,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "veteran"
@@ -635,13 +577,7 @@
     "damage": 10,
     "armor": 0,
     "speed": 11,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.25,
-      "frost": 0.75,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "mage"
@@ -674,13 +610,7 @@
     "damage": 10,
     "armor": 1,
     "speed": 13,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 0.75
-    },
+    "traits": [],
     "tags": [
       "human",
       "rogue"
@@ -720,13 +650,7 @@
     "damage": 12,
     "armor": 3,
     "speed": 10,
-    "resistances": {
-      "physical": 0.9,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "knight"
@@ -766,13 +690,7 @@
     "damage": 14,
     "armor": 2,
     "speed": 12,
-    "resistances": {
-      "physical": 0.9,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [],
     "tags": [
       "human",
       "champion"
@@ -814,13 +732,9 @@
     "damage": 12,
     "armor": 1,
     "speed": 12,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "beast"
+    ],
     "tags": [
       "beast"
     ],
@@ -891,13 +805,9 @@
     "damage": 11,
     "armor": 1,
     "speed": 8,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "beast"
+    ],
     "tags": [
       "beast"
     ],
@@ -974,13 +884,9 @@
     "damage": 13,
     "armor": 3,
     "speed": 3,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 2.0,
-      "frost": 0.5,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "plant"
+    ],
     "tags": [
       "beast",
       "plant"
@@ -1052,13 +958,10 @@
     "damage": 10,
     "armor": 2,
     "speed": 6,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 0.5,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "beast",
+      "swamp"
+    ],
     "tags": [
       "beast"
     ],
@@ -1129,13 +1032,10 @@
     "damage": 7,
     "armor": 0,
     "speed": 14,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.0,
-      "frost": 2.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "undead",
+      "swamp"
+    ],
     "tags": [
       "undead",
       "spirit"
@@ -1219,13 +1119,9 @@
     "damage": 11,
     "armor": 2,
     "speed": 4,
-    "resistances": {
-      "physical": 1.0,
-      "fire": 1.5,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "swamp"
+    ],
     "tags": [
       "beast",
       "ooze"
@@ -1316,13 +1212,10 @@
     "damage": 18,
     "armor": 2,
     "speed": 8,
-    "resistances": {
-      "physical": 0.9,
-      "fire": 1.0,
-      "frost": 1.0,
-      "holy": 1.0,
-      "poison": 1.0
-    },
+    "traits": [
+      "beast",
+      "cursed"
+    ],
     "tags": [
       "beast",
       "cursed"

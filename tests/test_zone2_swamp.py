@@ -49,15 +49,20 @@ class Zone2SwampTest(unittest.TestCase):
         self.assertGreaterEqual(min(levels), 5)
         self.assertLessEqual(max(levels), 10)
 
-    def test_mudcrab_resists_fire(self):
+    def test_mudcrab_is_weak_to_both_fire_and_frost(self):
+        # beast+swamp flips the mudcrab: beast's fire-bane and swamp's frost-bane
+        # partly cancel to a +2 step each, leaving it doubly soft (x1.5/x1.5).
         crab = self.engine.content.enemies["mutated_mudcrab"].create_enemy()
         fire = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="fire")
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, crab, None, fire), 5)  # x0.5
+        frost = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="frost")
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, crab, None, fire), 15)   # x1.5
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, crab, None, frost), 15)  # x1.5
 
     def test_bog_wraith_is_weak_to_frost(self):
+        # undead's frost-resist (-1) + swamp's frost-bane (+3) = +2 -> x1.5.
         wraith = self.engine.content.enemies["bog_wraith"].create_enemy()
         frost = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="frost")
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, wraith, None, frost), 20)  # x2.0
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, wraith, None, frost), 15)  # x1.5
 
     def test_bog_wraith_telegraphs_its_nuke_then_releases(self):
         wraith = self.engine.content.enemies["bog_wraith"].create_enemy()

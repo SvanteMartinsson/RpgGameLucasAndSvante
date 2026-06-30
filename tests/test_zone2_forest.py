@@ -72,8 +72,8 @@ class Zone2ForestTest(unittest.TestCase):
         treant = self.engine.content.enemies["treant"].create_enemy()
         fire = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="fire")
         frost = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="frost")
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, treant, None, fire), 20)
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, treant, None, frost), 5)
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, treant, None, fire), 20)   # plant: fire +3 -> x2.0
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, treant, None, frost), 7)   # plant: frost -1 -> x0.65
 
     # -- archetype AI (bruiser + telegraph) --------------------------------
 

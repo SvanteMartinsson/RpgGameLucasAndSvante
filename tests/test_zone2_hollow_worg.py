@@ -61,11 +61,11 @@ class HollowWorgTest(unittest.TestCase):
         self.assertGreater(worg.max_hp, bear.max_hp)
         self.assertGreater(worg.damage, bear.damage)
 
-    def test_lightly_physical_resistant(self):
+    def test_physical_resistant(self):
         worg = self.engine.content.enemies["hollow_worg"].create_enemy()
         worg.armor = 0  # isolate the resistance from armor
         phys = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="physical")
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, worg, None, phys), 9)  # x0.9
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, worg, None, phys), 7)  # cursed: physical -1 -> x0.65
 
     def test_telegraphs_its_heavy_pounce_then_releases(self):
         worg = self.engine.content.enemies["hollow_worg"].create_enemy()

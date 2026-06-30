@@ -29,6 +29,7 @@ from rpg_game.core.entities import (
     Weapon,
 )
 from rpg_game.core.equipment import ALLOWED_GEAR_STATS
+from rpg_game.core import traits
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -174,7 +175,10 @@ def load_content() -> GameContent:
             damage=row["damage"],
             armor=row["armor"],
             speed=row["speed"],
-            resistances=row.get("resistances", {}),
+            traits=tuple(row.get("traits", ())),
+            # Resistances are derived from traits (single source of truth); any
+            # `resistances` left in JSON is ignored.
+            resistances=traits.resistances_from_traits(row.get("traits", ())),
             action_ids=tuple(row.get("action_ids", ("power", "normal", "quick"))),
             xp_reward=row["xp_reward"],
             gold_min=row["gold_min"],

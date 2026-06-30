@@ -40,11 +40,15 @@ class TarBeastTest(unittest.TestCase):
         self.assertGreaterEqual(min(levels), 5)
         self.assertLessEqual(max(levels), 10)
 
-    def test_is_fire_weak(self):
-        # Chosen: fire-weak (x1.5) — ties to "burn the tar"; flagged in the commit.
+    def test_is_frost_weak_and_fire_resistant(self):
+        # The tar beast is now [swamp]: cold-blooded ooze. Swamp makes it
+        # frost-bane (+3 -> x2.0) and fire-resistant (-1 -> x0.65); the old
+        # "burn the tar" fire-weakness is intentionally inverted.
         beast = self._beast()
         fire = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="fire")
-        self.assertEqual(combat.calculate_effect_damage(self.engine.player, beast, None, fire), 15)
+        frost = EffectSpec(type="damage", scale="flat", magnitude=10, damage_type="frost")
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, beast, None, fire), 7)    # x0.65
+        self.assertEqual(combat.calculate_effect_damage(self.engine.player, beast, None, frost), 20)  # x2.0
 
     def test_regen_heals_each_round_and_caps_at_max_hp(self):
         beast = self._beast()

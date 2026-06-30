@@ -165,6 +165,9 @@ class EnemyTemplate:
     gold_min: int
     gold_max: int
     tags: tuple[str, ...] = ()
+    # Source of truth for elemental matchups; `resistances` above is derived
+    # from these at load (see data_loader / core.traits). Max 2 per enemy.
+    traits: tuple[str, ...] = ()
     mana: int = 0
     ai: tuple[dict[str, object], ...] = ()
     loot_table: tuple[dict[str, object], ...] = ()

@@ -83,7 +83,7 @@ class EffectivenessOutputTests(unittest.TestCase):
     def test_resisted_flag_in_event(self):
         engine = GameEngine(rng=__import__("random").Random(1))
         engine.start_new_game("Fighter", "fighter")
-        bear = engine.content.enemies["cave_bear"].create_enemy()  # physical 0.9
+        bear = engine.content.enemies["plague_acolyte"].create_enemy()  # cursed: physical 0.65
         bear.evasion_chance = 0
 
         result = combat.resolve_action(
