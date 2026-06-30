@@ -92,7 +92,17 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   avstånd; path-tiles −30–50%; fiendenivå nära start tak:at (t.ex. ≤ spelarnivå+2);
   sim visar rate- och nivå-kurvan mot mål; test för rate-/nivåfunktionen.
 
-#### B8 — Städerna som funktionsdrivna kluster  ⭐ designbärande  · *burg_5 KLAR (f41b13b); Slice 2 (alla 17 + triggrar) = guidad session*
+#### B8 — Städerna som funktionsdrivna kluster  ⭐ designbärande  · 🟢 **Slice 2a KLAR** (system: tier-styrt kluster i alla 17) · 2b (tuning) + tjänste-triggrar kvar
+- **Slice 2a KLAR** (`78cbce0`/`e74ffd2`/`17f6207`, Lucas-godkänd render): kluster generaliserat
+  till ALLA 17 städer, tier-styrt (capital|city|town|village) läst ur core_zone (`tier`/`shop_category`/
+  `prop` = PROVISORISK seed för 2b). `town_cluster.CLUSTER_TEMPLATES` + `resolve_template()` lägger ut
+  mallarna; capital byte-identisk. Varje stad har exakt EN rest-dörr (inn / cottage i by); town_hall
+  endast där turnering finns (burg_5/67/146/121); kuliss-byggnader renderar men saknar dörr/cobble.
+  Sprites nycklade på (id,facing). B32 encounters=0 på alla kluster; reachability + ingen-footprint-i-vatten
+  verifierad på riktiga kollisionen för alla 17. 637 tester gröna.
+- **Kvar:** **2b** = slutlig tier-tilldelning + roster/orientering (mot per-stad-render) + per-stad VARIERAT
+  butiks-INNEHÅLL (egen ekonomi-slice) + tjänster på kuliss (apothecary→potions, shrine→enchanter,
+  stable→snabbresa, town_hall→board).
 - **Vad:** Packade kluster runt ett **torg**, **tiered storlek** (liten/medium/hub),
   hus nedskalade (~0.6, justerbar load-tid), **cobble-wayfinding-nät** till varje
   ingång, **y-sort**, mallbaserad komposition anchored relativt stadens tile.
@@ -496,3 +506,6 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **#3 världsexpansion 240×208** (`960d0a3`/`1985e10`) — parametrisk terräng (option A): härledda zon-band,
   kust, seam-kanal, nordfödd flod→sjö, broar ur rutter (4 seam-övergångar). 17 städer på nya koordinater,
   klustren följde med intakt. All reachability/zon/vatten verifierad; 630 tester gröna. Kvar: B8 Slice 2.
+- **B8 Slice 2a** (`78cbce0`/`e74ffd2`/`17f6207`, Lucas-godkänd) — tier-styrt kluster i alla 17 städer
+  (capital/city/town/village ur core_zone), resolve_template, en rest-dörr/stad, town_hall vid turnering,
+  kuliss utan dörr, sprites (id,facing). 637 tester gröna. Kvar: 2b-tuning + tjänste-triggrar.
