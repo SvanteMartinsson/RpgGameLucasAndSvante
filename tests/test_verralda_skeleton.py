@@ -118,16 +118,31 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertIn("grave_heath_plant", names)
         self.assertIn("grave_heath_props", names)  # reserved for the edge phase
 
-    def test_heath_is_open_with_no_forest_canopy(self):
-        # The themed forest trees are removed; the heath is open ground framed by the
-        # sea. No plant-sheet canopy survives in walls or decor below the seam.
-        tmx = self.world.tmx
-        walls = tmx.get_layer_by_name("walls")
-        decor = tmx.get_layer_by_name("decor_over")
-        for y in range(SEAM_Y, tmx.height):
-            for x in range(tmx.width):
-                self.assertNotEqual(self._tileset_of(walls.data[y][x]), "grave_heath_plant")
-                self.assertNotEqual(self._tileset_of(decor.data[y][x]), "grave_heath_plant")
+    def test_heath_is_open_with_no_tree_canopy(self):
+        # The themed forest TREES stay removed: no plant-sheet tile in the heath
+        # collision layer, and in decor only single-tile shrubs (bushes) — never
+        # multi-tile tree canopy. Read the RAW CSV (pytmx remaps gids on load).
+        import os
+        import re
+        from rpg_game.presentation.pygame_overworld import MAPS_DIR
+        BUSHES = {103, 105, 107}
+        HEATH_FG = 4227
+        src = open(os.path.join(MAPS_DIR, "overworld.tmx"), encoding="utf-8").read()
+
+        def layer(name):
+            m = re.search(r'name="%s"[^>]*>\s*<data encoding="csv">\s*(.*?)\s*</data>' % name, src, re.S)
+            return [[int(v) for v in r.rstrip(",").split(",")] for r in m.group(1).strip().split("\n")]
+
+        def heath_plant_off(gid):
+            return gid - HEATH_FG if HEATH_FG <= gid < HEATH_FG + 256 else None
+
+        walls, decor = layer("walls"), layer("decor_over")
+        for y in range(SEAM_Y, len(walls)):
+            for x in range(len(walls[0])):
+                self.assertIsNone(heath_plant_off(walls[y][x]), f"plant in heath walls at {(x, y)}")
+                off = heath_plant_off(decor[y][x])
+                if off is not None:
+                    self.assertIn(off, BUSHES, f"tree canopy in heath decor at {(x, y)}")
 
     def test_no_plant_canopy_collides_anywhere(self):
         # The forest is gone entirely: no plant-sheet (cainos/grave_heath) canopy gid

@@ -88,10 +88,13 @@ class OverworldEncounterTest(unittest.TestCase):
 
     def test_road_tiles_reduce_the_rate(self):
         self.app.encounter_rate = 0.06
-        far = (15, 8)  # full-rate wilderness east of burg_117, off any cluster/road
+        far = (15, 8)  # well clear of any town safe zone
+        # Measure the road FACTOR directly by toggling _on_path, so the result is
+        # independent of whether this tile naturally carries path/flower ground.
+        self.app._on_path = lambda tile: False
         base = self.app.encounter_rate_at(far)
         self.assertGreater(base, 0.0)
-        self.app._on_path = lambda tile: True   # force the road factor
+        self.app._on_path = lambda tile: True
         self.assertAlmostEqual(self.app.encounter_rate_at(far), base * 0.6)
 
     # -- B32: a whole town cluster + margin is encounter-free ----------------

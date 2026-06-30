@@ -192,14 +192,25 @@ class OverworldRegenTest(unittest.TestCase):
             base, _ = self._grass_idx(ground[y][x])
             self.assertEqual(base, fg, f"zone band wrong at {(x, y)}")
 
-    def test_ground_has_lively_visible_detail(self):
+    def test_ground_detail_is_clustered_not_uniform(self):
+        # Pocket model: visible ground detail concentrates in feature pockets
+        # (blomäng/sten) with open ground between — so the densest blocks stand far
+        # above the map average (landmarks), unlike the old uniform speckle.
         ground = self._layer("ground")
         VIS = {6, 7, 12, 13, 21, 22, 28, 30, 31, 14, 20, 23, 29}
-        vis = sum(1 for y in range(H) for x in range(W)
-                  if (self._grass_idx(ground[y][x])[1] in VIS))
-        frac = vis / (W * H)
-        self.assertGreater(frac, 0.10, f"too sparse: {frac:.2f}")
-        self.assertLess(frac, 0.30, f"too busy: {frac:.2f}")
+        total = sum(1 for y in range(H) for x in range(W) if self._grass_idx(ground[y][x])[1] in VIS)
+        overall = total / (W * H)
+        self.assertGreater(total, 200, "no ground detail at all")
+        # densest 16x16 block fraction
+        B = 16
+        best = 0.0
+        for by in range(0, H - B, B):
+            for bx in range(0, W - B, B):
+                d = sum(1 for y in range(by, by + B) for x in range(bx, bx + B)
+                        if self._grass_idx(ground[y][x])[1] in VIS)
+                best = max(best, d / (B * B))
+        self.assertGreater(best, 0.30, f"no dense detail pocket (best block {best:.2f})")
+        self.assertGreater(best, overall * 3, f"detail not clustered (best {best:.2f} vs avg {overall:.2f})")
 
     def _is_path(self, gid):
         fg, idx = self._grass_idx(gid)
@@ -222,12 +233,20 @@ class OverworldRegenTest(unittest.TestCase):
                 return gid - fg
         return None
 
-    def test_no_forest_canopy_anywhere(self):
+    # Single-tile shrubs that may live in decor (walkable); multi-tile tree canopy
+    # stays forbidden everywhere, and NO plant tile may sit in walls (collision).
+    BUSHES = {97, 98, 99, 101, 103, 105, 107}
+
+    def test_no_tree_canopy_only_single_tile_bushes(self):
         walls, decor = self._layer("walls"), self._layer("decor_over")
-        plant = [(x, y) for y in range(H) for x in range(W)
-                 if self._plant_offset(walls[y][x]) is not None
-                 or self._plant_offset(decor[y][x]) is not None]
-        self.assertEqual(plant, [], f"forest canopy present at {plant[:5]}")
+        # no plant-sheet tile in the collision layer at all
+        wall_plant = [(x, y) for y in range(H) for x in range(W)
+                      if self._plant_offset(walls[y][x]) is not None]
+        self.assertEqual(wall_plant, [], f"plant tile in walls (collision) at {wall_plant[:5]}")
+        # decor plant tiles are ONLY the allowed single-tile bushes (no tree canopy)
+        bad = [(x, y) for y in range(H) for x in range(W)
+               if (off := self._plant_offset(decor[y][x])) is not None and off not in self.BUSHES]
+        self.assertEqual(bad, [], f"non-bush plant (tree canopy?) in decor at {bad[:5]}")
 
 
 if __name__ == "__main__":
