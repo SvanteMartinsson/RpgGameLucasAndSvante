@@ -1406,19 +1406,25 @@ class OverworldApp:
             self.screen.blit(hsurf, hsurf.get_rect(midbottom=(self.screen.get_width() // 2, self.screen.get_height() - 6)))
 
     def _draw_vitals(self) -> None:
-        """B31: HP / Mana / XP bars stacked just ABOVE the chatbox (no name/gold).
-        Aligned to the chatbox width; each bar shows current/max as small text."""
+        """B31/B39: a compact "Lv N    Gold G" line above thicker HP/Mana/XP bars,
+        stacked just ABOVE the chatbox (no name). Bars are tall enough for their
+        inline current/max text to sit comfortably centred."""
         p = build_snapshot(self.engine).player
         log = self._log_rect()
-        bar_h, gap = 12, 3
+        bar_h, gap = 18, 3
         rows = [
             ("HP", p.hp, p.max_hp, HP_COL),
             ("Mana", p.mana, p.max_mana, MANA_COL),
             ("XP", p.xp, p.xp_required, XP_COL),
         ]
-        total = len(rows) * (bar_h + gap)
+        head_h = self.font_sm.get_height() + 3
+        total = head_h + len(rows) * (bar_h + gap)
         x, w = log.x, log.width
         y = log.y - total - 4
+        # Lv + Gold header (no name).
+        self.screen.blit(self.font_sm.render(f"Lv {p.level}    Gold {p.gold}", True, TEXT), (x + 2, y))
+        y += head_h
+        text_dy = max(0, (bar_h - self.font_sm.get_height()) // 2)
         for name, cur, mx, col in rows:
             ratio = max(0.0, min(1.0, cur / mx)) if mx else 0.0
             track = pygame.Rect(x, y, w, bar_h)
@@ -1428,7 +1434,7 @@ class OverworldApp:
                                  pygame.Rect(x, y, max(2, int(w * ratio)), bar_h), border_radius=3)
             pygame.draw.rect(self.screen, PANEL_EDGE, track, width=1, border_radius=3)
             text = f"{name} {cur}/{mx}" if mx else f"{name} {cur}"
-            self.screen.blit(self.font_sm.render(text, True, TEXT), (x + 6, y - 1))
+            self.screen.blit(self.font_sm.render(text, True, TEXT), (x + 6, y + text_dy))
             y += bar_h + gap
 
     def _overlay_panel(self, title: str) -> pygame.Rect:

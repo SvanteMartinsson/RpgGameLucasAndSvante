@@ -171,11 +171,38 @@ class OverworldTownsTest(unittest.TestCase):
     def test_vitals_bars_sit_above_the_chatbox(self):
         self.app.display = pygame.Surface((960, 640))
         log = self.app._log_rect()
-        # the three stacked bars (HP/Mana/XP) occupy the band directly above the log
-        self.assertLess(log.y - (3 * (12 + 3) + 4), log.y)
+        # B39: Lv/Gold header + three thicker bars (bar_h 18) occupy the band
+        # directly above the log, fitting on-screen without overlapping it.
+        head_h = self.app.font_sm.get_height() + 3
+        band_top = log.y - (head_h + 3 * (18 + 3) + 4)
+        self.assertGreater(band_top, 0)         # whole band fits above the chatbox
+        self.assertLess(band_top, log.y)
         self.app.mode = "walk"; self.app.overlay = ""
         self.app.draw()  # must render HUD + vitals + chatbox without error
         self.assertFalse(hasattr(self.app, "_draw_xp_bar"))  # old top XP bar gone
+
+    def test_vitals_band_shows_level_and_gold(self):
+        # B39: the vitals band (not the top HUD) now carries Lv + Gold.
+        self.app.display = pygame.Surface((960, 640))
+        self.app.engine.player.level = 5
+        self.app.engine.player.gold = 142
+
+        drawn: list[str] = []
+        real = self.app.font_sm
+
+        class _Sink:
+            def render(self, text, *a, **k): drawn.append(text); return real.render(text, *a, **k)
+            def get_height(self): return real.get_height()
+            def size(self, t): return real.size(t)
+
+        self.app.font_sm = _Sink()
+        try:
+            self.app._draw_vitals()
+        finally:
+            self.app.font_sm = real
+        joined = " ".join(drawn)
+        self.assertIn("Lv 5", joined)
+        self.assertIn("Gold 142", joined)
 
     def test_hud_shows_no_name_or_gold(self):
         # B31 removed the name/level/gold top-left text; the HUD no longer reads them.
