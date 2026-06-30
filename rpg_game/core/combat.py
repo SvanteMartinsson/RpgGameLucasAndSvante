@@ -316,6 +316,26 @@ def effectiveness_label(resist: float) -> str:
     return ""
 
 
+# Wisdom slice: player magic effects scale off WISDOM as well as damage. The split
+# (0.4/0.6) and the per-spell multipliers are PLACEHOLDERS tuned in Wisdom Slice B.
+SPELL_DAMAGE_WEIGHT = 0.4
+SPELL_WISDOM_WEIGHT = 0.6
+
+
+def spell_source_value(actor: Actor, weapon: Weapon | None) -> int:
+    """The pre-multiplier base for a `spell`-scaled effect:
+    round(0.4 * (damage + magic weapon bonus) + 0.6 * wisdom) for a player. Enemies
+    have no wisdom, so for them it degrades to the POWER-equivalent (their damage),
+    i.e. a damage spell shared with an arena caster keeps its old enemy value."""
+    total_damage = effective_stat(actor, "damage" if isinstance(actor, Player) else "power")
+    if weapon is not None:
+        total_damage += weapon.damage_bonus
+    if not isinstance(actor, Player):
+        return total_damage
+    return round_half_up(SPELL_DAMAGE_WEIGHT * total_damage
+                         + SPELL_WISDOM_WEIGHT * effective_stat(actor, "wisdom"))
+
+
 def _effect_source_value(actor: Actor, weapon: Weapon | None, effect: EffectSpec, weapon_scaled: bool) -> int:
     if effect.scale == "basic_attack":
         return _basic_attack_base(actor, weapon)
@@ -324,6 +344,8 @@ def _effect_source_value(actor: Actor, weapon: Weapon | None, effect: EffectSpec
         if weapon_scaled and weapon is not None:
             base += weapon.damage_bonus
         return base
+    if effect.scale == "spell":
+        return spell_source_value(actor, weapon)
     if effect.scale == "flat":
         return effect.magnitude
     raise ValueError(f"unknown damage scale: {effect.scale}")
@@ -825,8 +847,11 @@ def apply_effect(
         return
 
     if effect.type == "instant_heal":
+        amount = effect.magnitude
+        if effect.scale == "spell":   # wisdom-scaled heal (e.g. mend) instead of flat
+            amount = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
         before = effect_target.hp
-        effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + effect.magnitude)
+        effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + amount)
         result.total_healing += effect_target.hp - before
         result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
         return
@@ -865,6 +890,8 @@ def apply_effect(
             result.events.append(f"{actor_name(effect_target)} is immune to {tag}.")
             return
         magnitude = effect.magnitude
+        if effect.scale == "spell":   # wisdom-scaled player DoT (e.g. plague_bolt) instead of flat
+            magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
         duration = effect.duration
         if isinstance(actor, Player):
             status_mod = actor.applied_status_mods.get(status_type, {})

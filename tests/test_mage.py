@@ -48,7 +48,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(plain_result.total_damage, 19)
+        self.assertEqual(plain_result.total_damage, 16)   # firebolt is now wisdom (spell) scaled
 
         burning = make_enemy(hp=100)
         burning.active_statuses.append(
@@ -61,7 +61,8 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(boosted.total_damage, 23)
+        self.assertGreater(boosted.total_damage, plain_result.total_damage)  # combustion fire bonus
+        self.assertEqual(boosted.total_damage, 19)
 
         chilled = make_enemy(hp=100)
         chilled.active_statuses.append(
@@ -74,7 +75,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(frost.total_damage, 17)
+        self.assertEqual(frost.total_damage, 14)   # frostbolt unaffected by combustion (fire-only)
 
     def test_frostbite_bonus_applies_only_to_frost_damage_against_frozen_or_chilled_targets(self):
         engine = GameEngine(rng=ChoiceRng([0.0]))
@@ -93,7 +94,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(plain_result.total_damage, 17)
+        self.assertEqual(plain_result.total_damage, 14)   # frostbolt is now wisdom (spell) scaled
 
         chilled = make_enemy(hp=100)
         chilled.active_statuses.append(
@@ -106,7 +107,8 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(boosted.total_damage, 21)
+        self.assertGreater(boosted.total_damage, plain_result.total_damage)  # frostbite frost bonus
+        self.assertEqual(boosted.total_damage, 18)
 
         fire = combat.resolve_action(
             engine.player,
@@ -115,7 +117,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(fire.total_damage, 19)
+        self.assertEqual(fire.total_damage, 16)   # firebolt unaffected by frostbite (frost-only)
 
     def test_ice_lance_doubles_only_against_frozen_target(self):
         engine = GameEngine(rng=ChoiceRng([0.0]))
@@ -130,7 +132,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(plain_result.total_damage, 18)
+        self.assertEqual(plain_result.total_damage, 15)   # wisdom (spell) scaled
 
         frozen = make_enemy(hp=100)
         frozen.active_statuses.append(
@@ -143,7 +145,7 @@ class MageClassTests(unittest.TestCase):
             ChoiceRng([0.0]),
             weapon=weapon,
         )
-        self.assertEqual(boosted.total_damage, 36)
+        self.assertEqual(boosted.total_damage, plain_result.total_damage * 2)  # doubles vs frozen
 
     def test_frostbolt_chill_reduces_speed_for_2_rounds_then_restores(self):
         engine = GameEngine(rng=ChoiceRng([0.0]))

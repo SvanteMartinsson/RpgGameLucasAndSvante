@@ -93,8 +93,10 @@ class WeaponGatingTests(unittest.TestCase):
             weapon=engine.content.weapons["emberwand"],
         )
 
-        self.assertEqual(result.total_damage, 45)
-        self.assertEqual(target.hp, 55)
+        # firebolt is wisdom (spell) scaled and still includes the magic weapon's
+        # damage_bonus (emberwand +16) in the damage term.
+        self.assertEqual(result.total_damage, 26)
+        self.assertEqual(target.hp, 74)
 
     def test_wrong_weapon_category_blocks_without_spending_turn_or_mutating_state(self):
         engine = GameEngine(rng=NoCritRng([0.0]))

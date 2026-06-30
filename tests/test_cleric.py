@@ -6,23 +6,29 @@ from rpg_game.core.game import GameEngine
 
 
 class ClericClassTests(unittest.TestCase):
-    def test_mend_heals_25_and_never_overheals(self):
+    def test_mend_scales_with_wisdom_and_never_overheals(self):
+        # B-wisdom: mend is no longer a flat 25 — it scales with the caster's wisdom.
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Cleric", "cleric")
         target = engine.content.enemies["giant_rat"].create_enemy()
+        engine.player.max_hp = 500
+
         engine.player.hp = 50
-
         result = combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
-
-        self.assertEqual(engine.player.hp, 75)
+        low_heal = engine.player.hp - 50
+        self.assertGreater(low_heal, 0)
         self.assertEqual(result.events[0], "Cleric used Mend.")  # action line precedes effect
-        self.assertTrue(any("healed 25 HP" in event for event in result.events))
 
-        engine.player.hp = 80
-        result = combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
+        engine.player.wisdom += 40           # more wisdom -> a bigger heal
+        engine.player.hp = 50
+        combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
+        high_heal = engine.player.hp - 50
+        self.assertGreater(high_heal, low_heal)
 
-        self.assertEqual(engine.player.hp, 90)
-        self.assertTrue(any("healed 10 HP" in event for event in result.events))
+        # never overheals past the (derived) max
+        engine.player.hp = engine.effective_stat("max_hp") - 1
+        combat.resolve_action(engine.player, target, engine.content.actions["mend"], engine.rng)
+        self.assertEqual(engine.player.hp, engine.effective_stat("max_hp"))
 
     def test_sanctuary_regens_8_for_exactly_3_rounds(self):
         engine = GameEngine(rng=random.Random(1))
@@ -57,9 +63,12 @@ class ClericClassTests(unittest.TestCase):
             weapon=engine.content.weapons["holy_mace"],
         )
 
-        self.assertEqual(result.total_damage, 12)
-        self.assertEqual(engine.player.hp, 86)
-        self.assertEqual(target.hp, 88)
+        # drain heals 50% of the damage dealt (half-up); the damage is now wisdom-
+        # scaled, so assert the RATIO, not a fixed number.
+        from rpg_game.core.progression import round_half_up
+        self.assertGreater(result.total_damage, 0)
+        self.assertEqual(engine.player.hp, 80 + round_half_up(result.total_damage * 0.5))
+        self.assertEqual(target.hp, 100 - result.total_damage)
 
     def test_curse_reduces_power_by_4_for_3_rounds_then_restores(self):
         engine = GameEngine(rng=random.Random(1))
@@ -93,10 +102,11 @@ class ClericClassTests(unittest.TestCase):
 
         normal_poison = target_without.active_statuses[0]
         virulent_poison = target_with.active_statuses[0]
-        self.assertEqual(normal_poison.magnitude, 6)
+        # plague_bolt's base magnitude is now wisdom-scaled; virulence adds a fixed
+        # +2 magnitude / +1 duration on top, so assert the RELATIONSHIP.
         self.assertEqual(normal_poison.duration, 3)
-        self.assertEqual(virulent_poison.magnitude, 8)
-        self.assertEqual(virulent_poison.duration, 4)
+        self.assertEqual(virulent_poison.magnitude, normal_poison.magnitude + 2)
+        self.assertEqual(virulent_poison.duration, normal_poison.duration + 1)
 
     def test_talent_prereq_and_talent_points_are_enforced(self):
         engine = GameEngine(rng=random.Random(1))
