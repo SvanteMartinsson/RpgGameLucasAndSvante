@@ -52,7 +52,7 @@ class EquipWeaponOutOfCombatTests(unittest.TestCase):
     def test_equipping_weapon_above_level_is_blocked(self):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Hero", "fighter")  # level 1
-        engine.player.owned_weapon_ids = ("sword", "worldsplitter")  # tier 6 -> needs level 4
+        engine.player.owned_weapon_ids = ("sword", "worldsplitter")  # 38 dmg -> t8 -> needs level 14
         engine.player.equipped_weapon_id = "sword"
 
         weapon = engine.content.weapons["worldsplitter"]

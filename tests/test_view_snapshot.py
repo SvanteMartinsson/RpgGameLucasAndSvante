@@ -28,7 +28,7 @@ class ViewSnapshotTests(unittest.TestCase):
 
         self.assertTrue(weapons["sword"].equippable)
         self.assertFalse(weapons["worldsplitter"].equippable)
-        self.assertEqual(weapons["worldsplitter"].required_level, 4)
+        self.assertEqual(weapons["worldsplitter"].required_level, 14)
 
     def test_weapon_type_is_exposed_and_surfaced(self):
         # B4: the weapon TYPE (category) + stats live in the snapshot, and the

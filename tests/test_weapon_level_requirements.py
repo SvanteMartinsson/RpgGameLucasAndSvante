@@ -18,15 +18,32 @@ class FighterStartWeaponTest(unittest.TestCase):
 
 
 class WeaponLevelRequirementTests(unittest.TestCase):
-    def test_weapon_required_level_uses_tier_minus_2_floor_1(self):
+    def test_required_level_follows_derived_tier(self):
+        # B37: tier is derived from damage (ceil/5) and the equip level is decoupled:
+        # t0-2 -> L1, t3 -> L3, t4 -> L5, t5 -> L8, t6 -> L11, t7+ -> L14.
         engine = GameEngine(rng=random.Random(1))
+        req = lambda wid: combat.weapon_required_level(engine.content.weapons[wid])
 
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["sword"]), 1)
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["longsword"]), 1)
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["steel_greatsword"]), 1)
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["consecrated_maul"]), 2)
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["pyre_scepter"]), 3)
-        self.assertEqual(combat.weapon_required_level(engine.content.weapons["worldsplitter"]), 4)
+        self.assertEqual(req("sword"), 1)               # 5 -> t1
+        self.assertEqual(req("axe"), 1)                 # 9 -> t2
+        self.assertEqual(req("longsword"), 3)           # 14 -> t3
+        self.assertEqual(req("steel_greatsword"), 5)    # 18 -> t4
+        self.assertEqual(req("consecrated_maul"), 8)    # 24 -> t5
+        self.assertEqual(req("pyre_scepter"), 11)       # 28 -> t6
+        self.assertEqual(req("worldsplitter"), 14)      # 38 -> t8
+
+    def test_tier_is_derived_from_damage(self):
+        engine = GameEngine(rng=random.Random(1))
+        tier = lambda wid: engine.content.weapons[wid].tier
+        self.assertEqual(tier("knife"), 0)              # 0 damage -> tier 0
+        self.assertEqual(tier("sword"), 1)              # 5  -> ceil 1
+        self.assertEqual(tier("axe"), 2)                # 9  -> ceil 2
+        self.assertEqual(tier("longsword"), 3)          # 14 -> ceil 3
+        self.assertEqual(tier("worldsplitter"), 8)      # 38 -> ceil 8
+        self.assertEqual(combat.weapon_tier_from_damage(0), 0)
+        self.assertEqual(combat.weapon_tier_from_damage(1), 1)
+        self.assertEqual(combat.weapon_tier_from_damage(25), 5)
+        self.assertEqual(combat.weapon_tier_from_damage(26), 6)
 
     def test_combat_swap_to_too_high_tier_is_blocked_without_state_mutation(self):
         engine = GameEngine(rng=random.Random(1))
@@ -46,7 +63,7 @@ class WeaponLevelRequirementTests(unittest.TestCase):
         result = engine.run_combat_turn(enemy, "swap:worldsplitter")
 
         self.assertEqual(result.outcome, "blocked")
-        self.assertIn("needs level 4", result.events[0])
+        self.assertIn("needs level 14", result.events[0])
         self.assertEqual(
             (
                 engine.player.hp,
@@ -63,7 +80,7 @@ class WeaponLevelRequirementTests(unittest.TestCase):
     def test_combat_swap_to_high_tier_succeeds_at_required_level(self):
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Fighter", "fighter")
-        engine.player.level = 4
+        engine.player.level = 14
         engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, "worldsplitter")
         enemy = make_enemy()
 
@@ -84,7 +101,7 @@ class WeaponLevelRequirementTests(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertIn("pyre_scepter", engine.player.owned_weapon_ids)
         self.assertEqual(engine.player.equipped_weapon_id, "worn_shortsword")  # fighter start weapon
-        self.assertIn("Requires level 3", result.message)
+        self.assertIn("Requires level 11", result.message)               # pyre_scepter 28 -> t6 -> L11
 
     def test_store_tier_2_weapon_equips_at_level_1(self):
         engine = GameEngine(rng=random.Random(1))

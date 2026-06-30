@@ -25,7 +25,7 @@ class EarlyPoolAndDropsTest(unittest.TestCase):
 
     def test_low_tier_weapons_added(self):
         weapons = self.engine.content.weapons
-        for wid, bonus, tier in [("worn_shortsword", 2, 1), ("hunting_bow", 3, 1), ("iron_hatchet", 4, 2)]:
+        for wid, bonus, tier in [("worn_shortsword", 2, 1), ("hunting_bow", 3, 1), ("iron_hatchet", 4, 1)]:
             self.assertIn(wid, weapons)
             self.assertEqual(weapons[wid].damage_bonus, bonus)
             self.assertEqual(weapons[wid].tier, tier)

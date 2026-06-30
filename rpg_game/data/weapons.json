@@ -5,8 +5,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 1
+    "category": "melee"
   },
   {
     "id": "sword",
@@ -14,8 +13,7 @@
     "damage_bonus": 5,
     "price": 50,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 1
+    "category": "melee"
   },
   {
     "id": "axe",
@@ -23,8 +21,7 @@
     "damage_bonus": 9,
     "price": 175,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 2
+    "category": "melee"
   },
   {
     "id": "longsword",
@@ -32,8 +29,7 @@
     "damage_bonus": 14,
     "price": 350,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 2
+    "category": "melee"
   },
   {
     "id": "mace",
@@ -41,8 +37,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 1
+    "category": "melee"
   },
   {
     "id": "holy_mace",
@@ -50,8 +45,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "magic",
-    "tier": 1
+    "category": "magic"
   },
   {
     "id": "dagger",
@@ -59,8 +53,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 1
+    "category": "melee"
   },
   {
     "id": "staff",
@@ -68,8 +61,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "magic",
-    "tier": 1
+    "category": "magic"
   },
   {
     "id": "bow",
@@ -77,8 +69,7 @@
     "damage_bonus": 0,
     "price": 0,
     "damage_type": "physical",
-    "category": "ranged",
-    "tier": 1
+    "category": "ranged"
   },
   {
     "id": "steel_greatsword",
@@ -86,8 +77,7 @@
     "damage_bonus": 18,
     "price": 450,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 3
+    "category": "melee"
   },
   {
     "id": "emberwand",
@@ -95,8 +85,7 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "fire",
-    "category": "magic",
-    "tier": 3
+    "category": "magic"
   },
   {
     "id": "rimebrand",
@@ -104,8 +93,7 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "frost",
-    "category": "magic",
-    "tier": 3
+    "category": "magic"
   },
   {
     "id": "consecrated_maul",
@@ -113,8 +101,7 @@
     "damage_bonus": 24,
     "price": 800,
     "damage_type": "holy",
-    "category": "melee",
-    "tier": 4
+    "category": "melee"
   },
   {
     "id": "venomfang",
@@ -122,8 +109,7 @@
     "damage_bonus": 22,
     "price": 760,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 4
+    "category": "melee"
   },
   {
     "id": "pyre_scepter",
@@ -131,8 +117,7 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "fire",
-    "category": "magic",
-    "tier": 5
+    "category": "magic"
   },
   {
     "id": "gravewarden_blade",
@@ -140,8 +125,7 @@
     "damage_bonus": 28,
     "price": 1300,
     "damage_type": "holy",
-    "category": "melee",
-    "tier": 5
+    "category": "melee"
   },
   {
     "id": "worldsplitter",
@@ -149,8 +133,7 @@
     "damage_bonus": 38,
     "price": 2200,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 6
+    "category": "melee"
   },
   {
     "id": "worn_shortsword",
@@ -158,8 +141,7 @@
     "damage_bonus": 2,
     "price": 20,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 1
+    "category": "melee"
   },
   {
     "id": "hunting_bow",
@@ -167,8 +149,7 @@
     "damage_bonus": 3,
     "price": 30,
     "damage_type": "physical",
-    "category": "ranged",
-    "tier": 1
+    "category": "ranged"
   },
   {
     "id": "iron_hatchet",
@@ -176,8 +157,7 @@
     "damage_bonus": 4,
     "price": 45,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 2
+    "category": "melee"
   },
   {
     "id": "worgfang",
@@ -185,8 +165,7 @@
     "damage_bonus": 20,
     "price": 740,
     "damage_type": "physical",
-    "category": "melee",
-    "tier": 4
+    "category": "melee"
   },
   {
     "id": "recurve_bow",
@@ -194,8 +173,7 @@
     "damage_bonus": 8,
     "price": 160,
     "damage_type": "physical",
-    "category": "ranged",
-    "tier": 2
+    "category": "ranged"
   },
   {
     "id": "yew_longbow",
@@ -203,8 +181,7 @@
     "damage_bonus": 16,
     "price": 430,
     "damage_type": "physical",
-    "category": "ranged",
-    "tier": 3
+    "category": "ranged"
   },
   {
     "id": "apprentice_wand",
@@ -212,7 +189,6 @@
     "damage_bonus": 8,
     "price": 160,
     "damage_type": "fire",
-    "category": "magic",
-    "tier": 2
+    "category": "magic"
   }
 ]

@@ -425,8 +425,23 @@ def action_uses_weapon_scaling(action: CombatAction) -> bool:
     return bool(action.requires_weapon_category)
 
 
+# B37: weapon tier is DERIVED from damage_bonus (no hand-set tier, like enemy
+# resistances are derived from traits), and the equip level is DECOUPLED from the
+# old max(1, tier-2) so early game stays open while 25+-damage weapons gate to L8+.
+_WEAPON_TIER_BAND = 5  # damage per tier band: t1=1-5, t2=6-10, ... t8=36-40
+_TIER_REQUIRED_LEVEL = {0: 1, 1: 1, 2: 1, 3: 3, 4: 5, 5: 8, 6: 11}  # t7+ -> 14
+
+
+def weapon_tier_from_damage(damage_bonus: int) -> int:
+    """Tier derived from damage: 0 for a 0-bonus starter, else ceil(dmg / 5)."""
+    if damage_bonus <= 0:
+        return 0
+    return -(-damage_bonus // _WEAPON_TIER_BAND)  # integer ceil division
+
+
 def weapon_required_level(weapon: Weapon) -> int:
-    return max(1, weapon.tier - 2)
+    """Equip level from tier; t7+ all gate at L14."""
+    return _TIER_REQUIRED_LEVEL.get(weapon.tier, 14)
 
 
 def apply_damage_dealt_mod(raw_damage: int, actor: Actor) -> int:

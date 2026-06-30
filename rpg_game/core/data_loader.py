@@ -29,7 +29,7 @@ from rpg_game.core.entities import (
     Weapon,
 )
 from rpg_game.core.equipment import ALLOWED_GEAR_STATS
-from rpg_game.core import traits
+from rpg_game.core import combat, traits
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -68,7 +68,9 @@ def load_content() -> GameContent:
             damage_bonus=row["damage_bonus"],
             price=row["price"],
             damage_type=row.get("damage_type", "physical"),
-            tier=row.get("tier", 1),
+            # Tier is derived from damage (single source of truth); any `tier` in
+            # JSON is ignored.
+            tier=combat.weapon_tier_from_damage(row["damage_bonus"]),
             category=row.get("category", "melee"),
         )
         for row in _read_json("weapons.json")

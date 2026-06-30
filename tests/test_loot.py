@@ -260,6 +260,7 @@ class PickupTests(unittest.TestCase):
         self.assertIn("steel_greatsword", engine.player.owned_weapon_ids)
         self.assertIn("steel_greatsword", [w.id for w in engine.owned_weapons()])
 
+        engine.player.level = 5  # steel_greatsword (18 dmg -> t4) equips at L5; this tests the pickup/equip flow
         enemy = engine.content.enemies["giant_rat"].create_enemy()
         engine.run_combat_turn(enemy, "swap:steel_greatsword")
         self.assertEqual(engine.player.equipped_weapon_id, "steel_greatsword")
