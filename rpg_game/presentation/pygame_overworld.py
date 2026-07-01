@@ -131,7 +131,7 @@ BUILDING_SCALE = 0.55
 # ~120-240px for the rest), so it gets its own scale to loom as a landmark without
 # swallowing the screen. Bottom-anchored draw is unchanged, so it still rises from
 # its door at the base. Others fall back to BUILDING_SCALE.
-BUILDING_SCALE_OVERRIDE = {"tower": 0.30}
+BUILDING_SCALE_OVERRIDE = {"tower": 0.18}
 # cainos's 4x4 autotile blob (cols 0-3, rows 0-3): tile index by which side grass
 # borders the cobble cell. Corridors (grass on opposite sides) fall back to centre.
 # cainos_grass shares cainos_stone's layout but puts the cobble-on-grass blob in the
