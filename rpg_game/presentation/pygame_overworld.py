@@ -111,6 +111,7 @@ BUILDING_TITLES = {
     "barracks": "Barracks",
     "church": "Church",
     "town_hall": "Town Hall",
+    "tower": "Mage Tower",
 }
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
@@ -746,7 +747,10 @@ class OverworldApp:
             func = None
         elif func == "tournaments" and not self.engine.available_tournaments():
             func = None
-        if func is None:
+        # A door opens a menu if it offers a service OR an upgrade station (the mage
+        # tower has no store/rest service — only armour upgrades).
+        is_station = self.engine.station_category(building_id) is not None
+        if func is None and not is_station:
             self.push_log(T.BUILDING_LOCKED, TEXT_DIM)
             return
         self.building_menu = (place_id, building_id)
@@ -1587,19 +1591,21 @@ class OverworldApp:
         elif func == "tournaments":
             label = "Tournaments"
         else:
-            label = "Use"
+            label = None   # station-only building (mage tower): no store/rest service
         y = panel.y + 80
         if info:
             self.screen.blit(self.font_sm.render(info, True, TEXT_DIM), (panel.x + 20, y))
             y += 30
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
-                         (lambda f=func, c=category: self._choose_building_action(f, c)), True)
-        # B37 Slice 2: a station building (blacksmith / mage tower / barracks) also
-        # offers item upgrades as a second choice in the same door menu.
+        if func is not None and label is not None:
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
+                             (lambda f=func, c=category: self._choose_building_action(f, c)), True)
+            y += 52
+        # B37: a station building (blacksmith weapons / mage tower armour) offers an
+        # upgrade choice. The blacksmith also has its weapon store above; the mage
+        # tower has ONLY this.
         if self.engine.station_category(building_id) is not None:
             station_cat = self.engine.station_category(building_id)
             up_label = "Upgrade weapon" if station_cat == "weapon" else "Upgrade armour"
-            y += 52
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), up_label,
                              (lambda b=building_id: self._open_upgrade_station(b)), True)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)

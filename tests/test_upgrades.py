@@ -236,6 +236,25 @@ class UpgradeStationUiTest(unittest.TestCase):
         self.assertTrue(reforge)
         self.assertTrue(all(b.restricted for b in reforge))   # clickable but sperred
 
+    def test_mage_tower_door_menu_offers_only_armour_upgrade(self):
+        app = self._app()
+        app.building_menu = ("burg_200", "tower")
+        app.mode = "building"
+        app.draw()  # must not raise
+        labels = [b.label for b in app.buttons]
+        self.assertIn("Upgrade armour", labels)
+        self.assertFalse(any("Browse" in l or "Rest" in l for l in labels))  # no store/rest service
+
+    def test_mage_tower_opens_armour_station_end_to_end(self):
+        app = self._app()
+        app._open_upgrade_station("tower")
+        self.assertEqual(app.mode, "upgrade_station")
+        self.assertEqual(app.selected_upgrade_item, "iron_cuirass")
+        gold_before = app.engine.player.gold
+        app.apply_upgrade("iron_cuirass", "bulwark")   # armor+3, max_hp+10
+        self.assertTrue(app.engine.is_item_upgraded("iron_cuirass"))
+        self.assertLess(app.engine.player.gold, gold_before)
+
     def test_character_panel_tags_a_rare_weapon_as_upgradable(self):
         app = self._app()
         app.overlay = "character"
@@ -247,17 +266,18 @@ class UpgradeStationUiTest(unittest.TestCase):
 
 
 class StationRoutingTest(unittest.TestCase):
-    def test_blacksmith_routes_weapons_mage_tower_and_barracks_route_armour(self):
+    def test_blacksmith_weapons_tower_armour_barracks_is_not_a_station(self):
         content = data_loader.load_content()
         self.assertEqual(upgrades.station_category("blacksmith"), "weapon")
-        self.assertEqual(upgrades.station_category("mage_tower"), "armour")
-        self.assertEqual(upgrades.station_category("barracks"), "armour")
+        self.assertEqual(upgrades.station_category("tower"), "armour")   # the mage tower
+        self.assertEqual(upgrades.station_category("mage_tower"), "armour")  # alias kept
+        self.assertIsNone(upgrades.station_category("barracks"))          # armour STORE only now
         self.assertIsNone(upgrades.station_category("inn"))
         # category match is enforced both ways
         self.assertTrue(upgrades.station_can_upgrade("blacksmith", content, "worgfang"))
         self.assertFalse(upgrades.station_can_upgrade("blacksmith", content, "iron_cuirass"))
-        self.assertTrue(upgrades.station_can_upgrade("mage_tower", content, "iron_cuirass"))
-        self.assertFalse(upgrades.station_can_upgrade("mage_tower", content, "worgfang"))
+        self.assertTrue(upgrades.station_can_upgrade("tower", content, "iron_cuirass"))
+        self.assertFalse(upgrades.station_can_upgrade("tower", content, "worgfang"))
 
     def test_station_tier_is_max_noop_so_any_tier_is_handled(self):
         content = data_loader.load_content()
@@ -270,9 +290,10 @@ class StationRoutingTest(unittest.TestCase):
         engine.player.owned_weapon_ids = ("knife", "worgfang", "steel_greatsword")  # knife is common
         engine.player.owned_gear_ids = ("iron_cuirass", "training_cap")             # cap is common
         weapons = engine.station_upgradable_items("blacksmith")
-        armour = engine.station_upgradable_items("barracks")
+        armour = engine.station_upgradable_items("tower")     # armour upgrades at the mage tower
         self.assertEqual(set(weapons), {"worgfang", "steel_greatsword"})
         self.assertEqual(set(armour), {"iron_cuirass"})
+        self.assertEqual(engine.station_upgradable_items("barracks"), [])   # not a station
 
 
 if __name__ == "__main__":

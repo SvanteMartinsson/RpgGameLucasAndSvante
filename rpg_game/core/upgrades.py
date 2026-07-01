@@ -32,10 +32,11 @@ RARITY_RANK = {"common": 0, "uncommon": 1, "rare": 2, "mega rare": 3, "legendary
 MIN_UPGRADE_RARITY = "rare"
 
 # Upgrade stations: the blacksmith reforges weapons, the mage tower enchants
-# armour (the barracks hosts armour upgrades until a dedicated mage-tower building
-# ships — same mechanic, different door). Each station has a `tier` it can handle,
-# wired for future town-size gating but pinned to MAX now (upgrades everything).
-STATION_CATEGORY = {"blacksmith": "weapon", "mage_tower": "armour", "barracks": "armour"}
+# armour. The in-cluster building id is 'tower' (the former cosmetic prop, now
+# functional); 'mage_tower' is kept as an alias for a possible dedicated building.
+# The barracks is a plain armour STORE again (no upgrades). Each station has a
+# `tier` it can handle, wired for future town-size gating but pinned to MAX now.
+STATION_CATEGORY = {"blacksmith": "weapon", "tower": "armour", "mage_tower": "armour"}
 STATION_MAX_TIER = 99
 
 
