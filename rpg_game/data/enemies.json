@@ -1324,7 +1324,7 @@
     "name": "Wild Dog",
     "level": 1,
     "level_min": 1,
-    "level_max": 3,
+    "level_max": 4,
     "max_hp": 22,
     "damage": 6,
     "armor": 0,
@@ -1364,7 +1364,7 @@
     "name": "Wild Stag",
     "level": 2,
     "level_min": 2,
-    "level_max": 4,
+    "level_max": 6,
     "max_hp": 38,
     "damage": 7,
     "armor": 0,
@@ -1403,8 +1403,8 @@
     "id": "giant_spider",
     "name": "Giant Spider",
     "level": 1,
-    "level_min": 1,
-    "level_max": 3,
+    "level_min": 2,
+    "level_max": 5,
     "max_hp": 18,
     "damage": 6,
     "armor": 0,
@@ -1416,7 +1416,7 @@
       "vermin"
     ],
     "action_ids": [
-      "power",
+      "poison_sting",
       "normal",
       "quick"
     ],
@@ -1437,13 +1437,27 @@
         "rarity_tier": 1
       }
     ],
-    "unique_table": []
+    "unique_table": [],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "poison_sting"
+        },
+        "action": "poison_sting"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "quick"
+      }
+    ]
   },
   {
     "id": "goblin_scrapper",
     "name": "Goblin Scrapper",
     "level": 2,
-    "level_min": 2,
+    "level_min": 1,
     "level_max": 4,
     "max_hp": 34,
     "damage": 7,
@@ -1485,11 +1499,11 @@
   {
     "id": "mire_lurker",
     "name": "Mire Lurker",
-    "level": 7,
-    "level_min": 7,
+    "level": 6,
+    "level_min": 6,
     "level_max": 9,
-    "max_hp": 80,
-    "damage": 14,
+    "max_hp": 72,
+    "damage": 13,
     "armor": 2,
     "speed": 6,
     "traits": [
@@ -1499,9 +1513,9 @@
       "swamp"
     ],
     "action_ids": [
+      "lurker_drag",
       "power",
-      "normal",
-      "quick"
+      "normal"
     ],
     "xp_reward": 26,
     "gold_min": 20,
@@ -1510,111 +1524,193 @@
     "rare_table_access": false,
     "loot_table": [
       {
-        "item_id": "bone_dust",
-        "weight": 70,
+        "item_id": "tattered_cloth",
+        "weight": 45,
         "rarity_tier": 1
       },
       {
         "item_id": "hp_potion",
-        "weight": 30,
+        "weight": 25,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "scout_leggings",
+        "weight": 16,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "grip_wraps",
+        "weight": 12,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "iron_hatchet",
+        "weight": 10,
+        "rarity_tier": 2
       }
     ],
-    "unique_table": []
+    "unique_table": [
+      {
+        "item_id": "grave_band",
+        "weight": 12,
+        "rarity_tier": 2
+      }
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "lurker_drag"
+        },
+        "action": "lurker_drag"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "power"
+      }
+    ]
   },
   {
     "id": "bog_leech",
     "name": "Bog Leech",
-    "level": 7,
-    "level_min": 7,
-    "level_max": 9,
-    "max_hp": 60,
-    "damage": 12,
+    "level": 4,
+    "level_min": 4,
+    "level_max": 7,
+    "max_hp": 40,
+    "damage": 9,
     "armor": 0,
     "speed": 8,
     "traits": [
-      "vermin",
       "swamp"
     ],
     "tags": [
       "vermin"
     ],
     "action_ids": [
-      "power",
+      "leech_drain",
       "normal",
       "quick"
     ],
     "xp_reward": 22,
     "gold_min": 16,
     "gold_max": 34,
-    "drop_chance": 0.5,
+    "drop_chance": 0.4,
     "rare_table_access": false,
     "loot_table": [
       {
-        "item_id": "bone_dust",
+        "item_id": "tattered_cloth",
         "weight": 70,
         "rarity_tier": 1
       },
       {
-        "item_id": "hp_potion",
-        "weight": 30,
+        "item_id": "lesser_hp_potion",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "bone_dust",
+        "weight": 20,
         "rarity_tier": 1
       }
     ],
-    "unique_table": []
+    "unique_table": [],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "leech_drain"
+        },
+        "action": "leech_drain"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "quick"
+      }
+    ]
   },
   {
     "id": "rotting_fiend",
     "name": "Rotting Fiend",
-    "level": 8,
-    "level_min": 8,
-    "level_max": 10,
-    "max_hp": 110,
-    "damage": 16,
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
+    "max_hp": 78,
+    "damage": 14,
     "armor": 1,
     "speed": 5,
     "traits": [
-      "undead",
-      "plant"
+      "undead"
     ],
     "tags": [
       "undead"
     ],
     "action_ids": [
+      "rotting_grasp",
       "power",
-      "normal",
-      "quick"
+      "normal"
     ],
     "xp_reward": 30,
     "gold_min": 24,
     "gold_max": 50,
-    "drop_chance": 0.6,
+    "drop_chance": 0.55,
     "rare_table_access": false,
     "loot_table": [
       {
         "item_id": "bone_dust",
-        "weight": 70,
+        "weight": 45,
         "rarity_tier": 1
       },
       {
         "item_id": "hp_potion",
-        "weight": 30,
+        "weight": 25,
         "rarity_tier": 1
       },
       {
         "item_id": "grave_iron",
+        "weight": 16,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "reinforced_vest",
         "weight": 12,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "padded_vest",
+        "weight": 12,
+        "rarity_tier": 1
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "grave_band",
+        "weight": 10,
         "rarity_tier": 2
       }
     ],
-    "unique_table": []
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "rotting_grasp"
+        },
+        "action": "rotting_grasp"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "power"
+      }
+    ]
   },
   {
     "id": "witchlight",
     "name": "Witchlight",
-    "level": 8,
-    "level_min": 8,
-    "level_max": 10,
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
     "max_hp": 70,
     "damage": 15,
     "armor": 0,
@@ -1626,56 +1722,86 @@
       "spirit"
     ],
     "action_ids": [
-      "power",
-      "normal",
+      "witch_hex",
+      "witch_bolt",
       "quick"
     ],
     "xp_reward": 28,
     "gold_min": 20,
     "gold_max": 44,
-    "drop_chance": 0.55,
-    "rare_table_access": false,
+    "drop_chance": 0.7,
+    "rare_table_access": true,
     "loot_table": [
       {
         "item_id": "tattered_cloth",
-        "weight": 70,
+        "weight": 35,
         "rarity_tier": 1
       },
       {
-        "item_id": "hp_potion",
-        "weight": 30,
-        "rarity_tier": 1
+        "item_id": "mana_potion",
+        "weight": 22,
+        "rarity_tier": 2
       },
       {
         "item_id": "chill_crystal",
-        "weight": 12,
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "sage_amulet",
+        "weight": 14,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 10,
         "rarity_tier": 3
       }
     ],
-    "unique_table": []
+    "unique_table": [
+      {
+        "item_id": "wraithlight_band",
+        "weight": 12,
+        "rarity_tier": 4
+      }
+    ],
+    "mana": 30,
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "witch_hex"
+        },
+        "action": "witch_hex"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "witch_bolt"
+      }
+    ]
   },
   {
     "id": "bog_hag",
     "name": "Bog Hag",
-    "level": 10,
-    "level_min": 10,
-    "level_max": 12,
+    "level": 7,
+    "level_min": 7,
+    "level_max": 10,
     "max_hp": 120,
     "damage": 18,
     "armor": 1,
     "speed": 9,
     "traits": [
-      "cursed",
-      "swamp"
+      "cursed"
     ],
     "tags": [
       "cursed"
     ],
     "mana": 40,
     "action_ids": [
-      "power",
-      "normal",
-      "quick"
+      "hag_hex",
+      "curse",
+      "normal"
     ],
     "xp_reward": 50,
     "gold_min": 60,
@@ -1685,30 +1811,66 @@
     "loot_table": [
       {
         "item_id": "tattered_cloth",
-        "weight": 70,
-        "rarity_tier": 1
-      },
-      {
-        "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
       },
       {
-        "item_id": "chill_crystal",
-        "weight": 10,
+        "item_id": "greater_hp_potion",
+        "weight": 20,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "chill_crystal",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "crimson_signet",
+        "weight": 8,
+        "rarity_tier": 4
       }
     ],
-    "unique_table": []
+    "unique_table": [
+      {
+        "item_id": "tarheart_amulet",
+        "weight": 12,
+        "rarity_tier": 4
+      }
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "hag_hex"
+        },
+        "action": "hag_hex"
+      },
+      {
+        "condition": {
+          "skill_ready": "curse"
+        },
+        "action": "curse"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
+    ]
   },
   {
     "id": "ghoul",
     "name": "Ghoul",
-    "level": 10,
-    "level_min": 10,
-    "level_max": 12,
-    "max_hp": 100,
-    "damage": 17,
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
+    "max_hp": 72,
+    "damage": 14,
     "armor": 1,
     "speed": 9,
     "traits": [
@@ -1718,9 +1880,9 @@
       "undead"
     ],
     "action_ids": [
+      "ghoul_lunge",
       "power",
-      "normal",
-      "quick"
+      "normal"
     ],
     "xp_reward": 34,
     "gold_min": 26,
@@ -1730,122 +1892,195 @@
     "loot_table": [
       {
         "item_id": "bone_dust",
-        "weight": 70,
+        "weight": 45,
         "rarity_tier": 1
       },
       {
         "item_id": "hp_potion",
-        "weight": 30,
+        "weight": 25,
         "rarity_tier": 1
       },
       {
         "item_id": "grave_iron",
-        "weight": 14,
+        "weight": 16,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "reinforced_vest",
+        "weight": 12,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "guard_cap",
+        "weight": 12,
         "rarity_tier": 2
       }
     ],
-    "unique_table": []
+    "unique_table": [],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "ghoul_lunge"
+        },
+        "action": "ghoul_lunge"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "power"
+      }
+    ]
   },
   {
     "id": "grave_hound",
     "name": "Grave Hound",
-    "level": 10,
-    "level_min": 10,
-    "level_max": 12,
-    "max_hp": 95,
-    "damage": 18,
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
+    "max_hp": 66,
+    "damage": 13,
     "armor": 1,
     "speed": 12,
     "traits": [
-      "undead",
-      "beast"
+      "beast",
+      "cursed"
     ],
     "tags": [
       "beast"
     ],
     "action_ids": [
-      "power",
+      "wolf_bite",
       "normal",
       "quick"
     ],
     "xp_reward": 34,
     "gold_min": 26,
     "gold_max": 52,
-    "drop_chance": 0.55,
+    "drop_chance": 0.5,
     "rare_table_access": false,
     "loot_table": [
       {
         "item_id": "rat_pelt",
-        "weight": 70,
+        "weight": 45,
         "rarity_tier": 1
       },
       {
         "item_id": "hp_potion",
-        "weight": 30,
+        "weight": 25,
         "rarity_tier": 1
       },
       {
         "item_id": "worg_tooth",
+        "weight": 16,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "runner_boots",
         "weight": 12,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "scout_leggings",
+        "weight": 10,
         "rarity_tier": 2
       }
     ],
-    "unique_table": []
+    "unique_table": [],
+    "ai": [
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "wolf_bite"
+      }
+    ]
   },
   {
     "id": "shade",
     "name": "Shade",
-    "level": 11,
-    "level_min": 11,
-    "level_max": 13,
-    "max_hp": 90,
-    "damage": 19,
+    "level": 7,
+    "level_min": 7,
+    "level_max": 10,
+    "max_hp": 58,
+    "damage": 12,
     "armor": 0,
     "speed": 13,
     "traits": [
-      "spirit"
+      "spirit",
+      "undead"
     ],
     "tags": [
       "spirit"
     ],
     "action_ids": [
-      "power",
-      "normal",
-      "quick"
+      "shade_drain",
+      "quick",
+      "normal"
     ],
     "xp_reward": 38,
     "gold_min": 28,
     "gold_max": 56,
-    "drop_chance": 0.55,
-    "rare_table_access": false,
+    "drop_chance": 0.7,
+    "rare_table_access": true,
     "loot_table": [
       {
         "item_id": "tattered_cloth",
-        "weight": 70,
+        "weight": 35,
         "rarity_tier": 1
       },
       {
-        "item_id": "hp_potion",
-        "weight": 30,
-        "rarity_tier": 1
+        "item_id": "greater_hp_potion",
+        "weight": 18,
+        "rarity_tier": 3
       },
       {
         "item_id": "chill_crystal",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "battle_amulet",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "windstep_boots",
+        "weight": 10,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "censer_pendant",
         "weight": 12,
         "rarity_tier": 3
       }
     ],
-    "unique_table": []
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "shade_drain"
+        },
+        "action": "shade_drain"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "quick"
+      }
+    ]
   },
   {
     "id": "cursed_wight",
     "name": "Cursed Wight",
-    "level": 13,
-    "level_min": 13,
-    "level_max": 15,
-    "max_hp": 150,
-    "damage": 22,
-    "armor": 3,
+    "level": 8,
+    "level_min": 8,
+    "level_max": 12,
+    "max_hp": 84,
+    "damage": 16,
+    "armor": 2,
     "speed": 8,
     "traits": [
       "undead",
@@ -1855,40 +2090,76 @@
       "undead"
     ],
     "action_ids": [
-      "power",
-      "normal",
-      "quick"
+      "grave_wail",
+      "wight_curse",
+      "power"
     ],
     "xp_reward": 60,
     "gold_min": 70,
     "gold_max": 140,
-    "drop_chance": 0.85,
+    "drop_chance": 0.9,
     "rare_table_access": true,
     "loot_table": [
       {
         "item_id": "bone_dust",
-        "weight": 70,
-        "rarity_tier": 1
-      },
-      {
-        "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
       },
       {
-        "item_id": "grave_iron",
-        "weight": 14,
+        "item_id": "greater_hp_potion",
+        "weight": 20,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 18,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "veteran_ring",
+        "weight": 8,
+        "rarity_tier": 5
       }
     ],
-    "unique_table": []
+    "unique_table": [
+      {
+        "item_id": "crimson_signet",
+        "weight": 12,
+        "rarity_tier": 4
+      }
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "grave_wail"
+        },
+        "action": "grave_wail"
+      },
+      {
+        "condition": {
+          "skill_ready": "wight_curse"
+        },
+        "action": "wight_curse"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "power"
+      }
+    ]
   },
   {
     "id": "skeleton_warrior",
     "name": "Skeleton Warrior",
-    "level": 12,
-    "level_min": 12,
-    "level_max": 15,
+    "level": 10,
+    "level_min": 8,
+    "level_max": 12,
     "max_hp": 140,
     "damage": 18,
     "armor": 2,
@@ -1921,30 +2192,476 @@
     "xp_reward": 60,
     "gold_min": 80,
     "gold_max": 150,
-    "drop_chance": 0.9,
+    "drop_chance": 0.85,
     "rare_table_access": true,
     "loot_table": [
       {
         "item_id": "bone_dust",
-        "weight": 70,
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "grave_iron",
+        "weight": 20,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_helm",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "grave_band",
+        "weight": 12,
+        "rarity_tier": 2
+      }
+    ]
+  },
+  {
+    "id": "goblin_raider",
+    "name": "Goblin Raider",
+    "level": 4,
+    "level_min": 4,
+    "level_max": 7,
+    "max_hp": 48,
+    "damage": 10,
+    "armor": 1,
+    "speed": 9,
+    "traits": [],
+    "tags": [
+      "humanoid"
+    ],
+    "action_ids": [
+      "raid_strike",
+      "power",
+      "normal",
+      "quick"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "raid_strike"
+        },
+        "action": "raid_strike"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
+    ],
+    "xp_reward": 14,
+    "gold_min": 10,
+    "gold_max": 22,
+    "drop_chance": 0.45,
+    "rare_table_access": false,
+    "loot_table": [
+      {
+        "item_id": "iron_scrap",
+        "weight": 45,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "tattered_cloth",
+        "weight": 25,
         "rarity_tier": 1
       },
       {
         "item_id": "hp_potion",
-        "weight": 30,
+        "weight": 20,
         "rarity_tier": 1
       },
       {
-        "item_id": "grave_iron",
+        "item_id": "padded_vest",
+        "weight": 14,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "guard_cap",
+        "weight": 10,
+        "rarity_tier": 2
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "thornling",
+    "name": "Thornling",
+    "level": 4,
+    "level_min": 4,
+    "level_max": 7,
+    "max_hp": 34,
+    "damage": 8,
+    "armor": 0,
+    "speed": 6,
+    "traits": [
+      "plant"
+    ],
+    "tags": [
+      "plant"
+    ],
+    "action_ids": [
+      "poison_sting",
+      "normal",
+      "quick"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "poison_sting"
+        },
+        "action": "poison_sting"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
+    ],
+    "xp_reward": 12,
+    "gold_min": 6,
+    "gold_max": 14,
+    "drop_chance": 0.35,
+    "rare_table_access": false,
+    "loot_table": [
+      {
+        "item_id": "bone_dust",
+        "weight": 60,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "lesser_hp_potion",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "antidote",
+        "weight": 15,
+        "rarity_tier": 2
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "razortusk_boar",
+    "name": "Razortusk Boar",
+    "level": 5,
+    "level_min": 5,
+    "level_max": 9,
+    "max_hp": 62,
+    "damage": 12,
+    "armor": 1,
+    "speed": 8,
+    "traits": [
+      "beast"
+    ],
+    "tags": [
+      "beast"
+    ],
+    "action_ids": [
+      "boar_charge",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "boar_charge"
+        },
+        "action": "boar_charge"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "normal"
+      }
+    ],
+    "xp_reward": 20,
+    "gold_min": 16,
+    "gold_max": 36,
+    "drop_chance": 0.55,
+    "rare_table_access": false,
+    "loot_table": [
+      {
+        "item_id": "rat_pelt",
+        "weight": 40,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "reinforced_vest",
         "weight": 16,
         "rarity_tier": 2
       },
       {
-        "item_id": "iron_scrap",
-        "weight": 20,
-        "rarity_tier": 1
+        "item_id": "iron_helm",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "marcher_greaves",
+        "weight": 10,
+        "rarity_tier": 3
       }
     ],
-    "unique_table": []
+    "unique_table": [
+      {
+        "item_id": "tusk_pendant",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ]
+  },
+  {
+    "id": "goblin_shaman",
+    "name": "Goblin Shaman",
+    "level": 5,
+    "level_min": 5,
+    "level_max": 8,
+    "max_hp": 58,
+    "damage": 11,
+    "armor": 0,
+    "speed": 10,
+    "mana": 40,
+    "traits": [
+      "cursed"
+    ],
+    "tags": [
+      "humanoid",
+      "cultist"
+    ],
+    "action_ids": [
+      "shaman_hex",
+      "curse",
+      "shaman_bolt"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "shaman_hex"
+        },
+        "action": "shaman_hex"
+      },
+      {
+        "condition": {
+          "skill_ready": "curse"
+        },
+        "action": "curse"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "shaman_bolt"
+      }
+    ],
+    "xp_reward": 22,
+    "gold_min": 16,
+    "gold_max": 38,
+    "drop_chance": 0.7,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "tattered_cloth",
+        "weight": 35,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "mana_potion",
+        "weight": 22,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "iron_scrap",
+        "weight": 18,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "sage_amulet",
+        "weight": 14,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "apprentice_cowl",
+        "weight": 12,
+        "rarity_tier": 2
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "plaguebearer_mask",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ]
+  },
+  {
+    "id": "broodmother_spider",
+    "name": "Broodmother Spider",
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
+    "max_hp": 86,
+    "damage": 14,
+    "armor": 1,
+    "speed": 9,
+    "traits": [
+      "vermin"
+    ],
+    "tags": [
+      "vermin"
+    ],
+    "action_ids": [
+      "spider_venom",
+      "brood_bite",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "spider_venom"
+        },
+        "action": "spider_venom"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "brood_bite"
+      }
+    ],
+    "xp_reward": 26,
+    "gold_min": 18,
+    "gold_max": 42,
+    "drop_chance": 0.7,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "bone_dust",
+        "weight": 35,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "antidote",
+        "weight": 22,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "duelist_gloves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "windstep_boots",
+        "weight": 10,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "carapace_plate",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ]
+  },
+  {
+    "id": "strangling_vine",
+    "name": "Strangling Vine",
+    "level": 6,
+    "level_min": 6,
+    "level_max": 9,
+    "max_hp": 96,
+    "damage": 14,
+    "armor": 2,
+    "speed": 5,
+    "mana": 20,
+    "traits": [
+      "plant"
+    ],
+    "tags": [
+      "plant"
+    ],
+    "action_ids": [
+      "snare",
+      "vine_crush",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "skill_ready": "snare"
+        },
+        "action": "snare"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "vine_crush"
+      }
+    ],
+    "xp_reward": 28,
+    "gold_min": 18,
+    "gold_max": 44,
+    "drop_chance": 0.75,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "bone_dust",
+        "weight": 35,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "iron_cuirass",
+        "weight": 16,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "marcher_greaves",
+        "weight": 12,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "emberwand",
+        "weight": 10,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": [
+      {
+        "item_id": "heartwood_ring",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ]
   }
 ]

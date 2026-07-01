@@ -1172,5 +1172,304 @@
         "target": "enemy"
       }
     ]
+  },
+  {
+    "id": "raid_strike",
+    "name": "Raid Strike",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "shaman_bolt",
+    "name": "Hex Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.3,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "shaman_hex",
+    "name": "Withering Hex",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.6,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "spider_venom",
+    "name": "Venom Bite",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 2,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "tag": "poison",
+        "magnitude": 6,
+        "duration": 3,
+        "damage_type": "poison"
+      }
+    ]
+  },
+  {
+    "id": "brood_bite",
+    "name": "Brood Bite",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.7,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "vine_crush",
+    "name": "Vine Crush",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.8,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "witch_bolt",
+    "name": "Spectral Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.4,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "witch_hex",
+    "name": "Corpselight Hex",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.6,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "shade_drain",
+    "name": "Life Siphon",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "drain",
+        "scale": "basic_attack",
+        "multiplier": 1.4,
+        "damage_type": "holy",
+        "ratio": 0.5,
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "hag_hex",
+    "name": "Bog Curse",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "cooldown_rounds": 2,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.8,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "speed",
+        "magnitude": -4,
+        "duration": 2,
+        "tag": "chill"
+      }
+    ]
+  },
+  {
+    "id": "rotting_grasp",
+    "name": "Rotting Grasp",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "tag": "poison",
+        "magnitude": 5,
+        "duration": 3,
+        "damage_type": "poison"
+      }
+    ]
+  },
+  {
+    "id": "ghoul_lunge",
+    "name": "Ghoul Lunge",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.8,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "grave_wail",
+    "name": "Grave Wail",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.6,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "accuracy_mod",
+        "magnitude": -15,
+        "duration": 2
+      }
+    ]
+  },
+  {
+    "id": "wight_curse",
+    "name": "Wight's Curse",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 2,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "power",
+        "magnitude": -5,
+        "duration": 3
+      }
+    ]
+  },
+  {
+    "id": "leech_drain",
+    "name": "Blood Leech",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "drain",
+        "scale": "basic_attack",
+        "multiplier": 1.2,
+        "damage_type": "physical",
+        "ratio": 0.5,
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "lurker_drag",
+    "name": "Mire Drag",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.5,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "speed",
+        "magnitude": -4,
+        "duration": 2,
+        "tag": "snare"
+      }
+    ]
   }
 ]

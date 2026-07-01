@@ -55,9 +55,9 @@
     "rank": "frontier",
     "description": "A frontier beast-pit: the Mork-Skog's own predators, baited and loosed one after another. No quarter once the gate drops.",
     "opponent_ids": [
-      "wild_boar",
+      "razortusk_boar",
       "dire_wolf",
-      "bog_wraith"
+      "treant"
     ],
     "reward": {
       "gold": 0,

@@ -90,6 +90,10 @@ ENEMY_SPRITE_TIER = {
     "treant": "large",
     "tar_beast": "large",
     "hollow_worg": "large",
+    # B42 new forest enemies (placeholder sprites reused from kin until art lands)
+    "thornling": "small",
+    "broodmother_spider": "large",
+    "strangling_vine": "large",
 }
 # Bigger on the roomier stage, but with air left in the band (not dominant).
 TIER_HEIGHT = {"small": 150, "medium": 200, "large": 250}

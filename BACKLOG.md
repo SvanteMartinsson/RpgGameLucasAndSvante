@@ -481,11 +481,20 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Not:** NY vapenmekanik — hook i basattack-resolutionen som rullar vapnets on-hit-effekt. Primitiven (DoT/speed/skip/accuracy) finns; det är wiring. v1 seedar **fire/poison/frost**; lightning/holy senare (deras skadekomponent funkar ändå). Siffror = platshållare, INTE simmat (sim endast om något spränger kurvan).
 - **Acceptans:** basattack med proc-vapen applicerar rätt status; resistensmatrisen respekteras (odöd immun mot toxin osv.); test för hook + de tre seedade elementen.
 
-#### B42 — Nya fiender (de 14): balans + loot + encounter-placering + caster-actions  · *nedströms från data-slicen*
-- **Vad:** De 14 fienderna är registrerade som DATA med platshållar-stats/minimal loot. Kvarvarande nedströms-slices: (a) riktig stat-balans (mot samlade kurvan, caster-med-Mana); (b) encounter-pool/zon-placering (cainos/cursed_mire/grave_heath); (c) fulla loot- + unique-tabeller inkl. Sigils-salvage (bone_dust/tattered_cloth på odöda/swamp); (d) signatur/caster-actions för bog_hag/witchlight/shade.
-- **Avsikt:** Fienderna blir spelbara på riktigt, inte bara laddbara.
-- **Not:** Sim endast för att fånga extremer; annars playtest. Placering = world-design.
-- **Acceptans (per del):** stats rimliga på zonens nivåband; fienderna dyker upp i rätt zon; loot droppar zon-tematiskt; elit/casters har egna actions; tester.
+#### B42 — Nya fiender: 4-zon-roster (balans + loot + placering + caster-actions)  · ✅ **KLAR**
+- **KLAR:** hela 4-zon-rostern ur Lucas skärmdump byggd: 14 fiender utfyllda + **6 nya**
+  skogsfiender (goblin_raider, thornling, razortusk_boar, goblin_shaman, broodmother_spider,
+  strangling_vine, placeholder-sprites). Roll-baserade stats (trash/standard/elite/mini-boss),
+  16 nya signatur-/caster-actions ur befintliga primitiv, traits→vekheter matchar skärmdumpen.
+  **Placering:** de 4 wild-region-poolerna satta (cainos→burg_54 per-fiende-band; mork_skog→
+  burg_146 4-9 rare strangling_vine; cursed_mire→burg_320 5-10 rare bog_hag; grave_heath→burg_121
+  6-12 rare cursed_wight mini-boss), befintliga fiender infällda i matchande zon. **Loot**
+  differentierad (trash=salvage+pots, elit=rare-access+unique tier 3-4). ENEMIES.md omskriven,
+  turneringen (rotequero_wildblood_pit) uppdaterad till mork_skog-rovdjur. 762 tester gröna.
+- **Designnot (motiverat beslut):** spirit/cursed = physical ×0.65 (trait-design) → shade/
+  cursed_wight är "ta-rätt-verktyg"-specialister (sim: fighter ~20 %, rogue 60-100 %, cleric 100 %),
+  medvetet inte en vägg. **Kvar:** riktig sprite-art för de 6 nya (placeholder nu).
+- **Not:** Sim fångade två väggar (shade/cursed_wight 0% melee) → tunade ned hp/dmg, behöll resistensen.
 
 #### B46 — Wisdom på gear & vapen  · *nytt, gear-stat förberedd*
 - **Vad:** `wisdom` finns i ALLOWED_GEAR_STATS men INGA items bär den än. Lägg wisdom-bärande armour/amuletter/vapen så casters kan skala spell-power via utrustning (inte bara level-up).

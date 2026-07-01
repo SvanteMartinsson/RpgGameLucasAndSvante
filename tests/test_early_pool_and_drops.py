@@ -18,7 +18,9 @@ class EarlyPoolAndDropsTest(unittest.TestCase):
 
     def test_core_zone_pool_has_more_than_two_types(self):
         pool = set(self.engine.content.places["burg_54"].encounters)
-        self.assertEqual(pool, {"giant_rat", "undead", "cave_bear", "undead_priest"})
+        # B42: CAINOS start pool — gentle mixed trash/standard (per-enemy bands)
+        self.assertEqual(pool, {"wild_dog", "goblin_scrapper", "giant_spider",
+                                "wild_stag", "giant_rat", "undead"})
         self.assertGreater(len(pool), 2)  # no longer just rat + undead on repeat
 
     # -- low-tier weapons exist --------------------------------------------

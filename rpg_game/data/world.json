@@ -39,8 +39,20 @@
         "x": 2176.1,
         "y": 915.2
       },
-      "danger_tier": 1,
-      "encounters": [],
+      "danger_tier": 2,
+      "level_min": 6,
+      "level_max": 12,
+      "rare_encounter": "cursed_wight",
+      "rare_chance": 0.05,
+      "encounters": [
+        "skeleton_warrior",
+        "ghoul",
+        "grave_hound",
+        "undead",
+        "undead_priest",
+        "shade",
+        "hollow_worg"
+      ],
       "respawn": true,
       "locked": false,
       "connections": [
@@ -121,10 +133,12 @@
       },
       "danger_tier": 1,
       "encounters": [
+        "wild_dog",
+        "goblin_scrapper",
+        "giant_spider",
+        "wild_stag",
         "giant_rat",
-        "undead",
-        "cave_bear",
-        "undead_priest"
+        "undead"
       ],
       "respawn": false,
       "locked": false,
@@ -578,10 +592,16 @@
       "danger_tier": 2,
       "level_min": 5,
       "level_max": 10,
+      "rare_encounter": "bog_hag",
+      "rare_chance": 0.06,
       "encounters": [
+        "bog_leech",
+        "mire_lurker",
+        "rotting_fiend",
         "mutated_mudcrab",
+        "tar_beast",
         "bog_wraith",
-        "tar_beast"
+        "witchlight"
       ],
       "respawn": true,
       "locked": false,
@@ -740,17 +760,19 @@
         "y": 838.1
       },
       "danger_tier": 2,
-      "level_min": 5,
-      "level_max": 10,
-      "rare_encounter": "hollow_worg",
-      "rare_chance": 0.05,
+      "level_min": 4,
+      "level_max": 9,
+      "rare_encounter": "strangling_vine",
+      "rare_chance": 0.06,
       "encounters": [
-        "undead",
+        "goblin_raider",
+        "thornling",
+        "razortusk_boar",
         "cave_bear",
-        "undead_priest",
         "dire_wolf",
-        "wild_boar",
-        "treant"
+        "treant",
+        "broodmother_spider",
+        "goblin_shaman"
       ],
       "respawn": true,
       "locked": false,

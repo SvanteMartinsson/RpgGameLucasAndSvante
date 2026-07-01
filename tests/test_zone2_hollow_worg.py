@@ -13,9 +13,13 @@ from rpg_game.core import combat
 from rpg_game.core.entities import EffectSpec
 from rpg_game.core.game import GameEngine
 
-FOREST = "burg_146"  # the worg's home (mid-west forest, undead-decay lore)
+FOREST = "burg_146"  # mid-west forest (MÖRK SKOG)
 CORE = "burg_54"
-NORMAL_FOREST = {"undead", "cave_bear", "undead_priest", "dire_wolf", "wild_boar", "treant"}
+# B42: hollow_worg moved to the grave_heath pool; the mork_skog rare is now the
+# strangling_vine. These tests exercise the rare-encounter MECHANIC via that rare.
+FOREST_RARE = "strangling_vine"
+NORMAL_FOREST = {"goblin_raider", "thornling", "razortusk_boar", "cave_bear",
+                 "dire_wolf", "treant", "broodmother_spider", "goblin_shaman"}
 
 
 class HollowWorgTest(unittest.TestCase):
@@ -28,9 +32,9 @@ class HollowWorgTest(unittest.TestCase):
 
     def test_is_a_rare_region_encounter_not_a_pool_member(self):
         forest = self.engine.content.places[FOREST]
-        self.assertEqual(forest.rare_encounter, "hollow_worg")
+        self.assertEqual(forest.rare_encounter, FOREST_RARE)
         self.assertGreater(forest.rare_chance, 0.0)
-        self.assertNotIn("hollow_worg", forest.encounters)  # not a uniform pool member
+        self.assertNotIn(FOREST_RARE, forest.encounters)  # not a uniform pool member
 
     def test_spawns_rarely_in_the_west(self):
         self.engine.rng = random.Random(7)
@@ -39,7 +43,7 @@ class HollowWorgTest(unittest.TestCase):
         total = 4000
         for _ in range(total):
             counts[self.engine.create_encounter().id] += 1
-        rate = counts["hollow_worg"] / total
+        rate = counts[FOREST_RARE] / total
         self.assertGreater(rate, 0.0)
         self.assertLess(rate, 0.15)  # an event, not a regular
         # normal beasts still all appear (relative frequencies preserved)

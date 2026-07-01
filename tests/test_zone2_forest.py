@@ -11,7 +11,9 @@ from rpg_game.core import combat, world
 from rpg_game.core.entities import EffectSpec
 from rpg_game.core.game import GameEngine
 
-NEW_BEASTS = ("dire_wolf", "wild_boar", "treant")
+# B42: burg_146 is now the MÖRK SKOG pool. wild_boar retired from the wild in
+# favour of razortusk_boar; these three forest beasts live in the western pool.
+NEW_BEASTS = ("dire_wolf", "treant", "razortusk_boar")
 WEST = "burg_146"   # western wild region (Rotequero)
 CORE = "burg_54"    # core wild region (Guaredama)
 
@@ -47,8 +49,8 @@ class Zone2ForestTest(unittest.TestCase):
         self.engine.rng = random.Random(3)
         self.engine.player.current_place_id = WEST
         levels = {self.engine.create_encounter().level for _ in range(800)}
-        self.assertGreaterEqual(min(levels), 5)
-        self.assertLessEqual(max(levels), 10)
+        self.assertGreaterEqual(min(levels), 4)   # B42: mork_skog band 4-9
+        self.assertLessEqual(max(levels), 9)
 
     def test_core_shared_enemy_bands_unchanged(self):
         core = self.engine.content.places[CORE]

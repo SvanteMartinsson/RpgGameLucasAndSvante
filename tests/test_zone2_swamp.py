@@ -10,10 +10,17 @@ from rpg_game.core import combat, world
 from rpg_game.core.entities import EffectSpec
 from rpg_game.core.game import GameEngine
 
-SWAMP_ENEMIES = ("mutated_mudcrab", "bog_wraith", "tar_beast")
+# B42: CURSED MIRE pool (burg_320). bog_hag is the rare (tested separately).
+SWAMP_ENEMIES = ("bog_leech", "mire_lurker", "rotting_fiend", "mutated_mudcrab",
+                 "tar_beast", "bog_wraith", "witchlight")
+SWAMP_RARE = "bog_hag"
 SWAMP = "burg_320"   # deep-west swamp region (Parguillas)
 FOREST = "burg_146"  # mid-west forest region (Rotequero)
 CORE = "burg_54"     # core wild region
+FOREST_POOL = {"goblin_raider", "thornling", "razortusk_boar", "cave_bear",
+               "dire_wolf", "treant", "broodmother_spider", "goblin_shaman"}
+CORE_POOL = {"wild_dog", "goblin_scrapper", "giant_spider", "wild_stag",
+             "giant_rat", "undead"}
 
 
 class Zone2SwampTest(unittest.TestCase):
@@ -31,11 +38,9 @@ class Zone2SwampTest(unittest.TestCase):
         self.assertFalse(set(SWAMP_ENEMIES) & set(self.engine.content.places[FOREST].encounters))
         self.assertFalse(set(SWAMP_ENEMIES) & set(self.engine.content.places[CORE].encounters))
 
-    def test_forest_and_core_pools_unchanged(self):
-        forest = set(self.engine.content.places[FOREST].encounters)
-        self.assertEqual(forest, {"undead", "cave_bear", "undead_priest", "dire_wolf", "wild_boar", "treant"})
-        self.assertEqual(set(self.engine.content.places[CORE].encounters),
-                         {"giant_rat", "undead", "cave_bear", "undead_priest"})
+    def test_forest_and_core_pools_are_the_b42_zones(self):
+        self.assertEqual(set(self.engine.content.places[FOREST].encounters), FOREST_POOL)
+        self.assertEqual(set(self.engine.content.places[CORE].encounters), CORE_POOL)
 
     def test_swamp_spawns_only_swamp_enemies_in_the_regional_band(self):
         self.engine.rng = random.Random(5)
@@ -45,7 +50,9 @@ class Zone2SwampTest(unittest.TestCase):
             enemy = self.engine.create_encounter()
             ids.add(enemy.id)
             levels.add(enemy.level)
-        self.assertEqual(ids, set(SWAMP_ENEMIES))
+        # every pool member appears; only the pool + its rare may appear
+        self.assertTrue(set(SWAMP_ENEMIES) <= ids)
+        self.assertTrue(ids <= set(SWAMP_ENEMIES) | {SWAMP_RARE})
         self.assertGreaterEqual(min(levels), 5)
         self.assertLessEqual(max(levels), 10)
 

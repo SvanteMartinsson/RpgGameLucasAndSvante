@@ -91,6 +91,82 @@ härleds ur AI/actions (finns inte som fält i datan). Resistans ×>1.0 = svag m
 | `hollow_worg` | Hollow Worg | grunt | 8 | physical ×0.9; `beast, cursed` | pounce + bite; lvl 8 rar top-band-miniboss |
 
 Startvärden för stats/skadetal sätts i `enemies.json` och tunas där.
+*Placering:* dire_wolf/wild_boar/treant/mudcrab/bog_wraith/tar_beast/hollow_worg
+mappas nu in i 4-zon-rostern nedan (B42) — se den för aktuell pool.
+
+## 4-zon-roster (B42)
+
+Vildmarken är indelad i fyra zoner: `ground_theme` (tile-band) → `wild_region`
+→ platsens `encounters`-pool. Roll = stat-budget + AI (**trash / standard /
+elite / mini-boss**), inte ett datafält. **Svag mot** härleds ur `traits`
+(`core/traits.py`): step +3 = ×2.0, +2 = ×1.5, +1 = ×1.25, −1 = ×0.65,
+IMMUNE = ×0. (NY) = ny fiende; (infälld) = befintlig fiende inplacerad i zonen.
+
+### CAINOS — start (`burg_54`-poolen, L1–6, ingen rare)
+Mjuk introzon: djur, vermin, goblins.
+
+| id | Roll | Traits | Svag mot |
+|---|---|---|---|
+| `wild_dog` | trash | beast | fire ×2 · poison ×1.25 |
+| `goblin_scrapper` | trash | — | neutral |
+| `giant_spider` | standard | vermin | fire ×1.25 (poison-tålig) |
+| `wild_stag` | standard | beast | fire ×2 · poison ×1.25 |
+| `giant_rat` | trash | beast | fire ×2 |
+| `undead` | standard | undead | holy ×2 · poison-immun |
+
+### MÖRK SKOG — skog (`burg_146`-poolen, L4–9, rare: `strangling_vine`)
+Djur, växter, spindlar, goblins.
+
+| id | Roll | Traits | Svag mot |
+|---|---|---|---|
+| `goblin_raider` (NY) | standard | — | neutral |
+| `thornling` (NY) | trash | plant | fire ×2 |
+| `razortusk_boar` (NY) | standard | beast | fire ×2 · poison ×1.25 |
+| `cave_bear` (infälld) | bruiser | beast | fire ×2 |
+| `dire_wolf` (infälld) | standard | beast | fire ×2 |
+| `treant` (infälld) | bruiser | plant | fire ×2 |
+| `broodmother_spider` (NY) | elite | vermin | fire ×1.25 |
+| `goblin_shaman` (NY) | elite caster | cursed | holy ×1.5 · phys ×0.65 |
+| `strangling_vine` (NY, rare) | elite | plant | fire ×2 |
+
+### CURSED MIRE — träsk (`burg_320`-poolen, L5–10, rare: `bog_hag`)
+Träsk, ooze, spöken.
+
+| id | Roll | Traits | Svag mot |
+|---|---|---|---|
+| `bog_leech` | trash | swamp | frost ×2 |
+| `mire_lurker` | standard | swamp | frost ×2 |
+| `rotting_fiend` | standard | undead | holy ×2 · poison-immun |
+| `mutated_mudcrab` (infälld) | bruiser | beast,swamp | frost ×2 |
+| `tar_beast` (infälld) | bruiser | swamp | frost ×2 |
+| `bog_wraith` (infälld) | caster | undead,swamp | frost ×2 · holy ×2 |
+| `witchlight` | elite caster | spirit | holy ×1.5 · phys ×0.65 |
+| `bog_hag` (rare) | elite caster | cursed | holy ×1.5 · phys ×0.65 |
+
+### GRAVE HEATH — hed (`burg_121`-poolen, L6–12, rare: `cursed_wight` mini-boss)
+Död, odöda, spöken.
+
+| id | Roll | Traits | Svag mot |
+|---|---|---|---|
+| `skeleton_warrior` | elite | undead | holy ×2 · poison-immun |
+| `ghoul` | standard | undead | holy ×2 · poison-immun |
+| `grave_hound` | standard | beast,cursed | fire ×2 · holy ×1.5 |
+| `undead` (infälld) | standard | undead | holy ×2 · poison-immun |
+| `undead_priest` (infälld) | healer | undead | holy ×2 |
+| `shade` | elite | spirit,undead | holy ×2 · phys ×0.65 |
+| `hollow_worg` (infälld) | bruiser | beast,cursed | fire ×2 · holy ×1.5 |
+| `cursed_wight` (rare) | mini-boss | undead,cursed | holy ×2 · poison-immun |
+
+**Designnot — physical-resistenta specialister:** spirit/cursed-fiender (shade,
+witchlight, goblin_shaman, bog_hag, cursed_wight, grave_hound) tål fysisk skada
+(×0.65). En ren melee-bruiser (fighter) ska ta ett icke-fysiskt vapen (holy/magi,
+t.ex. `consecrated_maul`) eller lämna dem åt rogue/caster. Avsiktlig "ta rätt
+verktyg"-design — sim: fighter ~20 %, rogue 60–100 %, cleric 100 % mot shade/wight.
+
+**Loot (differentierad):** trash ger salvage (`bone_dust`/`tattered_cloth`/
+`rat_pelt`/`iron_scrap`) + lesser-pots; standard ger tier 1–2 gear; elit/caster
+har `rare_table_access` + ett signatur-`unique_table`-item (tier 3–4). Låg-level
+wild capas mot top-tier rares (`rare_table_tier_cap`).
 
 ### Arena-duellanter (turneringsmotståndare)
 
@@ -113,10 +189,14 @@ telegraf märks `caster`.
 
 ## Koppling till world.json
 
-Lägg de nya fienderna i `enemies.json` och referera dem i lämpliga platsers
-`encounters[]` efter `danger_tier`: priest och acolyte hör hemma i tier 2
-(periferin), bruisern likaså; grunts i tier 1. (Senare kan `derive_world.py`
-tilldela arketyper per tier automatiskt — inte nu.)
+Overworld-zonerna kartläggs i `maps/core_zone.json`: `ground_themes` sätter
+tile-bandet (cainos x≤82 · mork_skog x83–158 · cursed_mire x≥159 · grave_heath
+y≥100) och `wild_regions` pekar varje band mot **en plats vars `encounters`-pool
+styr zonen**: cainos→`burg_54` (default), mork_skog→`burg_146`, cursed_mire→
+`burg_320`, grave_heath→`burg_121`. Zon-nivåbandet sätts som `level_min/level_max`
+på den platsen (överstyr fiendens egna band vid roll). Den tuffaste per zon ligger
+som `rare_encounter` (+`rare_chance`). Menyresans övriga platser behåller sina
+egna småpooler. (Senare kan `derive_world.py` tilldela roller per tier — inte nu.)
 
 ## Invarianter att låsa i test
 

@@ -32,9 +32,12 @@ class NewEnemyDataTests(unittest.TestCase):
             return self.content.enemies[eid].resistances.get(t, 1.0)
         cases = {
             "cursed_wight": {"holy": 2.0, "physical": 0.65, "poison": 0.0, "frost": 0.65},
-            "grave_hound": {"fire": 2.0, "holy": 2.0, "poison": 0.0},
+            # B42: grave_hound is now beast+cursed (was undead,beast)
+            "grave_hound": {"fire": 2.0, "holy": 1.5, "physical": 0.65, "poison": 1.25},
             "mire_lurker": {"frost": 2.0, "fire": 0.65, "poison": 0.65},
             "giant_spider": {"fire": 1.25, "poison": 0.65},
+            # B42: shade gained the undead trait -> holy stacks spirit+undead to ×2
+            "shade": {"holy": 2.0, "physical": 0.65, "poison": 0.0},
         }
         for eid, exp in cases.items():
             for t, v in exp.items():
@@ -44,7 +47,7 @@ class NewEnemyDataTests(unittest.TestCase):
         sw = self.content.enemies["skeleton_warrior"]
         self.assertEqual(sw.action_ids, ("frostfire_strike", "power", "normal"))
         self.assertTrue(sw.rare_table_access)
-        self.assertEqual(sw.unique_table, ())          # real unique = loot slice
+        self.assertTrue(sw.unique_table)               # B42: real loot table now assigned
         self.assertEqual(len(sw.ai), 2)
 
 
