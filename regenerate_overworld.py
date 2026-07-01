@@ -40,7 +40,10 @@ PLANT_FG = {"cainos": 2691, "mork_skog": 3203, "cursed_mire": 3715, "grave_heath
 PROPS_FG = {"cainos": 2947, "mork_skog": 3459, "cursed_mire": 3971, "grave_heath": 4483}
 # Tile indices verified OPAQUE on the current 512x512 sheets (measured per-tile;
 # the old 1847c8c indices pointed at empty cells -> invisible collision).
-BUSHES = [103, 105, 107]      # plant sheet — solid single-tile shrubs (decor)
+BUSHES = [97, 99]             # plant sheet — the ONLY clean single-tile shrubs
+# (97=31%, 99=54% opaque, no edge-touch in all four zone sheets). 103/105/107 were
+# clipped: they fill the whole tile and spill over its edges (103=99%+all edges;
+# 105/107 are left-halves of bushes continuing in 106/108) -> visibly cut sprites.
 # Clean FREESTANDING single-tile boulders only (242-245). 208/224/225/249 are
 # pieces of multi-tile rock formations — placed alone they show cut seams/borders
 # (the "buggy box" artifact). 240/241/247/248 are too transparent (phantom collision).

@@ -125,7 +125,7 @@ class VerraldaSkeletonTest(unittest.TestCase):
         import os
         import re
         from rpg_game.presentation.pygame_overworld import MAPS_DIR
-        BUSHES = {103, 105, 107}
+        BUSHES = {97, 99}   # clean single-tile shrubs (clipped 103/105/107 removed)
         HEATH_FG = 4227
         src = open(os.path.join(MAPS_DIR, "overworld.tmx"), encoding="utf-8").read()
 

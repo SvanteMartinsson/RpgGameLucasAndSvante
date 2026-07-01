@@ -233,9 +233,10 @@ class OverworldRegenTest(unittest.TestCase):
                 return gid - fg
         return None
 
-    # Single-tile shrubs that may live in decor (walkable); multi-tile tree canopy
-    # stays forbidden everywhere, and NO plant tile may sit in walls (collision).
-    BUSHES = {97, 98, 99, 101, 103, 105, 107}
+    # The ONLY clean single-tile shrubs (walkable decor); every clipped/edge-touch
+    # tile (103/105/107, ...) is forbidden, multi-tile tree canopy stays forbidden
+    # everywhere, and NO plant tile may sit in walls (collision).
+    BUSHES = {97, 99}
 
     def test_no_tree_canopy_only_single_tile_bushes(self):
         walls, decor = self._layer("walls"), self._layer("decor_over")
