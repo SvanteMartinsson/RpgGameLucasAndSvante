@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tournaments, upgrades, world
+from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -630,6 +630,24 @@ class GameEngine:
 
     def use_consumable(self, item_id: str) -> inventory.UseItemResult:
         return inventory.use_consumable(self.player, self.content, item_id)
+
+    # --- B38: skill tomes, sold at mage-tower buildings ---------------------
+    def tomes_for_sale(self, building_id: str) -> list:
+        """Tomes a mage-tower building offers (empty for other buildings)."""
+        return tomes.tomes_for_sale(building_id, self.content)
+
+    def buy_tome(self, building_id: str, item_id: str) -> store.PurchaseResult:
+        """Buy a tome at a mage tower: deduct gold, add it to the inventory.
+        Learning happens on USE (use_consumable), gated by level."""
+        offered = {t.id for t in self.tomes_for_sale(building_id)}
+        if item_id not in offered:
+            return store.PurchaseResult(False, "That tome is not sold here.")
+        tome = self.content.items[item_id]
+        if self.player.gold < tome.price:
+            return store.PurchaseResult(False, "Not enough gold.")
+        self.player.gold -= tome.price
+        self.player.inventory.add_consumable(item_id)
+        return store.PurchaseResult(True, f"Bought {tome.name}.")
 
     def _respawn_player(self) -> progression.RespawnResult:
         player = self.player

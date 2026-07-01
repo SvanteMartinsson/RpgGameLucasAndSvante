@@ -178,6 +178,9 @@ class ConsumableItem:
     tier: int = 1
     mana_amount: int = 0
     cures: tuple[str, ...] = ()
+    # B38: skill tomes (kind == "tome") teach an action on use, gated by level_req.
+    teaches: str = ""
+    level_req: int = 1
 
 
 @dataclass(frozen=True)
@@ -393,6 +396,8 @@ class Player:
     damage_taken_mod: int = 0
     equipped_skill_ids: tuple[str, ...] = ()
     talent_points: int = 0
+    # B38: skills learned from tomes (non-talent pool); merged into unlocked_skill_ids.
+    learned_skill_ids: tuple[str, ...] = ()
     learned_talent_ids: set[str] = field(default_factory=set)
     # B36: per-node rank (1..max_rank). Source of truth for what is owned; the
     # invariant is `id in learned_talent_ids` iff `talent_ranks[id] >= 1`.

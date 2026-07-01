@@ -210,6 +210,8 @@ def load_content() -> GameContent:
             tier=row.get("tier", 1),
             mana_amount=row.get("mana_amount", 0),
             cures=tuple(row.get("cures", ())),
+            teaches=row.get("teaches", ""),
+            level_req=row.get("level_req", 1),
         )
         for row in _read_json("items.json")
     }

@@ -140,5 +140,77 @@
     "heal_amount": 0,
     "price": 8,
     "tier": 1
+  },
+  {
+    "id": "tome_zap",
+    "name": "Tome: Zap",
+    "kind": "tome",
+    "teaches": "zap",
+    "level_req": 2,
+    "price": 100,
+    "tier": 1
+  },
+  {
+    "id": "tome_frost_shard",
+    "name": "Tome: Frost Shard",
+    "kind": "tome",
+    "teaches": "frost_shard",
+    "level_req": 4,
+    "price": 200,
+    "tier": 2
+  },
+  {
+    "id": "tome_holy_strike",
+    "name": "Tome: Holy Strike",
+    "kind": "tome",
+    "teaches": "holy_strike",
+    "level_req": 4,
+    "price": 200,
+    "tier": 2
+  },
+  {
+    "id": "tome_plague_ooze",
+    "name": "Tome: Plague Ooze",
+    "kind": "tome",
+    "teaches": "plague_ooze",
+    "level_req": 4,
+    "price": 200,
+    "tier": 2
+  },
+  {
+    "id": "tome_earthen_smash",
+    "name": "Tome: Earthen Smash",
+    "kind": "tome",
+    "teaches": "earthen_smash",
+    "level_req": 4,
+    "price": 200,
+    "tier": 2
+  },
+  {
+    "id": "tome_immolate",
+    "name": "Tome: Immolate",
+    "kind": "tome",
+    "teaches": "immolate",
+    "level_req": 5,
+    "price": 250,
+    "tier": 2
+  },
+  {
+    "id": "tome_thunder_strike",
+    "name": "Tome: Thunder Strike",
+    "kind": "tome",
+    "teaches": "thunder_strike",
+    "level_req": 6,
+    "price": 320,
+    "tier": 3
+  },
+  {
+    "id": "tome_incineration",
+    "name": "Tome: Incineration",
+    "kind": "tome",
+    "teaches": "incineration",
+    "level_req": 8,
+    "price": 500,
+    "tier": 3
   }
 ]

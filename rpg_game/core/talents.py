@@ -22,7 +22,8 @@ def talent_max_rank(node: TalentNode) -> int:
 
 
 def unlocked_skill_ids(player: Player, content: GameContent) -> list[str]:
-    """All active skills the player may equip: class starters + learned actives."""
+    """All active skills the player may equip: class starters + learned talent
+    actives + skills learned from tomes (B38)."""
     ids: list[str] = []
     for skill_id in content.classes[player.player_class].starting_skill_ids:
         if skill_id not in ids:
@@ -36,6 +37,9 @@ def unlocked_skill_ids(player: Player, content: GameContent) -> list[str]:
             and talent.action_id not in ids
         ):
             ids.append(talent.action_id)
+    for skill_id in player.learned_skill_ids:      # B38: tome-taught skills
+        if skill_id not in ids and skill_id in content.actions:
+            ids.append(skill_id)
     return ids
 
 

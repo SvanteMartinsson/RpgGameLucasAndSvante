@@ -386,12 +386,18 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** större karta utan att bryta befintliga ankare/gates/turneringar; alla städer
   som kluster i rätt storlek; alla stads-tester + reachability gröna; renders per stad.
 
-#### B38 — Skill-förvärv: mage tower / belöningar  ⭐ designbärande  · *nytt*
-- **Vad:** B27-poolen (8 elementala skills) finns men **ingen väg att FÅ dem**. Designrunda:
-  var/hur lär man sig dem — **mage tower-byggnad**? butik? turnerings-belöning? — och hur
-  **gateas** de (guld/nivå/klass), hur lärs de in (tome-item? meny i huset?).
-- **Kopplar:** B27 (poolen), B22 (stads-vendors), B30 (byggnads-menyer), de differentierade husen.
-- **HALT:** förvärvs-modellen är designbärande → designrunda med Lucas före bygge.
+#### B38 — Skill-förvärv: skill-tomes vid mage tower  · 🟢 **Core KLAR** · pygame-meny = render-review
+- **Design låst med Lucas:** **skill-tomes** (item) + **level-krav**, sålda vid **mage tower**,
+  förbrukas vid användning → lär skillen (Lucas invände mot "inga tomes" → tomes infört).
+- **Core KLAR (denna natt):** 8 tomes (kind `tome`, `teaches`+`level_req`, tier/pris skalat mot
+  skill-styrka: zap L2 100g … incineration L8 500g). Ny `learned_skill_ids`-pool (icke-talang),
+  `unlocked_skill_ids` inkluderar den. `tomes.py`: mage-tower-gated shop (building_id `tower`/
+  `mage_tower`, speglar upgrade-stationen). `game.tomes_for_sale`/`buy_tome`; `use_consumable`
+  hanterar tome→learn (level-gate, dedup, förbrukas). Persist i save/load. **Lärande auto-equippar
+  INTE** — equip via skill-skärmen inom max-4. 12 tester (data/shop/learn/gate/dedup/equip/persist).
+- **Kvar (render-review):** pygame mage-tower-menyn ska visa/köpa tomes (öppnar idag `upgrade_station`).
+  Engine-API:t är klart för UI:t att anropa. Turnerings-belöningar som tome-källa = valfri framtida.
+- **Kopplar:** B27 (poolen får äntligen en väg in), B30 (byggnadsmenyer).
 
 
 

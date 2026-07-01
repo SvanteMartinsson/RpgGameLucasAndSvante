@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rpg_game.core import equipment
+from rpg_game.core import equipment, tomes
 from rpg_game.core.entities import GameContent, Player
 
 
@@ -21,6 +21,14 @@ def use_consumable(player: Player, content: GameContent, item_id: str) -> UseIte
         return UseItemResult(False, "You do not have that item.")
 
     item = content.items[normalized]
+    if item.kind == "tome":                       # B38: study a tome -> learn a skill
+        blocker = tomes.learn_blocker(player, content, item)
+        if blocker:
+            return UseItemResult(False, blocker)
+        tomes.learn(player, content, item)
+        player.inventory.remove_consumable(normalized)
+        skill_name = content.actions[item.teaches].name
+        return UseItemResult(True, f"Studied {item.name}; learned {skill_name}. Equip it from the skills screen.")
     if item.kind != "consumable":
         return UseItemResult(False, "That item cannot be consumed.")
 
