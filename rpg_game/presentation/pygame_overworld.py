@@ -64,8 +64,17 @@ BUILDINGS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "buildin
 # Town gangways use the SAME cobblestone road tiles as the inter-city paths drawn
 # by regenerate_overworld.py — the cainos_grass sheet's cobble half (indices 32-63)
 # — so a town's paths read as the same road texture, not a flat grey slab.
-GRASS_SHEET = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles", "cainos",
-                           "TX Tileset Grass.png")
+TILES_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "tiles")
+GRASS_SHEET = os.path.join(TILES_DIR, "cainos", "TX Tileset Grass.png")
+
+
+def _grass_sheet_path(theme: str) -> str:
+    """The grass sheet whose cobble half a town's gangways use — the SAME sheet the
+    inter-city roads use for that zone, so a heath town cobbles over heath grass,
+    not cainos green."""
+    if theme == "cainos":
+        return GRASS_SHEET
+    return os.path.join(TILES_DIR, "generated", f"01-TX-Tileset-Grass__{theme}.png")
 # B8 proved the anchored building-cluster model on the start town. B28 reuses the
 # SAME hub template on more cities. A town qualifies as a hub only if it is a real
 # service city (a store town) AND the template places cleanly at its tile — on
@@ -462,7 +471,9 @@ class OverworldApp:
         # B8 Slice 1: the start town renders as a building cluster. The cluster is
         # anchored to its tile (template offsets), its footprints become solid
         # collision, and the anchor tile stays the walkable plaza/menu trigger.
-        self._cobble_tiles = self._load_cobble_tiles()
+        self._cobble_tiles = self._load_cobble_tiles(GRASS_SHEET)   # cainos default
+        self._cobble_tiles_by_theme: dict = {"cainos": self._cobble_tiles}
+        self._cobble_cell_theme: dict = {}   # (cx,cy) -> zone theme of its cluster
         # B8 Slice 2a: EVERY town anchors its own cluster, sized by its tier (read
         # from core_zone). town_hall appears only where a tournament lives. Resolve a
         # concrete template per town, then add ALL footprints to collision first so
@@ -500,6 +511,10 @@ class OverworldApp:
             tmpl = self.cluster_templates[pid]
             cobble = town_cluster.cobble_network(anchor, self.world.blocked, water, tmpl)
             self._cobble_net |= cobble
+            # This cluster's cobble reads on its zone's grass (matches the roads).
+            theme = self._cluster_ground_theme(anchor)
+            for cell in cobble:
+                self._cobble_cell_theme[cell] = theme
             entrances = town_cluster.cluster_entrances(anchor, tmpl)
             for bid, ent in entrances.items():
                 self.door_index[ent] = (pid, bid)
@@ -1449,18 +1464,38 @@ class OverworldApp:
                 cells.add((x, y))
         return cells
 
-    def _load_cobble_tiles(self) -> dict:
-        """Slice the cainos_grass cobble autotile blob (the road cobble) into 32px
-        tiles by name, so town gangways use the same cobblestone as the roads."""
+    def _load_cobble_tiles(self, sheet_path: str) -> dict:
+        """Slice a grass sheet's cobble autotile blob (the road cobble) into 32px
+        tiles by name, so town gangways use the same cobblestone as the roads —
+        for whichever ZONE's sheet is passed."""
         tiles = {}
         try:
-            sheet = pygame.image.load(GRASS_SHEET).convert_alpha()
+            sheet = pygame.image.load(sheet_path).convert_alpha()
         except (pygame.error, FileNotFoundError):
             return tiles
         cols = sheet.get_width() // 32
         for name, idx in COBBLE_BLOB.items():
             tiles[name] = sheet.subsurface(((idx % cols) * 32, (idx // cols) * 32, 32, 32))
         return tiles
+
+    def _cluster_ground_theme(self, anchor: tuple[int, int]) -> str:
+        """The grass theme a cluster sits on, from the ground tileset at its anchor
+        (e.g. 'grave_heath_grass' -> 'grave_heath'). Falls back to cainos."""
+        tmx = self.world.tmx
+        try:
+            ground = tmx.get_layer_by_name("ground")
+            gid = ground.data[anchor[1]][anchor[0]]
+            ts = tmx.get_tileset_from_gid(gid) if gid else None
+        except (ValueError, KeyError, IndexError):
+            ts = None
+        name = ts.name if ts else ""
+        return name[:-len("_grass")] if name.endswith("_grass") else "cainos"
+
+    def _cobble_tiles_for(self, theme: str) -> dict:
+        """Per-zone cobble tiles, loaded once and cached (cainos preloaded)."""
+        if theme not in self._cobble_tiles_by_theme:
+            self._cobble_tiles_by_theme[theme] = self._load_cobble_tiles(_grass_sheet_path(theme))
+        return self._cobble_tiles_by_theme[theme] or self._cobble_tiles
 
     def _cobble_tile_for(self, x: int, y: int) -> "pygame.Surface":
         """Marching-tile pick: which framed cobble tile a net cell uses, from which
@@ -1488,7 +1523,8 @@ class OverworldApp:
             key = "E"
         else:
             key = "center"
-        return self._cobble_tiles.get(key)
+        theme = self._cobble_cell_theme.get((x, y), "cainos")
+        return self._cobble_tiles_for(theme).get(key)
 
     def _draw_town(self, world: "pygame.Surface", ox: int, oy: int,
                    player_rect: "pygame.Rect") -> None:
