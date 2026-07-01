@@ -265,6 +265,27 @@ class OverworldRegenTest(unittest.TestCase):
     def _is_prop(self, gid):
         return any(fg <= gid < fg + 256 for fg in (2947, 3459, 3971, 4483))  # *_props sheets
 
+    def test_graves_render_full_stone_and_still_block(self):
+        # Graves render as full multi-tile stones (the sheet tile(s) above the
+        # placed body stacked on it) drawn y-sorted so the player can pass behind
+        # the upper tiles — but the collision cell keeps blocking (it stays on
+        # walls). Most stones are 2 tiles; the cross tomb is 3 (it has a base tile
+        # below the body), so the sprite may be taller than 2 tiles.
+        cells = self.app._grave_cells
+        self.assertGreater(len(cells), 0, "no graves detected")
+        tw, th = self.world.tw, self.world.th
+        heights = set()
+        for (x, y), gid in cells.items():
+            self.assertIn((x, y), self.world.blocked, f"grave {(x, y)} no longer blocks")
+            sprite = self.app._grave_sprites.get(gid)
+            self.assertIsNotNone(sprite, f"grave gid {gid} has no composited sprite")
+            self.assertEqual(sprite.get_width(), tw, "grave sprite wrong width")
+            self.assertEqual(sprite.get_height() % th, 0, "grave sprite not a whole number of tiles")
+            self.assertGreaterEqual(sprite.get_height(), th * 2, "grave stone lost its crown")
+            heights.add(sprite.get_height())
+        # the 3-tile cross tomb must be present (its base tile is no longer clipped)
+        self.assertIn(th * 3, heights, "cross tomb not composited as a 3-tile stone")
+
     def test_map_terrain_marks_obstacles_grey(self):
         # The M-map paints one grey dot per obstacle tile (bush thickets on decor,
         # rock/grave rings on walls) so clusters read as grey blobs.

@@ -159,6 +159,20 @@ PLAYER_SIZE = 20
 PLAYER_SPEED = 2.4
 COLLISION_LAYER = "walls"
 WATER_TILESET = "water_autotile"
+# Graves render as FULL multi-tile stones — the sheet tile(s) above the placed
+# body (idx-16, the crown/cross/arch) stacked on it — drawn y-sorted so the player
+# passes BEHIND the upper tiles, while the collision cell keeps blocking (it stays
+# on the walls layer, unchanged). In grave_heath the obstacle ring uses ONLY these
+# gravestone bodies, so any grave_heath_props tile on walls is a grave. Indices
+# mirror regenerate_overworld.GRAVES.
+GRAVE_TILESET = "grave_heath_props"
+GRAVE_SHEET_INDICES = (89, 103, 135, 137)
+# Tiles tall per stone. Most are 2 (crown idx-16 + body idx); the cross tomb (89)
+# is 3 — its base/plinth continues one tile below the body (105). Measured from the
+# sheet: 89's bottom edge and 105's top edge are both fully opaque (they join),
+# while the other bodies end cleanly (0% bottom edge). The composited sprite's
+# BOTTOM tile always sits on the collision cell, so a taller stone just grows up.
+GRAVE_TILES_TALL = {89: 3}
 # A water autotile cell blocks only if >= this fraction of it is water. Measured
 # fractions: outer corner ~0.22, edge ~0.58, channel ~0.76, inner corner ~0.89,
 # full 1.0 -> 0.6 makes shore (edge + outer) walkable while deep water still blocks.
@@ -509,6 +523,9 @@ class OverworldApp:
         # resolved templates (a building can face differently per tier, e.g. inn is
         # q1 in a capital but front in a town).
         self._building_sprites = self._load_building_sprites()
+        # Graves render as full 2-tile stones, y-sorted with the player + buildings
+        # so the player can walk BEHIND the upper tile (the bottom cell still blocks).
+        self._grave_cells, self._grave_sprites = self._load_graves()
         # Backward-compatible single-anchor handle for the primary/start hub.
         self.cluster_anchor = self.cluster_anchors.get(CLUSTER_TOWN_ID)
         for pid, anchor in self.cluster_anchors.items():
@@ -1503,6 +1520,63 @@ class OverworldApp:
                 sprites[(bid, facing)] = None  # missing art -> cobble still renders, no crash
         return sprites
 
+    def _grave_sheet(self) -> tuple:
+        """(sheet_surface, columns) for the grave props sheet, resolved from the
+        tileset's own image source (no hard-coded path). (None, 0) if unavailable."""
+        tmx = self.world.tmx
+        ts = next((t for t in tmx.tilesets if t.name == GRAVE_TILESET), None)
+        if ts is None or not getattr(ts, "source", None):
+            return None, 0
+        path = os.path.normpath(os.path.join(os.path.dirname(self.world.map_path), ts.source))
+        try:
+            return pygame.image.load(path).convert_alpha(), int(ts.columns)
+        except (pygame.error, FileNotFoundError, TypeError, ValueError):
+            return None, 0
+
+    def _load_graves(self) -> tuple:
+        """Grave cells (grave_heath_props tiles on the collision layer) + a full
+        2-tile stone sprite per placed cell: the sheet tile above the placed bottom
+        (idx-cols) stacked on the bottom, so the crown/cross/arch is no longer
+        clipped. Drawn y-sorted in _draw_town so the player passes BEHIND the upper
+        tile; the bottom cell still blocks (it stays on the walls layer). pytmx
+        compacts gids, so each placed bottom is matched to its source stone by pixel
+        bytes rather than gid arithmetic."""
+        tmx = self.world.tmx
+        walls = next((l for l in tmx.layers if getattr(l, "name", None) == COLLISION_LAYER), None)
+        cells: dict = {}
+        sprites: dict = {}
+        if walls is None:
+            return cells, sprites
+        get_ts = tmx.get_tileset_from_gid
+        tw, th = self.world.tw, self.world.th
+        sheet, cols = self._grave_sheet()
+        bottom_to_full: dict = {}
+        if sheet is not None and cols:
+            def cut(idx):
+                r, c = divmod(idx, cols)
+                return sheet.subsurface(pygame.Rect(c * tw, r * th, tw, th)).copy()
+            for idx in GRAVE_SHEET_INDICES:
+                h = GRAVE_TILES_TALL.get(idx, 2)
+                full = pygame.Surface((tw, th * h), pygame.SRCALPHA)
+                for k in range(h):               # crown (idx-cols) down to the base
+                    full.blit(cut(idx - cols + cols * k), (0, th * k))
+                # key by the PLACED body tile (idx) so the pixel-match still works,
+                # even when the body isn't the sprite's bottom tile (cross tomb).
+                bottom_to_full[pygame.image.tostring(cut(idx), "RGBA")] = full
+        for y, row in enumerate(walls.data):
+            for x, gid in enumerate(row):
+                if not gid:
+                    continue
+                ts = get_ts(gid)
+                if not (ts and ts.name == GRAVE_TILESET):
+                    continue
+                cells[(x, y)] = gid
+                if gid not in sprites:
+                    img = tmx.get_tile_image_by_gid(gid)
+                    key = pygame.image.tostring(img, "RGBA") if img is not None else None
+                    sprites[gid] = bottom_to_full.get(key)
+        return cells, sprites
+
     def _water_tiles(self) -> set:
         """All water-autotile cells (blocked deep water AND walkable shore), so the
         cobble net can route clear of every one of them."""
@@ -1606,6 +1680,19 @@ class OverworldApp:
                 cx = fx * tw + (fw * tw) // 2
                 sw, sh = sprite.get_size()
                 drawables.append((base_y, "b", (sprite, cx - sw // 2 - ox, base_y - sh - oy)))
+        # Graves: full 2-tile stones anchored on the (blocking) bottom cell's bottom
+        # edge, so the upper tile occupies the row above and the player — with a
+        # smaller base_y when standing north of it — draws BEHIND it. Cull to the view.
+        left, right, top, bot = getattr(self, "_vis_bounds",
+                                        (0, self.world.tmx.width, 0, self.world.tmx.height))
+        for (gx, gy), gid in self._grave_cells.items():
+            if not (left <= gx < right and top <= gy < bot):
+                continue
+            sprite = self._grave_sprites.get(gid)
+            if sprite is None:
+                continue
+            base_y = (gy + 1) * th
+            drawables.append((base_y, "b", (sprite, gx * tw - ox, base_y - sprite.get_height() - oy)))
         drawables.append((player_rect.bottom + oy, "p", player_rect))
         for _base_y, kind, payload in sorted(drawables, key=lambda d: d[0]):
             if kind == "b":
@@ -1633,6 +1720,7 @@ class OverworldApp:
         # tiles blit off-surface and contribute no pixels — but the blit count is
         # bounded by the view, not the map area. Applies to all layers identically.
         left, right, top, bottom = self._visible_tile_bounds(view_w, view_h, ox, oy)
+        self._vis_bounds = (left, right, top, bottom)   # for grave culling in _draw_town
         # B11: reveal the on-screen tiles into the fog bitset as the player walks.
         fog.reveal_rect(self.engine.player.revealed_tiles, tmx.width, tmx.height,
                         left, right, top, bottom)
@@ -1641,12 +1729,15 @@ class OverworldApp:
             data = getattr(layer, "data", None)
             if data is None:  # not a tile layer (object/image layer)
                 continue
+            is_walls = getattr(layer, "name", None) == COLLISION_LAYER
             for y in range(top, bottom):
                 row = data[y]
                 for x in range(left, right):
                     gid = row[x]
                     if not gid:  # empty cell
                         continue
+                    if is_walls and (x, y) in self._grave_cells:
+                        continue  # drawn as a full y-sorted stone in _draw_town
                     image = get_image(gid)
                     dest = (x * tw - ox, y * th - oy)
                     if image is None:  # tile without graphic -> placeholder block, never crash
