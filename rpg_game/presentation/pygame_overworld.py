@@ -117,6 +117,11 @@ BUILDING_TITLES = {
 # Building sprites are NATIVE-sized (vary per type); scale them at load time so the
 # whole town shrinks together. Tunable — bump to enlarge every building uniformly.
 BUILDING_SCALE = 0.55
+# Per-building scale overrides. The mage tower's native art is huge (505x1049 vs
+# ~120-240px for the rest), so it gets its own scale to loom as a landmark without
+# swallowing the screen. Bottom-anchored draw is unchanged, so it still rises from
+# its door at the base. Others fall back to BUILDING_SCALE.
+BUILDING_SCALE_OVERRIDE = {"tower": 0.30}
 # cainos's 4x4 autotile blob (cols 0-3, rows 0-3): tile index by which side grass
 # borders the cobble cell. Corridors (grass on opposite sides) fall back to centre.
 # cainos_grass shares cainos_stone's layout but puts the cobble-on-grass blob in the
@@ -1421,8 +1426,9 @@ class OverworldApp:
             try:
                 raw = pygame.image.load(path).convert_alpha()
                 w, h = raw.get_size()
+                scale = BUILDING_SCALE_OVERRIDE.get(bid, BUILDING_SCALE)
                 sprites[(bid, facing)] = pygame.transform.smoothscale(
-                    raw, (max(1, round(w * BUILDING_SCALE)), max(1, round(h * BUILDING_SCALE))))
+                    raw, (max(1, round(w * scale)), max(1, round(h * scale))))
             except (pygame.error, FileNotFoundError):
                 sprites[(bid, facing)] = None  # missing art -> cobble still renders, no crash
         return sprites
