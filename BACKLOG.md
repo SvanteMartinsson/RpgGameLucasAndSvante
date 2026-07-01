@@ -17,17 +17,24 @@ mät-först) / **Acceptans** (definition av "klart"; styr autonomt batch-arbete,
 
 ## Översikt
 
-**✅ Klart:** B1 · B5 · B6 · B7 · B9 · B14 · B15 · B19* · B7.1 · B20 (detaljer i arkivet).
-Karta: organisk havskust, seamless vatten/bro-skin, död kod borttagen. Byggnads-assets
-(13 × 128px) incheckade (`a8b262e`).
-*B19 (vatten-kollision per-tile) är ett delsteg — **ersätts för vattnet av B21** (sub-tile).
+**✅ Klart (senaste vågen, se arkivet):** hela power-curve-trilogin — **B35** (level-up
+stat-val) · **B36** (talent-ranger) · **B37 Slice 1+2** (vapen-rework + upgrade-station-
+system) — plus **Wisdom Slice A+B** (härledd mana + caster-tuning), **#3 världsexpansion**
+(240×208 parametrisk karta), **B8 Slice 2a** (tier-styrt kluster i alla 17 städer), **B11
+Slice 1** (fullskärmskarta + fog), **B40 Slice 1** (enhetlig meny-infra: Button/Tooltip/
+HoverTracker/rad-helper), **unified chatbox** (en delad logg-komponent), **B24-flaggan**
+(rare-table tier-cap 3 för låg-level wild). Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
 
-**▶ Pågår:** B8 — Slice 1 byggd (`bebd2b7`); refining (facings/cobble-nät/y-sort/0.6,
-burg_5 → hub). Designbeslut låsta, se `TOWN_DESIGN.md`. Väntar på resten av facing-arken.
+**▶ Pågår:** **B40 apply-slices S2–S5** (applicera meny-infran på inventory/shop/character/
+character-creation — varje = render-HALT) · **B8 Slice 2b** (per-stad butiksinnehåll +
+tjänste-triggrar).
 
-**Härnäst (förslag):** B21 (sub-tile-kollision + fences — fixar vattnet på riktigt) ·
-B12 (encounter-skalning — playtest visade hård tidig vägg) · B8 Slice 2 · sedan
-content/system: B22 (enchants) · B23 (quests) · CHARACTER_SCREEN+B10 (shop+preview).
+**Härnäst (öppet, ej byggt):** *Balans/content (autonom-vänligt):* odöd-pool-densitet ·
+B42 (de 14 fiendernas balans/loot/caster-actions) · B46 (wisdom-gear) · B43 (butiks-
+innehåll 9 nya stores) · B25 (klassbalans-sim, mät). *Visuellt:* B44 (chatt v4 segment-
+färg) · B11 minimap (Slice 2) · B16.1 (combat-flikar). *Designbärande (⭐, designrunda
+först):* B21 (sub-tile-kollision) · B22 (enchant-vendors) · B23 (quests) · B38 (skill-
+förvärv) · B41 (on-hit-procs) · B47 (zon-färg) · B3.1→B3 (dual-class) · B10/B18 (UI).
 
 ---
 
@@ -132,18 +139,20 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   y-sort (spelaren går bakom hus norrut); skala justerbar; meny från torget; reachability
   grön; inget vatten/grannstads-överlapp; idempotent; tester.
 
-#### B11 — Karta + fog of war
+#### B11 — Karta + fog of war  · ✅ **Slice 1 KLAR** (`01ee74d`/`9ec6f0c`) · minimap = Slice 2 (öppen, se nedan)
 - **Vad:** Karta + fog of war för obesökta platser. **Avsikt:** orientering; utforskande
   belönas. **Not:** besökt-tracking (sparas) delas med B12. **Acceptans:** besökt-data
   persisterar; kart-vy; obesökt döljs, återbesök avtäcker; test.
+- **KLAR (Slice 1):** fog-of-war-state (avtäck vid gång + persistens) + fullskärms-kart-overlay
+  (M) med fog, pins och you-are-here. Kvar = **minimap (Slice 2)**, se "B11 (tillägg)" nedan.
 
-#### B2 — Broarna (verifiera)
-- Sannolikt löst av plank-skin + hav. Verifiera in-game, arkivera. Möjlig polish:
-  gräs-ändkapslar vid broänden.
+#### B2 — Broarna  · ✅ **LÖST** (`b56f195`/`c76ef2b`)
+- Broarna omarbetade: seam-övergångar = en bred railless-däck (Lucas pick B, idx0), lake/river-broar
+  borttagna. Tidigare plank-skin + hav-verifiering (`45401b0`). Kvar (valfri polish): gräs-ändkapslar.
 
 ### Strid, progression & ekonomi
 
-#### B24 — Balans-pass från playtest (fiende-abilities, skadetyp, drop-rate)  · *nytt*
+#### B24 — Balans-pass från playtest (fiende-abilities, skadetyp, drop-rate)  · ✅ **KLAR** (`59e2cfb` + flagga `7f083ec`)
 - **Vad:** Tre balans-grejer som playtest blottade:
   1. **`undead_priest` heal** för stark (~128 HP i ett svep, nog att negera ett fullt
      träff) → kan bli mjuk vägg för en spelare som inte kan bursta igenom. Se över
@@ -168,7 +177,7 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (B24) trivialiserande. **Mät** pool per region (sim/räkning); justera densitet om för
   hög. Liten, sim-verifierbar, autonom-vänlig.
 
-#### B35 — Level-up: välj main-stat (Spår A)  · *nytt — progression*
+#### B35 — Level-up: välj main-stat (Spår A)  · ✅ **KLAR** (`c600efc`)
 - Vid varje level-up väljer spelaren EN main-stat av **{HP, Mana, Damage, Crit}** (Speed
   slopas som val). **Universellt + FLAT** — ingen nivå-scaling, ingen per-klass-skillnad.
 - Varje level får ALLA stats sin baslinje; den valda main-staten får sitt main-värde i st.:
@@ -178,18 +187,31 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Ersätter** de fasta HP/dmg-ökningarna. **Modal-UI** vid level-up (4 val).
 - **Absorberar B25:** mage kan välja Mana (+8/lvl) → löser den tidiga mana-bristen själv.
 
-#### B36 — Talent-ranger (upp till 3 steg)  · *nytt — progression*  · ⚠️ **HALT (designbärande) — flaggad**
+#### B36 — Talent-ranger (upp till 3 steg)  · ✅ **KLAR** (`1d7322a`/`7a83fdc`/`8c9dd3b`/`d458281`)
+- **KLAR:** `max_rank` per talent-nod i data (24 active / 17 passiva skalbara / 10 binära);
+  `talent_ranks`-state + learn-or-upgrade-allokering (1 point/steg); passiv rang-skalning +
+  skill-magnitud/duration skalas av rang i combat (`rank_mult`); talents-UI visar rang + Learn/
+  Upgrade. HALT-fyndet nedan löstes genom att skala de skalbara mekanikerna per rang och lämna de
+  binära noderna som 1-stegs.
 - Talents kan rankas upp i **upp till 3 steg**; **modest** ökning per rang (t.ex.
   1.6× → 1.8× → 2.0× damage). Mindre behov av många skills/talents — investera klokt i få.
 - Talent-points spenderas på ranger; skills/talents-overlay (K) visar rang + tillåter upprankning.
-- **HALT-fynd (STEG 0):** talangmodellen matchar INTE "1.6×→2.0× damage"-exemplet. 33/51 noder är
+- **HALT-fynd (STEG 0, bevarad kontext):** talangmodellen matchar INTE "1.6×→2.0× damage"-exemplet. 33/51 noder är
   **active** (ger en skill) utan power-skalnings-väg; 18 passiva spänner över 6 effekt-mekaniker
   (stat_bonus, conditional_damage_mod-multiplikatorer, elemental_attack_mod, immunity,
   applied_status_mod). Rankning kräver (a) per-rang-skala för var och en av dessa + (b) en HELT NY
   per-spelare skill-power-mekanik för de 33 active-noderna = klass-bred ombalansering. **Designval
   för Lucas:** vilka effekt-typer rankas, per-rang-skalning, och hur active/skill-talanger skalar.
 
-#### B37 — Item-damage-rebalans + epic consecrated_maul (Spår A / #2)  · *nytt — ekonomi*  · 🟢 **Slice 1 KLAR** (vapen-omarbetning) · Slice 2 (epic-rarity + socket) kvar
+#### B37 — Item-damage-rebalans + item-upgrades (Spår A / #2)  · ✅ **Slice 1 + Slice 2 KLARA**
+- **Slice 2 KLAR** (`b1ba224`/`c8c09b6`/`ffbc53c`/`eeef40c`/`403c096` + stationer `754ca7b`/`83a714e`):
+  levererades som ett **item-upgrade-recept-system**, INTE den ursprungliga "epic-rarity + socket".
+  Item-kind `junk`→`miscellaneous`; rarity-graderade material + enemy-drops; upgrade-core (recept,
+  deltas, exclusions, persistens i `upgrades.json`); stationer (blacksmith=vapen, mage tower=rustning);
+  upgrade-UI med *Upgradable*-tagg. B24-flaggan (låg-level rare-cap) löstes separat (`7f083ec`).
+  - **Kvar (design-pivot, ej gissat):** den specifika **epic-rarity `consecrated_maul`** är INTE gjord
+    (upgrades täcker steel_greatsword/worgfang/iron_cuirass). Om epic-rarity fortfarande önskas = egen
+    liten runda. De 8 material-fillers-vapnens **placering** (butiker/loot) = world-pass, fortf. kvar.
 - **Slice 1 KLAR** (`ba5af71`/`2f7733b`/`ad5cf9d`/`05a83b8`): tier HÄRLEDS ur damage (ceil/5, ingen
   hand-satt tier), required_level FRIKOPPLAD (t0-2→L1, t3→L3, t4→L5, t5→L8, t6→L11, t7+→L14).
   worn_shortsword 2→0 (osåld), venomfang→poison(25), worgfang→25; 8 materialstege-fillers
@@ -202,8 +224,8 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
     **3 rundor** men 0% mot neutral cave_bear utan dmg-vapen → stark specialist, ej trivialiserande
     (alla 6 klasser slår undead on-level → ej holy-gated). **Ingen data-nudge behövdes.**
   - **Kvar (flaggat, ej gissat):** de 8 fillers är ännu **ej åtkomliga** (ej i butiker/loot) —
-    placering per ort/drop = world-design, görs i en placerings-pass. `consecrated_maul` epic-rarity
-    + socket + droptable/`rare_tier_cap`/butik-konsekvens = **Slice 2**.
+    placering per ort/drop = world-design, görs i en placerings-pass. *(Slice 2 landade som
+    upgrade-system — se B37-headern ovan; epic-rarity `consecrated_maul` blev EJ gjord.)*
 
 ##### B37 (ursprunglig HALT-kontext — bevarad)  · ⚠️
 
@@ -404,33 +426,87 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
 ## Föreslagna kluster & ordning
 
-1. **Spår A — batch NU (progression & power-curve, sim-gated):** **B35 ✅** (level-up stat-val,
-   `c600efc`) · **B36 ⚠️ HALT** (talent-ranger — talangmodell-mismatch, designval) · **B37 ⚠️ HALT**
-   (item-rebalans — +2-tiers/required-level + epic-rarity + skill-sim = designval; baseline mätt).
-   + liten polish: **B31 stadsnamn-kontrast ✅** (`faac4ca`). Kombinerad kurva: B35-halvan klar +
-   mätt; item-halvan (B37) väntar på Lucas designbeslut. Absorberar B25 (mage Mana-val finns nu).
-2. **Spår B — Världsexpansion #3 (B28, GUIDAD):** större karta + glesare stads-prickar +
-   kluster i alla städer. STEG 0 på vad regen bryter (ankare/gates/place_ids/turneringar).
-   · ⚠️ **HALT (äkta fork, STEG 0 gjord):** hela vatten-systemet (seam y=36, två
-   flod-polylinjer CORE_PTS/HEATH_PTS, 5 BRIDGES, hav-kustlinje, LAKE) är HÅRDKODAT till
-   80×56 + nuvarande stads-koord — broarna är 2-breda lådor *assertade* på raka flod-
-   korsningar nära städer. place_ids/turneringar/respawn är tile-oberoende (remappbara),
-   men "större karta + sprid städer + ingen ny terräng" går INTE ihop: rivers/broar måste
-   re-författas (= förbjuden terräng-design), och uniform skalning spräcker bro↔flod-
-   invarianterna vid avrundning. **Designval för Lucas:** (A) parametriskt vatten-system
-   (flod/bro härledda ur stads-grafen) = ny terräng-design, eller (B) uniform skala +
-   manuell bro-omjustering (lätt terräng-tuning), eller (C) behåll 80×56, klustra bara de
-   städer som får plats (inkrementell B8 Slice 2). Byggde ingen trasig karta.
-   · **Skill-aware sim-harness KLAR** (`d79dfeb`) — låser upp B37 caster-tuning.
+1. **Spår A — power-curve-trilogin: ✅ KLAR.** **B35 ✅** (`c600efc`) · **B36 ✅**
+   (`1d7322a`…`d458281`, talent-ranger) · **B37 Slice 1+2 ✅** (`ba5af71`… + `b1ba224`…`403c096`,
+   vapen-rework + upgrade-system) · **Wisdom A+B ✅** · **B31 ✅** (`faac4ca`). Kvar i spåret:
+   **B25** (klassbalans-sim, mät-only) + ev. epic-rarity `consecrated_maul` om önskat.
+2. **Spår B — Världsexpansion #3: ✅ KLAR** (`960d0a3`/`1985e10`, 240×208 parametrisk karta —
+   vatten-forken löstes via **option A**: flod/bro/kust härledda parametriskt). **B8 Slice 2a ✅**
+   (kluster i alla 17). Kvar: **B8 Slice 2b** (per-stad butik + tjänste-triggrar) + nya ZONER
+   (designbärande, egen runda). **Skill-aware sim-harness ✅** (`d79dfeb`).
 3. **Innehållets syfte:** **B38** ⭐ (skill-förvärv: mage tower/belöningar) — ger B27-poolen
    en väg in. Sedan **B22** ⭐ (enchant-vendors), **B23** ⭐ (quests/notice boards).
 4. **Kollision:** ⭐**B21** (sub-tile — fixar vatten/fences/gates).
 5. **Progression-djup:** ⭐**B3.1** (dual-class, HALT) → **B3**.
-6. **Värld/utforskande:** **B11** (karta + fog; delar besökt-data med B12/B23).
-7. **UI/skärmar:** **B18** (klassvals-skärm fluid); CHARACTER_SCREEN-polish.
+6. **Värld/utforskande:** **B11 Slice 1 ✅** (karta + fog, `9ec6f0c`); kvar = **minimap (Slice 2)**.
+7. **UI/skärmar:** **B40 apply-slices S2–S5** (render-HALT/skärm); **B18** (klassvals-skärm fluid);
+   CHARACTER_SCREEN-polish; **B10** (shop-UI).
 
-> Mät-/designrunda-först: B35-B37 sim-gated; B21/B22/B23/B38/B3.1 ⭐ = designrunda; B28 #3 guidad.
-> Klart sedan sist (se arkiv): B16/B26/B27/B28-städer/B29/B30/B31/B32/B33/B34/Slice A/butiker.
+> Designrunda-först (öppna ⭐): B21/B22/B23/B38/B41/B47/B3.1. Autonom-vänligt (öppet): odöd-densitet,
+> B42, B46, B43, B25, B44, B11-minimap, B16.1.
+> Klart sedan sist (se arkiv): B35/B36/B37/Wisdom A+B/#3-karta/B8-2a/B11-S1/B40-S1/B24-flag/B2/B39.
+
+---
+
+### Menyer & UI (nytt program)
+
+#### B40 — Menyprogram: enhetlig menyspec över ALLA skärmar  ⭐ designbärande  · 🟢 **Slice 1 KLAR** · S2–S5 (apply, render-HALT) kvar
+- **Vad:** En single source of truth för hur alla menyer ser ut/beter sig, så menyerna slutar vara bespoke per skärm. Låst 7-punktsspec:
+  1. **Progressiv disclosure** — rader visar bara namn + åtgärds-relevant siffra (t.ex. kostnad); sekundär detalj bara på hover.
+  2. **Hover-tooltip** (>1 s) → panel med stats + kort förklarande text; EN delad komponent, aktiverad per meny.
+  3. **Inga parentetiska härledda värden** någonstans (visa "Wisdom 4", inte "(Mana 16)").
+  4. **Tomma kategorier dämpade** (shop "kan ej köpa"-stil), INGA "(N)"-räknare.
+  5. **Inga redundanta underrubriker** ("Allt du äger…").
+  6. **Enhetlig chrome** — en delad Button / list-stil / font / spacing.
+  7. **Rarity via färg** (konsekvent med chatt-paletten).
+- **Avsikt:** Menyerna blir läsbara, konsekventa och informativa; beslut (köp/equip) fattas informerat via hover.
+- **Not:** STEG 0: idag TVÅ Button-dataclasses (pygame_overworld ~435: rect/label/on_click/enabled/restricted; pygame_battle ~119: +hotkey/sublabel), ingen hover/tooltip-infra. Slice-först; varje apply-slice = render-HALT.
+- **Slices:**
+  - **S1 (grund, HALT-fri):** ✅ **KLAR** (`3b8db9a`/`8d46df3`/`d0673b9`/`866c448`, + unified chatbox `9083dac`). Delad `ui.py`: Button (superset rect/label/on_click/enabled/restricted/hotkey/sublabel) + HoverTracker/Tooltip + MenuRow/draw_menu_row (rarity-färgade namn). Beteende-bevarande migrering klar. **← S2 härnäst.**
+  - **S2:** applicera inventory (bort med "Everything you own…", dämpade tomma kategorier utan "(N)", namn synligt / stats på hover).
+  - **S3:** applicera shop (namn + kostnad synligt, stats/delta på hover).
+  - **S4:** applicera character (inga parenteser, stats/förklaring på hover).
+  - **S5:** character-creation — hela klassens talangträd som read-only förhandsvisning + starter-skill-val (1 av 2 tier-1 → learned rank 1) + enhetlig chrome + bort med "(Mana X)".
+- **Acceptans (per apply-slice):** skärmen följer 7-punktsspecen; hover >1 s visar tooltip; render-HALT-godkänd av Lucas; tester.
+
+#### B11 (tillägg) — Minimap = Slice 2
+- **Vad:** Fullskärmskarta + fog (M) är Slice 1 (KLAR, `9ec6f0c`). **Slice 2 = en alltid-synlig minimap** i hörnet, återanvänder fog-bitset + terräng-texturen. **Not:** presentation-only ovanpå B11-infran. **Acceptans:** minimap visar avtäckt terräng + spelarmarkör; togglas; test.
+
+### Strid, vapen & innehåll (nytt)
+
+#### B41 — On-hit elemental-proc-familj (status-on-hit som vapenmekanik)  ⭐ designbärande  · *nytt, familj föreslagen*
+- **Vad:** Låt vapen bära en **on-hit-effekt** (idag kommer status bara från skills). Föreslagen familj på befintliga status-primitiv:
+  - **Fire → Ignite** (burn-DoT), **Poison → Toxin** (DoT, respekterar resistensmatrisen), **Frost → Chill** (speed-debuff) + låg **Freeze**-chans (skip-turn), **Lightning → Shock** (låg accuracy-debuff), **Holy → Searing** (mest via matris ×1.5 vs odöda, ev. liten heal-on-hit).
+- **Avsikt:** "Elementala vapen" känns distinkta; kopplar till item-upgrade-systemet (proc som primär-effekt ett recept kan ge).
+- **Not:** NY vapenmekanik — hook i basattack-resolutionen som rullar vapnets on-hit-effekt. Primitiven (DoT/speed/skip/accuracy) finns; det är wiring. v1 seedar **fire/poison/frost**; lightning/holy senare (deras skadekomponent funkar ändå). Siffror = platshållare, INTE simmat (sim endast om något spränger kurvan).
+- **Acceptans:** basattack med proc-vapen applicerar rätt status; resistensmatrisen respekteras (odöd immun mot toxin osv.); test för hook + de tre seedade elementen.
+
+#### B42 — Nya fiender (de 14): balans + loot + encounter-placering + caster-actions  · *nedströms från data-slicen*
+- **Vad:** De 14 fienderna är registrerade som DATA med platshållar-stats/minimal loot. Kvarvarande nedströms-slices: (a) riktig stat-balans (mot samlade kurvan, caster-med-Mana); (b) encounter-pool/zon-placering (cainos/cursed_mire/grave_heath); (c) fulla loot- + unique-tabeller inkl. Sigils-salvage (bone_dust/tattered_cloth på odöda/swamp); (d) signatur/caster-actions för bog_hag/witchlight/shade.
+- **Avsikt:** Fienderna blir spelbara på riktigt, inte bara laddbara.
+- **Not:** Sim endast för att fånga extremer; annars playtest. Placering = world-design.
+- **Acceptans (per del):** stats rimliga på zonens nivåband; fienderna dyker upp i rätt zon; loot droppar zon-tematiskt; elit/casters har egna actions; tester.
+
+#### B46 — Wisdom på gear & vapen  · *nytt, gear-stat förberedd*
+- **Vad:** `wisdom` finns i ALLOWED_GEAR_STATS men INGA items bär den än. Lägg wisdom-bärande armour/amuletter/vapen så casters kan skala spell-power via utrustning (inte bara level-up).
+- **Not:** Ren content ovanpå wisdom-systemet (Slice A/B klara). Sim vid behov. **Acceptans:** N items med wisdom-stat; härledd mana + spell-skalning svarar; tester.
+
+### Overworld & värld (nytt)
+
+#### B45 — Minisjö (5–8 tiles) att gå runt  · *nytt (vatten-/regenerate-lagret)*
+- **Vad:** En liten insjö någonstans som landmärke/omväg (Lucas-önskad). **Not:** ligger i vatten-lagret (regenerate_overworld), inte prop-scattern → egen slice; flood-fill-verifieras. **Acceptans:** sjö placerad, gångbar runtom, reachability grön, test.
+
+#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · *öppet beslut*
+- **Vad:** Zon-till-zon-färgskiften (gul kärna / mörkgrön skog / grågrön swamp) upplevs hackiga. **Not:** paletten är **inbränd i tema-PNG:erna** → INTE fixbart via tile-placering. Öppet beslut: retuscha tema-PNG-paletterna för mjukare övergång, eller acceptera. **Acceptans:** beslut fattat; om åtgärd — mjukare zon-gräns verifierad i render.
+
+### Chatt/HUD (nytt)
+
+#### B44 — Chatt-logg v4-polish: segment-färg + per-träff skada  · *nytt (uppskjutet från chatt-unifieringen)*
+- **Vad:** Två uppskjutna förbättringar i den unifierade loggen: (a) **segment-färg per rad** (item-namn i rarity-färg + guld-belopp i amber på samma rad, inte hela raden en färg); (b) **per-träff skada i rött** (skada mot spelaren).
+- **Not:** Båda kräver en rikare log-modell: (a) rader som färgade **segment** i stället för en färg/rad; (b) **strukturerade combat-events** (skadetyp/mål) i stället för färdig-formaterad text. **Acceptans:** loot-rad visar färgat itemnamn + amber guld; skada-mot-spelare renderas röd; tester för segment-rendering + event→färg.
+
+#### B43 — Butiksinnehåll för de 9 nyaktiverade store-städerna  · *snabbfix, kopplar B8 2b*
+- **Vad:** De 9 städer som fick store via has_store-fixen bär det tunna default-lagret (hp_potion/sword/axe/longsword). Kurerat, kategori-lämpligt sortiment + lesser-pots. **Not:** delmängd av B8 Slice 2b (per-stad varierat butiksinnehåll) men vassare/omedelbar. **Acceptans:** varje ny store-stad har kategori-rätt sortiment; ingen kvar med bara default-fyra; test.
 
 ---
 
@@ -515,4 +591,27 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   ingen lagrad max_mana-bas); level-up-valet Mana→Wisdom; ny combat-scale `spell` =
   round(0.4×(dmg+magic-vapen) + 0.6×wisdom)×mod för spelar-magi (smite/firebolt/.../mend/DoTs + B27-pool).
   Fiender (ingen wisdom) → power-ekvivalent, oförändrade; ignite lämnad platt (delas med arena_mira).
-  650 tester gröna (system + venv). **Slice B (balans):** MANA_PER_WISDOM, wisdom/val, 0.4/0.6, per-spell-mods via B37-sim.
+  650 tester gröna (system + venv).
+- **Wisdom Slice B** (`b3249fa`) — sim-tunad caster-skalning: wisdom-val +2/level, mana/wisdom 5→4,
+  smite-mod 1.8. Balanserar spell-power mot power-curve-trilogin (B35/B36/B37).
+- **B36** (`1d7322a`/`7a83fdc`/`8c9dd3b`/`d458281`) — talent-ranger: `max_rank` per nod (24 active /
+  17 passiva skalbara / 10 binära), `talent_ranks`-state + learn-or-upgrade, per-rang skill/passiv-
+  skalning (`rank_mult`), talents-UI visar rang + Learn/Upgrade.
+- **B37 Slice 2** (`b1ba224`/`c8c09b6`/`ffbc53c`/`eeef40c`/`403c096` + stationer `754ca7b`/`83a714e`) —
+  item-**upgrade-system** (INTE epic-rarity): junk→miscellaneous, rarity-graderade material + drops,
+  upgrade-recept (deltas/exclusions/persistens i `upgrades.json`), stationer (blacksmith=vapen /
+  mage tower=rustning), upgrade-UI med Upgradable-tagg. *Epic-rarity `consecrated_maul` blev EJ gjord.*
+- **B24-flag** (`7f083ec`) — delad rare-table capad till tier 3 för wild-kills < L5 (consecrated_maul/
+  venomfang/pyre_scepter ej dropp-bara L3–4; L6+ opåverkat). Stänger B24:s öppna flagga.
+- **B11 Slice 1** (`01ee74d`/`9ec6f0c`) — fog-of-war (avtäck vid gång + persistens) + fullskärms-kart-
+  overlay (M) med fog/pins/you-are-here. Minimap = Slice 2 (öppen).
+- **B40 Slice 1** (`3b8db9a`/`8d46df3`/`d0673b9`/`866c448`, + unified chatbox `9083dac`) — delad `ui.py`:
+  unifierad Button + HoverTracker/Tooltip + MenuRow/draw_menu_row (rarity-färgade namn). Beteende-
+  bevarande migrering. Apply-slices S2–S5 (render-HALT per skärm) kvar.
+- **B2** (`b56f195`/`c76ef2b`) — broar omarbetade: seam = en bred railless-däck (idx0), lake/river-broar
+  borttagna. Tidigare plank-skin/hav-verifiering (`45401b0`).
+- **Overworld-polish** (`631c87d`/`bab02eb`/`9182af0`/`ba6fe6a`/`9f6c65e`) — pocket-vegetation (busksnår/
+  sten-ringar/blomsteräng), fullhöjds y-sorterade gravstenar (gå bakom), solida buskar + grå M-map-
+  prickar, rena en-tile-buskar, stadscobble matchar zonens gräs.
+- **has_store från core_zone** (`dd74c8b`) — has_store härleds ur core_zone (single source); rest/store-
+  gating fixad. *(Kurerat butiksinnehåll för de 9 nyaktiverade stores = B43, öppen.)*
