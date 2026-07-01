@@ -109,5 +109,53 @@ class FogRevealOnWalkTest(unittest.TestCase):
         self.assertTrue(fog.is_revealed(app.engine.player.revealed_tiles, app.world.tmx.width, *far))
 
 
+@unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
+class MapOverlayTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1000, 700))
+
+    @classmethod
+    def tearDownClass(cls):
+        pygame.quit()
+
+    def test_m_key_toggles_the_map_overlay(self):
+        app = OverworldApp()
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_m))
+        self.assertEqual(app.overlay, "map")
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_m))
+        self.assertEqual(app.overlay, "")
+
+    def test_esc_closes_the_map(self):
+        app = OverworldApp()
+        app.overlay = "map"
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+        self.assertEqual(app.overlay, "")
+
+    def test_map_renders_and_offers_no_fast_travel(self):
+        app = OverworldApp()
+        app.world.set_tile(51, 52); app.sync_location()
+        place_before = app.engine.player.current_place_id
+        tile_before = app.world.current_tile
+        app.overlay = "map"
+        app.draw()   # must not raise
+        # Orientation only: the map overlay adds NO clickable buttons, and merely
+        # viewing it never changes where you are.
+        self.assertEqual(app.buttons, [])
+        self.assertEqual(app.world.current_tile, tile_before)
+        self.assertEqual(app.engine.player.current_place_id, place_before)
+
+    def test_town_becomes_a_pin_only_once_its_tile_is_revealed(self):
+        app = OverworldApp()
+        W = app.world.tmx.width
+        # pick a town far from spawn
+        far_town = next(tile for tile, pid in app.zone.towns.items() if pid == "burg_53")
+        self.assertFalse(fog.is_revealed(app.engine.player.revealed_tiles, W, *far_town))
+        # standing there + drawing reveals it -> it would now render as a pin
+        app.world.set_tile(*far_town); app.sync_location(); app.draw()
+        self.assertTrue(fog.is_revealed(app.engine.player.revealed_tiles, W, *far_town))
+
+
 if __name__ == "__main__":
     unittest.main()

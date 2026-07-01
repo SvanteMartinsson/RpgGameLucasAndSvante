@@ -198,6 +198,23 @@ PLAYER_COLOR = (235, 200, 90)
 PLAYER_EDGE = (40, 36, 16)
 TOWN_COLOR = (90, 150, 230)
 TOWN_HUB = (120, 220, 140)
+
+# B11 fullscreen map: unrevealed fog + per-terrain-family land colours (from the
+# ground tileset name) so zones + the southern heath read as landmarks; water is
+# detected from the walls water_autotile tileset.
+MAP_FOG = (22, 22, 30)
+MAP_BG = (10, 12, 18)
+MAP_WATER = (58, 92, 150)
+MAP_LAND_DEFAULT = (74, 96, 72)
+MAP_FAMILY_COLORS = {
+    "cainos": (96, 132, 78),        # core green
+    "mork_skog": (52, 80, 58),      # dark forest
+    "cursed_mire": (104, 110, 66),  # sickly fen
+    "grave_heath": (104, 96, 118),  # heath (south)
+    "frostfell": (176, 196, 214),   # pale ice
+    "ash_waste": (120, 116, 112),   # grey ash
+    "karr": (150, 132, 96),         # tan
+}
 GATE_COLOR = (150, 90, 70)
 
 
@@ -538,6 +555,11 @@ class OverworldApp:
         self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
         self._pending_tags: list = []                # queued 'Upgradable' row tags
+        # B11 fullscreen map caches: terrain texture (built once) + fog composite
+        # (rebuilt only when the revealed-tile count changes).
+        self._map_terrain = None
+        self._map_composite = None
+        self._map_composite_count = -1
         self.buttons: list[Button] = []
         # B16 + B29: the chatbox is the ONLY on-screen text. Combat lines flow in via
         # the shared deque passed to BattleApp; world events flow in through set_toast
@@ -1126,6 +1148,9 @@ class OverworldApp:
         if event.key == pygame.K_k:
             self.toggle_overlay("skills_talents")
             return
+        if event.key == pygame.K_m:
+            self.toggle_overlay("map")
+            return
         # Chatbox resize/scroll: walk-only. Under menus the chatbox is visible but
         # read-only ('+' grows, '-' shrinks; PageUp/PageDown scroll).
         if self._log_interactive():
@@ -1204,7 +1229,9 @@ class OverworldApp:
             self._draw_tournament_confirm_screen()
         elif self.mode == "tournament_intermission":
             self._draw_tournament_intermission_screen()
-        if self.overlay:
+        if self.overlay == "map":
+            self._draw_map_overlay()      # fullscreen, not the standard panel
+        elif self.overlay:
             self._draw_overlay_screen()
         # Chatbox LAST so it stays visible (read-only) over overlays and menus, not
         # only in walk — the player always sees why an action was blocked.
@@ -1246,6 +1273,131 @@ class OverworldApp:
         top = max(0, oy // th - 1)
         bottom = min(tmx.height, (oy + view_h) // th + 2)
         return left, right, top, bottom
+
+    # -- B11 fullscreen map + fog of war ------------------------------------
+
+    def _map_family(self, tileset_name: str | None) -> str | None:
+        if not tileset_name:
+            return None
+        for family in MAP_FAMILY_COLORS:
+            if tileset_name.startswith(family):
+                return family
+        return None
+
+    def _build_map_terrain(self) -> "pygame.Surface":
+        """A 1px-per-tile terrain texture, coloured by ground family (zones + the
+        heath) with water from the walls water_autotile tileset. Built once."""
+        tmx = self.world.tmx
+        surf = pygame.Surface((tmx.width, tmx.height))
+        surf.fill(MAP_LAND_DEFAULT)
+        ground = next((l for l in tmx.layers if getattr(l, "name", None) == "ground"), None)
+        walls = next((l for l in tmx.layers if getattr(l, "name", None) == "walls"), None)
+        get_ts = tmx.get_tileset_from_gid
+        land_of: dict[int, tuple] = {0: MAP_LAND_DEFAULT}   # memoize gid -> colour
+        water_of: dict[int, bool] = {0: False}
+        for y in range(tmx.height):
+            grow = ground.data[y] if ground else None
+            wrow = walls.data[y] if walls else None
+            for x in range(tmx.width):
+                color = MAP_LAND_DEFAULT
+                if grow is not None:
+                    gid = grow[x]
+                    if gid not in land_of:
+                        ts = get_ts(gid)
+                        fam = self._map_family(ts.name if ts else None)
+                        land_of[gid] = MAP_FAMILY_COLORS.get(fam, MAP_LAND_DEFAULT)
+                    color = land_of[gid]
+                if wrow is not None:
+                    wg = wrow[x]
+                    if wg not in water_of:
+                        ts = get_ts(wg)
+                        water_of[wg] = bool(ts and ts.name == "water_autotile")
+                    if water_of[wg]:
+                        color = MAP_WATER
+                surf.set_at((x, y), color)
+        return surf
+
+    def _map_composite_surface(self) -> "pygame.Surface":
+        """Terrain with unrevealed tiles painted as fog. Cached; rebuilt only when
+        the revealed count changes (movement is blocked while the map is open, so
+        this is at most once per open)."""
+        bits = self.engine.player.revealed_tiles
+        count = fog.count_revealed(bits)
+        if self._map_terrain is None:
+            self._map_terrain = self._build_map_terrain()
+        if self._map_composite is None or self._map_composite_count != count:
+            tmx = self.world.tmx
+            comp = self._map_terrain.copy()
+            for y in range(tmx.height):
+                for x in range(tmx.width):
+                    if not fog.is_revealed(bits, tmx.width, x, y):
+                        comp.set_at((x, y), MAP_FOG)
+            self._map_composite = comp
+            self._map_composite_count = count
+        return self._map_composite
+
+    def _map_screen_rect(self) -> "pygame.Rect":
+        w, h = self.screen.get_size()
+        tmx = self.world.tmx
+        margin = 64
+        scale = min((w - 2 * margin) / tmx.width, (h - 2 * margin) / tmx.height)
+        mw, mh = int(tmx.width * scale), int(tmx.height * scale)
+        return pygame.Rect((w - mw) // 2, (h - mh) // 2, mw, mh)
+
+    def _draw_map_overlay(self) -> None:
+        """B11: the fullscreen orientation map. Fog-masked terrain + discovered
+        town/gate/mage-tower pins + a 'you are here' marker. NO fast-travel — the
+        only interaction is closing it (M/Esc)."""
+        self.screen.fill(MAP_BG)
+        tmx = self.world.tmx
+        W, H = tmx.width, tmx.height
+        comp = self._map_composite_surface()
+        rect = self._map_screen_rect()
+        self.screen.blit(pygame.transform.scale(comp, (rect.width, rect.height)), rect.topleft)
+        pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2)
+        sx, sy = rect.width / W, rect.height / H
+        bits = self.engine.player.revealed_tiles
+
+        def to_screen(tx, ty):
+            return (int(rect.x + (tx + 0.5) * sx), int(rect.y + (ty + 0.5) * sy))
+
+        # discovered gates
+        for (gx, gy) in self.world.gate_messages:
+            if fog.is_revealed(bits, W, gx, gy):
+                px, py = to_screen(gx, gy)
+                pygame.draw.rect(self.screen, WARN, (px - 3, py - 3, 6, 6))
+                pygame.draw.rect(self.screen, MAP_BG, (px - 3, py - 3, 6, 6), 1)
+
+        # discovered towns (mage-tower towns get an accent diamond + label tag)
+        meta = self.zone.town_meta or {}
+        for (tx, ty), pid in self.zone.towns.items():
+            if not fog.is_revealed(bits, W, tx, ty):
+                continue
+            px, py = to_screen(tx, ty)
+            is_tower = (meta.get(pid) or {}).get("prop") == "tower"
+            if is_tower:
+                pygame.draw.polygon(self.screen, ACCENT,
+                                    [(px, py - 5), (px + 5, py), (px, py + 5), (px - 5, py)])
+                pygame.draw.polygon(self.screen, MAP_BG,
+                                    [(px, py - 5), (px + 5, py), (px, py + 5), (px - 5, py)], 1)
+            else:
+                color = TOWN_HUB if pid == self.zone.respawn_place_id else TOWN_COLOR
+                pygame.draw.circle(self.screen, color, (px, py), 4)
+                pygame.draw.circle(self.screen, MAP_BG, (px, py), 4, 1)
+            label = self.zone.town_labels.get((tx, ty), pid)
+            if is_tower:
+                label += " (Mage Tower)"
+            self.screen.blit(self.font_sm.render(label, True, TEXT), (px + 7, py - 7))
+
+        # "you are here"
+        ppx, ppy = to_screen(*self.world.current_tile)
+        pygame.draw.circle(self.screen, GOOD, (ppx, ppy), 5)
+        pygame.draw.circle(self.screen, MAP_BG, (ppx, ppy), 5, 2)
+
+        self.screen.blit(self.font_lg.render("World Map", True, ACCENT), (rect.x, rect.y - 42))
+        self.screen.blit(self.font_sm.render(
+            "M / Esc: close   ·   fog lifts as you explore   ·   orientation only",
+            True, TEXT_DIM), (rect.x, rect.bottom + 10))
 
     def _resolve_town_template(self, place_id: str, has_tournament: bool):
         """Concrete building list for a town from its core_zone tier/shop_category/
