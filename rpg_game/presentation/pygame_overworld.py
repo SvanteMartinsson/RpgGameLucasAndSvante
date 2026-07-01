@@ -58,6 +58,8 @@ from rpg_game.presentation.talent_text import (
 from rpg_game.presentation import town_cluster
 from rpg_game.presentation import fog
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import ui
+from rpg_game.presentation.ui import Button
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -456,17 +458,6 @@ class Overworld:
         else:
             oy = max(0, min(self.player.centery - view_h // 2, self.map_px_h - view_h))
         return ox, oy
-
-
-@dataclass
-class Button:
-    rect: pygame.Rect
-    label: str
-    on_click: object
-    enabled: bool = True
-    # Visually sperred but still clickable: a level-locked item reads as restricted
-    # yet a click still fires (so the player gets a "needs level N" explanation).
-    restricted: bool = False
 
 
 @dataclass

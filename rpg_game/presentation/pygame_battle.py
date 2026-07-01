@@ -21,7 +21,6 @@ import collections
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Callable
 
 import pygame
 
@@ -31,6 +30,8 @@ from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import ui
+from rpg_game.presentation.ui import Button
 from rpg_game.presentation.pygame_canvas import acquire_display, present, set_display_mode, to_canvas
 
 # --- Layout ----------------------------------------------------------------
@@ -115,16 +116,6 @@ def enemy_sprite(enemy_id: str):
         surface = pygame.transform.scale(raw, (width, target_h))  # nearest-neighbor
     _sprite_cache[enemy_id] = surface
     return surface
-
-
-@dataclass
-class Button:
-    rect: pygame.Rect
-    label: str
-    on_click: Callable[[], None]
-    enabled: bool = True
-    hotkey: str = ""
-    sublabel: str = ""
 
 
 @dataclass
@@ -573,7 +564,7 @@ class BattleApp:
         if self.allow_flee:
             specs.append((*T.ACTION_FLEE, self.issue_flee, True))
         for rect, (label, hotkey, cb, enabled) in zip(self._action_rects(len(specs)), specs):
-            self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey))
+            self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey=hotkey))
 
     def _build_submenu(self, snapshot):
         options = self._submenu_options(snapshot)
@@ -584,7 +575,7 @@ class BattleApp:
             # Inline the sub-detail so each option fits one compact line.
             text = f"{label} ({sub})" if sub else label
             self.buttons.append(Button(rect, text, (lambda a=action_id: self.issue_turn(a)), enabled))
-        self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, "\x1b"))
+        self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, hotkey="\x1b"))
 
     def _build_stat_buttons(self):
         specs = T.STAT_CHOICES
