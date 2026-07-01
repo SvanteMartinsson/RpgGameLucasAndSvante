@@ -1,5 +1,5 @@
 {
-  "_comment": "Spelbar overworld (fri-gång, Modell B). #3-expansion: kartan är 240x208 (option A, parametrisk terräng). Nord (y<100): cainos x<=82, mork_skog 83-158, cursed_mire >=159. Söder om seamen (y>=100) är grave_heath. Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark. Gates spärrar vägen ut mot ospelbara zoner. Allt här är data/tunbart. Terrängen genereras av overworld_layout.py + regenerate_overworld.py.",
+  "_comment": "Spelbar overworld (fri-g\u00e5ng, Modell B). #3-expansion: kartan \u00e4r 240x208 (option A, parametrisk terr\u00e4ng). Nord (y<100): cainos x<=82, mork_skog 83-158, cursed_mire >=159. S\u00f6der om seamen (y>=100) \u00e4r grave_heath. Towns = lokationer man g\u00e5r in i; wild_region_place_id = motorns encounter-pool i k\u00e4rn-vildmark. Gates sp\u00e4rrar v\u00e4gen ut mot ospelbara zoner. Allt h\u00e4r \u00e4r data/tunbart. Terr\u00e4ngen genereras av overworld_layout.py + regenerate_overworld.py.",
   "map": "overworld.tmx",
   "start_tile": [
     51,
@@ -21,7 +21,7 @@
       "min_tile_x": 83
     }
   ],
-  "_ground_themes_comment": "Presentation + respawn-zon: vilken tile-theme som målar varje zons basmark. Nordbanden driver zone_for_tile (respawn-kostnad) och alignar med wild_regions; grave_heath (y>=100) överrider söderut. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets finns registrerade.",
+  "_ground_themes_comment": "Presentation + respawn-zon: vilken tile-theme som m\u00e5lar varje zons basmark. Nordbanden driver zone_for_tile (respawn-kostnad) och alignar med wild_regions; grave_heath (y>=100) \u00f6verrider s\u00f6derut. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets finns registrerade.",
   "ground_themes": [
     {
       "theme": "cainos",
@@ -61,7 +61,7 @@
       "label": "Yeblegali",
       "tier": "town",
       "shop_category": "weapons",
-      "prop": "shrine"
+      "prop": "tower"
     },
     {
       "tile": [
@@ -101,7 +101,8 @@
       "place_id": "burg_146",
       "label": "Rotequero",
       "tier": "town",
-      "shop_category": "armor"
+      "shop_category": "armor",
+      "prop": "tower"
     },
     {
       "tile": [
@@ -111,7 +112,7 @@
       "place_id": "burg_67",
       "label": "Fongorinos",
       "tier": "city",
-      "prop": "warehouse"
+      "prop": "tower"
     },
     {
       "tile": [
@@ -142,7 +143,7 @@
       "label": "Tierva",
       "tier": "town",
       "shop_category": "general",
-      "prop": "stable"
+      "prop": "tower"
     },
     {
       "tile": [
@@ -162,7 +163,7 @@
       "label": "Guaredama",
       "tier": "town",
       "shop_category": "armor",
-      "prop": "shrine"
+      "prop": "tower"
     },
     {
       "tile": [
@@ -182,7 +183,7 @@
       "place_id": "burg_149",
       "label": "Salles",
       "tier": "city",
-      "prop": "apothecary"
+      "prop": "tower"
     },
     {
       "tile": [
@@ -204,7 +205,7 @@
       "label": "Chuequeroma",
       "tier": "town",
       "shop_category": "general",
-      "prop": "stable"
+      "prop": "tower"
     },
     {
       "tile": [
