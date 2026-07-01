@@ -93,6 +93,26 @@ class MenuRowTest(unittest.TestCase):
                     for y in range(right.top, right.bottom, 2))
         self.assertTrue(found, "right-aligned value not drawn on the right")
 
+    def test_label_color_paints_the_name_and_survives_dim(self):
+        from rpg_game.presentation import chatlog
+        legendary = chatlog.rarity_color("legendary")
+        screen = pygame.Surface((300, 60))
+        screen.fill((0, 0, 0))
+        rect = pygame.Rect(0, 10, 260, 36)
+        row = ui.MenuRow("Dragon Blade", value="999g", enabled=False, label_color=legendary)
+        style = ui.RowStyle(font=self.font, bg=(0, 0, 0), edge=(0, 0, 0),
+                            disabled=(0, 0, 0))
+        ui.draw_menu_row(screen, rect, row, style)
+        # the NAME is drawn in the rarity colour even though the row is disabled
+        found = any(tuple(screen.get_at((x, y))[:3]) == legendary
+                    for x in range(rect.x, rect.x + 140)
+                    for y in range(rect.top, rect.bottom))
+        self.assertTrue(found, "rarity colour not applied to the item name")
+
+    def test_no_label_color_uses_style_text(self):
+        row = ui.MenuRow("Plain")
+        self.assertIsNone(row.label_color)   # default: fall back to style.text
+
     def test_fit_callback_is_applied_to_the_label(self):
         screen = pygame.Surface((300, 60))
         rect = pygame.Rect(0, 0, 120, 36)

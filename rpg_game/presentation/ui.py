@@ -200,7 +200,12 @@ class MenuRow:
     optional right-aligned value (cost / count), a dimmed (disabled) or
     restricted (clickable-but-locked) look, and an optional tooltip payload
     surfaced on hover. ``on_click`` is carried for convenience — the screen still
-    owns click handling via its Button list."""
+    owns click handling via its Button list.
+
+    ``label_color`` overrides the label colour — set it to an item's rarity colour
+    (e.g. ``chatlog.rarity_color(rarity)``) so the NAME itself signals rarity. When
+    set it wins even on a dimmed row, so an unaffordable legendary still reads as
+    legendary; leave it None to use the style's default text colour."""
 
     label: str
     value: str = ""
@@ -208,6 +213,7 @@ class MenuRow:
     restricted: bool = False
     tooltip: object = None            # ui.Tooltip shown after a >1 s dwell
     on_click: object = None
+    label_color: object = None        # rarity colour for the name; None -> style.text
 
 
 def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
@@ -230,7 +236,10 @@ def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
         value_w = vs.get_width() + style.pad
     max_label_w = rect.width - 2 * style.pad - value_w
     label = fit(row.label, max_label_w, style.font) if fit else row.label
-    ls = style.font.render(label, True, style.text_dim if dim else style.text)
+    # A rarity colour on the name wins even when dimmed (an unaffordable legendary
+    # still reads as legendary); otherwise fall back to the normal/dim text colour.
+    label_color = row.label_color or (style.text_dim if dim else style.text)
+    ls = style.font.render(label, True, label_color)
     screen.blit(ls, ls.get_rect(midleft=(rect.x + style.pad, rect.centery)))
     if hover is not None and row.tooltip is not None:
         hover.add(rect, row.tooltip)
