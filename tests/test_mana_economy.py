@@ -11,7 +11,7 @@ import random
 import unittest
 
 from rpg_game.core import store
-from rpg_game.core.data_loader import load_content
+from rpg_game.core.data_loader import load_content, DEFAULT_STORE_INVENTORY
 from rpg_game.core.game import GameEngine
 
 LESSER_POTS = {"lesser_hp_potion", "lesser_mana_potion"}
@@ -22,6 +22,11 @@ class ManaEconomyTests(unittest.TestCase):
     def setUp(self):
         self.content = load_content()
         self.store_ids = [pid for pid, place in self.content.places.items() if place.has_store]
+        # Curated stores stock the lesser-pot basics; specialized towns on the
+        # default fallback are a separate content pass (has_store now derives from
+        # core_zone, so the store set is much larger than the authored inventories).
+        self.curated_ids = [pid for pid in self.store_ids
+                            if tuple(self.content.places[pid].store_inventory) != DEFAULT_STORE_INVENTORY]
 
     def test_tiered_potions_exist(self):
         for pot in LESSER_POTS | GREATER_POTS | {"hp_potion", "mana_potion"}:
@@ -31,7 +36,7 @@ class ManaEconomyTests(unittest.TestCase):
         self.assertEqual(self.content.items["greater_mana_potion"].mana_amount, 100)
 
     def test_lesser_pots_are_sold_in_stores(self):
-        for pid in self.store_ids:
+        for pid in self.curated_ids:
             stock = set(self.content.places[pid].store_inventory)
             self.assertTrue(LESSER_POTS <= stock, f"{pid} missing lesser pots")
 

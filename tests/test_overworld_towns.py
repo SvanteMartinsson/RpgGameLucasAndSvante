@@ -64,7 +64,7 @@ class OverworldTownsTest(unittest.TestCase):
         self.addCleanup(lambda: os.path.exists("savegame.json") and os.remove("savegame.json"))
 
     def test_store_gated_when_town_has_no_store(self):
-        self.app.world.set_tile(10, 8)  # Yeblegali has no store
+        self.app.world.set_tile(106, 44)  # Jinosa: a bare village (no shop_category) -> no store
         self.app.sync_location()
         self.app.mode = "walk"
         self.app.do_action("store")

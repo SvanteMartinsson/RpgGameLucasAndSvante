@@ -153,15 +153,12 @@ class GameEngine:
     REST_VOUCHER_ID = "rest_voucher"
 
     def rest(self, zone: int = 1) -> RestResult:
+        # Rest is reached only through an inn/cottage door, and EVERY town cluster
+        # has one, so resting is never store-gated — the door is the gate. (The old
+        # has_store check wrongly blocked rest in store-less villages.) Cost/voucher
+        # still apply.
         place = self.current_place()
         player = self.player
-        if not place.has_store:
-            return RestResult(
-                outcome="not_allowed",
-                message="You can only rest in a town with services.",
-                player_hp=player.hp,
-                player_mana=player.mana,
-            )
         # A Rest Voucher makes the rest free (and is consumed); otherwise it costs
         # gold scaled by zone. Too poor -> refuse, drawing no gold and no voucher.
         has_voucher = player.inventory.count(self.REST_VOUCHER_ID) > 0

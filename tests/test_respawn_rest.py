@@ -115,7 +115,7 @@ class RespawnRelocationTest(unittest.TestCase):
 
     def test_relocation_requires_a_store_town(self):
         engine = _engine()
-        engine.enter_place("burg_54")  # wilderness region, no store
+        engine.enter_place("burg_235")  # Jinosa: bare village (no shop_category) -> no store
         engine.player.gold = 1000
         result = engine.relocate_respawn(zone=1)
         self.assertFalse(result.success)

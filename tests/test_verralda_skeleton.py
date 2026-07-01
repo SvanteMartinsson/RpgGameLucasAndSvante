@@ -182,9 +182,15 @@ class VerraldaSkeletonTest(unittest.TestCase):
             self.assertGreaterEqual(by_id[pid][1], SEAM_Y, f"{label} not in the heath (y>={SEAM_Y})")
             self.assertEqual(self.zone.town_labels[by_id[pid]], label)
 
-    def test_villages_are_landmarks_without_a_store(self):
+    def test_faction_village_store_follows_the_cluster(self):
+        # has_store now derives from core_zone (single source): a town renders a
+        # trade building iff capital/city/town, or a village with a shop_category.
+        # So these heath towns have a store exactly when their cluster shows one.
+        meta = self.zone.town_meta
         for pid in self.FACTION_VILLAGES:
-            self.assertFalse(self.app.engine.content.places[pid].has_store)
+            m = meta[pid]
+            expected = m["tier"] in {"capital", "city", "town"} or bool(m.get("shop_category"))
+            self.assertEqual(self.app.engine.content.places[pid].has_store, expected, pid)
 
     def test_every_village_is_reachable_from_start(self):
         seen = self._reachable_from_start()

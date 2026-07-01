@@ -49,7 +49,7 @@ WEST_BORDER_FLAVOR = "The road west feels desolate. Few return unscathed."
 
 # Per-region soft signal shown when first crossing into a non-core region.
 REGION_FLAVOR = {
-    "burg_121": "Söderut tunnar byarna ut — Verraldas hedar tar vid.",
+    "burg_121": "Southward the villages thin out — the heaths of Verralda begin.",
 }
 
 

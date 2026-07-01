@@ -44,6 +44,21 @@ def _read_json(filename: str) -> Any:
         return json.load(file)
 
 
+def _core_zone_store_towns() -> dict[str, bool]:
+    """place_id -> has_store, derived from core_zone tier + shop_category (the
+    source of truth for a town's rendered cluster). capital/city/town always have
+    a trade building; a village only when it has a shop_category."""
+    try:
+        towns = _read_json("maps/core_zone.json")["towns"]
+    except (FileNotFoundError, KeyError):
+        return {}
+    return {
+        t["place_id"]: t.get("tier") in {"capital", "city", "town"}
+        or (t.get("tier") == "village" and bool(t.get("shop_category")))
+        for t in towns
+    }
+
+
 def _load_upgrade_recipes() -> dict[str, UpgradeRecipe]:
     recipes: dict[str, UpgradeRecipe] = {}
     for item_id, row in _read_json("upgrades.json").items():
@@ -233,6 +248,12 @@ def load_content() -> GameContent:
     upgrade_recipes = _load_upgrade_recipes()
 
     world = _read_json("world.json")
+    # core_zone is the SINGLE SOURCE for town services: it drives which cluster
+    # (and thus which trade building) a town renders, so has_store must derive from
+    # it, not the stale hand-set world.json flag. A town has a store iff it renders
+    # a trade building — every capital/city/town does, and a village only when it
+    # has a shop_category.
+    store_towns = _core_zone_store_towns()
     places = {}
     for row in world["places"]:
         position = row["position"]
@@ -250,7 +271,7 @@ def load_content() -> GameContent:
             name=row["name"],
             type=row["type"],
             description=row["description"],
-            has_store=row["has_store"],
+            has_store=store_towns.get(row["id"], row["has_store"]),
             mana_site=row["mana_site"],
             port=row["port"],
             position=Position(x=position["x"], y=position["y"]),

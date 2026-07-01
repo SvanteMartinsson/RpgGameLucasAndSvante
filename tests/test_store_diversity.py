@@ -8,7 +8,7 @@ import random
 import unittest
 
 from rpg_game.core import store
-from rpg_game.core.data_loader import load_content
+from rpg_game.core.data_loader import load_content, DEFAULT_STORE_INVENTORY
 from rpg_game.core.game import GameEngine
 
 
@@ -16,6 +16,12 @@ class StoreDiversityTests(unittest.TestCase):
     def setUp(self):
         self.content = load_content()
         self.store_ids = [pid for pid, place in self.content.places.items() if place.has_store]
+        # B: has_store now derives from core_zone, so MANY more towns are stores —
+        # but only the authored (non-default) ones are hand-curated. The
+        # richness/diversity guarantees apply to those; specialized towns that fall
+        # back to the default stock are a separate content pass.
+        self.curated_ids = [pid for pid in self.store_ids
+                            if tuple(self.content.places[pid].store_inventory) != DEFAULT_STORE_INVENTORY]
 
     def test_there_are_multiple_store_towns(self):
         self.assertGreaterEqual(len(self.store_ids), 2)
@@ -25,7 +31,7 @@ class StoreDiversityTests(unittest.TestCase):
             self.assertTrue(store.get_store_entries(self.content, pid), f"{pid} store is empty")
 
     def test_no_two_stores_have_identical_stock(self):
-        stocks = {pid: tuple(self.content.places[pid].store_inventory) for pid in self.store_ids}
+        stocks = {pid: tuple(self.content.places[pid].store_inventory) for pid in self.curated_ids}
         # every store differs from every other
         seen = {}
         for pid, stock in stocks.items():
@@ -36,7 +42,7 @@ class StoreDiversityTests(unittest.TestCase):
         self.assertGreater(len(union), max(len(s) for s in stocks.values()))
 
     def test_every_store_carries_gear_weapons_and_consumables(self):
-        for pid in self.store_ids:
+        for pid in self.curated_ids:
             kinds = {entry.kind for entry in store.get_store_entries(self.content, pid)}
             self.assertIn("gear", kinds, f"{pid} sells no gear")
             self.assertIn("weapon", kinds, f"{pid} sells no weapon")
