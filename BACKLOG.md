@@ -415,15 +415,19 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   ur zonens pool; sim visar att den är klarbar runt zonens nivå-band (ej L1); belöning
   = skalad guld/XP + flaggat signatur-item; tester. Sim N≥200.
 
-#### B25 — Klassbalans-granskning (skill-användande sim)  · *nytt*
-- **Vad:** Mät klassbalansen med en **skill-användande** sim L1→7, jämför alla 6 klasser.
-- **Avsikt:** Fighter framstår som outlier i attack-only-sim (L3 88% vs ~0% andra), men
-  attack-only straffar casters som lever på skills → gapet är delvis artefakt. Avgör om
-  fightern faktiskt är OP eller om det är sim-modellen.
-- **Not:** Kräver att sim:en kan driva skill-rotationer (ej bara attack). Sim-verifierbar.
-  **Nerfa inget** förrän skill-sim/playtest visar det verkliga gapet.
-- **Acceptans:** sim-matris (6 klasser × nivå, skill-användande) som visar relativa
-  win-rates; rekommendation om fightern behöver justeras eller ej.
+#### B25 — Klassbalans-granskning (skill-användande sim)  · ✅ **MÄTT** (mät-only, inga nerfs)
+- **Fråga besvarad:** i **skill-medveten** sim (best weapon + skills, on-level) är **fighter INTE
+  en outlier** — attack-only-gapet var till stor del en sim-artefakt. Matris (60 trials):
+  - **L3** (giant_rat/undead/cave_bear) & **L5** (goblin_shaman/plague_acolyte/razortusk_boar):
+    **alla 6 klasser 100 %** on-level.
+  - **L7:** mest 100 %; avvikelser = *signaler, ej enemy-buggar*: **mage 0 % vs mire_lurker**
+    (caster-skörhet: mana slut + låg HP → förlorar DPS-race mot tanky standard); **cleric 22 %
+    vs treant** (holy neutralt mot plant + treant tålig = specialist-svaghet); physical-resistenta
+    elites (bog_hag: tank 35 %, mage 20 %) svåra för fysiska/sköra, cleric 100 % (avsedd "rätt verktyg").
+- **Rekommendation:** **inga enemy-/klass-nerfs nu.** Överväg en separat **caster-sustain/mana-
+  ekonomi-pass** (mage L7-skörhet mot tanky standards) om det bekräftas i playtest. Fighter behöver
+  ingen justering.
+- **Not:** mät-only per punktens krav; ingen kod ändrad.
 
 #### B13 — Tournaments: svårighet (KLART, se arkiv)
 - Löst: Frenzy-CD (root-fix) + diversifierade turneringsbuffar. Fortsättning = B26.
