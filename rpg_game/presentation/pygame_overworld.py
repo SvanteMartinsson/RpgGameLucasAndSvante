@@ -580,6 +580,9 @@ class OverworldApp:
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
         self.font_italic = pygame.font.SysFont("menlo,consolas,monospace", 13, italic=True)
+        # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
+        # infra only), so it stays a no-op until an apply-slice calls hover.add().
+        self.hover = ui.HoverTracker()
         self.mode = "walk"  # walk | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
         self.inventory_category = "consumables"  # selected category in the inventory overlay
@@ -1252,6 +1255,7 @@ class OverworldApp:
 
     def draw(self) -> None:
         self.buttons = []
+        self.hover.begin()   # menus re-register their hoverable rects each frame
         # Fluid overworld: the canvas tracks the live (logical) display size, so
         # the world fills the window instead of sitting as a centered island. The
         # camera (camera_offset) then shows more map; present() is the identity
@@ -1282,6 +1286,11 @@ class OverworldApp:
         # Chatbox LAST so it stays visible (read-only) over overlays and menus, not
         # only in walk — the player always sees why an action was blocked.
         self._draw_log()
+        # Tooltip on the very top, once the mouse has dwelt on a registered row.
+        mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
+        self.hover.update(mouse, pygame.time.get_ticks())
+        if self.hover.active is not None:
+            ui.draw_tooltip(self.screen, self.hover.active, mouse, self.font, self.font_sm)
         self._transform = present(self.display, self.screen, BG)
         # Edge-triggered: log only when the fills-state flips (window starts/stops
         # filling), so an anchoring glitch is captured with no per-frame spam.

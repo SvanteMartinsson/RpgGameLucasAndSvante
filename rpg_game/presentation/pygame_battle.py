@@ -158,6 +158,9 @@ class BattleApp:
     def __post_init__(self) -> None:
         if self.event_log is None:            # standalone fight: own the shared log
             self.event_log = collections.deque(maxlen=chatlog.LOG_HISTORY_MAX)
+        # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
+        # infra only), so it stays a no-op until an apply-slice calls hover.add().
+        self.hover = ui.HoverTracker()
         pygame.init()
         pygame.display.set_caption(T.CAPTION_BATTLE)
         # Inherit the caller's display (window or fullscreen); draw to a fixed
@@ -398,6 +401,7 @@ class BattleApp:
         self._draw_chatbox()
         self._draw_hud_vitals(snapshot)
         self.buttons = []
+        self.hover.begin()   # menus re-register their hoverable rects each frame
         if self.mode == "submenu":
             self._build_submenu(snapshot)
         elif self.mode == "stat_choice":
@@ -407,6 +411,11 @@ class BattleApp:
         self._draw_buttons()
         if self.banner:
             self._draw_banner()
+        # Tooltip on the very top, once the mouse has dwelt on a registered row.
+        mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
+        self.hover.update(mouse, pygame.time.get_ticks())
+        if self.hover.active is not None:
+            ui.draw_tooltip(self.screen, self.hover.active, mouse, self.font, self.font_sm)
         self._transform = present(self.display, self.screen, BG)
 
     def _panel(self, rect: pygame.Rect, title: str = "") -> None:
