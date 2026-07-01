@@ -214,6 +214,7 @@ class GameEngine:
         return tournaments.start_tournament(self.player, self.content, tournament_id)
 
     def create_tournament_opponent(self, tournament: Tournament, index: int) -> Enemy:
+        self._begin_encounter()   # each tournament fight starts with fresh cooldowns
         enemy = self.content.enemies[tournament.opponent_ids[index]].create_enemy()
         # B13 difficulty (diversified), applied per tournament INSTANCE so the shared
         # arena templates are untouched. Opponents alternate role by index so a series
@@ -260,7 +261,16 @@ class GameEngine:
         return world.enter_place(self.player, self.content, place_id)
 
     def create_encounter(self) -> Enemy | None:
-        return world.create_encounter(self.player, self.content, self.rng)
+        enemy = world.create_encounter(self.player, self.content, self.rng)
+        if enemy is not None:
+            self._begin_encounter()
+        return enemy
+
+    def _begin_encounter(self) -> None:
+        """Fresh fight: clear the player's skill cooldowns so they never leak from a
+        previous encounter (enemies already spawn as fresh Actors). Wild and
+        tournament fights both funnel through here."""
+        self.player.cooldowns = {}
 
     def loot_pool(self, enemy: Enemy) -> list[dict[str, object]]:
         # Each enemy resolves from its own COMMON table (loot_table: shared miscellaneous,
@@ -321,16 +331,19 @@ class GameEngine:
     ) -> LootDrop:
         item_id = str(entry["item_id"])
         tier = int(entry.get("rarity_tier", 1))
+        # The denominator (this fight's true 1/N drop chance) is kept for telemetry,
+        # but the SHOWN rarity is the item's AUTHORED rarity so the chat matches what
+        # inventory/character display. Consumables/materials have no authored rarity.
         denominator = self.loot_drop_denominator(enemy, entry, pool)
-        rarity = loot_rarity_for_denominator(denominator)
         if item_id in self.content.weapons:
-            return LootDrop(item_id, self.content.weapons[item_id].name, "weapon", tier, rarity, denominator)
+            weapon = self.content.weapons[item_id]
+            return LootDrop(item_id, weapon.name, "weapon", tier, weapon.rarity, denominator)
         if item_id in self.content.gear_items:
             gear = self.content.gear_items[item_id]
-            return LootDrop(item_id, gear.name, "gear", gear.tier, rarity, denominator)
+            return LootDrop(item_id, gear.name, "gear", gear.tier, gear.rarity, denominator)
         if item_id in self.content.items:
             item = self.content.items[item_id]
-            return LootDrop(item_id, item.name, item.kind, tier, rarity, denominator)
+            return LootDrop(item_id, item.name, item.kind, tier, "common", denominator)
         raise ValueError(f"unknown loot item: {item_id}")
 
     def loot_drop_denominator(

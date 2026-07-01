@@ -68,7 +68,10 @@ class LootRarityTests(unittest.TestCase):
         self.assertEqual(loot_rarity_for_denominator(301), "legendary")
         self.assertEqual(loot_rarity_for_denominator(500), "legendary")
 
-    def test_drop_rarity_is_based_on_actual_weighted_drop_rate(self):
+    def test_drop_rarity_is_the_authored_item_rarity_not_the_drop_rate(self):
+        # The SHOWN rarity is the item's authored rarity (so chat == inventory), NOT
+        # the drop-luck denominator. bone_dust is a miscellaneous item -> common,
+        # even though it dropped at a 1/70 chance (still tracked in the denominator).
         engine = GameEngine(rng=SequenceRng([0.0, 0.99]))
         engine.start_new_game("Hero", "fighter")
         loot = [
@@ -79,8 +82,8 @@ class LootRarityTests(unittest.TestCase):
         drop = engine.roll_loot(_enemy(loot, drop_chance=1.0))
 
         self.assertEqual(drop.item_id, "bone_dust")
-        self.assertEqual(drop.drop_rate_denominator, 70)
-        self.assertEqual(drop.rarity, "rare")
+        self.assertEqual(drop.drop_rate_denominator, 70)   # true drop chance still tracked
+        self.assertEqual(drop.rarity, "common")            # authored, not the 1/70 label
 
     def test_different_drop_rates_inside_same_rarity_class_are_grouped(self):
         engine = _engine()
@@ -121,8 +124,8 @@ class LootRarityTests(unittest.TestCase):
         result = engine.run_combat_turn(enemy, "attack")
 
         self.assertEqual(result.outcome, "victory")
-        self.assertEqual(result.loot_drop.rarity, "rare")
-        self.assertTrue(any("[rare]" in event for event in result.events))
+        self.assertEqual(result.loot_drop.rarity, "common")   # bone_dust authored rarity
+        self.assertTrue(any("[common]" in event for event in result.events))
         self.assertFalse(any("1/70" in event for event in result.events))
 
 
