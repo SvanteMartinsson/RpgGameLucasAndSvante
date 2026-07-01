@@ -233,9 +233,10 @@ class OverworldRegenTest(unittest.TestCase):
                 return gid - fg
         return None
 
-    # The ONLY clean single-tile shrubs (walkable decor); every clipped/edge-touch
-    # tile (103/105/107, ...) is forbidden, multi-tile tree canopy stays forbidden
-    # everywhere, and NO plant tile may sit in walls (collision).
+    # The ONLY clean single-tile shrubs; every clipped/edge-touch tile
+    # (103/105/107, ...) is forbidden, multi-tile tree canopy stays forbidden
+    # everywhere, and NO plant tile may sit in walls (collision) — bushes render
+    # as decor sprites but their collision is added by the presentation (below).
     BUSHES = {97, 99}
 
     def test_no_tree_canopy_only_single_tile_bushes(self):
@@ -248,6 +249,36 @@ class OverworldRegenTest(unittest.TestCase):
         bad = [(x, y) for y in range(H) for x in range(W)
                if (off := self._plant_offset(decor[y][x])) is not None and off not in self.BUSHES]
         self.assertEqual(bad, [], f"non-bush plant (tree canopy?) in decor at {bad[:5]}")
+
+    def test_bushes_are_solid_obstacles(self):
+        # Bushes stay single-tile decor sprites (rendered above walls, under the
+        # player) but are now SOLID: the presentation adds every *_plant cell to
+        # the collision set. Reachability with these blocked is covered by the
+        # town/gate flood-fill tests, which read the same world.blocked.
+        decor = self._layer("decor_over")
+        bushes = [(x, y) for y in range(H) for x in range(W)
+                  if self._plant_offset(decor[y][x]) is not None]
+        self.assertGreater(len(bushes), 50, "no bush thickets placed")
+        walkable = [b for b in bushes if b not in self.world.blocked]
+        self.assertEqual(walkable, [], f"bushes still walkable at {walkable[:5]}")
+
+    def _is_prop(self, gid):
+        return any(fg <= gid < fg + 256 for fg in (2947, 3459, 3971, 4483))  # *_props sheets
+
+    def test_map_terrain_marks_obstacles_grey(self):
+        # The M-map paints one grey dot per obstacle tile (bush thickets on decor,
+        # rock/grave rings on walls) so clusters read as grey blobs.
+        from rpg_game.presentation.pygame_overworld import MAP_OBSTACLE
+        terr = self.app._build_map_terrain()
+        decor, walls = self._layer("decor_over"), self._layer("walls")
+        bush = next(((x, y) for y in range(H) for x in range(W)
+                     if self._plant_offset(decor[y][x]) is not None), None)
+        rock = next(((x, y) for y in range(H) for x in range(W)
+                     if self._is_prop(walls[y][x])), None)
+        self.assertIsNotNone(bush, "no bush cell to sample")
+        self.assertIsNotNone(rock, "no rock/grave prop to sample")
+        self.assertEqual(tuple(terr.get_at(bush))[:3], MAP_OBSTACLE, "bush not grey on map")
+        self.assertEqual(tuple(terr.get_at(rock))[:3], MAP_OBSTACLE, "rock/grave not grey on map")
 
 
 if __name__ == "__main__":

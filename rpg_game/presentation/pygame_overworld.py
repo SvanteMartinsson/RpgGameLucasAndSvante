@@ -223,6 +223,9 @@ MAP_FOG = (22, 22, 30)
 MAP_BG = (10, 12, 18)
 MAP_WATER = (58, 92, 150)
 MAP_LAND_DEFAULT = (74, 96, 72)
+# Obstacles (rock/grave props on walls + bush thickets on decor_over) show as a
+# light-grey dot per tile, so a cluster reads as a grey blob on the map.
+MAP_OBSTACLE = (178, 178, 184)
 MAP_FAMILY_COLORS = {
     "cainos": (96, 132, 78),        # core green
     "mork_skog": (52, 80, 58),      # dark forest
@@ -370,7 +373,28 @@ class Overworld:
                 if f < WATER_BLOCK_THRESHOLD:
                     continue  # mostly-land shore tile: drawn, but walkable
             blocked.add((x, y))
+        blocked |= self._decor_bush_cells()
         return blocked
+
+    def _decor_bush_cells(self) -> set:
+        """Bush thickets live on the decor_over layer (the *_plant sheets) as
+        single-tile shrubs — they render there (above walls, under the player) and
+        are now SOLID obstacles the player can't walk through. Decks on the same
+        layer (water_bridge / bridge_halfdeck) are NOT bushes and stay walkable."""
+        cells: set = set()
+        try:
+            decor = self.tmx.get_layer_by_name("decor_over")
+        except (ValueError, KeyError):
+            return cells
+        get_ts = self.tmx.get_tileset_from_gid
+        for y, row in enumerate(decor.data):
+            for x, gid in enumerate(row):
+                if not gid:
+                    continue
+                ts = get_ts(gid)
+                if ts is not None and ts.name.endswith("_plant"):
+                    cells.add((x, y))
+        return cells
 
     @staticmethod
     def _water_fraction(img: "pygame.Surface") -> float:
@@ -1323,12 +1347,15 @@ class OverworldApp:
         surf.fill(MAP_LAND_DEFAULT)
         ground = next((l for l in tmx.layers if getattr(l, "name", None) == "ground"), None)
         walls = next((l for l in tmx.layers if getattr(l, "name", None) == "walls"), None)
+        decor = next((l for l in tmx.layers if getattr(l, "name", None) == "decor_over"), None)
         get_ts = tmx.get_tileset_from_gid
         land_of: dict[int, tuple] = {0: MAP_LAND_DEFAULT}   # memoize gid -> colour
         water_of: dict[int, bool] = {0: False}
+        obstacle_of: dict[int, bool] = {0: False}           # gid -> rock/grave/bush prop
         for y in range(tmx.height):
             grow = ground.data[y] if ground else None
             wrow = walls.data[y] if walls else None
+            drow = decor.data[y] if decor else None
             for x in range(tmx.width):
                 color = MAP_LAND_DEFAULT
                 if grow is not None:
@@ -1338,6 +1365,7 @@ class OverworldApp:
                         fam = self._map_family(ts.name if ts else None)
                         land_of[gid] = MAP_FAMILY_COLORS.get(fam, MAP_LAND_DEFAULT)
                     color = land_of[gid]
+                is_water = False
                 if wrow is not None:
                     wg = wrow[x]
                     if wg not in water_of:
@@ -1345,6 +1373,22 @@ class OverworldApp:
                         water_of[wg] = bool(ts and ts.name == "water_autotile")
                     if water_of[wg]:
                         color = MAP_WATER
+                        is_water = True
+                # Obstacle dots: rock/grave props (walls) + bush thickets (decor_over).
+                # Every obstacle tile paints one grey pixel, so a cluster shows as a
+                # grey blob on the map. Obstacles never sit on water.
+                if not is_water:
+                    for row_data in (wrow, drow):
+                        if row_data is None:
+                            continue
+                        og = row_data[x]
+                        if og not in obstacle_of:
+                            ts = get_ts(og)
+                            obstacle_of[og] = bool(
+                                ts and (ts.name.endswith("_props") or ts.name.endswith("_plant")))
+                        if obstacle_of[og]:
+                            color = MAP_OBSTACLE
+                            break
                 surf.set_at((x, y), color)
         return surf
 
