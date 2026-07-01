@@ -496,9 +496,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   medvetet inte en vägg. **Kvar:** riktig sprite-art för de 6 nya (placeholder nu).
 - **Not:** Sim fångade två väggar (shade/cursed_wight 0% melee) → tunade ned hp/dmg, behöll resistensen.
 
-#### B46 — Wisdom på gear & vapen  · *nytt, gear-stat förberedd*
-- **Vad:** `wisdom` finns i ALLOWED_GEAR_STATS men INGA items bär den än. Lägg wisdom-bärande armour/amuletter/vapen så casters kan skala spell-power via utrustning (inte bara level-up).
-- **Not:** Ren content ovanpå wisdom-systemet (Slice A/B klara). Sim vid behov. **Acceptans:** N items med wisdom-stat; härledd mana + spell-skalning svarar; tester.
+#### B46 — Wisdom på gear & vapen  · ✅ **KLAR** (gear-only)
+- **KLAR:** 6 wisdom-bärande gear-pjäser över caster-slots (acolyte_charm/seer_pendant amulett,
+  runed_circlet head, oracle_loop/archon_signet ring, mystic_robe chest), tier 1–3, wisdom +1..+4.
+  Equip höjer härledd mana (wisdom×`MANA_PER_WISDOM`) + `spell_source_value` — verifierat i test.
+- **Motiverat beslut:** **gear-only** — vapen saknar `stat_modifiers`-fält (wisdom-på-vapen =
+  kodändring, ej content), och casters skalar redan spell via magic-vapnets damage_bonus, så
+  wisdom-på-vapen vore delvis redundant. Wisdom-vapen = egen liten runda om önskat.
+- **Not:** per-pjäs wisdom ≤4 + rares → modest, ingen sim behövdes. Reachability: stockas i B43-butiker.
+- **Acceptans:** ✅ 6 items med wisdom; härledd mana + spell svarar; 5 tester.
 
 ### Overworld & värld (nytt)
 
