@@ -10,7 +10,7 @@
     ],
     "start_place_id": "burg_5",
     "place_count": 21,
-    "note": "distance_px = sann pixel-l\u00e4ngd (auktoritativt f\u00f6r restid). distance_km_approx kalibreras mot skalstrecket vid behov."
+    "note": "distance_px = sann pixel-längd (auktoritativt för restid). distance_km_approx kalibreras mot skalstrecket vid behov."
   },
   "places": [
     {
@@ -117,6 +117,17 @@
           "distance_px": 40,
           "distance_km_approx": 19.9
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "iron_shortsword",
+        "sword",
+        "maple_shortbow",
+        "hunting_bow",
+        "apprentice_wand",
+        "training_cap"
       ]
     },
     {
@@ -155,6 +166,19 @@
           "distance_px": 20,
           "distance_km_approx": 10.2
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "iron_shortsword",
+        "guard_cap",
+        "padded_vest",
+        "reinforced_vest",
+        "grip_wraps",
+        "scout_leggings",
+        "runner_boots",
+        "iron_cuirass"
       ]
     },
     {
@@ -190,6 +214,18 @@
           "distance_px": 53,
           "distance_km_approx": 26.7
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "sword",
+        "iron_longsword",
+        "recurve_bow",
+        "willow_bow",
+        "adept_wand",
+        "guard_cap",
+        "steel_greatsword"
       ]
     },
     {
@@ -348,6 +384,18 @@
           "distance_px": 56,
           "distance_km_approx": 28.1
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "sword",
+        "hunting_bow",
+        "training_cap",
+        "worn_boots",
+        "novice_ring",
+        "acolyte_charm"
       ]
     },
     {
@@ -382,6 +430,18 @@
           "distance_px": 12,
           "distance_km_approx": 6.0
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "iron_hatchet",
+        "willow_bow",
+        "apprentice_cowl",
+        "scout_leggings",
+        "focus_band",
+        "seer_pendant"
       ]
     },
     {
@@ -416,6 +476,17 @@
           "distance_px": 12,
           "distance_km_approx": 5.9
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "iron_shortsword",
+        "maple_shortbow",
+        "threadbare_gloves",
+        "patched_trousers",
+        "swift_ring",
+        "tin_amulet"
       ]
     },
     {
@@ -512,6 +583,18 @@
           "distance_px": 14,
           "distance_km_approx": 7.0
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "axe",
+        "recurve_bow",
+        "reinforced_vest",
+        "grip_wraps",
+        "sage_amulet",
+        "marcher_greaves"
       ]
     },
     {
@@ -546,6 +629,19 @@
           "distance_px": 13,
           "distance_km_approx": 6.3
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "sword",
+        "recurve_bow",
+        "guard_cap",
+        "reinforced_vest",
+        "runner_boots",
+        "sage_amulet",
+        "battle_amulet"
       ]
     },
     {
@@ -575,6 +671,18 @@
           "distance_px": 30,
           "distance_km_approx": 15.2
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "iron_longsword",
+        "willow_longbow",
+        "adept_wand",
+        "sage_amulet",
+        "oracle_loop",
+        "windstep_boots"
       ]
     },
     {
@@ -732,6 +840,18 @@
           "distance_px": 15,
           "distance_km_approx": 7.5
         }
+      ],
+      "store_inventory": [
+        "lesser_hp_potion",
+        "lesser_mana_potion",
+        "hp_potion",
+        "antidote",
+        "iron_shortsword",
+        "iron_longsword",
+        "axe",
+        "willow_longbow",
+        "apprentice_wand",
+        "grip_wraps"
       ]
     },
     {
@@ -744,14 +864,13 @@
         "lesser_hp_potion",
         "lesser_mana_potion",
         "hp_potion",
-        "mana_potion",
-        "steel_greatsword",
         "emberwand",
-        "yew_longbow",
-        "iron_helm",
-        "marcher_greaves",
-        "swift_ring",
-        "lucky_loop"
+        "guard_cap",
+        "reinforced_vest",
+        "scout_leggings",
+        "runner_boots",
+        "sage_amulet",
+        "iron_helm"
       ],
       "mana_site": false,
       "port": false,

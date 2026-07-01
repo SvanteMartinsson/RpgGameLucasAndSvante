@@ -520,8 +520,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Vad:** Två uppskjutna förbättringar i den unifierade loggen: (a) **segment-färg per rad** (item-namn i rarity-färg + guld-belopp i amber på samma rad, inte hela raden en färg); (b) **per-träff skada i rött** (skada mot spelaren).
 - **Not:** Båda kräver en rikare log-modell: (a) rader som färgade **segment** i stället för en färg/rad; (b) **strukturerade combat-events** (skadetyp/mål) i stället för färdig-formaterad text. **Acceptans:** loot-rad visar färgat itemnamn + amber guld; skada-mot-spelare renderas röd; tester för segment-rendering + event→färg.
 
-#### B43 — Butiksinnehåll för de 9 nyaktiverade store-städerna  · *snabbfix, kopplar B8 2b*
-- **Vad:** De 9 städer som fick store via has_store-fixen bär det tunna default-lagret (hp_potion/sword/axe/longsword). Kurerat, kategori-lämpligt sortiment + lesser-pots. **Not:** delmängd av B8 Slice 2b (per-stad varierat butiksinnehåll) men vassare/omedelbar. **Acceptans:** varje ny store-stad har kategori-rätt sortiment; ingen kvar med bara default-fyra; test.
+#### B43 — Butiksinnehåll för de nyaktiverade store-städerna  · ✅ **KLAR**
+- **KLAR:** 10 städer som bar default-fyran fick kurerat, kategori-lämpligt sortiment (weapons/
+  armor/general per core_zone shop_category), + burg_146 (armor) trimmad. **Lucas-regel enforced
+  globalt: max 1 rare/shop** — "prestera snarare än köpa": shops fyller luckor/små uppgraderingar,
+  inte topp-gear. Varje butik bär nu båda lesser-pots + ≥1 weapon/gear/consumable, inga greater-pots,
+  ingen osåld worn_shortsword. Wisdom-gear (B46) seedad i caster-shops (acolyte_charm/seer_pendant/
+  oracle_loop) för reachability. **Acceptans:** ✅ ingen default-fyra kvar; ≤1 rare/shop; test låser
+  regeln för ALLA stores. 765 tester gröna.
 
 ---
 
