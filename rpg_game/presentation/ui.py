@@ -174,3 +174,64 @@ def draw_tooltip(screen, tooltip: "Tooltip", anchor, title_font, body_font,
         screen.blit(surf, (rect.x + pad, y))
         y += surf.get_height() + gap
     return rect
+
+
+# --- list / row helper -----------------------------------------------------
+@dataclass
+class RowStyle:
+    """Colours + geometry for draw_menu_row, so each screen can pass its own
+    palette. Defaults are a neutral dark scheme (used by the smoke demo)."""
+
+    font: "pygame.font.Font"
+    bg: tuple = (44, 48, 62)
+    hover: tuple = (58, 64, 84)
+    disabled: tuple = (34, 36, 46)
+    edge: tuple = (80, 88, 112)
+    text: tuple = (222, 226, 235)
+    text_dim: tuple = (140, 146, 160)
+    value: tuple = (220, 180, 90)     # right-aligned cost colour
+    radius: int = 6
+    pad: int = 10
+
+
+@dataclass
+class MenuRow:
+    """One selectable menu line the apply-slices build lists of: a label, an
+    optional right-aligned value (cost / count), a dimmed (disabled) or
+    restricted (clickable-but-locked) look, and an optional tooltip payload
+    surfaced on hover. ``on_click`` is carried for convenience — the screen still
+    owns click handling via its Button list."""
+
+    label: str
+    value: str = ""
+    enabled: bool = True
+    restricted: bool = False
+    tooltip: object = None            # ui.Tooltip shown after a >1 s dwell
+    on_click: object = None
+
+
+def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
+                  *, mouse=None, hover=None, fit=None) -> "pygame.Rect":
+    """Render one menu row into ``rect``: a rounded fill (hover/dim aware), the
+    label at the left (fitted to the free width via ``fit(text, max_w, font)`` if
+    given), and the optional right-aligned ``row.value``. A disabled/restricted
+    row is dimmed. If ``hover`` (a HoverTracker) and ``row.tooltip`` are provided,
+    the rect is registered so a >1 s dwell pops the tooltip. ``mouse`` (canvas
+    space) drives the hover fill. Returns the rect (for click wiring)."""
+    dim = (not row.enabled) or row.restricted
+    hot = (mouse is not None) and (not dim) and rect.collidepoint(mouse)
+    fill = style.disabled if dim else (style.hover if hot else style.bg)
+    pygame.draw.rect(screen, fill, rect, border_radius=style.radius)
+    pygame.draw.rect(screen, style.edge, rect, width=1, border_radius=style.radius)
+    value_w = 0
+    if row.value:
+        vs = style.font.render(row.value, True, style.text_dim if dim else style.value)
+        screen.blit(vs, vs.get_rect(midright=(rect.right - style.pad, rect.centery)))
+        value_w = vs.get_width() + style.pad
+    max_label_w = rect.width - 2 * style.pad - value_w
+    label = fit(row.label, max_label_w, style.font) if fit else row.label
+    ls = style.font.render(label, True, style.text_dim if dim else style.text)
+    screen.blit(ls, ls.get_rect(midleft=(rect.x + style.pad, rect.centery)))
+    if hover is not None and row.tooltip is not None:
+        hover.add(rect, row.tooltip)
+    return rect
