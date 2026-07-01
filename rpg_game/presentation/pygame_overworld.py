@@ -56,6 +56,7 @@ from rpg_game.presentation.talent_text import (
     talent_status,
 )
 from rpg_game.presentation import town_cluster
+from rpg_game.presentation import fog
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -1383,6 +1384,9 @@ class OverworldApp:
         # tiles blit off-surface and contribute no pixels — but the blit count is
         # bounded by the view, not the map area. Applies to all layers identically.
         left, right, top, bottom = self._visible_tile_bounds(view_w, view_h, ox, oy)
+        # B11: reveal the on-screen tiles into the fog bitset as the player walks.
+        fog.reveal_rect(self.engine.player.revealed_tiles, tmx.width, tmx.height,
+                        left, right, top, bottom)
         get_image = tmx.get_tile_image_by_gid
         for layer in tmx.visible_layers:
             data = getattr(layer, "data", None)

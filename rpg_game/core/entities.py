@@ -419,6 +419,10 @@ class Player:
     item_upgrades: dict[str, str] = field(default_factory=dict)
     upgrade_stat_bonuses: dict[str, int] = field(default_factory=dict)
     weapon_upgrade_components: list[dict[str, object]] = field(default_factory=list)
+    # B11: fog-of-war for the fullscreen map — an OPAQUE bitset (one bit per
+    # overworld tile, row-major) the presentation reads/writes; the core just
+    # persists the blob. Empty = nothing revealed (old saves + new games).
+    revealed_tiles: bytearray = field(default_factory=bytearray)
 
     @property
     def is_alive(self) -> bool:

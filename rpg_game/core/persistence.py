@@ -7,6 +7,7 @@ from an older structure (missing fields) load without crashing.
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 
 from rpg_game.core import entities
@@ -113,6 +114,8 @@ def serialize_player(player: Player) -> dict:
         "pending_stat_choices": player.pending_stat_choices,
         "completed_tournament_ids": sorted(player.completed_tournament_ids),
         "item_upgrades": dict(player.item_upgrades),
+        # B11 fog-of-war: base64 of the reveal bitset ("" when nothing revealed).
+        "revealed_tiles": base64.b64encode(bytes(player.revealed_tiles)).decode("ascii"),
         "inventory": {"consumables": dict(player.inventory.consumables)},
     }
 
@@ -193,6 +196,8 @@ def deserialize_player(data: dict, default_place_id: str = "") -> Player:
         completed_tournament_ids=set(data.get("completed_tournament_ids", ())),
         # B37 Slice 2: old saves predate upgrades -> nothing upgraded.
         item_upgrades={str(k): str(v) for k, v in data.get("item_upgrades", {}).items()},
+        # B11: old saves predate fog -> empty bitset (all hidden).
+        revealed_tiles=bytearray(base64.b64decode(data.get("revealed_tiles", "") or "")),
     )
 
 
