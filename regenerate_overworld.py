@@ -35,10 +35,9 @@ BRIDGE_FG = 4755                  # water_bridge firstgid
 PLANK_H, PLANK_V = 13, 14         # (old) self-railed decks — repeated rails per tile
 # One wide RAILLESS crossing: the bridge_halfdeck sheet's plank tiles carry NO
 # rails, so tiling them across a crossing reads as a single continuous deck
-# instead of "three railed bridges". idx 3 = horizontal-seam planks (a boardwalk
-# you cross N-S over the seam channel).
+# instead of "three railed bridges". idx 0 = vertical-plank deck (Lucas's pick B).
 HALFDECK_FG = 4871                # bridge_halfdeck firstgid
-RAILLESS_DECK = HALFDECK_FG + 3   # railless plank deck (whole-width crossing)
+RAILLESS_DECK = HALFDECK_FG + 0   # railless plank deck (whole-width crossing)
 
 # ---- pocket-based vegetation (this slice) --------------------------------
 # Per-zone plant/props sheet firstgids (registered in the TMX, left intact).
