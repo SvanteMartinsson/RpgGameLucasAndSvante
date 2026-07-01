@@ -1,7 +1,8 @@
 """B39: the battle chatbox shows ONE set of battle-end lines. The core still
 returns its narration ("X was defeated." / "Gained N XP and M gold." /
 "X dropped: ...") for tests, but the log surfaces only the short presentation
-lines ("Victory!" / "+N XP" / "+N gold" / "Loot: item [rarity]") with no dups.
+lines ("Victory!" / "+N XP" / "+N gold" / "Loot: item") with no dups. Rarity is
+now shown by the loot line's COLOUR, not a "[rarity]" suffix.
 """
 
 import collections
@@ -17,6 +18,7 @@ try:
     from rpg_game.core.entities import LootDrop
     from rpg_game.core.game import GameEngine
     from rpg_game.presentation.pygame_battle import BattleApp
+    from rpg_game.presentation import chatlog
 
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard
@@ -64,9 +66,11 @@ class ChatboxDedupTest(unittest.TestCase):
         battle._consume_result(self._victory_result(enemy, drop))
         texts = [t for t, _c in log]
 
-        loot = [t for t in texts if t.startswith("Loot:")]
+        loot = [(t, c) for t, c in log if t.startswith("Loot:")]
         self.assertEqual(len(loot), 1, texts)                       # exactly one Loot line
-        self.assertIn("[common]", loot[0])                          # carries the rarity label
+        loot_text, loot_color = loot[0]
+        self.assertNotIn("[", loot_text)                            # no "[common]" text
+        self.assertEqual(loot_color, chatlog.rarity_color("common"))  # rarity shown by colour
         self.assertFalse([t for t in texts if "dropped:" in t], texts)  # verbose line gone
 
     def test_battle_end_is_not_doubled(self):

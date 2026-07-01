@@ -57,6 +57,7 @@ from rpg_game.presentation.talent_text import (
 )
 from rpg_game.presentation import town_cluster
 from rpg_game.presentation import fog
+from rpg_game.presentation import chatlog
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "maps")
 DEFAULT_MAP = os.path.join(MAPS_DIR, "testmap.tmx")
@@ -180,11 +181,13 @@ SAFE_TILE_MARGIN = 2
 # on-screen text goes (no floating toasts). It keeps deep scrollback, shows a
 # resizable number of lines (player grows/shrinks it, clamped), and can be scrolled
 # up to read older lines.
-LOG_HISTORY_MAX = 200       # how many lines are retained for scrollback
-LOG_VISIBLE_DEFAULT = 10    # visible lines by default (bigger than the old 7)
-LOG_VISIBLE_MIN = 5
-LOG_VISIBLE_MAX = 18
-LOG_SCROLL_STEP = 2         # lines per mouse-wheel notch
+# Chatbox sizing lives in the shared chatlog component (single source); aliased
+# here so existing references/imports keep working.
+LOG_HISTORY_MAX = chatlog.LOG_HISTORY_MAX
+LOG_VISIBLE_DEFAULT = chatlog.LOG_VISIBLE_DEFAULT
+LOG_VISIBLE_MIN = chatlog.LOG_VISIBLE_MIN
+LOG_VISIBLE_MAX = chatlog.LOG_VISIBLE_MAX
+LOG_SCROLL_STEP = chatlog.LOG_SCROLL_STEP
 
 # Location indicator (top-right): within this many tiles of a hub's plaza the label
 # reads relative ("south of Hordanita") instead of the generic wilds text.
@@ -641,12 +644,10 @@ class OverworldApp:
             self.push_log(message, color)
 
     def push_log(self, message: str, color=TEXT) -> None:
-        """Append a line to the chatbox log (deduping immediate repeats). Stays
-        pinned to the newest line unless the player has scrolled up to read history."""
-        if self.event_log and self.event_log[-1][0] == message:
-            return
-        self.event_log.append((message, color))
-        if self.log_scroll:        # reading history: hold position relative to newest
+        """Append a line to the shared chatbox log (deduping immediate repeats).
+        Stays pinned to the newest line unless the player scrolled up to read
+        history."""
+        if chatlog.push(self.event_log, message, color) and self.log_scroll:
             self.log_scroll = min(self.log_scroll + 1, self._log_scroll_max())
 
     def _log_scroll_max(self) -> int:
@@ -981,7 +982,17 @@ class OverworldApp:
 
     def sell(self, item_id: str) -> None:
         result = self.engine.sell_item(item_id)
-        self.set_toast(result.message, GOOD if result.success else BAD)
+        # A successful sale reads in the item's rarity colour (unified with drops);
+        # a failure stays in the failure colour.
+        color = chatlog.rarity_color(self._item_rarity(item_id)) if result.success else BAD
+        self.set_toast(result.message, color)
+
+    def _item_rarity(self, item_id: str) -> str:
+        if item_id in self.engine.content.weapons:
+            return self.engine.content.weapons[item_id].rarity
+        if item_id in self.engine.content.gear_items:
+            return self.engine.content.gear_items[item_id].rarity
+        return "common"
 
     def learn_talent(self, node_id: str) -> None:
         try:
@@ -2402,47 +2413,19 @@ class OverworldApp:
         return pygame.Rect(8, self.screen.get_height() - panel_h - 8, panel_w, panel_h)
 
     def _visual_log_lines(self) -> list[tuple[str, tuple, bool]]:
-        """B39: the event log flattened into word-wrapped visual lines (no
-        truncation). Each entry becomes >=1 line via _wrapped_lines_pixels; the
-        bool flags lines from the newest entry so the renderer keeps them bright."""
+        """The shared event log flattened into word-wrapped (text, color, newest)
+        visual lines (delegates to the shared chatlog component)."""
         width = self._log_rect().width - 8 * 2  # both-side padding
-        entries = list(self.event_log)
-        out: list[tuple[str, tuple, bool]] = []
-        for idx, (text, color) in enumerate(entries):
-            newest = idx == len(entries) - 1
-            for piece in self._wrapped_lines_pixels(text, width, self.font_sm):
-                out.append((piece, color, newest))
-        return out
+        return chatlog.visual_lines(self.event_log, width, self.font_sm)
 
     def _draw_log(self) -> None:
-        """B29 chatbox: the single on-screen text surface. Semi-transparent panel,
-        bottom-left, showing log_visible VISUAL lines ending at the scroll position;
-        long lines word-wrap (never truncated). Oldest fade dimmer; a '... N more'
-        hint appears when scrolled up."""
-        line_h = self.font_sm.get_height() + 3
-        pad = 8
-        rect = self._log_rect()
-        vis = self._log_visible_now()
-        overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
-        # More opaque under menus so it stays readable over the overlay dim.
-        overlay.fill((10, 12, 18, 180 if self._log_interactive() else 220))
-        self.screen.blit(overlay, rect.topleft)
-        pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=1, border_radius=4)
-        lines = self._visual_log_lines()
-        n = len(lines)
-        if not lines:        # always show the panel (it's the primary HUD now)
-            return
-        # Window of visible visual lines, clamped, honoring the scroll offset.
-        self.log_scroll = min(self.log_scroll, max(0, n - vis))
-        end = n - self.log_scroll
-        start = max(0, end - vis)
-        for i, (text, color, newest) in enumerate(lines[start:end]):
-            shade = color if newest else tuple((c + d) // 2 for c, d in zip(color, TEXT_DIM))
-            surf = self.font_sm.render(text, True, shade)
-            self.screen.blit(surf, (rect.x + pad, rect.y + pad + i * line_h))
-        if self.log_scroll:        # show there is newer text below the view
-            hint = self.font_sm.render(f"v {self.log_scroll} more v", True, ACCENT)
-            self.screen.blit(hint, hint.get_rect(bottomright=(rect.right - pad, rect.bottom - 2)))
+        """The single on-screen chatbox (shared with battle): semi-transparent
+        panel, bottom-left, showing the visible lines ending at the scroll
+        position."""
+        self.log_scroll = chatlog.draw(
+            self.screen, self._log_rect(), self.event_log, self.font_sm,
+            visible=self._log_visible_now(), scroll=self.log_scroll,
+            interactive=self._log_interactive(), edge=PANEL_EDGE, accent=ACCENT)
 
     # -- main loop ----------------------------------------------------------
 

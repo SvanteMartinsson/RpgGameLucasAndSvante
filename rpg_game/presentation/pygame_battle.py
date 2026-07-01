@@ -17,6 +17,7 @@ Kör:
 
 from __future__ import annotations
 
+import collections
 import os
 import sys
 from dataclasses import dataclass, field
@@ -29,6 +30,7 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import ui_text as T
+from rpg_game.presentation import chatlog
 from rpg_game.presentation.pygame_canvas import acquire_display, present, set_display_mode, to_canvas
 
 # --- Layout ----------------------------------------------------------------
@@ -141,7 +143,7 @@ class BattleApp:
     # the given enemy on a shared engine, then return control via self.outcome
     # without quitting pygame — used by the overworld loop.
     standalone: bool = True
-    log: list[tuple[str, tuple[int, int, int]]] = field(default_factory=list)
+    log_scroll: int = 0
     mode: str = "combat"  # combat | submenu | stat_choice | game_over | victory_idle
     submenu_kind: str = ""
     buttons: list[Button] = field(default_factory=list)
@@ -155,14 +157,16 @@ class BattleApp:
     allow_flee: bool = True
     allow_swap: bool = True
     _transform: tuple[int, int, float] = (0, 0, 1.0)  # canvas->display offset+scale
-    # B16: optional shared action log (a deque owned by the overworld). When set,
-    # every push_log line is mirrored into it so the overworld can surface combat,
-    # drops, level-ups and heals after the battle hands control back.
+    # The ONE shared log: a deque of (text, color). The overworld passes its own so
+    # combat/drops/level-ups continue in the same chatbox after the fight; a
+    # standalone battle gets its own. Battle renders the SAME chatbox component.
     event_log: object | None = None
 
     # -- lifecycle ----------------------------------------------------------
 
     def __post_init__(self) -> None:
+        if self.event_log is None:            # standalone fight: own the shared log
+            self.event_log = collections.deque(maxlen=chatlog.LOG_HISTORY_MAX)
         pygame.init()
         pygame.display.set_caption(T.CAPTION_BATTLE)
         # Inherit the caller's display (window or fullscreen); draw to a fixed
@@ -234,10 +238,7 @@ class BattleApp:
     # -- logging ------------------------------------------------------------
 
     def push_log(self, text: str, color: tuple[int, int, int] = TEXT) -> None:
-        self.log.append((text, color))
-        del self.log[:-300]
-        if self.event_log is not None:
-            self.event_log.append((text, color))
+        chatlog.push(self.event_log, text, color)
 
     # -- command dispatch ---------------------------------------------------
 
@@ -282,12 +283,14 @@ class BattleApp:
         for event in result.events:
             if event in suppressed:
                 continue
+            if result.loot_drop is not None and "dropped:" in event:
+                continue   # shown as a rarity-coloured loot line instead of "[rare]" text
             self.push_log(event)
         if result.enemy_reveal is not None:
             for line in _reveal_lines(result.enemy_reveal):
                 self.push_log(line, ACCENT)
         if result.loot_drop is not None:
-            self.push_log(_loot_line(result.loot_drop), GOOD)
+            self.push_log(_loot_line(result.loot_drop), chatlog.rarity_color(result.loot_drop.rarity))
 
         self.set_mode("combat")
 
@@ -303,11 +306,11 @@ class BattleApp:
                 self._show_result("fled")
             return
         if result.outcome == "victory":
-            self.push_log(T.VICTORY_LOG, GOOD)
+            self.push_log(T.VICTORY_LOG, chatlog.HEAL)
             if result.xp_gained:
-                self.push_log(T.xp_gain(result.xp_gained), XP_COL)
+                self.push_log(T.xp_gain(result.xp_gained), chatlog.XP)
             if result.gold_gained:
-                self.push_log(T.gold_gain(result.gold_gained), WARN)
+                self.push_log(T.gold_gain(result.gold_gained), chatlog.GOLD)
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning
@@ -320,7 +323,7 @@ class BattleApp:
                 self._show_result("victory")
             return
         if result.outcome == "defeat":
-            self.push_log(T.DEFEATED_LOG, BAD)
+            self.push_log(T.DEFEATED_LOG, chatlog.DAMAGE)
             self.enemy = None
             if self.standalone:
                 self.banner = T.DEFEAT_BANNER
@@ -333,7 +336,7 @@ class BattleApp:
         if self.engine.player.pending_stat_choices <= 0:
             return
         message = self.engine.apply_stat_choice(stat)
-        self.push_log(message, XP_COL)
+        self.push_log(message, chatlog.LEVELUP)
         if self.engine.player.pending_stat_choices <= 0:
             if self.standalone:
                 self.banner = T.LEVELUP_RESOLVED
@@ -401,7 +404,7 @@ class BattleApp:
         self.screen.fill(BG)
         snapshot = build_snapshot(self.engine)
         self._draw_stage()
-        self._draw_log_panel()
+        self._draw_chatbox()
         self._draw_hud_vitals(snapshot)
         self.buttons = []
         if self.mode == "submenu":
@@ -500,14 +503,15 @@ class BattleApp:
         pygame.draw.rect(self.screen, HERO_BOX, rect, border_radius=6)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
 
-    def _draw_log_panel(self):
-        self._panel(LOG_PANEL, T.PANEL_LOG)
-        line_h = 18
-        top = LOG_PANEL.y + 28
-        max_lines = (LOG_PANEL.height - 36) // line_h
-        visible = self.log[-max_lines:]
-        for i, (text, color) in enumerate(visible):
-            self._text(text[:120], (LOG_PANEL.x + 12, top + i * line_h), self.font_sm, color)
+    def _draw_chatbox(self):
+        """The SAME chatbox component the overworld uses, drawn in the battle's log
+        band so the combat log and the overworld log are one surface."""
+        line_h = self.font_sm.get_height() + 3
+        visible = max(1, (LOG_PANEL.height - 16) // line_h)
+        self.log_scroll = chatlog.draw(
+            self.screen, LOG_PANEL, self.event_log, self.font_sm,
+            visible=visible, scroll=self.log_scroll, interactive=False,
+            edge=PANEL_EDGE, accent=ACCENT)
 
     def _draw_hud_vitals(self, snapshot):
         # Compact vitals; the YOU name/class header is gone — only a discreet
@@ -697,9 +701,9 @@ def _reveal_lines(reveal):
 
 
 def _loot_line(loot):
+    # Rarity is conveyed by the line's COLOUR (chatlog), so no "[rare]" text here.
     name = getattr(loot, "item_name", None) or getattr(loot, "name", "loot")
-    rarity = getattr(loot, "rarity_label", None) or getattr(loot, "rarity", "")
-    return f"Loot: {name}" + (f" [{rarity}]" if rarity else "")
+    return f"Loot: {name}"
 
 
 # --- entry point -----------------------------------------------------------
