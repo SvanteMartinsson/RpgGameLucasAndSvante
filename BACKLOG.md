@@ -475,8 +475,12 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   - **S5:** character-creation — hela klassens talangträd som read-only förhandsvisning + starter-skill-val (1 av 2 tier-1 → learned rank 1) + enhetlig chrome + bort med "(Mana X)".
 - **Acceptans (per apply-slice):** skärmen följer 7-punktsspecen; hover >1 s visar tooltip; render-HALT-godkänd av Lucas; tester.
 
-#### B11 (tillägg) — Minimap = Slice 2
+#### B11 (tillägg) — Minimap = Slice 2  · 🟢 **BYGGD** (render-review)
 - **Vad:** Fullskärmskarta + fog (M) är Slice 1 (KLAR, `9ec6f0c`). **Slice 2 = en alltid-synlig minimap** i hörnet, återanvänder fog-bitset + terräng-texturen. **Not:** presentation-only ovanpå B11-infran. **Acceptans:** minimap visar avtäckt terräng + spelarmarkör; togglas; test.
+- **BYGGD:** `_draw_minimap` (top-left, ~44×33 tiles = 3.5× walk-vyn) återanvänder den **fog-maskade
+  map-kompositen** (obesökt = MAP_FOG, exakt samma fog som M-kartan → "varit där"-regeln gratis) +
+  spelarmarkör; **N** togglar (default på). Ren framing-helper `fog.minimap_origin` (centrering +
+  kant-clamp) testad. **Render-review i morgon** (pygame-ritning; systempython saknar pygame).
 
 ### Strid, vapen & innehåll (nytt)
 

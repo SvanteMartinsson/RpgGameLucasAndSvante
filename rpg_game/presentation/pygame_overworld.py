@@ -236,6 +236,12 @@ TOWN_HUB = (120, 220, 140)
 # ground tileset name) so zones + the southern heath read as landmarks; water is
 # detected from the walls water_autotile tileset.
 MAP_FOG = (22, 22, 30)
+# B11 Slice 2: always-on minimap. Shows ~3.5x the walk viewport (ZOOM_TARGET_TILES_W
+# wide) around the player, reusing the fog-masked map composite (unexplored stays
+# hidden). Top-left corner; toggled with N.
+MINIMAP_TILES = (44, 33)      # window in tiles (~3.5x the 12-wide walk view)
+MINIMAP_BOX = (176, 132)      # on-screen pixel size (nearest-neighbour scaled)
+MINIMAP_MARGIN = 10
 MAP_BG = (10, 12, 18)
 MAP_WATER = (58, 92, 150)
 MAP_LAND_DEFAULT = (74, 96, 72)
@@ -613,6 +619,7 @@ class OverworldApp:
         self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
         self._pending_tags: list = []                # queued 'Upgradable' row tags
+        self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
         # (rebuilt only when the revealed-tile count changes).
         self._map_terrain = None
@@ -1217,6 +1224,9 @@ class OverworldApp:
         if event.key == pygame.K_m:
             self.toggle_overlay("map")
             return
+        if event.key == pygame.K_n:
+            self.show_minimap = not self.show_minimap   # B11 Slice 2
+            return
         # Chatbox resize/scroll: walk-only. Under menus the chatbox is visible but
         # read-only ('+' grows, '-' shrinks; PageUp/PageDown scroll).
         if self._log_interactive():
@@ -1284,6 +1294,8 @@ class OverworldApp:
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
             self._draw_vitals()
+            if self.show_minimap:
+                self._draw_minimap()
         if self.mode == "building":
             self._draw_building_menu()
         elif self.mode == "upgrade_station":
@@ -1490,6 +1502,31 @@ class OverworldApp:
         self.screen.blit(self.font_sm.render(
             "M / Esc: close   ·   fog lifts as you explore   ·   orientation only",
             True, TEXT_DIM), (rect.x, rect.bottom + 10))
+
+    def _draw_minimap(self) -> None:
+        """B11 Slice 2: a small always-on minimap in the top-left, showing a window
+        of ~MINIMAP_TILES around the player. Reuses the fog-masked map composite, so
+        unexplored terrain stays hidden (identical fog to the M map). N toggles it."""
+        tmx = self.world.tmx
+        W, H = tmx.width, tmx.height
+        win_w, win_h = min(MINIMAP_TILES[0], W), min(MINIMAP_TILES[1], H)
+        comp = self._map_composite_surface()          # 1px/tile, unrevealed = MAP_FOG
+        ptx, pty = self.world.current_tile
+        left, top = fog.minimap_origin(ptx, pty, W, H, win_w, win_h)
+        sub = comp.subsurface(pygame.Rect(left, top, win_w, win_h))
+        box_w, box_h = MINIMAP_BOX
+        scaled = pygame.transform.scale(sub, (box_w, box_h))
+        x0 = y0 = MINIMAP_MARGIN
+        panel = pygame.Surface((box_w + 4, box_h + 4), pygame.SRCALPHA)
+        panel.fill((10, 12, 18, 185))
+        self.screen.blit(panel, (x0 - 2, y0 - 2))
+        self.screen.blit(scaled, (x0, y0))
+        pygame.draw.rect(self.screen, PANEL_EDGE, (x0 - 2, y0 - 2, box_w + 4, box_h + 4), 1)
+        # player marker at its position within the window
+        mx = x0 + int((ptx - left + 0.5) * box_w / win_w)
+        my = y0 + int((pty - top + 0.5) * box_h / win_h)
+        pygame.draw.circle(self.screen, GOOD, (mx, my), 3)
+        pygame.draw.circle(self.screen, MAP_BG, (mx, my), 3, 1)
 
     def _resolve_town_template(self, place_id: str, has_tournament: bool):
         """Concrete building list for a town from its core_zone tier/shop_category/

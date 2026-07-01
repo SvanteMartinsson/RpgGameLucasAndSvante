@@ -44,3 +44,16 @@ def is_revealed(bits: bytearray, width: int, x: int, y: int) -> bool:
 
 def count_revealed(bits: bytearray) -> int:
     return sum(bin(byte).count("1") for byte in bits)
+
+
+def minimap_origin(px: int, py: int, map_w: int, map_h: int,
+                   win_w: int, win_h: int) -> tuple[int, int]:
+    """Top-left tile of a win_w x win_h minimap window centred on (px, py),
+    clamped so the window never leaves the map. Pure (no pygame) so the framing
+    + edge-clamp is unit-testable. When the map is smaller than the window the
+    origin is 0 (the whole map shows)."""
+    left = px - win_w // 2
+    top = py - win_h // 2
+    left = max(0, min(left, max(0, map_w - win_w)))
+    top = max(0, min(top, max(0, map_h - win_h)))
+    return (left, top)
