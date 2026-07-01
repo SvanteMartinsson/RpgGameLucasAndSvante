@@ -32,7 +32,13 @@ PATH_FAR = [52, 53, 60, 61]       # scattered overgrown cobble mid-route
 
 WATER_FG = 4739                   # water_autotile firstgid (WIDX offsets)
 BRIDGE_FG = 4755                  # water_bridge firstgid
-PLANK_H, PLANK_V = 13, 14         # full self-railed decks: E-W deck / N-S deck
+PLANK_H, PLANK_V = 13, 14         # (old) self-railed decks — repeated rails per tile
+# One wide RAILLESS crossing: the bridge_halfdeck sheet's plank tiles carry NO
+# rails, so tiling them across a crossing reads as a single continuous deck
+# instead of "three railed bridges". idx 3 = horizontal-seam planks (a boardwalk
+# you cross N-S over the seam channel).
+HALFDECK_FG = 4871                # bridge_halfdeck firstgid
+RAILLESS_DECK = HALFDECK_FG + 3   # railless plank deck (whole-width crossing)
 
 # ---- pocket-based vegetation (this slice) --------------------------------
 # Per-zone plant/props sheet firstgids (registered in the TMX, left intact).
@@ -78,11 +84,16 @@ def _csv(grid, W):
     return ",\n".join(",".join(str(grid[y][x]) for x in range(W)) for y in range(len(grid)))
 
 
+def _on_seam(x, y):
+    """This bridge cell crosses the E-W seam channel (a N-S traversal we keep) vs
+    the river/lake (removed)."""
+    return abs(y - L.seam_y(x)) <= L.RIVER_HALF + 1.5
+
+
 def _deck_gid(x, y):
-    """Full-deck plank for a bridge cell: N-S deck (walk N-S) over the E-W seam
-    channel; E-W deck (walk E-W) over the N-S river/lake."""
-    on_seam = abs(y - L.seam_y(x)) <= L.RIVER_HALF + 1.5
-    return BRIDGE_FG + (PLANK_V if on_seam else PLANK_H)
+    """A seam crossing is ONE wide railless deck — every cell uses the same
+    rail-free plank tile, so the crossing reads as a single bridge."""
+    return RAILLESS_DECK
 
 
 def _seed_pockets(W, H, water, protected, rng):
@@ -124,6 +135,12 @@ def main():
     gates = list(lay["gates"].values())
     start = lay["start"]
     water, cell_name, bridges = lay["water"], lay["cell_name"], lay["bridges"]
+    # Keep ONLY the seam crossings (N-S traversal). River/lake bridges are removed
+    # — that water becomes plain, non-passable water (a landmark, not a crossing).
+    # Downstream this makes those cells render + block as water and drop out of the
+    # reachability flood-fill; the assert below confirms no town is isolated.
+    river_lake_bridges = {b for b in bridges if not _on_seam(*b)}
+    bridges = {b for b in bridges if _on_seam(*b)}
 
     # ---- PROTECTED cells (no props/pockets): town cluster footprints + doorstep,
     # gates, the start tile. Path cells are added after the path pass. ----
@@ -250,7 +267,8 @@ def main():
 
     walkable = 100 * (1 - len(blocked) / (W * H))
     print(f"OK {W}x{H}: {len(town_tiles)} towns + {len(gates)} gates reachable; "
-          f"{len(water)} water cells ({len(bridges)} bridge); "
+          f"{len(water)} water cells ({len(bridges)} seam-bridge, "
+          f"{len(river_lake_bridges)} river/lake bridges removed); "
           f"{len(pockets)} pockets, {rock_n} rocks (walls), {bush_n} bushes (decor); "
           f"walkable ~{walkable:.1f}%")
 
