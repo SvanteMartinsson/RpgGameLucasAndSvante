@@ -618,6 +618,7 @@ class OverworldApp:
         self.building_menu: tuple[str, str] | None = None  # (place_id, building_id) of the open door menu
         self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
+        self.tome_building: str | None = None        # B38: open mage-tower tome shop building id
         self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
@@ -948,8 +949,9 @@ class OverworldApp:
         items = self.engine.content.items
         bag = self.engine.player.inventory.consumables
         counts = {
-            "consumables": sum(c for i, c in bag.items() if c > 0 and items[i].kind == "consumable"),
-            "miscellaneous": sum(c for i, c in bag.items() if c > 0 and items[i].kind != "consumable"),
+            # B38: tomes are usable items -> live with consumables, not inert misc.
+            "consumables": sum(c for i, c in bag.items() if c > 0 and items[i].kind in ("consumable", "tome")),
+            "miscellaneous": sum(c for i, c in bag.items() if c > 0 and items[i].kind not in ("consumable", "tome")),
             "weapon": len(snap.weapons),
         }
         gear_by_type = collections.Counter(g.slot_type for g in snap.gear)
@@ -976,7 +978,8 @@ class OverworldApp:
         if category in ("consumables", "miscellaneous"):
             want_consumable = category == "consumables"
             for item_id, count in sorted(bag.items()):
-                if count <= 0 or (items[item_id].kind == "consumable") != want_consumable:
+                usable = items[item_id].kind in ("consumable", "tome")  # B38: tomes are usable
+                if count <= 0 or usable != want_consumable:
                     continue
                 if want_consumable:
                     rows.append((item_id, f"{items[item_id].name} x{count}",
@@ -1205,6 +1208,8 @@ class OverworldApp:
                 self._close_upgrade_station()
             elif self.mode == "store":
                 self.mode = "walk"
+            elif self.mode == "tome_shop":
+                self._close_tome_shop()
             elif self.mode in {"tournaments", "tournament_confirm"}:
                 self.mode = "walk"
             elif self.mode == "tournament_intermission":
@@ -1302,6 +1307,8 @@ class OverworldApp:
             self._draw_upgrade_station()
         elif self.mode == "store":
             self._draw_store_screen()
+        elif self.mode == "tome_shop":
+            self._draw_tome_shop()
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
         elif self.mode == "tournament_confirm":
@@ -1989,8 +1996,55 @@ class OverworldApp:
             up_label = "Upgrade weapon" if station_cat == "weapon" else "Upgrade armour"
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), up_label,
                              (lambda b=building_id: self._open_upgrade_station(b)), True)
+            y += 52
+        # B38: a mage tower also teaches skills via tomes.
+        if self.engine.tomes_for_sale(building_id):
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Study skill tomes",
+                             (lambda b=building_id: self._open_tome_shop(b)), True)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
         self._add_button(back, T.BACK, self._close_building_menu)
+        self._draw_buttons()
+
+    # -- B38: skill-tome shop (mage tower) ----------------------------------
+
+    def _open_tome_shop(self, building_id: str) -> None:
+        self.building_menu = None
+        self.tome_building = building_id
+        self.mode = "tome_shop"
+
+    def _close_tome_shop(self) -> None:
+        self.tome_building = None
+        self.mode = "walk"
+
+    def _buy_tome(self, item_id: str) -> None:
+        result = self.engine.buy_tome(self.tome_building, item_id)
+        self.push_log(result.message, GOOD if result.success else BAD)
+
+    def _draw_tome_shop(self) -> None:
+        """B38: a mage-tower shop listing skill tomes. Buying puts a tome in the
+        inventory; studying it there (I) learns the skill (level-gated). Known
+        skills + unaffordable/owned tomes are shown but disabled."""
+        from rpg_game.core import talents
+        panel = self._overlay_panel("Mage Tower — Skill Tomes")
+        gold = self.engine.player.gold
+        known = set(talents.unlocked_skill_ids(self.engine.player, self.engine.content))
+        y = panel.y + 66
+        self.screen.blit(self.font_sm.render(
+            f"Gold: {gold}    ·    study a bought tome from your inventory (I) to learn it",
+            True, TEXT_DIM), (panel.x + 20, y))
+        y += 30
+        for tome in self.engine.tomes_for_sale(self.tome_building):
+            skill = self.engine.content.actions[tome.teaches].name
+            already = tome.teaches in known
+            owned = self.engine.player.inventory.count(tome.id) > 0
+            suffix = "  (known)" if already else ("  (owned)" if owned else "")
+            label = f"{tome.name}  —  {skill}  ·  Lv {tome.level_req}  ·  {tome.price}g{suffix}"
+            enabled = (not already) and gold >= tome.price
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
+                             (lambda t=tome.id: self._buy_tome(t)), enabled)
+            y += 46
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, self._close_tome_shop)
         self._draw_buttons()
 
     # -- B37 Slice 2: upgrade station ---------------------------------------

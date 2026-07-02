@@ -386,7 +386,11 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** större karta utan att bryta befintliga ankare/gates/turneringar; alla städer
   som kluster i rätt storlek; alla stads-tester + reachability gröna; renders per stad.
 
-#### B38 — Skill-förvärv: skill-tomes vid mage tower  · 🟢 **Core KLAR** · pygame-meny = render-review
+#### B38 — Skill-förvärv: skill-tomes vid mage tower  · ✅ **KLAR** (core + UI, render-verifierad)
+- **UI KLAR:** mage-tower-byggmenyn har "Study skill tomes" → tome-shop-vy (`_draw_tome_shop`) som
+  listar alla 8 tomes (sorterade på Lv, med skill/Lv-krav/pris), dimmar redan-kända + oköpbara,
+  köp via `buy_tome`. Köpt tome hamnar i inventoryns **consumables**-flik som **användbar** rad →
+  klick lär skillen (level-gated). Headless-renderad + verifierad av mig; 4 pygame-tester (venv). 790 gröna.
 - **Design låst med Lucas:** **skill-tomes** (item) + **level-krav**, sålda vid **mage tower**,
   förbrukas vid användning → lär skillen (Lucas invände mot "inga tomes" → tomes infört).
 - **Core KLAR (denna natt):** 8 tomes (kind `tome`, `teaches`+`level_req`, tier/pris skalat mot
