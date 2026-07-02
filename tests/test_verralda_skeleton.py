@@ -77,11 +77,17 @@ class VerraldaSkeletonTest(unittest.TestCase):
         self.assertTrue(alherralba.respawn)
         self.assertEqual(self.zone.towns.get((72, 180)), "burg_121")
 
-    def test_heath_is_enemy_free(self):
+    def test_heath_spawns_the_grave_roster(self):
+        # B42: grave_heath (burg_121) is no longer an empty placeholder pool — it is
+        # the L6-12 undead zone, so it now spawns its roster (+ the rare mini-boss).
         self.assertEqual(self.zone.wild_region_at((72, 150)), "burg_121")
         self.app.engine.enter_place("burg_121")
         self.app.engine.rng = random.Random(1)
-        self.assertTrue(all(self.app.engine.create_encounter() is None for _ in range(60)))
+        pool = {"skeleton_warrior", "ghoul", "grave_hound", "undead", "undead_priest",
+                "shade", "hollow_worg", "cursed_wight"}
+        seen = {self.app.engine.create_encounter().id for _ in range(80)}
+        self.assertTrue(seen)                 # populated (was empty pre-B42)
+        self.assertTrue(seen <= pool, seen)   # only grave_heath enemies
 
     def test_region_at_respects_x_and_y(self):
         self.assertEqual(self.zone.wild_region_at((20, 8)), "burg_54")    # core (cainos NW)
