@@ -70,26 +70,26 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   `rng.choice`). **Stor puck** → egen designrunda: authoring-modell (viktade pooler? fler band? per-
   tile-taggar?). **Acceptans:** olika områden ger tydligt olika fiende-mix; authoring datadrivet.
 
-#### B50 — Combat-loggen ska gå att scrolla (som overworld-loggen)  · *playtest #4*
+#### B50 — Combat-loggen ska gå att scrolla (som overworld-loggen)  · ✅ **KLAR** (`scroll_log` + hjul/PageUp-Down i battle, clamp mot visuella rader; test)
 - **Vad:** Combat-loggen ska ha samma scroll (hjul + PageUp/Down) som overworld-loggen. **Not:** den
   delade `chatlog`-komponenten har redan `_log_scroll`/`visual_lines`; overworld wirar scroll-events
   men battle-shellen gör det troligen inte. STEG 0: jämför scroll-wiring i `pygame_overworld` vs
   `pygame_battle`. **Acceptans:** combat-loggen scrollar bakåt/framåt; test för scroll-clamp.
 
-#### B51 — Buskar egen färg på minimap/(M)-karta  · *playtest #5*
+#### B51 — Buskar egen färg på minimap/(M)-karta  · ✅ **KLAR** (`MAP_BUSH` grön för `_plant`, rock/grave kvar grå; render-verifierad; test)
 - **Vad:** Buskar ska ritas i egen färg — skild från både bakgrund OCH sten. **STEG 0:** idag (`9182af0`)
   ritas busk- OCH sten-kluster som samma **grå** prickar på M-kartan (och därmed minimapen som återanvänder
   kompositen). Fix = egen busk-färg (t.ex. dämpad grön) ≠ sten-grå ≠ terräng-grön. **Acceptans:** buskar
   syns i egen färg på M-karta + minimap; test för färgvalet.
 
-#### B52 — Broarna: flippa plank-riktningen  · *playtest #6*
+#### B52 — Broarna: flippa plank-riktningen  · ✅ **KLAR** (render-tids-rotation 90° av `water_bridge`/`bridge_halfdeck`; headless-verifierad horisontell; test)
 - **Vad:** Seam-broarnas plankor går fel håll (uppifrån-ner). Ska flippas så plankorna löper vänster→
   höger (horisontellt) tvärs gångriktningen. **STEG 0:** nuvarande seam-däck = `idx0` "vertical-plank
   railless deck" (`c76ef2b`, Lucas pick B). Fix = välj/rotera plank-tilen till horisontell orientering
   (troligen ett annat deck-idx eller `pygame.transform.rotate`/flippad tile). **Acceptans:** broplankor
   löper horisontellt; broarna renderar snyggt över seam; reachability oförändrad; render-review.
 
-#### B49 — Fiendens level bredvid namnet i combat-skärmen  · *playtest #3*
+#### B49 — Fiendens level bredvid namnet i combat-skärmen  · ✅ **KLAR** (`enemy_nameplate` = "Namn Lv N" i namnplåten; test)
 - **Vad:** Visa motståndarens level intill namnet i combat-vyn (t.ex. "Cave Bear · Lv 5"). **Not:**
   `snapshot`/enemy bär redan `level`; ren presentation i `pygame_battle` (enemy-namn-rendering).
   **Acceptans:** combat-skärmen visar fiendens level vid namnet; render-review.

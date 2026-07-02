@@ -362,6 +362,9 @@ class BattleApp:
         if event.type == pygame.VIDEORESIZE:
             self.display = set_display_mode((event.w, event.h))
             return
+        if event.type == pygame.MOUSEWHEEL:
+            self.scroll_log(event.y * chatlog.LOG_SCROLL_STEP)   # B50: wheel up = older
+            return
         if event.type == pygame.KEYDOWN:
             self._handle_key(event)
             return
@@ -389,6 +392,12 @@ class BattleApp:
             return
         if self.mode == "victory_idle" and event.key in (pygame.K_RETURN, pygame.K_SPACE):
             self.next_encounter()
+            return
+        if event.key == pygame.K_PAGEUP:            # B50: scroll the combat log
+            self.scroll_log(chatlog.LOG_SCROLL_STEP)
+            return
+        if event.key == pygame.K_PAGEDOWN:
+            self.scroll_log(-chatlog.LOG_SCROLL_STEP)
             return
         key_char = event.unicode.lower() if event.unicode else ""
         for button in self.buttons:
@@ -455,8 +464,8 @@ class BattleApp:
             return
         self._draw_hero_sprite()
         self._draw_enemy_sprite(enemy)
-        # Compact nameplate (not a thick panel): name + HP bar + status/identify.
-        self._text(enemy.name, (STAGE.x + 14, STAGE.y + 8), self.font_lg)
+        # Compact nameplate (not a thick panel): name + level + HP bar + status/identify.
+        self._text(enemy_nameplate(enemy), (STAGE.x + 14, STAGE.y + 8), self.font_lg)
         bar = pygame.Rect(STAGE.x + 14, STAGE.y + 42, 320, 20)
         hp_ratio = enemy.hp / enemy.max_hp if enemy.max_hp else 0
         self._bar(bar, hp_ratio, _hp_color(hp_ratio), f"HP {enemy.hp}/{enemy.max_hp}")
@@ -507,14 +516,26 @@ class BattleApp:
         pygame.draw.rect(self.screen, HERO_BOX, rect, border_radius=6)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
 
+    def _log_visible(self) -> int:
+        line_h = self.font_sm.get_height() + 3
+        return max(1, (LOG_PANEL.height - 16) // line_h)
+
+    def _log_scroll_max(self) -> int:
+        # B50: in VISUAL-line units (a wrapped entry counts as its rendered rows),
+        # so scrolling matches what the overworld log does.
+        lines = chatlog.visual_lines(self.event_log, LOG_PANEL.width - 16, self.font_sm)
+        return max(0, len(lines) - self._log_visible())
+
+    def scroll_log(self, lines: int) -> None:
+        """B50: scroll the combat log — +lines = older (up), -lines = newer (down)."""
+        self.log_scroll = max(0, min(self.log_scroll + lines, self._log_scroll_max()))
+
     def _draw_chatbox(self):
         """The SAME chatbox component the overworld uses, drawn in the battle's log
         band so the combat log and the overworld log are one surface."""
-        line_h = self.font_sm.get_height() + 3
-        visible = max(1, (LOG_PANEL.height - 16) // line_h)
         self.log_scroll = chatlog.draw(
             self.screen, LOG_PANEL, self.event_log, self.font_sm,
-            visible=visible, scroll=self.log_scroll, interactive=False,
+            visible=self._log_visible(), scroll=self.log_scroll, interactive=False,
             edge=PANEL_EDGE, accent=ACCENT)
 
     def _draw_hud_vitals(self, snapshot):
@@ -702,6 +723,11 @@ def _reveal_lines(reveal):
         f"  Tags: {', '.join(reveal.tags) if reveal.tags else 'none'}",
         f"  Skills: {', '.join(reveal.skills) if reveal.skills else 'none'}",
     ]
+
+
+def enemy_nameplate(enemy) -> str:
+    """B49: the combat nameplate — enemy name + its level."""
+    return f"{enemy.name}   Lv {enemy.level}"
 
 
 def _loot_line(loot):

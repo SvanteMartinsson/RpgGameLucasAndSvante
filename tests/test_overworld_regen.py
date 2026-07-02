@@ -286,10 +286,11 @@ class OverworldRegenTest(unittest.TestCase):
         # the 3-tile cross tomb must be present (its base tile is no longer clipped)
         self.assertIn(th * 3, heights, "cross tomb not composited as a 3-tile stone")
 
-    def test_map_terrain_marks_obstacles_grey(self):
-        # The M-map paints one grey dot per obstacle tile (bush thickets on decor,
-        # rock/grave rings on walls) so clusters read as grey blobs.
-        from rpg_game.presentation.pygame_overworld import MAP_OBSTACLE
+    def test_map_terrain_marks_obstacles(self):
+        # The M-map paints one dot per obstacle tile: B51 gives bush thickets their
+        # own leafy green (MAP_BUSH) while rock/grave props on walls stay grey
+        # (MAP_OBSTACLE), so foliage reads apart from stone.
+        from rpg_game.presentation.pygame_overworld import MAP_OBSTACLE, MAP_BUSH
         terr = self.app._build_map_terrain()
         decor, walls = self._layer("decor_over"), self._layer("walls")
         bush = next(((x, y) for y in range(H) for x in range(W)
@@ -298,7 +299,7 @@ class OverworldRegenTest(unittest.TestCase):
                      if self._is_prop(walls[y][x])), None)
         self.assertIsNotNone(bush, "no bush cell to sample")
         self.assertIsNotNone(rock, "no rock/grave prop to sample")
-        self.assertEqual(tuple(terr.get_at(bush))[:3], MAP_OBSTACLE, "bush not grey on map")
+        self.assertEqual(tuple(terr.get_at(bush))[:3], MAP_BUSH, "bush not green on map")
         self.assertEqual(tuple(terr.get_at(rock))[:3], MAP_OBSTACLE, "rock/grave not grey on map")
 
 

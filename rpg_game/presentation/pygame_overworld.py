@@ -245,9 +245,11 @@ MINIMAP_MARGIN = 10
 MAP_BG = (10, 12, 18)
 MAP_WATER = (58, 92, 150)
 MAP_LAND_DEFAULT = (74, 96, 72)
-# Obstacles (rock/grave props on walls + bush thickets on decor_over) show as a
-# light-grey dot per tile, so a cluster reads as a grey blob on the map.
-MAP_OBSTACLE = (178, 178, 184)
+# Obstacles show as a dot per tile so a cluster reads as a blob on the map.
+# B51: rock/grave props stay grey; bush thickets get their own leafy green so
+# foliage reads apart from stone AND from the terrain field (tunable).
+MAP_OBSTACLE = (178, 178, 184)   # rock / grave props
+MAP_BUSH = (54, 132, 52)         # bush thickets (_plant) — leafy green, not grey
 MAP_FAMILY_COLORS = {
     "cainos": (96, 132, 78),        # core green
     "mork_skog": (52, 80, 58),      # dark forest
@@ -258,6 +260,9 @@ MAP_FAMILY_COLORS = {
     "karr": (150, 132, 96),         # tan
 }
 GATE_COLOR = (150, 90, 70)
+# B52: seam bridge decks are authored with vertical planks; rotate them 90° at
+# render so the planks run across the walking direction (Lucas's fix).
+BRIDGE_TILESETS = {"water_bridge", "bridge_halfdeck"}
 
 
 # --- zone config -----------------------------------------------------------
@@ -619,6 +624,7 @@ class OverworldApp:
         self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
         self.tome_building: str | None = None        # B38: open mage-tower tome shop building id
+        self._bridge_img_cache: dict = {}            # B52: gid -> rotated deck image (or None)
         self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
@@ -1420,10 +1426,15 @@ class OverworldApp:
                         og = row_data[x]
                         if og not in obstacle_of:
                             ts = get_ts(og)
-                            obstacle_of[og] = bool(
-                                ts and (ts.name.endswith("_props") or ts.name.endswith("_plant")))
+                            # B51: 0 none · 1 prop (rock/grave, grey) · 2 plant (bush, green)
+                            kind = 0
+                            if ts and ts.name.endswith("_plant"):
+                                kind = 2
+                            elif ts and ts.name.endswith("_props"):
+                                kind = 1
+                            obstacle_of[og] = kind
                         if obstacle_of[og]:
-                            color = MAP_OBSTACLE
+                            color = MAP_BUSH if obstacle_of[og] == 2 else MAP_OBSTACLE
                             break
                 surf.set_at((x, y), color)
         return surf
@@ -1746,6 +1757,16 @@ class OverworldApp:
                 pygame.draw.rect(world, PLAYER_COLOR, payload, border_radius=4)
                 pygame.draw.rect(world, PLAYER_EDGE, payload, width=2, border_radius=4)
 
+    def _bridge_deck_image(self, gid, image):
+        """B52: rotate seam bridge-deck tiles 90° so their planks run across the
+        walking direction. Cached per gid; non-bridge tiles pass through."""
+        cached = self._bridge_img_cache.get(gid, False)
+        if cached is False:
+            ts = self.world.tmx.get_tileset_from_gid(gid)
+            cached = pygame.transform.rotate(image, 90) if (ts and ts.name in BRIDGE_TILESETS) else None
+            self._bridge_img_cache[gid] = cached
+        return cached or image
+
     def _draw_map(self) -> None:
         screen_w, screen_h = self.screen.get_size()
         zoom = self._zoom_factor()
@@ -1787,7 +1808,7 @@ class OverworldApp:
                     if image is None:  # tile without graphic -> placeholder block, never crash
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
-                        world.blit(image, dest)
+                        world.blit(self._bridge_deck_image(gid, image), dest)
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),
