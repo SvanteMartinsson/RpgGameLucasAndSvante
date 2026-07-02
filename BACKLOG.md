@@ -17,24 +17,23 @@ mät-först) / **Acceptans** (definition av "klart"; styr autonomt batch-arbete,
 
 ## Översikt
 
-**✅ Klart (senaste vågen, se arkivet):** hela power-curve-trilogin — **B35** (level-up
-stat-val) · **B36** (talent-ranger) · **B37 Slice 1+2** (vapen-rework + upgrade-station-
-system) — plus **Wisdom Slice A+B** (härledd mana + caster-tuning), **#3 världsexpansion**
-(240×208 parametrisk karta), **B8 Slice 2a** (tier-styrt kluster i alla 17 städer), **B11
-Slice 1** (fullskärmskarta + fog), **B40 Slice 1** (enhetlig meny-infra: Button/Tooltip/
-HoverTracker/rad-helper), **unified chatbox** (en delad logg-komponent), **B24-flaggan**
-(rare-table tier-cap 3 för låg-level wild). Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
+**✅ Klart (natt-batch 2026-07-01→02):** **B42** (4-zon-roster: 6 nya skogsfiender + 14
+utfyllda + placering + loot + art) · **B46** (wisdom-gear) · **B43** (butiksinnehåll, max
+1 rare/shop) · **B38** (skill-tomes core + mage-tower-UI) · **B11 Slice 2** (minimap, render-
+verifierad) · **B41** (on-hit elemental-procs) · **B25** (klassbalans-sim, mätt). Föregående
+våg: power-curve-trilogin **B35/B36/B37 Slice 1+2**, **Wisdom A+B**, **#3** (240×208-karta),
+**B8 Slice 2a**, **B11 Slice 1**, **B40 Slice 1**, unified chatbox, **B24-flaggan**.
+Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
 
-**▶ Pågår:** **B40 apply-slices S2–S5** (applicera meny-infran på inventory/shop/character/
-character-creation — varje = render-HALT) · **B8 Slice 2b** (per-stad butiksinnehåll +
-tjänste-triggrar).
+**▶ Pågår / nästa:** **B44** (chatt v4 — STEG 0 klar; delad-log-modell + strukturerade
+combat-events = egen slice) · **B40 apply-slices S2–S5** (render-HALT/skärm) · **B8 Slice 2b**
+(per-stad butik + tjänste-triggrar).
 
-**Härnäst (öppet, ej byggt):** *Balans/content (autonom-vänligt):* odöd-pool-densitet ·
-B42 (de 14 fiendernas balans/loot/caster-actions) · B46 (wisdom-gear) · B43 (butiks-
-innehåll 9 nya stores) · B25 (klassbalans-sim, mät). *Visuellt:* B44 (chatt v4 segment-
-färg) · B11 minimap (Slice 2) · B16.1 (combat-flikar). *Designbärande (⭐, designrunda
-först):* B21 (sub-tile-kollision) · B22 (enchant-vendors) · B23 (quests) · B38 (skill-
-förvärv) · B41 (on-hit-procs) · B47 (zon-färg) · B3.1→B3 (dual-class) · B10/B18 (UI).
+**Härnäst (öppet, ej byggt):** *Playtest 2026-07-02:* **B48** (per-zon spawn-authoring ⭐) ·
+**B49** (fiende-level i combat) · **B50** (combat-logg-scroll) · **B51** (busk-färg minimap) ·
+**B52** (broplank-flip). *Visuellt:* B44 · B16.1 (combat-flikar). *Designbärande (⭐,
+designrunda först):* B21 (sub-tile-kollision) · B22 (enchant-vendors) · B23 (quests) · B47
+(zon-färg) · B3.1→B3 (dual-class) · B10/B18 (UI). *(#2 encounter-heatmap = LIVE, B12-rate.)*
 
 ---
 
@@ -52,6 +51,48 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 ---
 
 ## Aktiva punkter
+
+### Playtest-tasks (2026-07-02, fighter playtest)
+
+> STEG 0 gjord av Code mot koden där det gick; #2 bekräftad LIVE, ej ny punkt.
+
+- **#2 — Encounter-heatmap (nära stad låg, längre bort mer, vägar sänker):** ✅ **LIVE**
+  redan — `B12-rate` (`dd66afc`): `ENCOUNTER_SAFE_RADIUS=1` (stad+granne = 0), `ENCOUNTER_RAMP_TILES=3`
+  (rampar 0→full över 3 tiles från stad), cobble/väg-tiles ×0.6. Öppna igen bara om kurvan ska tunas
+  (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
+
+#### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
+- **Vad:** Kunna sätta VILKA fiender som spawnar VAR med finare kornighet än idag, så utbudet
+  varierar inom och mellan zoner (inte samma pool överallt). **Not/STEG 0:** B42 la grunden — 4 zon-
+  pooler via `wild_regions`→plats-`encounters` (cainos/mork_skog/cursed_mire/grave_heath skiljer sig
+  redan). #1 = (a) verifiera in-game att zonerna faktiskt visar olika utbud, (b) finare per-område-
+  kontroll (sub-regioner / fler `wild_regions`-band / vikter per fiende i en pool i stället för uniform
+  `rng.choice`). **Stor puck** → egen designrunda: authoring-modell (viktade pooler? fler band? per-
+  tile-taggar?). **Acceptans:** olika områden ger tydligt olika fiende-mix; authoring datadrivet.
+
+#### B50 — Combat-loggen ska gå att scrolla (som overworld-loggen)  · *playtest #4*
+- **Vad:** Combat-loggen ska ha samma scroll (hjul + PageUp/Down) som overworld-loggen. **Not:** den
+  delade `chatlog`-komponenten har redan `_log_scroll`/`visual_lines`; overworld wirar scroll-events
+  men battle-shellen gör det troligen inte. STEG 0: jämför scroll-wiring i `pygame_overworld` vs
+  `pygame_battle`. **Acceptans:** combat-loggen scrollar bakåt/framåt; test för scroll-clamp.
+
+#### B51 — Buskar egen färg på minimap/(M)-karta  · *playtest #5*
+- **Vad:** Buskar ska ritas i egen färg — skild från både bakgrund OCH sten. **STEG 0:** idag (`9182af0`)
+  ritas busk- OCH sten-kluster som samma **grå** prickar på M-kartan (och därmed minimapen som återanvänder
+  kompositen). Fix = egen busk-färg (t.ex. dämpad grön) ≠ sten-grå ≠ terräng-grön. **Acceptans:** buskar
+  syns i egen färg på M-karta + minimap; test för färgvalet.
+
+#### B52 — Broarna: flippa plank-riktningen  · *playtest #6*
+- **Vad:** Seam-broarnas plankor går fel håll (uppifrån-ner). Ska flippas så plankorna löper vänster→
+  höger (horisontellt) tvärs gångriktningen. **STEG 0:** nuvarande seam-däck = `idx0` "vertical-plank
+  railless deck" (`c76ef2b`, Lucas pick B). Fix = välj/rotera plank-tilen till horisontell orientering
+  (troligen ett annat deck-idx eller `pygame.transform.rotate`/flippad tile). **Acceptans:** broplankor
+  löper horisontellt; broarna renderar snyggt över seam; reachability oförändrad; render-review.
+
+#### B49 — Fiendens level bredvid namnet i combat-skärmen  · *playtest #3*
+- **Vad:** Visa motståndarens level intill namnet i combat-vyn (t.ex. "Cave Bear · Lv 5"). **Not:**
+  `snapshot`/enemy bär redan `level`; ren presentation i `pygame_battle` (enemy-namn-rendering).
+  **Acceptans:** combat-skärmen visar fiendens level vid namnet; render-review.
 
 ### Overworld, kollision & karta
 
