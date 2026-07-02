@@ -41,6 +41,11 @@ class Weapon:
     # B37 Slice 2: rarity gates upgradability (>= rare). Tier stays derived from
     # the BASE damage_bonus; an upgrade never touches tier or damage_bonus.
     rarity: str = "common"
+    # B41: on-hit proc entries fired by a basic attack that connects. Each is a
+    # dict — either a target status {chance, status_type, tag, magnitude, duration,
+    # damage_type, stat} or a self-heal {chance, heal_self}. The resistance matrix
+    # gates status procs (an immune target shrugs it off). Empty = a plain weapon.
+    on_hit: tuple = ()
 
 
 @dataclass(frozen=True)

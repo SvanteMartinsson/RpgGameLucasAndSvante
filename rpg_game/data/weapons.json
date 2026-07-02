@@ -86,7 +86,17 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "fire",
-    "category": "magic"
+    "category": "magic",
+    "on_hit": [
+      {
+        "chance": 0.3,
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 6,
+        "duration": 3,
+        "damage_type": "fire"
+      }
+    ]
   },
   {
     "id": "rimebrand",
@@ -94,7 +104,26 @@
     "damage_bonus": 16,
     "price": 420,
     "damage_type": "frost",
-    "category": "magic"
+    "category": "magic",
+    "on_hit": [
+      {
+        "chance": 0.35,
+        "status_type": "debuff",
+        "stat": "speed",
+        "magnitude": -3,
+        "duration": 2,
+        "tag": "chill",
+        "damage_type": "frost"
+      },
+      {
+        "chance": 0.1,
+        "status_type": "skip_turn",
+        "tag": "freeze",
+        "duration": 1,
+        "tick_timing": "turn",
+        "damage_type": "frost"
+      }
+    ]
   },
   {
     "id": "consecrated_maul",
@@ -103,7 +132,13 @@
     "price": 800,
     "damage_type": "holy",
     "category": "melee",
-    "rarity": "rare"
+    "rarity": "rare",
+    "on_hit": [
+      {
+        "chance": 0.25,
+        "heal_self": 5
+      }
+    ]
   },
   {
     "id": "venomfang",
@@ -112,7 +147,17 @@
     "price": 760,
     "damage_type": "poison",
     "category": "melee",
-    "rarity": "rare"
+    "rarity": "rare",
+    "on_hit": [
+      {
+        "chance": 0.35,
+        "status_type": "poison",
+        "tag": "poison",
+        "magnitude": 6,
+        "duration": 3,
+        "damage_type": "poison"
+      }
+    ]
   },
   {
     "id": "pyre_scepter",
@@ -121,7 +166,17 @@
     "price": 1300,
     "damage_type": "fire",
     "category": "magic",
-    "rarity": "rare"
+    "rarity": "rare",
+    "on_hit": [
+      {
+        "chance": 0.35,
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 8,
+        "duration": 3,
+        "damage_type": "fire"
+      }
+    ]
   },
   {
     "id": "gravewarden_blade",
@@ -130,7 +185,13 @@
     "price": 1300,
     "damage_type": "holy",
     "category": "melee",
-    "rarity": "rare"
+    "rarity": "rare",
+    "on_hit": [
+      {
+        "chance": 0.25,
+        "heal_self": 6
+      }
+    ]
   },
   {
     "id": "worldsplitter",
@@ -196,7 +257,17 @@
     "damage_bonus": 8,
     "price": 160,
     "damage_type": "fire",
-    "category": "magic"
+    "category": "magic",
+    "on_hit": [
+      {
+        "chance": 0.2,
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 3,
+        "duration": 3,
+        "damage_type": "fire"
+      }
+    ]
   },
   {
     "id": "iron_shortsword",
@@ -260,6 +331,16 @@
     "damage_bonus": 12,
     "price": 280,
     "damage_type": "fire",
-    "category": "magic"
+    "category": "magic",
+    "on_hit": [
+      {
+        "chance": 0.25,
+        "status_type": "fire",
+        "tag": "burn",
+        "magnitude": 4,
+        "duration": 3,
+        "damage_type": "fire"
+      }
+    ]
   }
 ]

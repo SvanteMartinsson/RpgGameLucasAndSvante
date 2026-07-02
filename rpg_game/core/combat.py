@@ -663,10 +663,50 @@ def resolve_action(
             rank_duration_bonus=rank_duration_bonus,
         )
 
+    apply_weapon_on_hit(actor, target, action, weapon, result, rng)   # B41
+
     if action.cooldown_rounds:
         actor.cooldowns[action.id] = action.cooldown_rounds
 
     return result
+
+
+def apply_weapon_on_hit(actor, target, action, weapon, result, rng) -> None:
+    """B41: after a player BASIC ATTACK connects, roll the equipped weapon's on-hit
+    procs. Each proc is a target status (burn/toxin/chill/freeze) or a self-heal
+    (holy Searing). The resistance matrix gates status procs — a target immune to
+    the proc's damage type (e.g. undead vs poison) shrugs it off. Skills keep their
+    own authored effects; only base attacks proc the weapon."""
+    if not (isinstance(actor, Player) and weapon is not None and weapon.on_hit):
+        return
+    if action.kind != "base_attack":   # quick / normal / power (rolled Attack styles)
+        return
+    for proc in weapon.on_hit:
+        if rng.random() >= float(proc.get("chance", 0.0)):
+            continue
+        if "heal_self" in proc:
+            before = actor.hp
+            actor.hp = min(effective_max_hp(actor), actor.hp + int(proc["heal_self"]))
+            if actor.hp > before:
+                result.events.append(f"{weapon.name} sears {actor_name(target)}; {actor_name(actor)} mends {actor.hp - before} HP.")
+            continue
+        damage_type = str(proc.get("damage_type", "physical"))
+        tag = str(proc.get("tag", proc.get("status_type", "")))
+        if get_resistance(target, damage_type) == 0:   # immune -> shrugs the proc off
+            result.events.append(f"{actor_name(target)} is immune to {tag}.")
+            continue
+        spec = EffectSpec(
+            type="apply_status",
+            status_type=str(proc.get("status_type", "")),
+            tag=tag,
+            magnitude=int(proc.get("magnitude", 0)),
+            duration=int(proc.get("duration", 0)),
+            tick_timing=str(proc.get("tick_timing", "round_end")),
+            damage_type=damage_type,
+            stat=str(proc.get("stat", "")),
+            target="enemy",
+        )
+        apply_effect(actor, target, spec, result, weapon=weapon, rng=rng)
 
 
 def action_can_be_evaded(action: CombatAction) -> bool:

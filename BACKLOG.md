@@ -488,8 +488,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
 ### Strid, vapen & innehåll (nytt)
 
-#### B41 — On-hit elemental-proc-familj (status-on-hit som vapenmekanik)  ⭐ designbärande  · *nytt, familj föreslagen*
-- **Vad:** Låt vapen bära en **on-hit-effekt** (idag kommer status bara från skills). Föreslagen familj på befintliga status-primitiv:
+#### B41 — On-hit elemental-proc-familj (status-on-hit som vapenmekanik)  · ✅ **KLAR** (v1: fire/poison/frost + holy-heal)
+- **KLAR:** `Weapon.on_hit` (data) + `combat.apply_weapon_on_hit`-hook efter basattack som träffat
+  (bara `base_attack` — skills proccar ej; fiender proccar ej). Resistensmatrisen gatar status-procs
+  (odöd shruggar toxin, "immune"-event). Seedat per Lucas beslut: **fire→burn** (apprentice/adept/ember/
+  pyre, 20-35% mag 3-8), **poison→toxin** (venomfang 35% mag6), **frost→chill+låg freeze** (rimebrand
+  35% speed−3 / 10% skip-turn), **holy→Searing** = matris ×1.5 (redan i skada) **+ liten heal-on-hit**
+  (consecrated_maul/gravewarden_blade 25% heal 5-6). **Lightning avvaktar** (inga bärare; skadetyp finns
+  bara på skills). Sim: proc-vapnen (rares) starka men spränger ej kurvan. 8 tester; 786 gröna (venv).
+- **Vad (bevarad):** Låt vapen bära en **on-hit-effekt** (idag kommer status bara från skills). Föreslagen familj på befintliga status-primitiv:
   - **Fire → Ignite** (burn-DoT), **Poison → Toxin** (DoT, respekterar resistensmatrisen), **Frost → Chill** (speed-debuff) + låg **Freeze**-chans (skip-turn), **Lightning → Shock** (låg accuracy-debuff), **Holy → Searing** (mest via matris ×1.5 vs odöda, ev. liten heal-on-hit).
 - **Avsikt:** "Elementala vapen" känns distinkta; kopplar till item-upgrade-systemet (proc som primär-effekt ett recept kan ge).
 - **Not:** NY vapenmekanik — hook i basattack-resolutionen som rullar vapnets on-hit-effekt. Primitiven (DoT/speed/skip/accuracy) finns; det är wiring. v1 seedar **fire/poison/frost**; lightning/holy senare (deras skadekomponent funkar ändå). Siffror = platshållare, INTE simmat (sim endast om något spränger kurvan).

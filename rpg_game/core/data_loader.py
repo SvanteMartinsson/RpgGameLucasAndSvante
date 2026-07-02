@@ -117,6 +117,7 @@ def load_content() -> GameContent:
             tier=combat.weapon_tier_from_damage(row["damage_bonus"]),
             category=row.get("category", "melee"),
             rarity=row.get("rarity", "common"),
+            on_hit=tuple(row.get("on_hit", ())),
         )
         for row in _read_json("weapons.json")
     }
