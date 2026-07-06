@@ -199,7 +199,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   klick-skipp fungerar ENDAST med settingen på; FX/logg synkade per steg; tester för
   kö-tömning + input-lås + settingen.
 
-#### B76 — Battle-layout v2: vitals till höger, längre combatlogg
+#### B76 — Battle-layout v2  · ✅ **KLAR** (nattbatch: LOG=vänsterkolumn i full höjd (~2× rader), VITALS ovanför ACTIONS i högerkolumnen; layouttest omskrivet till nya invarianterna; headless-render för Lucas morgon-review)
 - **Lucas (skärmdump):** flytta HP/Mana/XP + stats + vapen till HÖGER sida ovanför
   knapparna; combatloggen tar vänstra bredden och blir högre — mer lik overworld-chatten,
   får plats med mer.

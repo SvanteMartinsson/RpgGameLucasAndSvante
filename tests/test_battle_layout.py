@@ -40,13 +40,16 @@ class BattleLayoutTest(unittest.TestCase):
         enemy = engine.content.enemies[enemy_id].create_enemy()
         return engine, pb.BattleApp(engine=engine, enemy=enemy, standalone=False)
 
-    def test_stage_is_the_biggest_zone_and_hud_the_smallest(self):
+    def test_stage_on_top_log_left_vitals_over_actions_right(self):
+        # B76: stage biggest; below it the LOG owns the left column at full
+        # height while VITALS stacks above ACTIONS in the right column.
         self.assertGreater(pb.STAGE.height, pb.LOG_PANEL.height)
-        self.assertGreater(pb.STAGE.height, pb.HUD.height)
-        self.assertLessEqual(pb.HUD.height, pb.LOG_PANEL.height)
-        # Three stacked, non-overlapping zones.
-        self.assertLessEqual(pb.STAGE.bottom, pb.LOG_PANEL.top)
-        self.assertLessEqual(pb.LOG_PANEL.bottom, pb.HUD.top)
+        self.assertLessEqual(pb.STAGE.bottom, pb.HUD.top)
+        self.assertEqual(pb.LOG_PANEL.height, pb.HUD.height)          # tall log
+        self.assertGreaterEqual(pb.LOG_PANEL.height, 200)
+        self.assertLessEqual(pb.LOG_PANEL.right, pb.VITALS.left)      # columns apart
+        self.assertEqual(pb.VITALS.x, pb.ACTIONS.x)                   # same column
+        self.assertLessEqual(pb.VITALS.bottom, pb.ACTIONS.top)        # vitals on top
 
     def test_all_six_actions_present_and_inside_the_compact_band(self):
         _engine, battle = self._battle()

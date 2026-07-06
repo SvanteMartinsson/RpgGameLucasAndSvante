@@ -42,13 +42,16 @@ WIDTH, HEIGHT = 1024, 680
 FPS = 60
 
 PAD = 16
-# Three zones, rebalanced toward the fight: STAGE biggest (~53%), LOG slim
-# (~19%), HUD compact (~19%). Heights sum to 680 with PAD between.
+# B76 (Lucas playtest): STAGE on top, then a two-column band — the combat LOG
+# takes the LEFT column at full height (reads like the overworld chat), while
+# the RIGHT column stacks VITALS (bars + stats + weapon) ABOVE the ACTIONS.
 STAGE = pygame.Rect(PAD, PAD, WIDTH - 2 * PAD, 360)
-LOG_PANEL = pygame.Rect(PAD, STAGE.bottom + PAD, WIDTH - 2 * PAD, 130)
-HUD = pygame.Rect(PAD, LOG_PANEL.bottom + PAD, WIDTH - 2 * PAD, HEIGHT - LOG_PANEL.bottom - 2 * PAD)
-VITALS = pygame.Rect(HUD.x, HUD.y, 600, HUD.height)          # player vitals (left)
-ACTIONS = pygame.Rect(VITALS.right + PAD, HUD.y, HUD.right - VITALS.right - PAD, HUD.height)  # buttons (right)
+HUD = pygame.Rect(PAD, STAGE.bottom + PAD, WIDTH - 2 * PAD, HEIGHT - STAGE.bottom - 2 * PAD)
+LOG_PANEL = pygame.Rect(HUD.x, HUD.y, 600, HUD.height)       # tall log (left)
+VITALS = pygame.Rect(LOG_PANEL.right + PAD, HUD.y,
+                     HUD.right - LOG_PANEL.right - PAD, 148)  # bars/stats (right, top)
+ACTIONS = pygame.Rect(VITALS.x, VITALS.bottom + PAD, VITALS.width,
+                      HUD.bottom - VITALS.bottom - PAD)       # buttons (right, bottom)
 GROUND_Y = STAGE.bottom - 28  # shared baseline both combatants stand on
 HERO_BOX = (90, 120, 170)
 
