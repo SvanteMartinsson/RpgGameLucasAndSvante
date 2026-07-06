@@ -32,11 +32,12 @@ vs-dig-skada, All/Combat-flikar) · **B56** (OverworldApp 3423→1969 rader, tre
 moduler, render-identiskt) · **B62** (ekonomi-sim + N=300-rapport) · **B48-förarbete**
 (zon-referenskarta `docs/ZONE_MAP.png`) · **B47-PoC** (blend-beslutsbilder `docs/b47_poc/`).
 
-**▶ Pågår / nästa:** **B40 apply-slices S2–S5** (render-HALT/skärm; redigerar nu
-`overworld_overlays`) · **B8 Slice 2b** (per-stad butik + tjänste-triggrar; shrine/board
-väntar på B22/B23-rundor) · **B47-beslut** (Lucas: blend eller inte, på PoC-bilderna) ·
-**B48-designrunda** (encounter-områden mot referenskartan). **B64 dungeons = PARKERAD**
-(Lucas 2026-07-06: väntar på karta som stödjer interiörer).
+**▶ Pågår / nästa:** **Playtest-fynd B74–B82** (dokumenterade, DISKUSSION → GO per punkt;
+B74 load-bugg = PRIO HÖG) · **B40 apply-slices S2–S5** (render-HALT/skärm; redigerar nu
+`overworld_overlays`; S2/S4 bär playtest-kollisionerna) · **B8 Slice 2b** (per-stad butik +
+tjänste-triggrar; shrine/board väntar på B22/B23-rundor) · **B47-beslut** (Lucas: blend
+eller inte, på PoC-bilderna) · **B48-designrunda** (encounter-områden mot referenskartan).
+**B64 dungeons = PARKERAD** (Lucas 2026-07-06: väntar på karta som stödjer interiörer).
 
 **Härnäst (öppet, ej byggt):** *Playtest 2026-07-02:* **B48** (per-zon spawn-authoring ⭐) ·
 **B49** (fiende-level i combat) · **B50** (combat-logg-scroll) · **B51** (busk-färg minimap) ·
@@ -110,6 +111,90 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Vad:** Visa motståndarens level intill namnet i combat-vyn (t.ex. "Cave Bear · Lv 5"). **Not:**
   `snapshot`/enemy bär redan `level`; ren presentation i `pygame_battle` (enemy-namn-rendering).
   **Acceptans:** combat-skärmen visar fiendens level vid namnet; render-review.
+
+### Playtest-fynd (2026-07-06, våg 2 + bossar) — DISKUSSION, invänta GO per punkt
+
+*Lucas playtest av våg 1+2+B65. Godkänt utan åtgärd: save-slots, settings-persistens,
+chatt-färgerna, flikarna (funktion), alkemi-priser, dödsflödet, boss-balansen ("vann som
+L3 efter flera försök + potions" = förberedelse-loopen fungerar — balans ligger kvar).
+Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
+
+#### B74 — Load-bug: fel stad efter vildmarks-save  · **BUGG · PRIO HÖG**
+- **Symptom (Lucas):** startade om och spawnade i Guaredama — en stad han aldrig besökt —
+  i stället för Hordanita.
+- **Rotorsak (BEKRÄFTAD i kod):** i vildmarken sätter `sync_location`
+  `current_place_id = wild_region_at(tile)` = zonens pool-container (cainos → `burg_54`
+  Guaredama). Autosave efter vildmarksstrid sparar det; `_load_save`/start teleporterar
+  till `town_tile_by_place[current_place_id]` — containerstadens FYSISKA tile, som för
+  burg_54 ligger i grave heath (samma pool-stads-mismatch som ZONE_MAP avslöjade, se B48).
+- **Lösningsförslag:** persistera spelarens **exakta tile** (`overworld_tile`, nytt fält i
+  B59-tabellen + migration v2→v3); load återställer till tilen, fallback till town-tile
+  för äldre saves. Respawn-vid-död ändras INTE (respawn_place_id-flödet är korrekt).
+- **Acceptans:** save i vildmark → load → samma tile; gammal save laddar via fallback;
+  död→respawn opåverkad; test för round-trip + migration.
+
+#### B75 — Rundsekvensering i strid (turordning synlig, input-låst under rundan)
+- **Lucas:** aktörerna upplevs slå samtidigt; man kan spamma A genom striden. Önskat:
+  se vem som agerar först/sist med delay mellan aktionerna, och ingen ny input förrän
+  hela rundan spelats upp. Ger även kroken för framtida spell-animationer.
+- **Lösningsförslag:** presentationen spelar upp `CombatTurnResult.action_resolutions`
+  **stegvis** (kö, ~400–600 ms per aktion; logg-rader + B72-FX triggas per steg i stället
+  för allt på en gång). Knapparna disabled tills kön är tom; klick/Space snabbspolar.
+  Kärnan orörd — resolutionerna ligger redan per aktör i initiativordning.
+- **Öppet val (Lucas):** fast delay (rek.) eller klicka-för-nästa-steg?
+- **Acceptans:** sekventiell uppspelning; input blockerad under rundan; skipp funkar;
+  FX/logg synkade per steg; tester för kö-tömning + input-lås.
+
+#### B76 — Battle-layout v2: vitals till höger, längre combatlogg
+- **Lucas (skärmdump):** flytta HP/Mana/XP + stats + vapen till HÖGER sida ovanför
+  knapparna; combatloggen tar vänstra bredden och blir högre — mer lik overworld-chatten,
+  får plats med mer.
+- **Förslag:** LOG_PANEL till vänster (~60 % bredd, full HUD-höjd), VITALS+stats staplade
+  ovanför ACTIONS till höger. Render-HALT: skiss/screenshot till Lucas före låsning.
+
+#### B77 — Logga NÄR en status appliceras ("You were poisoned by ...!")
+- **Lucas:** tick-raderna finns ("Hero took 3 poison damage") men själva appliceringen
+  syns inte. **STEG 0:** hitta vilka apply-vägar som inte loggar (fiende-on-hit/procs
+  misstänks; spelarens apply_status loggar "affected by"). En egen färgad rad per
+  applicering: "You were poisoned by Quick Attack!" — källa (action/vapen) ska nämnas.
+- **Acceptans:** varje status-applicering på spelaren ger en rad med källa; test.
+
+#### B78 — Människoläsbara skill-/talent-texter (bort med råa stat-namn)
+- **Lucas (skärmdump):** "buff +50 damage_dealt_mod for 3 rounds (self); buff +25
+  damage_taken_mod ..." är obegriplig även för byggarna.
+- **Förslag:** central **formatter** i presentationen (effekt-spec → spelartext, t.ex.
+  "Aktiv: +50 % skada men +25 % tagen skada i 3 rundor · 7 mana · kräver Bloodlust")
+  + valfritt `description`-override-fält i talents.json/actions.json för specialfall.
+  Samma formatter återanvänds av B40:s hover-tooltips (S4/S5) — bygg den FÖRE/i den slicen.
+- **Även:** skills-skärmens rubrik-kollision ("Equipped 1/4 …" skriver över "Talent
+  points: …") fixas här eller i B40 S-slicen — en av dem äger fixen, inte båda.
+
+#### B79 — Bestiarium: scrollbar roster + sedda-räknare
+- **Lucas:** listan är låst till de ~14 första; man vill scrolla och få känsla för hur
+  många man INTE sett. **Förslag:** hjul-/piltangent-scroll i rostern (markören driver
+  visningsfönstret som i shop-listor) + "Sedda X/Y"-rad i panelhuvudet.
+
+#### B80 — Boss-lya efter seger: vad ska stå kvar?  ⭐ Lucas-beslut
+- **Lucas:** grå husk "ser fattigt ut". Alternativ: **(a)** bossen försvinner helt +
+  tilen avblockeras (renast; risk: platsen tappar historia), **(b)** kvarleva-prop
+  (benhög/trofé ur props-arken, liten och stilren), **(c)** dagens mörka siluett (utgår).
+- **Claude-rek:** (b) om props-arken har en passande sprite (STEG 0 kollar), annars (a).
+
+#### B81 — Kistor: minska sprite-storleken 15 %
+- Ren render-skalning (target-höjd ×0.85 i chest-ritningen); kollision/E-interaktion
+  oförändrad. Render-verifieras headless.
+
+#### B82 — Chatt-flikarna får inte skymma vitals  · **BUGG (B16.1-följdfel)**
+- **Lucas (skärmdump):** [All][Combat]-chipsen ligger ovanpå XP-baren. **Regel:**
+  HP/Mana/XP ska ALDRIG ockluderas av loggen/chipsen. **Förslag:** rita chipsen INUTI
+  loggpanelens övre kant (overlay på panelens första rad) i stället för ovanför panelen;
+  alternativt sänk loggpanelen chip-höjden. Render-verifieras mot vitals-rects (test:
+  chip-rect ∩ vitals-rect = tom).
+
+*Kopplingar: menytext-glitcharna i Inventory ("Everything you own…"-raden krockar med
+kategorirubriken) och Character ("Gold" krockar med "Stats"-headern, truncerad
+Damage-rad) läggs som KONKRETA fixlistor på **B40 S2 (inventory) + S4 (character)** —
+det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Overworld, kollision & karta
 
@@ -541,9 +626,9 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Not:** STEG 0: idag TVÅ Button-dataclasses (pygame_overworld ~435: rect/label/on_click/enabled/restricted; pygame_battle ~119: +hotkey/sublabel), ingen hover/tooltip-infra. Slice-först; varje apply-slice = render-HALT.
 - **Slices:**
   - **S1 (grund, HALT-fri):** ✅ **KLAR** (`3b8db9a`/`8d46df3`/`d0673b9`/`866c448`, + unified chatbox `9083dac`). Delad `ui.py`: Button (superset rect/label/on_click/enabled/restricted/hotkey/sublabel) + HoverTracker/Tooltip + MenuRow/draw_menu_row (rarity-färgade namn). Beteende-bevarande migrering klar. **← S2 härnäst.**
-  - **S2:** applicera inventory (bort med "Everything you own…", dämpade tomma kategorier utan "(N)", namn synligt / stats på hover).
+  - **S2:** applicera inventory (bort med "Everything you own…", dämpade tomma kategorier utan "(N)", namn synligt / stats på hover). *Playtest 2026-07-06:* rubrikraden KROCKAR med kategorirubriken ("…Pick a categMisc̶ellaneous(1)…") — layoutkollisionen fixas här.
   - **S3:** applicera shop (namn + kostnad synligt, stats/delta på hover).
-  - **S4:** applicera character (inga parenteser, stats/förklaring på hover).
+  - **S4:** applicera character (inga parenteser, stats/förklaring på hover). *Playtest 2026-07-06:* "Gold"-raden krockar med "Stats base→+gear→total"-headern och Damage-raden trunkeras "(…" — layoutkollisionerna fixas här. Skill-/talent-texternas formatter = B78 (bygg den före/i S4-S5).
   - **S5:** character-creation — hela klassens talangträd som read-only förhandsvisning + starter-skill-val (1 av 2 tier-1 → learned rank 1) + enhetlig chrome + bort med "(Mana X)".
 - **Acceptans (per apply-slice):** skärmen följer 7-punktsspecen; hover >1 s visar tooltip; render-HALT-godkänd av Lucas; tester.
 
