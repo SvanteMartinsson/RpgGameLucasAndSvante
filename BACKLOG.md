@@ -741,7 +741,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 #### B45 — Minisjö (5–8 tiles) att gå runt  · *nytt (vatten-/regenerate-lagret)*
 - **Vad:** En liten insjö någonstans som landmärke/omväg (Lucas-önskad). **Not:** ligger i vatten-lagret (regenerate_overworld), inte prop-scattern → egen slice; flood-fill-verifieras. **Acceptans:** sjö placerad, gångbar runtom, reachability grön, test.
 
-#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · 🟢 **BESLUTAT: bygg blenden** (Lucas 2026-07-06: "Jag gillar din PoC, vi kör på detta") — production-slice vid GO (load-time syntetiska gids, `BLEND_BAND=4`, + hash-jitter mot kolumnbandning; render-verifieras mot PoC-bilderna)
+#### B47 — Zonfärgs-övergångar (palett)  · ✅ **KLAR** (nattbatch: production-blenden byggd som **draw-time-overrides** — 2305 förblandade tiles byggda EN gång vid load, layer-datan orörd (väg-scan/M-karta/gid-konsumenter opåverkade), `ZONE_BLEND_BAND=4` (0=av), mild deterministisk jitter; matchar PoC-utseendet Lucas godkände; renders i docs/b47_poc/b47_production_*.png; 4 tester)
 - **PoC (2026-07-06):** `docs/b47_poc/` — före/efter för cainos↔skog, skog↔mire och
   heath-sömmen. Teknik: **alpha-crossfade av ground-tiles** i ett ±4-tiles-band
   (8 alfasteg; förblandade tile-bilder som syntetiska gids byggda EN gång vid

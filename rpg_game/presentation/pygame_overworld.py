@@ -524,6 +524,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             safe_tiles=frozenset(self._safe_tiles),
             path_tiles=frozenset(self._build_path_tiles()),
         )
+        # B47: zone-seam crossfade — synthetic gids built ONCE, after the road
+        # scan froze (it must read original gids) and before any rendering.
+        self._apply_zone_blend()
         # B74: a loaded engine restores its exact saved tile; otherwise the
         # place's town tile (fresh games, legacy saves).
         start_tile = self._restore_tile() or self.zone.start_tile

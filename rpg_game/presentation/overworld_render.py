@@ -162,6 +162,41 @@ CHEST_OPEN_RECT = (96, 76, 32, 49)
 # felled). Same generated-art directory the battle shell reads.
 SPRITE_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites", "generated")
 
+# B47 (Lucas-GO on the PoC): zone-seam colour blend. Ground tiles within
+# ZONE_BLEND_BAND of a seam get pre-blended images (own tile crossfaded toward
+# the neighbour theme's corresponding tile), registered as synthetic gids ONCE
+# at load — zero per-frame cost, no PNG retouching, no seeded streams touched.
+# 0 turns the whole pass off. A deterministic per-tile jitter of ±1 alpha step
+# breaks the column banding the PoC showed.
+ZONE_BLEND_BAND = 4
+ZONE_BLEND_STEPS = 8
+
+# Theme bands (mirrors core_zone ground_themes; x<83 cainos, 83-158 mork_skog,
+# >=159 cursed_mire, y>=100 grave_heath overrides).
+def _blend_theme_at(x: int, y: int) -> str:
+    if y >= 100:
+        return "grave_heath"
+    if x >= 159:
+        return "cursed_mire"
+    if x >= 83:
+        return "mork_skog"
+    return "cainos"
+
+
+def _blend_seam_info(x: int, y: int):
+    """(distance to nearest seam, theme on the OTHER side) or (None, None)."""
+    candidates = []
+    if y < 100:
+        candidates.append((abs(x - 82.5), "mork_skog" if x <= 82 else "cainos"))
+        candidates.append((abs(x - 158.5), "cursed_mire" if x <= 158 else "mork_skog"))
+        candidates.append((abs(y - 99.5), "grave_heath"))
+    else:
+        candidates.append((abs(y - 99.5), _blend_theme_at(x, 99)))
+    dist, other = min(candidates, key=lambda c: c[0])
+    if dist > ZONE_BLEND_BAND:
+        return None, None
+    return dist, other
+
 
 class MapRenderMixin:
     """Map/terrain rendering for OverworldApp (see module docstring)."""
@@ -639,6 +674,83 @@ class MapRenderMixin:
             x = bx * tw - ox + (tw - sprite.get_width()) // 2
             world.blit(sprite, (x, (by + 1) * th - oy - sprite.get_height()))
 
+    def _apply_zone_blend(self) -> None:
+        """B47: build the seam crossfade at load as DRAW-TIME overrides —
+        (x, y) -> pre-blended image index. Layer data stays untouched, so the
+        road scan, the M-map terrain and every gid-walking consumer keep seeing
+        real gids. Deterministic: same map -> same overrides."""
+        self._blend_overrides: dict = {}
+        if ZONE_BLEND_BAND <= 0:
+            return
+        tmx = self.world.tmx
+        ground = next((l for l in tmx.layers if getattr(l, "name", None) == "ground"), None)
+        if ground is None:
+            return
+        firstgid_by_name = {ts.name: ts.firstgid for ts in tmx.tilesets}
+
+        def tileset_of_original(og):
+            for ts in tmx.tilesets:
+                if ts.firstgid <= og < ts.firstgid + ts.tilecount:
+                    return ts
+            return None
+
+        blended_cache: dict = {}
+        for y in range(tmx.height):
+            row = ground.data[y]
+            for x in range(tmx.width):
+                dist, other = _blend_seam_info(x, y)
+                if dist is None:
+                    continue
+                mix = 0.5 * (1 - dist / ZONE_BLEND_BAND)      # 0.5 at the seam -> 0 at edge
+                step = round(mix * ZONE_BLEND_STEPS)
+                step += (1 if (x * 7 + y * 13) % 4 == 0 else 0) \
+                     - (1 if (x * 5 + y * 11) % 4 == 0 else 0)   # mild deterministic jitter
+                step = max(0, min(ZONE_BLEND_STEPS, step))
+                if step <= 0:
+                    continue
+                internal = row[x]
+                og = tmx.tiledgidmap.get(internal, 0)
+                if not og:
+                    continue
+                ts = tileset_of_original(og)
+                theme = _blend_theme_at(x, y)
+                if ts is None or not ts.name.startswith(theme):
+                    continue                                   # only this zone's own tiles
+                key = (internal, other, step)
+                if key not in blended_cache:
+                    blended_cache[key] = self._build_blend_gid(
+                        tmx, ts, og, internal, other, step, firstgid_by_name)
+                synthetic = blended_cache[key]
+                if synthetic is not None:
+                    self._blend_overrides[(x, y)] = synthetic
+
+    _BLEND_THEMES = ("grave_heath", "cursed_mire", "mork_skog", "cainos",
+                     "frostfell", "ash_waste", "karr")
+
+    def _build_blend_gid(self, tmx, ts, og, internal, other, step, firstgid_by_name):
+        """One pre-blended tile image registered as a synthetic gid (or None if
+        the neighbour theme lacks the corresponding tile). The theme tilesets
+        are parallel recolours, so index arithmetic maps tiles 1:1."""
+        theme = next((t for t in self._BLEND_THEMES if ts.name.startswith(t)), None)
+        if theme is None:
+            return None
+        target_first = firstgid_by_name.get(other + ts.name[len(theme):])
+        if target_first is None:
+            return None
+        mapped = tmx.map_gid(target_first + (og - ts.firstgid))
+        if not mapped:
+            return None
+        own_img = tmx.images[internal]
+        other_img = tmx.images[mapped[0][0]]
+        if own_img is None or other_img is None:
+            return None
+        blend = own_img.convert_alpha()
+        layer = other_img.convert_alpha().copy()
+        layer.set_alpha(int(255 * step / ZONE_BLEND_STEPS))
+        blend.blit(layer, (0, 0))
+        tmx.images.append(blend)
+        return len(tmx.images) - 1
+
     def _bridge_deck_image(self, gid, image):
         """B52: rotate seam bridge-deck tiles 90° so their planks run across the
         walking direction. Cached per gid; non-bridge tiles pass through."""
@@ -672,11 +784,13 @@ class MapRenderMixin:
         fog.reveal_rect(self.engine.player.revealed_tiles, tmx.width, tmx.height,
                         left, right, top, bottom)
         get_image = tmx.get_tile_image_by_gid
+        blend_overrides = getattr(self, "_blend_overrides", {})
         for layer in tmx.visible_layers:
             data = getattr(layer, "data", None)
             if data is None:  # not a tile layer (object/image layer)
                 continue
             is_walls = getattr(layer, "name", None) == COLLISION_LAYER
+            is_ground = getattr(layer, "name", None) == "ground"
             for y in range(top, bottom):
                 row = data[y]
                 for x in range(left, right):
@@ -686,6 +800,10 @@ class MapRenderMixin:
                     if is_walls and (x, y) in self._grave_cells:
                         continue  # drawn as a full y-sorted stone in _draw_town
                     image = get_image(gid)
+                    if is_ground and blend_overrides:
+                        override = blend_overrides.get((x, y))
+                        if override is not None:
+                            image = tmx.images[override]   # B47 seam crossfade
                     dest = (x * tw - ox, y * th - oy)
                     if image is None:  # tile without graphic -> placeholder block, never crash
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
