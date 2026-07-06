@@ -65,6 +65,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
+- **Referenskarta (2026-07-06):** `docs/ZONE_MAP.png` — M-map-schematiken med zon-band,
+  alla 17 städer namngivna, pool-städerna markerade (guld), B65-lyorna och START.
+  Regenerera: `.venv/bin/python -m rpg_game.tools.worldgen.render_zone_map`.
+  **Kart-fynd att ta i designrundan:** pool-städerna ligger inte alltid i "sin" zon —
+  burg_54 (Guaredama, cainos-poolens container) ligger fysiskt i grave heath; bindningen
+  band→plats är mekaniskt korrekt men mentalt förvirrande. Design låst sedan tidigare:
+  viktade heltalspooler + fler sub-regioner authorade inline i core_zone `wild_regions`;
+  Claude utkastar rosters, Lucas tunar mot kartan.
 - **Vad:** Kunna sätta VILKA fiender som spawnar VAR med finare kornighet än idag, så utbudet
   varierar inom och mellan zoner (inte samma pool överallt). **Not/STEG 0:** B42 la grunden — 4 zon-
   pooler via `wild_regions`→plats-`encounters` (cainos/mork_skog/cursed_mire/grave_heath skiljer sig
