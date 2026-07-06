@@ -72,6 +72,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
+- **Grave heath-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** BLÅ nordväst
+  x2-91/y101-162 = undead+priest+rotting_fiend (mjuk entré) · GRÖN väst-syd x0-72/
+  y133-207 + syd-mitt x72-139/y187-207 = ghoul+grave_hound · VIT kolumn väst x42-91/
+  y100-207 = shade+hollow_worg(LÅG vikt) — vaktar Barrow-lyan · RÖD öst-mitt x132-209/
+  y100-199 = priest+skeleton_warrior+cursed_wight · LILA nordost x180-230/y100-142 =
+  priest+rotting_fiend (⚠ saknades i legenden, läst ur bilden) · VIT öst-syd x170-235/
+  y144-207 = shade+hollow_worg(LÅG vikt) — Pale Gate-hörnet. **Öppet:** (1) lila-rutan
+  bekräftas? (2) fallback = ghoul+grave_hound? (3) cursed_wight låg-måttlig vikt i röd,
+  rare-slot tom (Claude-rek)?
 - **Cursed mire-skiss LÅST (Lucas 2026-07-06):** VIT topp x159-239/y0-18 + östkust
   x226-239/y0-96 = mudcrab · GUL HELA zonen = bog_leech (baslager = fallback) ·
   RÖD mitt-nord x172-222/y2-71 = bog_wraith+witchlight · GRÖN öst-syd x187-239/y40-97 =
