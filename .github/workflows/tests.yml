@@ -1,0 +1,44 @@
+# B53: CI — every push/PR runs byte-compilation + both test suites.
+#
+# Mirrors the two local runs:
+#   core: dependency-free python (pygame absent -> presentation tests skip),
+#         exactly like `python3 -m unittest discover -s tests` on system python.
+#   full: pip install -r requirements.txt, pygame tests run HEADLESS via the
+#         SDL dummy drivers, exactly like the local .venv run.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    name: core suite (no pygame)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Byte-compile game + tests
+        run: python -m compileall -q rpg_game tests
+      - name: Run the dependency-free suite
+        run: python -m unittest discover -s tests
+
+  full:
+    name: full suite (pygame, headless)
+    runs-on: ubuntu-latest
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+      - name: Byte-compile game + tests
+        run: python -m compileall -q rpg_game tests
+      - name: Run the FULL suite (incl. pygame tests)
+        run: python -m unittest discover -s tests
