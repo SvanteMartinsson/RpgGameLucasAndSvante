@@ -43,6 +43,11 @@ def _fully_populated_player() -> Player:
         pending_stat_choices=1, completed_tournament_ids={"hordanita_novice_cup"},
         item_upgrades={"emberwand": "honed"},
         revealed_tiles=bytearray(b"\x0f\xf0"),
+        opened_chest_ids=("chest_cainos_1",),                     # B63
+        playtime_seconds=4321,                                    # B71
+        bestiary_seen={"cave_bear"},                              # B66
+        bestiary_identified={"cave_bear"},
+        bestiary_kills={"wild_dog": 3},
     )
 
 

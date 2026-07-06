@@ -1070,7 +1070,16 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** nås från start+ESC; ändringar tar effekt direkt + persisterar över omstart; följer
   B40-spec; tester för persistens.
 
-#### B71 — Save-slots + autosave + dödsflöde  · *stödsystem* · liten-medel · risk LÅG
+#### B71 — Save-slots + autosave + dödsflöde  · ✅ **KLAR (S1+S2)** · render-verifierad headless
+- **KLAR:** `core/saveslots.py` — 3 slots + autosave under `saves/` (gitignorerad) med billig metadata-
+  peek (namn/klass/level/plats/**speltid** — nytt persisterat fält `playtime_seconds`, tickat av
+  run-loopen). **Startmenyn** listar slots+autosave med metadata ("Slot 1 — Rt · Mage · Lv 7 · 2h 13m");
+  ny "load:<path>"-val i `engine_from_start_choice` (legacy "load" + explicit-path-tester orörda);
+  gamla root-`savegame.json` **migreras till slot 1** en gång. Nytt spel tar första lediga slot; manuell
+  save skriver spelarens slot. **Autosave** vid stadsentré + efter segrad strid (loggad dimmat, ej vid
+  uppstart-i-stad). **Dödsskärm** "You fell." — Rise at <plats> (straffet redan draget av core) / Load
+  autosave / Load slot N, med resync av sprite. 13 tester (patchade tempdir-paths); 2 gamla lås
+  uppdaterade till avsedda B71-beteendet. 886 gröna.
 - **Vad:** Tre namngivna save-slots (i st. f. hårdkodade savegame.json) med metadata i menyn (namn,
   klass, level, plats, speltid) + AUTOSAVE vid stadsentré och efter strid (separat slot) + ett värdigt
   dödsflöde: "Du föll" → ladda senaste autosave / senaste manuella / huvudmeny. Upplevelsen: trygghet —

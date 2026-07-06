@@ -439,6 +439,8 @@ class Player:
     completed_tournament_ids: set[str] = field(default_factory=set)
     # B63: world chests this player has looted (chest ids; a chest opens once).
     opened_chest_ids: tuple[str, ...] = ()
+    # B71: accumulated play time (seconds), ticked by the presentation loop.
+    playtime_seconds: int = 0
     # B66 bestiary: enemies encountered, identified, and per-enemy kill counts.
     # An entry UNLOCKS (details visible) via Identify OR enough kills.
     bestiary_seen: set[str] = field(default_factory=set)

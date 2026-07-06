@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat, encounters, progression
+from rpg_game.core import combat, encounters, progression, saveslots
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
@@ -647,6 +647,11 @@ class OverworldApp:
         self._bridge_img_cache: dict = {}            # B52: gid -> rotated deck image (or None)
         self.bestiary_index = 0                      # B66: selected codex row
         self._bestiary_sprite_cache: dict = {}       # enemy_id -> (thumb, silhouette)
+        # B71: which manual slot this run saves to (the start menu tags the engine
+        # when it loads a slot; a fresh game takes the first empty slot).
+        self.save_path = getattr(self.engine, "_save_slot_path", None) or _first_free_slot()
+        self._playtime_accum = 0.0                   # fractional seconds carry
+        self._was_in_town = self.world.town_place_id() is not None
         self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
@@ -706,6 +711,12 @@ class OverworldApp:
         place_id = self.world.town_place_id() or self.zone.wild_region_at(self.world.current_tile)
         if place_id != self.engine.player.current_place_id:
             self.engine.enter_place(place_id)
+        in_town = self.world.town_place_id() is not None
+        # getattr: sync_location runs during __init__ before the flag exists; the
+        # True default also means "no autosave for merely starting in town".
+        if in_town and not getattr(self, "_was_in_town", True):
+            self.autosave("town")                     # B71: autosave on town entry
+        self._was_in_town = in_town
 
     def set_toast(self, message: str, color=TEXT, log: bool = True) -> None:
         # B29: no floating toasts — every on-screen message goes to the chatbox log.
@@ -836,6 +847,7 @@ class OverworldApp:
             self._move_accum_x = self._move_accum_y = 0.0  # teleport -> no carried drift
             self.sync_location()
             self.set_toast(T.defeat_respawn(self.engine.current_place().name), BAD)
+            self.mode = "death"                       # B71: a dignified death screen
         else:
             # Victory or flee: stay where we are; location is still the wilds. The
             # battle shell already logged the outcome into the shared event_log, so
@@ -845,6 +857,7 @@ class OverworldApp:
                 self.set_toast(T.fled_from(enemy.name), WARN, log=False)
             else:
                 self.set_toast(T.victory_over(enemy.name), GOOD, log=False)
+                self.autosave("battle")               # B71: autosave after a victory
         self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------
@@ -919,8 +932,30 @@ class OverworldApp:
             self.overlay_return_mode = ""
 
     def save_game(self) -> None:
-        result = self.engine.save(SAVE_PATH)
+        saveslots.ensure_saves_dir()
+        result = self.engine.save(self.save_path)
         self.set_toast(result.message, GOOD if result.success else BAD)
+
+    def autosave(self, reason: str) -> None:
+        """B71: write the separate autosave slot (town entry / after battle)."""
+        saveslots.ensure_saves_dir()
+        result = self.engine.save(saveslots.AUTOSAVE_PATH)
+        if result.success:
+            self.push_log(f"Autosaved ({reason}).", TEXT_DIM)
+
+    def _load_save(self, path: str) -> None:
+        """B71: load a save (death screen / slot picker) and resync the sprite."""
+        result = self.engine.load(path)
+        if not result.success:
+            self.push_log(result.message, BAD)
+            return
+        tile = self.town_tile_by_place.get(self.engine.player.current_place_id)
+        if tile is not None:
+            self.world.set_tile(*tile)
+        self._move_accum_x = self._move_accum_y = 0.0
+        self.sync_location()
+        self.mode = "walk"
+        self.push_log("Game loaded.", GOOD)
 
     def quit_game(self) -> None:
         self.exit_reason = "menu"
@@ -1245,6 +1280,8 @@ class OverworldApp:
                 self._close_tome_shop()
             elif self.mode == "apothecary":
                 self.mode = "walk"
+            elif self.mode == "death":
+                self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
                 self.mode = "walk"
             elif self.mode == "tournament_intermission":
@@ -1351,6 +1388,8 @@ class OverworldApp:
             self._draw_tome_shop()
         elif self.mode == "apothecary":
             self._draw_apothecary()
+        elif self.mode == "death":
+            self._draw_death_screen()
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
         elif self.mode == "tournament_confirm":
@@ -2268,6 +2307,36 @@ class OverworldApp:
         self._add_button(back, T.BACK, self._close_tome_shop)
         self._draw_buttons()
 
+    # -- B71: death screen -----------------------------------------------------
+
+    def _draw_death_screen(self) -> None:
+        """B71: "You fell." — rise at the respawn (penalty already applied by the
+        core) or load the autosave / a manual slot instead."""
+        panel = self._overlay_panel("You fell.")
+        place = self.engine.current_place().name
+        self.screen.blit(self.font_sm.render(
+            f"You wake at {place}, lighter of purse.", True, TEXT_DIM),
+            (panel.x + 20, panel.y + 60))
+        y = panel.y + 96
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44),
+                         f"Rise at {place}", (lambda: setattr(self, "mode", "walk")), True)
+        y += 52
+        auto = saveslots.slot_summary(saveslots.AUTOSAVE_PATH)
+        if auto is not None:
+            label = f"Load autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
+                             (lambda: self._load_save(saveslots.AUTOSAVE_PATH)), True)
+            y += 52
+        for i, summary in enumerate(saveslots.all_summaries()):
+            if summary is None:
+                continue
+            label = (f"Load slot {i + 1} — {summary.name} · {summary.player_class} · "
+                     f"Lv {summary.level} · {summary.playtime_label()}")
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
+                             (lambda p=summary.path: self._load_save(p)), True)
+            y += 52
+        self._draw_buttons()
+
     # -- B68: apothecary brewing ----------------------------------------------
 
     def _open_apothecary(self) -> None:
@@ -2880,9 +2949,23 @@ class OverworldApp:
             self.update()
             self.draw()
             self.clock.tick(FPS)
+            # B71: accumulate play time (whole seconds land on the player).
+            self._playtime_accum += self.clock.get_time() / 1000.0
+            if self._playtime_accum >= 1.0:
+                whole = int(self._playtime_accum)
+                self.engine.player.playtime_seconds += whole
+                self._playtime_accum -= whole
         if self.exit_reason == "exit":
             pygame.quit()
         return self.exit_reason or "menu"
+
+
+def _first_free_slot() -> str:
+    """B71: a fresh game claims the first empty manual slot (slot 1 when full)."""
+    for path in saveslots.SLOT_PATHS:
+        if not os.path.exists(path):
+            return path
+    return saveslots.SLOT_PATHS[0]
 
 
 def _tournament_reward_text(tournament) -> str:
@@ -2903,6 +2986,25 @@ def _tournament_reward_text_by_data(engine: GameEngine, tournament) -> str:
         elif item_id in engine.content.items:
             bits.append(engine.content.items[item_id].name)
     return ", ".join(bits) if bits else T.TOURNAMENT_REWARD_NONE
+
+
+def start_menu_slot_options() -> list[tuple[str, str]]:
+    """B71: the live menu — New game + one Load row per existing slot/autosave.
+    (The legacy start_menu_options stays for explicit-path callers/tests.)"""
+    saveslots.migrate_legacy(SAVE_PATH)          # old root savegame.json -> slot 1
+    options = [("new", T.START_NEW_GAME)]
+    for i, summary in enumerate(saveslots.all_summaries()):
+        if summary is None:
+            continue
+        options.append((f"load:{summary.path}",
+                        f"Slot {i + 1} — {summary.name} · {summary.player_class} · "
+                        f"Lv {summary.level} · {summary.playtime_label()}"))
+    auto = saveslots.slot_summary(saveslots.AUTOSAVE_PATH)
+    if auto is not None:
+        options.append((f"load:{auto.path}",
+                        f"Autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"))
+    options.append(("quit", T.START_QUIT))
+    return options
 
 
 def start_menu_options(save_path: str = SAVE_PATH) -> list[tuple[str, str]]:
@@ -2927,6 +3029,16 @@ def engine_from_start_choice(
         result = engine.load(save_path)
         if not result.success:
             raise ValueError(result.message)
+        return engine
+    if choice.startswith("load:"):               # B71: a specific slot/autosave
+        path = choice.split(":", 1)[1]
+        result = engine.load(path)
+        if not result.success:
+            raise ValueError(result.message)
+        # An autosave load keeps saving to slot 1 semantics via _first_free_slot;
+        # a slot load keeps saving to ITS slot.
+        if path in saveslots.SLOT_PATHS:
+            engine._save_slot_path = path
         return engine
     if choice == "quit":
         return None
@@ -2972,7 +3084,7 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     while True:
         if screen.get_size() != display.get_size():
             screen = pygame.Surface(display.get_size())  # follow resize / fullscreen
-        options = start_menu_options(save_path)
+        options = start_menu_slot_options()
         buttons, title_pos, msg_pos = start_menu_layout(display.get_size(), options)
 
         for event in pygame.event.get():

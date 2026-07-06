@@ -263,8 +263,10 @@ class OverworldTownsTest(unittest.TestCase):
         self.app.push_log("Victory!", (120, 220, 140))
         before = len(self.app.event_log)
         self.app.resolve_battle_outcome("victory", enemy)
-        # the battle already logged the outcome; resolve adds no extra line
-        self.assertEqual(len(self.app.event_log), before)
+        # the battle already logged the outcome; resolve adds no DUPLICATE line —
+        # the only allowed addition is the B71 autosave notice.
+        added = [text for text, _ in list(self.app.event_log)[before:]]
+        self.assertTrue(all("autosaved" in text.lower() for text in added), added)
 
     def test_door_without_a_service_logs_locked(self):
         before = len(self.app.event_log)

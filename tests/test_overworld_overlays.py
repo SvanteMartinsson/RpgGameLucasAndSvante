@@ -63,7 +63,10 @@ class OverworldOverlayTest(unittest.TestCase):
 
         self.app.save_game()
 
-        self.assertTrue(os.path.exists(SAVE_PATH))
+        # B71: manual saves land in the app's slot (saves/slotN.json), not the
+        # legacy root savegame.json.
+        self.assertTrue(os.path.exists(self.app.save_path))
+        self.addCleanup(lambda: os.path.exists(self.app.save_path) and os.remove(self.app.save_path))
         self.assertIn("saved", self.app.event_log[-1][0].lower())
 
     def test_inventory_overlay_use_consumable_goes_through_engine(self):
