@@ -171,6 +171,24 @@ SPRITE_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites", 
 ZONE_BLEND_BAND = 4
 ZONE_BLEND_STEPS = 8
 
+# B83: the player's walk/idle animation (Lucas's hooded sprite, 8 directions).
+# Row order in player_walk.png mirrors his review sheet: r0..r7 = N NE E SE S SW W NW;
+# player_idle.png is the front/blink cycle. Cadence per his animation test:
+# walk ~7.5 fps, idle 4 fps (in 60 fps render frames).
+PLAYER_WALK_SHEET = os.path.join(SPRITE_DIR, "player_walk.png")
+PLAYER_IDLE_SHEET = os.path.join(SPRITE_DIR, "player_idle.png")
+PLAYER_SPRITE_TILES = 1.5      # sprite height in tiles (feet on the tile)
+WALK_FRAME_TICKS = 8           # 60 / 8  = 7.5 fps
+IDLE_FRAME_TICKS = 15          # 60 / 15 = 4 fps
+PLAYER_DIRECTIONS = {(0, -1): 0, (1, -1): 1, (1, 0): 2, (1, 1): 3,
+                     (0, 1): 4, (-1, 1): 5, (-1, 0): 6, (-1, -1): 7}
+
+
+def player_facing(dx: float, dy: float, fallback: int = 4) -> int:
+    """8-way facing row from a movement vector (0 when standing still)."""
+    key = ((dx > 0) - (dx < 0), (dy > 0) - (dy < 0))
+    return PLAYER_DIRECTIONS.get(key, fallback)
+
 # Theme bands (mirrors core_zone ground_themes; x<83 cainos, 83-158 mork_skog,
 # >=159 cursed_mire, y>=100 grave_heath overrides).
 def _blend_theme_at(x: int, y: int) -> str:
@@ -598,8 +616,53 @@ class MapRenderMixin:
                 sprite, sx, sy = payload
                 world.blit(sprite, (sx, sy))
             else:
-                pygame.draw.rect(world, PLAYER_COLOR, payload, border_radius=4)
-                pygame.draw.rect(world, PLAYER_EDGE, payload, width=2, border_radius=4)
+                self._draw_player(world, payload)
+
+    def _draw_player(self, world: "pygame.Surface", rect: "pygame.Rect") -> None:
+        """B83: the animated hooded player — walk cycle in the movement's
+        direction, front/blink cycle at rest. Falls back to the classic yellow
+        square if the sheets are missing (feet stay on the tile either way)."""
+        frames = getattr(self, "_player_frames", None)
+        if frames is None:
+            pygame.draw.rect(world, PLAYER_COLOR, rect, border_radius=4)
+            pygame.draw.rect(world, PLAYER_EDGE, rect, width=2, border_radius=4)
+            return
+        if getattr(self, "_player_moving", False):
+            sprite = frames["walk"][self._player_facing][self._player_frame % 4]
+        else:
+            sprite = frames["idle"][self._player_frame % 4]
+        world.blit(sprite, (rect.centerx - sprite.get_width() // 2,
+                            rect.bottom - sprite.get_height()))
+
+    def _load_player_frames(self):
+        """{'walk': [8][4], 'idle': [4]} scaled so the sprite stands
+        PLAYER_SPRITE_TILES tall, or None when the sheets are absent."""
+        try:
+            walk = pygame.image.load(PLAYER_WALK_SHEET).convert_alpha()
+            idle = pygame.image.load(PLAYER_IDLE_SHEET).convert_alpha()
+        except (pygame.error, FileNotFoundError):
+            return None
+        cell_w, walk_cell_h = walk.get_width() // 4, walk.get_height() // 8
+        target_h = max(1, round(self.world.th * PLAYER_SPRITE_TILES))
+        target_w = max(1, round(cell_w * target_h / walk_cell_h))
+
+        def cut(sheet, row, col, cell_h):
+            cell = sheet.subsurface(pygame.Rect(col * cell_w, row * cell_h, cell_w, cell_h))
+            return pygame.transform.scale(cell, (target_w, target_h))
+
+        return {
+            "walk": [[cut(walk, row, col, walk_cell_h) for col in range(4)]
+                     for row in range(8)],
+            "idle": [cut(idle, 0, col, idle.get_height()) for col in range(4)],
+        }
+
+    def _tick_player_anim(self) -> None:
+        """Advance the player's animation clock (called once per render frame)."""
+        self._player_anim_clock = getattr(self, "_player_anim_clock", 0) + 1
+        ticks = WALK_FRAME_TICKS if getattr(self, "_player_moving", False) else IDLE_FRAME_TICKS
+        if self._player_anim_clock >= ticks:
+            self._player_anim_clock = 0
+            self._player_frame = (getattr(self, "_player_frame", 0) + 1) % 4
 
     def _load_chest_sprites(self) -> dict:
         """B63: (theme, opened) -> chest sprite, cropped from the theme's props

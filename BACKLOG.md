@@ -240,6 +240,15 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 - Ren render-skalning (target-höjd ×0.85 i chest-ritningen); kollision/E-interaktion
   oförändrad. Render-verifieras headless.
 
+#### B83 — Player walk/idle-animationer i overworld  · ✅ **KLAR** (nattbatch 2026-07-06→07)
+- **KLAR:** Lucas's huvfigur ersätter gula kvadraten. `build_player_sheet`-verktyget
+  color-keyar review-arket (grå bg + r0-r8-etiketter) och auto-klipper cellerna →
+  rena `player_walk.png` (8 riktningar × 4 frames, r0..r7 = N NE E SE S SW W NW) +
+  `player_idle.png` (front/blink). Runtime: 8-vägs facing ur rörelsevektorn
+  (diagonaler används), gång 7,5 fps / idle 4 fps (Lucas-låst), 1,5 tiles hög med
+  fötterna på tilen, y-sorterad med byggnader som förut; gul-kvadrat-fallback om
+  arken saknas. 5 tester.
+
 #### B82 — Chatt-flikarna får inte skymma vitals  · ✅ **KLAR** (nattbatch: chipsen bor nu INUTI panelen som header-remsa, texten börjar under; en synlig rad spenderas på remsan; test låser chip⊂panel)
 - **Lucas (skärmdump):** [All][Combat]-chipsen ligger ovanpå XP-baren. **Regel:**
   HP/Mana/XP ska ALDRIG ockluderas av loggen/chipsen. **Förslag:** rita chipsen INUTI

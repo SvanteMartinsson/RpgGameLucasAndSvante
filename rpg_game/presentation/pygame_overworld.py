@@ -67,6 +67,7 @@ from rpg_game.presentation.overworld_buildings import (  # noqa: F401 — re-exp
     STORE_CATEGORY,
 )
 from rpg_game.presentation.overworld_render import (  # noqa: F401 — re-exports
+    player_facing,
     MapRenderMixin,
     BG,
     PANEL_EDGE,
@@ -516,6 +517,12 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.lair_tiles = {}
         self._sync_lairs()
         self._lair_sprites: dict = {}   # boss_id -> sprite | None, lazy
+        # B83: the animated player (walk 7.5 fps / idle 4 fps, 8 directions).
+        self._player_frames = self._load_player_frames()
+        self._player_facing = 4          # start facing the camera (S)
+        self._player_frame = 0
+        self._player_anim_clock = 0
+        self._player_moving = False
         # B55: freeze the tile geometry the CORE pacing rule reads (towns, the
         # B32 no-encounter zone, road tiles). The base rate stays a live attribute
         # (self.encounter_rate) so runtime tuning and tests keep working.
@@ -1272,12 +1279,15 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self._try_open_chest()   # B63: open an adjacent chest
 
     def update(self) -> None:
+        self._player_moving = False      # B83: proven again each walk frame
         if self.overlay or self.mode != "walk":
             return
         keys = pygame.key.get_pressed()
         dx = (keys[pygame.K_RIGHT] or keys[pygame.K_d]) - (keys[pygame.K_LEFT] or keys[pygame.K_a])
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
         if dx or dy:
+            self._player_moving = True
+            self._player_facing = player_facing(dx, dy, self._player_facing)
             # Accumulate sub-pixel movement; move the integer part, carry the rest.
             # int() truncates toward zero so the fraction keeps its sign both ways.
             self._move_accum_x += dx * PLAYER_SPEED
@@ -1306,6 +1316,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     def draw(self) -> None:
         self.buttons = []
+        self._tick_player_anim()   # B83: one animation tick per rendered frame
         self.hover.begin()   # menus re-register their hoverable rects each frame
         # Fluid overworld: the canvas tracks the live (logical) display size, so
         # the world fills the window instead of sitting as a centered island. The
