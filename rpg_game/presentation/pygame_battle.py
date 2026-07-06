@@ -95,6 +95,12 @@ ENEMY_SPRITE_TIER = {
     "thornling": "small",
     "broodmother_spider": "large",
     "strangling_vine": "large",
+    # B65 zone bosses (placeholder sprites copied from kin until art lands)
+    "boss_rotfang": "large",
+    "boss_briar_queen": "large",
+    "boss_yagra": "large",
+    "boss_barrow_king": "large",
+    "boss_pale_sovereign": "large",
 }
 # Bigger on the roomier stage, but with air left in the band (not dominant).
 TIER_HEIGHT = {"small": 150, "medium": 200, "large": 250}
@@ -195,7 +201,7 @@ class BattleApp:
         if self.enemy is not None:
             # Single battle against a supplied enemy (e.g. a wild encounter).
             self.set_mode("combat")
-            self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
+            self.push_log(T.appears(_enemy_article(self.enemy), self.enemy.name), ACCENT)
             self.playtest_logger.encounter_start(self.enemy, build_snapshot(self.engine), self.location_id)
         elif self.standalone:
             self._ensure_dangerous_place()
@@ -236,7 +242,7 @@ class BattleApp:
             return
         self.set_mode("combat")
         self.banner = ""
-        self.push_log(T.appears(_article(self.enemy.name), self.enemy.name), ACCENT)
+        self.push_log(T.appears(_enemy_article(self.enemy), self.enemy.name), ACCENT)
         self.location_id = self.engine.player.current_place_id
         if self.playtest_logger is not None:
             self.playtest_logger.encounter_start(self.enemy, build_snapshot(self.engine), self.location_id)
@@ -550,7 +556,8 @@ class BattleApp:
         self._draw_hero_sprite()
         self._draw_enemy_sprite(enemy)
         # Compact nameplate (not a thick panel): name + level + HP bar + status/identify.
-        self._text(enemy_nameplate(enemy), (STAGE.x + 14, STAGE.y + 8), self.font_lg)
+        nameplate_color = WARN if getattr(enemy, "boss", False) else TEXT   # B65: gold boss plate
+        self._text(enemy_nameplate(enemy), (STAGE.x + 14, STAGE.y + 8), self.font_lg, nameplate_color)
         bar = pygame.Rect(STAGE.x + 14, STAGE.y + 42, 320, 20)
         hp_ratio = enemy.hp / enemy.max_hp if enemy.max_hp else 0
         self._bar(bar, hp_ratio, _hp_color(hp_ratio), f"HP {enemy.hp}/{enemy.max_hp}")
@@ -793,6 +800,11 @@ def _article(noun: str) -> str:
     return "an" if noun[:1].lower() in "aeiou" else "a"
 
 
+def _enemy_article(enemy) -> str:
+    """B65: named bosses take no article — 'Rotfang ... appears!', not 'A ...'."""
+    return "" if getattr(enemy, "boss", False) else _article(enemy.name)
+
+
 def _hp_color(ratio):
     return HP_LOW if ratio <= 0.3 else HP_FULL
 
@@ -818,7 +830,10 @@ def _reveal_lines(reveal):
 
 
 def enemy_nameplate(enemy) -> str:
-    """B49: the combat nameplate — enemy name + its level."""
+    """B49: the combat nameplate — enemy name + its level. B65: bosses are
+    marked so the wall reads as intentional."""
+    if getattr(enemy, "boss", False):
+        return f"{enemy.name}   Lv {enemy.level}  [BOSS]"
     return f"{enemy.name}   Lv {enemy.level}"
 
 

@@ -1471,5 +1471,375 @@
         "tag": "snare"
       }
     ]
+  },
+  {
+    "id": "rat_king_gnaw",
+    "name": "Gnawing Frenzy",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 0.9,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 0.9,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "rat_king_plague_leap",
+    "name": "Plague Leap",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.4,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tag": "toxin",
+        "magnitude": 4,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "damage_type": "poison",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "rat_king_frenzy",
+    "name": "Warren Frenzy",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 99,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "buff",
+        "stat": "power",
+        "magnitude": 4,
+        "duration": 4,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "briar_lash",
+    "name": "Briar Lash",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.2,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tag": "toxin",
+        "magnitude": 5,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "damage_type": "poison",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "briar_crushing_boughs",
+    "name": "Crushing Boughs",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.8,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "briar_verdant_renewal",
+    "name": "Verdant Renewal",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 6,
+    "effects": [
+      {
+        "type": "instant_heal",
+        "magnitude": 60,
+        "target": "self"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "reflect",
+        "magnitude": 6,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self",
+        "damage_type": "physical"
+      }
+    ]
+  },
+  {
+    "id": "yagra_hexbolt",
+    "name": "Hexbolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.2,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "speed",
+        "magnitude": -4,
+        "duration": 2,
+        "tag": "chill"
+      }
+    ]
+  },
+  {
+    "id": "yagra_wither_curse",
+    "name": "Withering Curse",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 4,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "power",
+        "magnitude": -5,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "yagra_drowning_grasp",
+    "name": "Drowning Grasp",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 2.9,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "yagra_swampskin",
+    "name": "Swampskin",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 6,
+    "effects": [
+      {
+        "type": "instant_heal",
+        "magnitude": 40,
+        "target": "self"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "mitigation",
+        "magnitude": 6,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "barrow_blade",
+    "name": "Gravecold Blade",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.0,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 0.4,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "barrow_soul_harvest",
+    "name": "Soul Harvest",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "drain",
+        "scale": "basic_attack",
+        "multiplier": 2.6,
+        "damage_type": "frost",
+        "ratio": 0.5,
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "barrow_bone_shield",
+    "name": "Bone Shield",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 5,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "mitigation",
+        "magnitude": 8,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "barrow_grave_storm",
+    "name": "Grave Storm",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 4,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.8,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "tick_timing": "round_end",
+        "target": "enemy",
+        "stat": "speed",
+        "magnitude": -3,
+        "duration": 2,
+        "tag": "chill"
+      }
+    ]
+  },
+  {
+    "id": "sovereign_umbral_bolt",
+    "name": "Umbral Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 1.3,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "sovereign_ruin",
+    "name": "Umbral Ruin",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 3,
+    "telegraph": true,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "basic_attack",
+        "multiplier": 3.2,
+        "damage_type": "frost",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "sovereign_hex",
+    "name": "Sovereign's Hex",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 4,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "power",
+        "magnitude": -6,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "sovereign_last_light",
+    "name": "Last Light",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "cooldown_rounds": 99,
+    "effects": [
+      {
+        "type": "instant_heal",
+        "magnitude": 80,
+        "target": "self"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "buff",
+        "stat": "power",
+        "magnitude": 6,
+        "duration": 4,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
   }
 ]

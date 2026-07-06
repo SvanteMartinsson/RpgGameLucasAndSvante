@@ -71,6 +71,24 @@ BUILDING_LOCKED = "This building seems to be locked."
 BACK_TO_MAP = "Esc / Enter: back to map"
 BACK = "Back (Esc)"
 
+# --- B65 zone bosses ---------------------------------------------------------
+
+VICTORY_TITLE = "THE CURSE IS BROKEN"
+VICTORY_LINES = (
+    "The Pale Sovereign has fallen, and with it the curse over the land.",
+    "The mire clears, the heath grows quiet, and the roads are safe again.",
+    "",
+    "Svantrenish RPG — by Lucas & Svante",
+    "made with Claude",
+    "",
+    "The world remains yours to wander.",
+)
+VICTORY_CONTINUE = "Continue exploring"
+
+
+def boss_challenge_prompt(name: str, level: int) -> str:
+    return f"{name} (Lv {level}) lurks here. Press E again to challenge."
+
 
 def wilds_near(place_name: str) -> str:
     return f"Wilds near {place_name}"
@@ -271,6 +289,8 @@ LEVELUP_PROMPT = "Level up! Choose a main stat."
 
 
 def appears(article: str, enemy_name: str) -> str:
+    if not article:   # B65: named bosses carry no article ("Rotfang ... appears!")
+        return f"{enemy_name} appears!"
     return f"{article.capitalize()} {enemy_name} appears!"
 
 

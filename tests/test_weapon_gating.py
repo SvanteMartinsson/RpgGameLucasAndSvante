@@ -42,6 +42,7 @@ class WeaponGatingTests(unittest.TestCase):
             "willow_longbow": "ranged",
             "yew_warbow": "ranged",
             "adept_wand": "magic",
+            "sanctified_recurve": "ranged",   # B65: hunter's holy counter (loot-only)
         }
         self.assertEqual(
             {weapon_id: weapon.category for weapon_id, weapon in engine.content.weapons.items()},

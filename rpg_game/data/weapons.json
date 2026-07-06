@@ -342,5 +342,15 @@
         "damage_type": "fire"
       }
     ]
+  },
+  {
+    "id": "sanctified_recurve",
+    "name": "Sanctified Recurve",
+    "damage_bonus": 26,
+    "price": 1250,
+    "damage_type": "holy",
+    "category": "ranged",
+    "rarity": "rare",
+    "on_hit": [{"chance": 0.2, "heal_self": 5}]
   }
 ]

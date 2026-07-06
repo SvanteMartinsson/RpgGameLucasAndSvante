@@ -235,8 +235,10 @@ class PerEnemyUniqueTableTests(unittest.TestCase):
             if tmpl.drop_chance <= 0:        # arena opponents drop nothing
                 continue
             self.assertTrue(tmpl.loot_table, f"{eid} has no common table")
-            if eid in self.NO_UNIQUE:
-                continue                     # trash/standard carry no signature (B42)
+            if eid in self.NO_UNIQUE or tmpl.boss:
+                # trash/standard carry no signature (B42); bosses grant theirs
+                # deterministically via the lair reward instead (B65)
+                continue
             self.assertTrue(tmpl.unique_table, f"{eid} has no unique table")
 
     def test_signature_unique_drops_in_target_band(self):

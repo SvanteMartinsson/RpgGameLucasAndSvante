@@ -519,5 +519,68 @@
       "wisdom": 4,
       "crit_chance": 2
     }
+  },
+  {
+    "id": "warren_signet",
+    "name": "Warren Signet",
+    "slot_type": "ring",
+    "tier": 2,
+    "rarity": "rare",
+    "level_req": 2,
+    "stat_modifiers": {
+      "damage": 1,
+      "max_hp": 8
+    }
+  },
+  {
+    "id": "briarheart_amulet",
+    "name": "Briarheart Amulet",
+    "slot_type": "amulet",
+    "tier": 3,
+    "rarity": "rare",
+    "level_req": 5,
+    "stat_modifiers": {
+      "max_hp": 15,
+      "damage": 2
+    }
+  },
+  {
+    "id": "hagbone_idol",
+    "name": "Hagbone Idol",
+    "slot_type": "amulet",
+    "tier": 4,
+    "rarity": "rare",
+    "level_req": 7,
+    "stat_modifiers": {
+      "wisdom": 3,
+      "max_mana": 10,
+      "crit_chance": 2
+    }
+  },
+  {
+    "id": "barrow_crown",
+    "name": "Crown of the Barrow King",
+    "slot_type": "head",
+    "tier": 5,
+    "rarity": "rare",
+    "level_req": 9,
+    "stat_modifiers": {
+      "armor": 3,
+      "max_hp": 20,
+      "damage": 2
+    }
+  },
+  {
+    "id": "sovereign_mantle",
+    "name": "Sovereign's Mantle",
+    "slot_type": "chest",
+    "tier": 5,
+    "rarity": "rare",
+    "level_req": 10,
+    "stat_modifiers": {
+      "armor": 5,
+      "max_hp": 25,
+      "max_mana": 15
+    }
   }
 ]

@@ -158,6 +158,7 @@ PLAYER_FIELDS: dict[str, tuple] = {
     "bestiary_seen": _str_set(),        # B66 bestiary
     "bestiary_identified": _str_set(),
     "bestiary_kills": _dict_of(int),
+    "defeated_boss_ids": _str_set(),    # B65 zone bosses
     "learned_talent_ids": _str_set(),
     "talent_ranks": _dict_of(int),
     "resistances": _dict_of(float),

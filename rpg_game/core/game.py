@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import alchemy, bestiary, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, bosses, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -52,6 +52,9 @@ class GameEngine:
         self.content = content or load_content()
         self.rng = rng or random.Random()
         self.state: GameState | None = None
+        # B65: set while a lair fight is live; the victory path consumes it.
+        # Transient by design — a boss fight can't be saved mid-battle.
+        self._active_boss_id = ""
 
     @property
     def player(self) -> Player:
@@ -277,9 +280,29 @@ class GameEngine:
 
     def _begin_encounter(self) -> None:
         """Fresh fight: clear the player's skill cooldowns so they never leak from a
-        previous encounter (enemies already spawn as fresh Actors). Wild and
-        tournament fights both funnel through here."""
+        previous encounter (enemies already spawn as fresh Actors). Wild, tournament
+        and boss fights all funnel through here."""
         self.player.cooldowns = {}
+        self._active_boss_id = ""   # only challenge_boss re-arms it, right after
+
+    def boss_challenge_blocker(self, boss_id: str) -> str:
+        """Why this lair can't be challenged right now ('' = it can)."""
+        return bosses.challenge_blocker(self.player, self.content, boss_id)
+
+    def challenge_boss(self, boss_id: str) -> Enemy | None:
+        """B65: start a lair fight. None when gated (defeated / prerequisites);
+        the reason comes from boss_challenge_blocker."""
+        if bosses.challenge_blocker(self.player, self.content, boss_id):
+            return None
+        boss = self.content.bosses[boss_id]
+        enemy = self.content.enemies[boss.enemy_id].create_enemy()
+        bestiary.mark_seen(self.player, enemy.id)
+        self._begin_encounter()
+        self._active_boss_id = boss_id
+        return enemy
+
+    def main_goal_complete(self) -> bool:
+        return bosses.main_goal_complete(self.player, self.content)
 
     def loot_pool(self, enemy: Enemy) -> list[dict[str, object]]:
         # Each enemy resolves from its own COMMON table (loot_table: shared miscellaneous,
@@ -511,6 +534,7 @@ class GameEngine:
         events: list[str] = []
         chance = self.flee_chance(enemy)
         if self.rng.random() < chance:
+            self._active_boss_id = ""   # B65: retreating resets the lair fight
             events.append(f"You fled from {enemy.name}.")
             result = combat.CombatTurnResult(
                 outcome="fled",
@@ -710,6 +734,7 @@ class GameEngine:
         enemy_reveal: combat.EnemyReveal | None = None,
         action_resolutions: list[combat.ActionResolution] | None = None,
     ) -> combat.CombatTurnResult:
+        self._active_boss_id = ""   # B65: a lost lair fight can be retried
         penalty = self._respawn_player()
         events.append(
             f"You died and respawned in {self.current_place().name}. "
@@ -776,6 +801,13 @@ class GameEngine:
                 f"{enemy.name} dropped: {drop.name} "
                 f"[{drop.rarity}] (tier {drop.tier})!"
             )
+
+        if self._active_boss_id and enemy.boss:
+            # B65: one-time lair reward; a felled boss is also fully known.
+            reward = bosses.on_first_defeat(self.player, self.content, self._active_boss_id)
+            bestiary.mark_identified(self.player, enemy.id)
+            events.extend(reward.events)
+            self._active_boss_id = ""
 
         return combat.CombatTurnResult(
             outcome="victory",

@@ -203,6 +203,22 @@ class ChestDef:
 
 
 @dataclass(frozen=True)
+class BossDef:
+    """B65: a zone boss lair placed in the world. `enemy_id` points at the boss's
+    EnemyTemplate; `requires_defeated` gates the challenge (the final boss lists
+    the other four); the reward is granted ONCE, on first defeat."""
+    id: str
+    enemy_id: str
+    zone: str
+    lair_tile: tuple[int, int]
+    requires_defeated: tuple[str, ...]
+    reward_gold: int
+    reward_item_ids: tuple[str, ...]
+    intro: str
+    final: bool = False
+
+
+@dataclass(frozen=True)
 class LootDrop:
     item_id: str
     name: str
@@ -241,6 +257,8 @@ class EnemyTemplate:
     # opponents leave these at 0 so their hand-built fixed levels never roll.
     level_min: int = 0
     level_max: int = 0
+    # B65: zone bosses — fixed level, never in wild pools, elite nameplate.
+    boss: bool = False
 
     def create_enemy(self) -> "Enemy":
         # Late import avoids a circular import (progression imports entities).
@@ -272,6 +290,7 @@ class EnemyTemplate:
             unique_table=self.unique_table,
             drop_chance=self.drop_chance,
             rare_table_access=self.rare_table_access,
+            boss=self.boss,
         )
 
 
@@ -309,6 +328,7 @@ class Enemy:
     damage_dealt_mod: int = 0
     damage_taken_mod: int = 0
     tags: set[str] = field(default_factory=set)
+    boss: bool = False   # B65: elite nameplate + boss-only victory handling
     conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
 
     @property
@@ -446,6 +466,9 @@ class Player:
     bestiary_seen: set[str] = field(default_factory=set)
     bestiary_identified: set[str] = field(default_factory=set)
     bestiary_kills: dict[str, int] = field(default_factory=dict)
+    # B65: zone bosses this player has felled (boss ids from bosses.json).
+    # A defeated boss stays defeated; the final boss gates on the other four.
+    defeated_boss_ids: set[str] = field(default_factory=set)
     # B37 Slice 2: permanent one-time upgrades. item_id -> chosen variant id
     # (presence == upgraded). The applied deltas live in upgrade_stat_bonuses /
     # weapon_upgrade_components (derived, NOT persisted) — never in damage_bonus.
@@ -492,6 +515,7 @@ class GameContent:
     upgrade_recipes: dict[str, UpgradeRecipe] = field(default_factory=dict)
     chests: dict[str, ChestDef] = field(default_factory=dict)   # B63 world chests
     brew_recipes: dict = field(default_factory=dict)             # B68 alchemy
+    bosses: dict[str, BossDef] = field(default_factory=dict)     # B65 zone bosses
 
 
 @dataclass

@@ -271,6 +271,9 @@ BRIDGE_TILESETS = {"water_bridge", "bridge_halfdeck"}
 PROPS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "props")
 CHEST_CLOSED_RECT = (96, 30, 32, 31)
 CHEST_OPEN_RECT = (96, 76, 32, 49)
+# B65: boss lairs draw the boss's battle sprite in the world (darkened once
+# felled). Same generated-art directory the battle shell reads.
+SPRITE_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites", "generated")
 
 
 # --- zone config -----------------------------------------------------------
@@ -592,6 +595,12 @@ class OverworldApp:
                             for chest in self.engine.content.chests.values()}
         self.world.blocked |= set(self.chest_tiles)
         self._chest_sprites = self._load_chest_sprites()
+        # B65: boss lairs are solid landmarks — the boss itself stands on its
+        # tile (darkened once felled). Blocked before the encounter map freezes.
+        self.lair_tiles = {tuple(boss.lair_tile): boss.id
+                           for boss in self.engine.content.bosses.values()}
+        self.world.blocked |= set(self.lair_tiles)
+        self._lair_sprites: dict = {}   # boss_id -> (alive, felled) | None, lazy
         # B55: freeze the tile geometry the CORE pacing rule reads (towns, the
         # B32 no-encounter zone, road tiles). The base rate stays a live attribute
         # (self.encounter_rate) so runtime tuning and tests keep working.
@@ -652,6 +661,8 @@ class OverworldApp:
         self._bridge_img_cache: dict = {}            # B52: gid -> rotated deck image (or None)
         self.bestiary_index = 0                      # B66: selected codex row
         self._bestiary_sprite_cache: dict = {}       # enemy_id -> (thumb, silhouette)
+        self._armed_boss_id = ""                     # B65: first E arms, second E fights
+        self._end_shown = self.engine.main_goal_complete()   # B65: ending shows ONCE
         # B71: which manual slot this run saves to (the start menu tags the engine
         # when it loads a slot; a fresh game takes the first empty slot).
         self.save_path = getattr(self.engine, "_save_slot_path", None) or _first_free_slot()
@@ -871,6 +882,12 @@ class OverworldApp:
             else:
                 self.set_toast(T.victory_over(enemy.name), GOOD, log=False)
                 self.autosave("battle")               # B71: autosave after a victory
+                # B65: felling the final boss ends the main goal — show the ending
+                # once (a loaded finished save never re-triggers it).
+                if getattr(enemy, "boss", False) and not self._end_shown \
+                        and self.engine.main_goal_complete():
+                    self._end_shown = True
+                    self.mode = "victory"
         self._last_tile = self.world.current_tile
 
     # -- town actions (all go through the engine) ---------------------------
@@ -968,6 +985,7 @@ class OverworldApp:
         self._move_accum_x = self._move_accum_y = 0.0
         self.sync_location()
         self.mode = "walk"
+        self._end_shown = self.engine.main_goal_complete()   # B65: track the loaded run
         self.push_log("Game loaded.", GOOD)
 
     def quit_game(self) -> None:
@@ -1295,6 +1313,8 @@ class OverworldApp:
                 self.mode = "walk"
             elif self.mode == "death":
                 self.mode = "walk"
+            elif self.mode == "victory":
+                self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
                 self.mode = "walk"
             elif self.mode == "tournament_intermission":
@@ -1342,6 +1362,8 @@ class OverworldApp:
                 if door is not None:
                     self._interact_door(*door)
                     return
+                if self._try_challenge_boss():   # B65: lair beside the player
+                    return
                 self._try_open_chest()   # B63: open an adjacent chest
 
     def update(self) -> None:
@@ -1366,6 +1388,7 @@ class OverworldApp:
                 tile = self.world.current_tile
                 if tile != self._last_tile:
                     self._last_tile = tile
+                    self._armed_boss_id = ""   # B65: stepping away disarms the challenge
                     region = self.zone.wild_region_at(tile)
                     if region != self._last_region and region != self.zone.wild_region_place_id:
                         self.set_toast(T.region_flavor(region), WARN)  # soft signal, not a wall
@@ -1404,6 +1427,8 @@ class OverworldApp:
             self._draw_apothecary()
         elif self.mode == "death":
             self._draw_death_screen()
+        elif self.mode == "victory":
+            self._draw_victory_screen()   # B65: the ending
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
         elif self.mode == "tournament_confirm":
@@ -2003,6 +2028,91 @@ class OverworldApp:
             return True
         return False
 
+    def _try_challenge_boss(self) -> bool:
+        """B65 E/Enter: a lair on an adjacent tile. First press announces the
+        boss (arming the challenge), the second press starts the fight; walking
+        away disarms. Gated lairs (defeated / prerequisites) just explain why.
+        Returns True if a lair was there."""
+        px, py = self.world.current_tile
+        for tile in ((px + 1, py), (px - 1, py), (px, py + 1), (px, py - 1)):
+            boss_id = self.lair_tiles.get(tile)
+            if boss_id is None:
+                continue
+            blocker = self.engine.boss_challenge_blocker(boss_id)
+            if blocker:
+                self.push_log(blocker, TEXT_DIM)
+                return True
+            boss = self.engine.content.bosses[boss_id]
+            template = self.engine.content.enemies[boss.enemy_id]
+            if self._armed_boss_id != boss_id:
+                self._armed_boss_id = boss_id
+                if boss.intro:
+                    self.push_log(boss.intro, WARN)
+                self.push_log(T.boss_challenge_prompt(template.name, template.level), WARN)
+                return True
+            self._armed_boss_id = ""
+            enemy = self.engine.challenge_boss(boss_id)
+            if enemy is not None:
+                self.start_battle(enemy)
+            return True
+        return False
+
+    def _lair_sprite(self, boss_id: str):
+        """(alive, felled) overworld sprites for a boss — its battle art scaled
+        to loom two tiles tall; the felled variant is darkened to a husk. A
+        missing sprite degrades to None (lair still blocks + challenges)."""
+        cached = self._lair_sprites.get(boss_id, False)
+        if cached is not False:
+            return cached
+        boss = self.engine.content.bosses[boss_id]
+        path = os.path.join(SPRITE_DIR, f"{boss.enemy_id}.png")
+        pair = None
+        try:
+            raw = pygame.image.load(path).convert_alpha()
+            target_h = self.world.th * 2
+            width = max(1, round(raw.get_width() * target_h / raw.get_height()))
+            alive = pygame.transform.scale(raw, (width, target_h))
+            felled = alive.copy()
+            felled.fill((70, 70, 82), special_flags=pygame.BLEND_RGB_MIN)
+            pair = (alive, felled)
+        except (pygame.error, FileNotFoundError):
+            pair = None
+        self._lair_sprites[boss_id] = pair
+        return pair
+
+    def _draw_lairs(self, world: "pygame.Surface", ox: int, oy: int,
+                    left: int, right: int, top: int, bottom: int) -> None:
+        """B65: draw every lair boss in view, bottom-anchored on its tile;
+        defeated state reads from the player's persisted defeated_boss_ids."""
+        tw, th = self.world.tw, self.world.th
+        defeated = self.engine.player.defeated_boss_ids
+        for boss in self.engine.content.bosses.values():
+            bx, by = boss.lair_tile
+            if not (left - 2 <= bx < right + 2 and top - 2 <= by < bottom + 3):
+                continue
+            pair = self._lair_sprite(boss.id)
+            if pair is None:
+                continue
+            sprite = pair[1] if boss.id in defeated else pair[0]
+            x = bx * tw - ox + (tw - sprite.get_width()) // 2
+            world.blit(sprite, (x, (by + 1) * th - oy - sprite.get_height()))
+
+    def _draw_victory_screen(self) -> None:
+        """B65: the ending — shown once, when the final boss falls. The world
+        stays open behind it; Continue (or Esc) returns to the map."""
+        veil = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        veil.fill((8, 6, 16, 210))
+        self.screen.blit(veil, (0, 0))
+        panel = self._overlay_panel(T.VICTORY_TITLE)
+        y = panel.y + 64
+        for line in T.VICTORY_LINES:
+            if line:
+                self.screen.blit(self.font_sm.render(line, True, TEXT), (panel.x + 20, y))
+            y += 22
+        self._add_button(pygame.Rect(panel.x + 20, y + 10, panel.width - 40, 44),
+                         T.VICTORY_CONTINUE, (lambda: setattr(self, "mode", "walk")), True)
+        self._draw_buttons()
+
     def _bridge_deck_image(self, gid, image):
         """B52: rotate seam bridge-deck tiles 90° so their planks run across the
         walking direction. Cached per gid; non-bridge tiles pass through."""
@@ -2056,6 +2166,7 @@ class OverworldApp:
                     else:
                         world.blit(self._bridge_deck_image(gid, image), dest)
         self._draw_chests(world, ox, oy, left, right, top, bottom)   # B63
+        self._draw_lairs(world, ox, oy, left, right, top, bottom)   # B65
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),

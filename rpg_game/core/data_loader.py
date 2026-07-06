@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from rpg_game.core.entities import (
+    BossDef,
     ChestDef,
     Connection,
     ConsumableItem,
@@ -244,6 +245,7 @@ def load_content() -> GameContent:
             rare_table_access=row.get("rare_table_access", False),
             level_min=row.get("level_min", row["level"]),
             level_max=row.get("level_max", row["level"]),
+            boss=row.get("boss", False),
         )
         for row in _read_json("enemies.json")
     }
@@ -275,6 +277,22 @@ def load_content() -> GameContent:
             loot_table=tuple(row.get("loot_table", ())),
         )
         for row in _read_json("chests.json")
+    }
+
+    # B65: zone bosses and their lairs.
+    bosses = {
+        row["id"]: BossDef(
+            id=row["id"],
+            enemy_id=row["enemy_id"],
+            zone=row.get("zone", ""),
+            lair_tile=tuple(row["lair_tile"]),
+            requires_defeated=tuple(row.get("requires_defeated", ())),
+            reward_gold=row.get("reward_gold", 0),
+            reward_item_ids=tuple(row.get("reward_item_ids", ())),
+            intro=row.get("intro", ""),
+            final=row.get("final", False),
+        )
+        for row in _read_json("bosses.json")
     }
 
     world = _read_json("world.json")
@@ -324,6 +342,7 @@ def load_content() -> GameContent:
                            enemies, places, rare_loot_table, upgrade_recipes)
     _validate_chests(chests, weapons, gear_items, items)
     _validate_brews(brew_recipes, items)
+    _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -341,6 +360,7 @@ def load_content() -> GameContent:
         upgrade_recipes=upgrade_recipes,
         chests=chests,
         brew_recipes=brew_recipes,
+        bosses=bosses,
     )
 
 
@@ -388,6 +408,38 @@ def _validate_chests(chests, weapons, gear_items, items) -> None:
             item_id = entry.get("item_id")
             if item_id not in weapons and item_id not in gear_items and item_id not in items:
                 raise ValueError(f"chest {chest.id} references unknown item {item_id}")
+
+
+def _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests) -> None:
+    """B65: boss defs must resolve, boss enemies must never sit in a wild pool
+    (a boss only spawns via its lair), and lair tiles must not collide."""
+    boss_enemy_ids = {enemy.id for enemy in enemies.values() if enemy.boss}
+    for boss in bosses.values():
+        enemy = enemies.get(boss.enemy_id)
+        if enemy is None:
+            raise ValueError(f"boss {boss.id} references unknown enemy {boss.enemy_id}")
+        if not enemy.boss:
+            raise ValueError(f"boss {boss.id} enemy {boss.enemy_id} is not boss-flagged")
+        for required_id in boss.requires_defeated:
+            if required_id not in bosses:
+                raise ValueError(f"boss {boss.id} requires unknown boss {required_id}")
+        for item_id in boss.reward_item_ids:
+            if item_id not in weapons and item_id not in gear_items and item_id not in items:
+                raise ValueError(f"boss {boss.id} rewards unknown item {item_id}")
+    placed_enemy_ids = {boss.enemy_id for boss in bosses.values()}
+    for orphan in sorted(boss_enemy_ids - placed_enemy_ids):
+        raise ValueError(f"boss enemy {orphan} has no lair in bosses.json")
+    for place in places.values():
+        for enemy_id in place.encounters:
+            if enemy_id in boss_enemy_ids:
+                raise ValueError(f"boss enemy {enemy_id} must not be in {place.id}'s wild pool")
+    lair_tiles = [boss.lair_tile for boss in bosses.values()]
+    if len(set(lair_tiles)) != len(lair_tiles):
+        raise ValueError("two bosses share a lair tile")
+    chest_tiles = {chest.tile for chest in chests.values()}
+    for boss in bosses.values():
+        if boss.lair_tile in chest_tiles:
+            raise ValueError(f"boss {boss.id} lair collides with a chest tile")
 
 
 def _validate_content_refs(classes, weapons, gear_items, items, actions, talents,

@@ -1,0 +1,87 @@
+[
+  {
+    "id": "rotfang",
+    "enemy_id": "boss_rotfang",
+    "zone": "cainos",
+    "lair_tile": [
+      12,
+      22
+    ],
+    "requires_defeated": [],
+    "reward_gold": 150,
+    "reward_item_ids": [
+      "warren_signet"
+    ],
+    "intro": "Gnawed bones ring a burrow mouth. Something vast stirs below.",
+    "final": false
+  },
+  {
+    "id": "briar_queen",
+    "enemy_id": "boss_briar_queen",
+    "zone": "mork_skog",
+    "lair_tile": [
+      139,
+      30
+    ],
+    "requires_defeated": [],
+    "reward_gold": 300,
+    "reward_item_ids": [
+      "briarheart_amulet"
+    ],
+    "intro": "The forest grows silent. Thorned boughs arch into a living throne.",
+    "final": false
+  },
+  {
+    "id": "yagra",
+    "enemy_id": "boss_yagra",
+    "zone": "cursed_mire",
+    "lair_tile": [
+      209,
+      44
+    ],
+    "requires_defeated": [],
+    "reward_gold": 400,
+    "reward_item_ids": [
+      "hagbone_idol"
+    ],
+    "intro": "A crooked hut squats over the black water. The swamp itself seems to breathe.",
+    "final": false
+  },
+  {
+    "id": "barrow_king",
+    "enemy_id": "boss_barrow_king",
+    "zone": "grave_heath",
+    "lair_tile": [
+      70,
+      165
+    ],
+    "requires_defeated": [],
+    "reward_gold": 600,
+    "reward_item_ids": [
+      "barrow_crown"
+    ],
+    "intro": "A great barrow mound, its stone door split wide. Grave-cold air pours out.",
+    "final": false
+  },
+  {
+    "id": "pale_sovereign",
+    "enemy_id": "boss_pale_sovereign",
+    "zone": "grave_heath",
+    "lair_tile": [
+      218,
+      179
+    ],
+    "requires_defeated": [
+      "rotfang",
+      "briar_queen",
+      "yagra",
+      "barrow_king"
+    ],
+    "reward_gold": 1500,
+    "reward_item_ids": [
+      "sovereign_mantle"
+    ],
+    "intro": "The Pale Gate. Every curse in the land flows from the figure waiting beyond.",
+    "final": true
+  }
+]

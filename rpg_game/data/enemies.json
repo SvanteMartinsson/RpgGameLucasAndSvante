@@ -2124,6 +2124,11 @@
         "item_id": "veteran_ring",
         "weight": 8,
         "rarity_tier": 5
+      },
+      {
+        "item_id": "sanctified_recurve",
+        "weight": 8,
+        "rarity_tier": 5
       }
     ],
     "unique_table": [
@@ -2219,6 +2224,11 @@
         "item_id": "iron_helm",
         "weight": 12,
         "rarity_tier": 3
+      },
+      {
+        "item_id": "sanctified_recurve",
+        "weight": 8,
+        "rarity_tier": 5
       }
     ],
     "unique_table": [
@@ -2663,5 +2673,372 @@
         "rarity_tier": 3
       }
     ]
+  },
+  {
+    "id": "boss_rotfang",
+    "name": "Rotfang, the Rat King",
+    "boss": true,
+    "level": 4,
+    "max_hp": 140,
+    "damage": 11,
+    "armor": 1,
+    "speed": 9,
+    "traits": [
+      "beast",
+      "vermin"
+    ],
+    "tags": [
+      "beast",
+      "vermin",
+      "boss"
+    ],
+    "action_ids": [
+      "rat_king_frenzy",
+      "rat_king_plague_leap",
+      "rat_king_gnaw",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "self_hp_below": 50,
+          "skill_ready": "rat_king_frenzy"
+        },
+        "action": "rat_king_frenzy"
+      },
+      {
+        "condition": {
+          "skill_ready": "rat_king_plague_leap"
+        },
+        "action": "rat_king_plague_leap"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "rat_king_gnaw"
+      }
+    ],
+    "xp_reward": 90,
+    "gold_min": 120,
+    "gold_max": 180,
+    "drop_chance": 1.0,
+    "rare_table_access": false,
+    "loot_table": [
+      {
+        "item_id": "rat_pelt",
+        "weight": 30,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "hp_potion",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "iron_scrap",
+        "weight": 20,
+        "rarity_tier": 1
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "boss_briar_queen",
+    "name": "The Briar Queen",
+    "boss": true,
+    "level": 8,
+    "max_hp": 220,
+    "damage": 16,
+    "armor": 2,
+    "speed": 7,
+    "traits": [
+      "plant"
+    ],
+    "tags": [
+      "plant",
+      "boss"
+    ],
+    "action_ids": [
+      "briar_verdant_renewal",
+      "briar_crushing_boughs",
+      "briar_lash",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "self_hp_below": 50,
+          "skill_ready": "briar_verdant_renewal"
+        },
+        "action": "briar_verdant_renewal"
+      },
+      {
+        "condition": {
+          "skill_ready": "briar_crushing_boughs"
+        },
+        "action": "briar_crushing_boughs"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "briar_lash"
+      }
+    ],
+    "xp_reward": 200,
+    "gold_min": 250,
+    "gold_max": 350,
+    "drop_chance": 1.0,
+    "rare_table_access": false,
+    "loot_table": [
+      {
+        "item_id": "tattered_cloth",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 25,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "emberwand",
+        "weight": 12,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "boss_yagra",
+    "name": "Hagmother Yagra",
+    "boss": true,
+    "level": 10,
+    "max_hp": 240,
+    "damage": 18,
+    "armor": 1,
+    "speed": 9,
+    "mana": 80,
+    "traits": [
+      "cursed",
+      "swamp"
+    ],
+    "tags": [
+      "cursed",
+      "swamp",
+      "boss"
+    ],
+    "action_ids": [
+      "yagra_swampskin",
+      "yagra_drowning_grasp",
+      "yagra_wither_curse",
+      "yagra_hexbolt",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "self_hp_below": 50,
+          "skill_ready": "yagra_swampskin"
+        },
+        "action": "yagra_swampskin"
+      },
+      {
+        "condition": {
+          "skill_ready": "yagra_drowning_grasp"
+        },
+        "action": "yagra_drowning_grasp"
+      },
+      {
+        "condition": {
+          "skill_ready": "yagra_wither_curse"
+        },
+        "action": "yagra_wither_curse"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "yagra_hexbolt"
+      }
+    ],
+    "xp_reward": 260,
+    "gold_min": 300,
+    "gold_max": 450,
+    "drop_chance": 1.0,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "chill_crystal",
+        "weight": 25,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 25,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "tattered_cloth",
+        "weight": 20,
+        "rarity_tier": 1
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "boss_barrow_king",
+    "name": "The Barrow King",
+    "boss": true,
+    "level": 12,
+    "max_hp": 300,
+    "damage": 21,
+    "armor": 3,
+    "speed": 8,
+    "traits": [
+      "undead",
+      "cursed"
+    ],
+    "tags": [
+      "undead",
+      "cursed",
+      "boss"
+    ],
+    "action_ids": [
+      "barrow_grave_storm",
+      "barrow_bone_shield",
+      "barrow_soul_harvest",
+      "barrow_blade",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "self_hp_below": 33,
+          "skill_ready": "barrow_grave_storm"
+        },
+        "action": "barrow_grave_storm"
+      },
+      {
+        "condition": {
+          "self_hp_below": 66,
+          "skill_ready": "barrow_bone_shield"
+        },
+        "action": "barrow_bone_shield"
+      },
+      {
+        "condition": {
+          "skill_ready": "barrow_soul_harvest"
+        },
+        "action": "barrow_soul_harvest"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "barrow_blade"
+      }
+    ],
+    "xp_reward": 340,
+    "gold_min": 400,
+    "gold_max": 600,
+    "drop_chance": 1.0,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "grave_iron",
+        "weight": 30,
+        "rarity_tier": 2
+      },
+      {
+        "item_id": "bone_dust",
+        "weight": 25,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 20,
+        "rarity_tier": 3
+      }
+    ],
+    "unique_table": []
+  },
+  {
+    "id": "boss_pale_sovereign",
+    "name": "The Pale Sovereign",
+    "boss": true,
+    "level": 13,
+    "max_hp": 400,
+    "damage": 24,
+    "armor": 2,
+    "speed": 10,
+    "mana": 100,
+    "traits": [
+      "spirit",
+      "cursed"
+    ],
+    "tags": [
+      "spirit",
+      "cursed",
+      "boss"
+    ],
+    "action_ids": [
+      "sovereign_last_light",
+      "sovereign_ruin",
+      "sovereign_hex",
+      "sovereign_umbral_bolt",
+      "normal"
+    ],
+    "ai": [
+      {
+        "condition": {
+          "self_hp_below": 33,
+          "skill_ready": "sovereign_last_light"
+        },
+        "action": "sovereign_last_light"
+      },
+      {
+        "condition": {
+          "skill_ready": "sovereign_ruin"
+        },
+        "action": "sovereign_ruin"
+      },
+      {
+        "condition": {
+          "skill_ready": "sovereign_hex"
+        },
+        "action": "sovereign_hex"
+      },
+      {
+        "condition": {
+          "always": true
+        },
+        "action": "sovereign_umbral_bolt"
+      }
+    ],
+    "xp_reward": 500,
+    "gold_min": 800,
+    "gold_max": 1200,
+    "drop_chance": 1.0,
+    "rare_table_access": true,
+    "loot_table": [
+      {
+        "item_id": "greater_hp_potion",
+        "weight": 25,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "chill_crystal",
+        "weight": 20,
+        "rarity_tier": 3
+      },
+      {
+        "item_id": "bone_dust",
+        "weight": 20,
+        "rarity_tier": 1
+      }
+    ],
+    "unique_table": []
   }
 ]

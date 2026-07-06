@@ -48,6 +48,7 @@ def _fully_populated_player() -> Player:
         bestiary_seen={"cave_bear"},                              # B66
         bestiary_identified={"cave_bear"},
         bestiary_kills={"wild_dog": 3},
+        defeated_boss_ids={"rotfang"},                            # B65
     )
 
 

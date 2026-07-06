@@ -187,6 +187,29 @@ telegraf märks `caster`.
 | `arena_ser_kaela_voss` | Ser Kaela Voss | grunt | 10 | physical ×0.9; `human, knight` | counter + sunder (lvl 5) |
 | `arena_lord_maren_dusk` | Lord Maren Dusk | grunt | 12 | physical ×0.9; `human, champion` | combo + counter (lvl 6) |
 
+## Zonbossar (B65)
+
+Fem namngivna bossar i `bosses.json` (lya-tile, gating, engångsbelöning) med
+sina fiendemallar i `enemies.json` (`"boss": true` — aldrig i någon wild-pool,
+fast level, elit-nameplate). Bossen står synlig på sin lya i overworld; E armar
+utmaningen, E igen startar striden. Fälld boss persisteras (`defeated_boss_ids`),
+mörknar till en husk och kan inte om-farmas. **Alla fyra zonbossar → Pale Gate
+öppnas → slutstrid → victory-skärm.** Flee/död lämnar lyan öppen för nya försök.
+
+| boss | zon (lya) | lvl | traits → matchup | signatur (AI-faser) | belöning |
+|---|---|---|---|---|---|
+| **Rotfang, the Rat King** | cainos (12,22) | 4 | beast+vermin → fire ×2.0, frost ×0.65 | Plague Leap (telegraf + toxin) · <50%: Warren Frenzy (power-buff) | 150 g + Warren Signet (ring) |
+| **The Briar Queen** | mork_skog (139,30) | 8 | plant → fire ×2.0, frost ×0.65 | Crushing Boughs (telegraf) · <50%: Verdant Renewal (heal + törne-reflect) | 300 g + Briarheart Amulet |
+| **Hagmother Yagra** | cursed_mire (209,44) | 10 | cursed+swamp → frost ×2.0, holy ×1.5; fys/fire/poison ×0.65 | Drowning Grasp (telegraf frost) + Withering Curse (power-debuff) · <50%: Swampskin (heal + mitigation) | 400 g + Hagbone Idol |
+| **The Barrow King** | grave_heath (70,165) | 12 | undead+cursed → holy ×2.0; poison IMMUN; fys/frost ×0.65 | Soul Harvest (telegraf drain) · <66%: Bone Shield (mitigation) · <33%: Grave Storm (frost+chill) | 600 g + Crown of the Barrow King |
+| **The Pale Sovereign** | Pale Gate (218,179) | 13 | spirit+cursed → holy ×2.0; fys ×0.65 | Umbral Ruin (telegraf 3.2×) + Sovereign's Hex · <33%: Last Light (stor heal + power-buff, en gång) | 1500 g + Sovereign's Mantle + slutet |
+
+Balansprincip (sim N=200, skills, bästa kategorivapen): **rätt verktyg på
+nivå ≈ 41–96 % vinst; fel verktyg ≈ 0–41 %** — skadestegen ÄR fajten.
+`sanctified_recurve` (ranged/holy, loot på heath-undead) är hunterns motdrag
+mot de heliga väggarna. Känd lucka: mage-skörheten (B25) gör L10+-bossar till
+väggar för mage i sim — eskalerad till den uppskjutna klassbalansrundan.
+
 ## Koppling till world.json
 
 Overworld-zonerna kartläggs i `maps/core_zone.json`: `ground_themes` sätter

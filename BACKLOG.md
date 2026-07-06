@@ -17,17 +17,20 @@ mät-först) / **Acceptans** (definition av "klart"; styr autonomt batch-arbete,
 
 ## Översikt
 
-**✅ Klart (natt-batch 2026-07-01→02):** **B42** (4-zon-roster: 6 nya skogsfiender + 14
-utfyllda + placering + loot + art) · **B46** (wisdom-gear) · **B43** (butiksinnehåll, max
-1 rare/shop) · **B38** (skill-tomes core + mage-tower-UI) · **B11 Slice 2** (minimap, render-
-verifierad) · **B41** (on-hit elemental-procs) · **B25** (klassbalans-sim, mätt). Föregående
-våg: power-curve-trilogin **B35/B36/B37 Slice 1+2**, **Wisdom A+B**, **#3** (240×208-karta),
-**B8 Slice 2a**, **B11 Slice 1**, **B40 Slice 1**, unified chatbox, **B24-flaggan**.
+**✅ Klart (2026-07-06): B65 zonbossar + huvudmål** — spelet har nu ett SLUT (5 bossar,
+Pale Gate, victory-skärm). Dessförinnan våg 1+2 (2026-07-04→06): **B53** (CI) · **B54**
+(content-validering) · **B55** (encounter-core) · **B57** (en wrap) · **B58** (effekt-
+dispatch) · **B59** (save-schema) · **B60** (terminal-beslut) · **B61** (worldgen-flytt) ·
+**B63** (lootkistor) · **B66** (bestiarium) · **B68** (alkemi) · **B70** (settings) ·
+**B71** (save-slots+död) · **B72** (stridskänsla). Natt-batch 2026-07-01→02: **B42/B46/
+B43/B38/B11 S2/B41/B25**. Föregående: **B35/B36/B37 S1+2**, **Wisdom A+B**, **#3**,
+**B8 S2a**, **B11 S1**, **B40 S1**, unified chatbox, **B24-flaggan**.
 Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
 
 **▶ Pågår / nästa:** **B44** (chatt v4 — STEG 0 klar; delad-log-modell + strukturerade
 combat-events = egen slice) · **B40 apply-slices S2–S5** (render-HALT/skärm) · **B8 Slice 2b**
-(per-stad butik + tjänste-triggrar).
+(per-stad butik + tjänste-triggrar). **B64 dungeons = PARKERAD** (Lucas 2026-07-06: väntar
+på karta som stödjer interiörer).
 
 **Härnäst (öppet, ej byggt):** *Playtest 2026-07-02:* **B48** (per-zon spawn-authoring ⭐) ·
 **B49** (fiende-level i combat) · **B50** (combat-logg-scroll) · **B51** (busk-färg minimap) ·
@@ -920,7 +923,7 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** kista syns/öppnas/lootar/förblir tömd över save-load; loot respekterar zon + tier-cap;
   minst N kistor per zon; tester för roll + persistens.
 
-#### B64 — Dungeons: instansierade interiörer med kurerade strider  · *innehållssystem* · stor · risk MEDEL-HÖG
+#### B64 — Dungeons: instansierade interiörer med kurerade strider  · ⏸ **PARKERAD** (Lucas 2026-07-06: "Låt dungeons vara, vi återkommer till dem när vi har en map som stödjer detta") · *innehållssystem* · stor · risk MEDEL-HÖG
 - **Vad:** Ingångar i världen (grotta/ruin/gravvalv) som leder till en egen liten karta (5–10 rum i
   eget TMX): kurerade encounters i stället för slump, ett tema (t.ex. spindelbo → vermin), en
   loot-kista (B63) i slutet och plats för en boss (B65). Spelaren kan lämna, men läkning är begränsad
@@ -940,7 +943,26 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** ingång→interiör→utgång stabil inkl. save inne; kurerade strider triggar per rum;
   temat läses (fiender+tileset); kistan i slutet lootar; reachability i interiören verifierad; tester.
 
-#### B65 — Zonbossar + huvudmål (spelets ryggrad och slut)  · *innehållssystem* · medel-stor · risk MEDEL
+#### B65 — Zonbossar + huvudmål (spelets ryggrad och slut)  · ✅ **KLAR (S1+S2+S3)** · render-verifierad headless
+- **KLAR (2026-07-06, Lucas-GO "bygg som HALT-hanterare"):** 5 namngivna bossar
+  (`bosses.json` + `enemies.json "boss": true`) — **Rotfang** (cainos L4, beast+vermin),
+  **Briar Queen** (skog L8, plant), **Hagmother Yagra** (mire L10, cursed+swamp),
+  **Barrow King** (heath L12, undead+cursed), **Pale Sovereign** (Pale Gate L13,
+  spirit+cursed, kräver de fyra). Allt på befintliga primitiv: telegraph + `self_hp_below`-
+  fas-AI + statusar + trait-matrisen (17 nya actions, inga nya mattesystem).
+  `core/bosses.py` (challenge-gating, engångsbelöning, huvudmålsstatus) +
+  `defeated_boss_ids` persisterat via B59-tabellen; `_validate_bosses` fail-fast
+  (okänd fiende/reward/requires, boss i wild-pool, lya-kollision). **Overworld-lyor:**
+  bossen står SYNLIG på sin tile (fälld = mörknad husk), E armar → E utmanar, stads-
+  distans ≥8 verifierad; flee/död lämnar lyan öppen. **Slutet:** alla 4 → Pale Gate →
+  victory-skärm (credits + Continue), visas EN gång. Guld-nameplate "[BOSS]", namngivna
+  bossar utan artikel. **Sim N=200** (skills, bästa kategorivapen): rätt verktyg on-level
+  41–96 %, fel verktyg 0–41 % — förberedelsen ÄR fajten; `sanctified_recurve` (ranged/
+  holy, loot på heath-undead) täpper hunterns holy-lucka. **Kända fynd:** mage-skörheten
+  (B25) gör L10+-bossar till sim-väggar för mage → eskalerad till klassbalansrundan;
+  boss-belöningar = deterministisk lya-grant (ej droptabell; loot-policytest uppdaterat).
+  Placeholder-art = kin-kopior (`boss_*.png` ×5) — Lucas genererar riktig art.
+  19 nya tester; **919 gröna**. ENEMIES.md har boss-sektionen.
 - **Vad:** En namngiven boss per zon (4 st) med signaturmekanik byggd på BEFINTLIGA primitiv — främst
   telegraferade laddningsattacker (charging_action_id finns redan i combat) + statusar + trait-matrisen
   (max 2 traits, fasta stegen: bossen är inget nytt mattesystem, bara en STARK, läsbar fiende med
