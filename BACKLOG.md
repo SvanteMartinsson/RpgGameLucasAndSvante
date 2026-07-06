@@ -796,7 +796,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** en wrap-implementation i ui; chatlog + overworld delegerar; wrap-tester täcker
   ord-brytning, teckenbrytning, ellipsis; render-identiskt i logg + overlays.
 
-#### B58 — Combat-resolutionens megafunktioner: dispatch per effekt-typ  · *strukturell* · medel · prio MEDEL
+#### B58 — Combat-resolutionens megafunktioner: dispatch per effekt-typ  · ✅ **KLAR**
+- **KLAR:** `apply_effect` 209→23 rader dispatch; 11 handlers (`_effect_damage`…`_effect_elemental_
+  attack_mod`) med enhetlig signatur + `EFFECT_HANDLERS`-tabell (damage/instant_damage delar handler).
+  Grenarna flyttade VERBATIM via mekaniskt splice-script (dedent) → beteende-identiskt per konstruktion.
+  `run_combat_turn` fasindelad med namngivna markörer (VALIDERING → ROUND-START-STATUSAR → INITIATIV →
+  AKTIONER → ROUND-END+COOLDOWNS → UTFALL). Nya tester: tabell-totalitet över authored effekt-typer,
+  unknown-raise, dispatch-spotchecks. **Sviten grön utan testdiffar** (befintliga combat-tester orörda).
+  843 gröna.
 - **Vad:** `apply_effect` (209 rader, 14 effekt-typer i en if/elif-kedja), `resolve_action` (~80) och
   `game.run_combat_turn` (114) fasindelas: effekt-typ → handler-tabell (`EFFECT_HANDLERS[type]`),
   turn-flödet → namngivna faser (initiativ → aktion → on-hit → statusar → cooldowns → utfall).

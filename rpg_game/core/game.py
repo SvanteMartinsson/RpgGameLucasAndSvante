@@ -375,10 +375,14 @@ class GameEngine:
         return max(1, progression.round_half_up(1 / probability))
 
     def run_combat_turn(self, enemy: Enemy, attack_id: str) -> combat.CombatTurnResult:
+        """One full combat round. B58: the flow reads as named phases —
+        VALIDERING -> ROUND-START-STATUSAR -> INITIATIV -> AKTIONER (per actor,
+        on-hit ingår i resolve_action) -> ROUND-END-STATUSAR -> COOLDOWNS -> UTFALL."""
         player = self.player
         events: list[str] = []
         action_resolutions: list[combat.ActionResolution] = []
         enemy_reveal: combat.EnemyReveal | None = None
+        # -- fas: VALIDERING (styles, consumables, gating) ---------------------
         normalized_action = attack_id.strip().lower()
         is_identify = normalized_action == "identify"
         if normalized_action in combat.PLAYER_ATTACK_STYLE_IDS:
@@ -418,6 +422,7 @@ class GameEngine:
                 pending_stat_choices=player.pending_stat_choices,
             )
 
+        # -- fas: ROUND-START-STATUSAR (DoT-ticks kan avgöra rundan direkt) ----
         events.extend(combat.tick_statuses(player, "round_start"))
         events.extend(combat.tick_statuses(enemy, "round_start"))
         if not enemy.is_alive:
@@ -425,10 +430,12 @@ class GameEngine:
         if not player.is_alive:
             return self._defeat(enemy, events, action_resolutions=action_resolutions)
 
+        # -- fas: INITIATIV (speed avgör aktionsordningen) ---------------------
         first, second = combat.ordered_by_speed(player, enemy)
         player_actions_used: set[str] = set()
         enemy_actions_used: set[str] = set()
 
+        # -- fas: AKTIONER (per actor; on-hit-procs ligger i resolve_action) ---
         for actor in (first, second):
             if not player.is_alive or not enemy.is_alive:
                 break
@@ -473,11 +480,13 @@ class GameEngine:
         if not player.is_alive:
             return self._defeat(enemy, events, action_resolutions=action_resolutions)
 
+        # -- fas: ROUND-END-STATUSAR + COOLDOWNS -------------------------------
         events.extend(combat.tick_statuses(player, "round_end"))
         events.extend(combat.tick_statuses(enemy, "round_end"))
         combat.tick_cooldowns(player, skip=player_actions_used)
         combat.tick_cooldowns(enemy, skip=enemy_actions_used)
 
+        # -- fas: UTFALL -------------------------------------------------------
         if not enemy.is_alive:
             return self._handle_victory(enemy, events, action_resolutions=action_resolutions)
 

@@ -899,40 +899,20 @@ def apply_effect(
     rank_mult: float = 1.0,
     rank_duration_bonus: int = 0,
 ) -> None:
-    effect_target = actor if effect.target == "self" else target
+    """B58: one handler per effect type via EFFECT_HANDLERS — a new mechanic is
+    an isolated handler + a table entry, not another branch in a megafunction.
+    Handlers share one signature; each reads the params it needs."""
+    handler = EFFECT_HANDLERS.get(effect.type)
+    if handler is None:
+        raise ValueError(f"unknown effect type: {effect.type}")
+    handler(actor, target, actor if effect.target == "self" else target,
+            effect, result, weapon=weapon, rng=rng, weapon_scaled=weapon_scaled,
+            rank_mult=rank_mult, rank_duration_bonus=rank_duration_bonus)
 
-    if effect.type in {"damage", "instant_damage"}:
-        for _ in range(effect.hits):
-            components, total, crit = compute_damage_components(
-                actor,
-                effect_target,
-                weapon,
-                effect,
-                rng=rng,
-                result=result,
-                weapon_scaled=weapon_scaled,
-                rank_mult=rank_mult,
-            )
-            result.damage_components.extend(components)
-            primary_type = components[0].damage_type
-            deal_damage(actor, effect_target, total, primary_type, result)
-            result.events.append(
-                format_damage_event(actor, result.action_name, effect_target, components, crit)
-            )
-        return
 
-    if effect.type == "instant_heal":
-        amount = effect.magnitude
-        if effect.scale == "spell":   # wisdom-scaled heal (e.g. mend) instead of flat
-            amount = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
-        amount = round_half_up(amount * rank_mult)   # B36 talent rank magnitude
-        before = effect_target.hp
-        effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + amount)
-        result.total_healing += effect_target.hp - before
-        result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
-        return
-
-    if effect.type == "drain":
+def _effect_damage(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    for _ in range(effect.hits):
         components, total, crit = compute_damage_components(
             actor,
             effect_target,
@@ -946,154 +926,221 @@ def apply_effect(
         result.damage_components.extend(components)
         primary_type = components[0].damage_type
         deal_damage(actor, effect_target, total, primary_type, result)
-        heal = round_half_up(total * effect.ratio)
-        before = actor.hp
-        actor.hp = min(effective_max_hp(actor), actor.hp + heal)
-        result.total_healing += actor.hp - before
-        parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
-        flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
-        flag_text = f" ({', '.join(flags)})" if flags else ""
-        crit_text = " critical hit!" if crit else ""
         result.events.append(
-            f"{actor_name(actor)}'s {result.action_name} drained {parts}{flag_text}{crit_text} from {actor_name(effect_target)}."
+            format_damage_event(actor, result.action_name, effect_target, components, crit)
         )
-        result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
+    return
+
+
+def _effect_instant_heal(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    amount = effect.magnitude
+    if effect.scale == "spell":   # wisdom-scaled heal (e.g. mend) instead of flat
+        amount = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
+    amount = round_half_up(amount * rank_mult)   # B36 talent rank magnitude
+    before = effect_target.hp
+    effect_target.hp = min(effective_max_hp(effect_target), effect_target.hp + amount)
+    result.total_healing += effect_target.hp - before
+    result.events.append(f"{actor_name(effect_target)} healed {effect_target.hp - before} HP.")
+    return
+
+
+def _effect_drain(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    components, total, crit = compute_damage_components(
+        actor,
+        effect_target,
+        weapon,
+        effect,
+        rng=rng,
+        result=result,
+        weapon_scaled=weapon_scaled,
+        rank_mult=rank_mult,
+    )
+    result.damage_components.extend(components)
+    primary_type = components[0].damage_type
+    deal_damage(actor, effect_target, total, primary_type, result)
+    heal = round_half_up(total * effect.ratio)
+    before = actor.hp
+    actor.hp = min(effective_max_hp(actor), actor.hp + heal)
+    result.total_healing += actor.hp - before
+    parts = " + ".join(f"{component.amount} {component.damage_type}" for component in components)
+    flags = [f"{component.damage_type} {component.effectiveness}" for component in components if component.effectiveness]
+    flag_text = f" ({', '.join(flags)})" if flags else ""
+    crit_text = " critical hit!" if crit else ""
+    result.events.append(
+        f"{actor_name(actor)}'s {result.action_name} drained {parts}{flag_text}{crit_text} from {actor_name(effect_target)}."
+    )
+    result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
+    return
+
+
+def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    status_type = effect.status_type or effect.damage_type
+    tag = effect.tag or status_type
+    if is_immune(effect_target, tag):
+        result.events.append(f"{actor_name(effect_target)} is immune to {tag}.")
         return
+    magnitude = effect.magnitude
+    if effect.scale == "spell":   # wisdom-scaled player DoT (e.g. plague_bolt) instead of flat
+        magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
+    magnitude = round_half_up(magnitude * rank_mult)   # B36 talent rank magnitude
+    duration = effect.duration + rank_duration_bonus   # B36: +1 round at rank 3
+    if isinstance(actor, Player):
+        status_mod = actor.applied_status_mods.get(status_type, {})
+        magnitude += status_mod.get("magnitude", 0)
+        duration += status_mod.get("duration", 0)
 
-    if effect.type == "apply_status":
-        status_type = effect.status_type or effect.damage_type
-        tag = effect.tag or status_type
-        if is_immune(effect_target, tag):
-            result.events.append(f"{actor_name(effect_target)} is immune to {tag}.")
-            return
-        magnitude = effect.magnitude
-        if effect.scale == "spell":   # wisdom-scaled player DoT (e.g. plague_bolt) instead of flat
-            magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
-        magnitude = round_half_up(magnitude * rank_mult)   # B36 talent rank magnitude
-        duration = effect.duration + rank_duration_bonus   # B36: +1 round at rank 3
-        if isinstance(actor, Player):
-            status_mod = actor.applied_status_mods.get(status_type, {})
-            magnitude += status_mod.get("magnitude", 0)
-            duration += status_mod.get("duration", 0)
-
-        applied_delta = 0
-        if status_type in {"buff", "debuff"}:
-            if effect.on_event:
-                effect_target.active_statuses.append(
-                    ActiveStatus(
-                        type=status_type,
-                        magnitude=magnitude,
-                        duration=duration,
-                        tick_timing=effect.tick_timing,
-                        stat=effect.stat,
-                        applied_delta=0,
-                        scale=effect.scale,
-                        multiplier=effect.multiplier,
-                        damage_type=effect.damage_type,
-                        tag=tag,
-                        trigger=effect.trigger,
-                        max_stacks=effect.max_stacks,
-                        stacks=0,
-                        on_event=effect.on_event,
-                        base_duration=duration,
-                        weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
-                    )
+    applied_delta = 0
+    if status_type in {"buff", "debuff"}:
+        if effect.on_event:
+            effect_target.active_statuses.append(
+                ActiveStatus(
+                    type=status_type,
+                    magnitude=magnitude,
+                    duration=duration,
+                    tick_timing=effect.tick_timing,
+                    stat=effect.stat,
+                    applied_delta=0,
+                    scale=effect.scale,
+                    multiplier=effect.multiplier,
+                    damage_type=effect.damage_type,
+                    tag=tag,
+                    trigger=effect.trigger,
+                    max_stacks=effect.max_stacks,
+                    stacks=0,
+                    on_event=effect.on_event,
+                    base_duration=duration,
+                    weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
                 )
-                result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
-                return
-            existing = find_stackable_status(effect_target, status_type, effect.stat)
-            if existing and effect.max_stacks > 1:
-                existing.stacks = min(effect.max_stacks, existing.stacks + 1)
-                previous_delta = existing.applied_delta
-                existing.applied_delta = existing.stacks * magnitude
-                set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) - previous_delta + existing.applied_delta)
-                existing.duration = duration
-                existing.max_stacks = effect.max_stacks
-                result.events.append(f"{actor_name(effect_target)}'s {status_type} refreshed.")
-                return
-            applied_delta = magnitude
-            set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) + applied_delta)
-
-        effect_target.active_statuses.append(
-            ActiveStatus(
-                type=status_type,
-                magnitude=magnitude,
-                duration=duration,
-                tick_timing=effect.tick_timing,
-                stat=effect.stat,
-                applied_delta=applied_delta,
-                scale=effect.scale,
-                multiplier=effect.multiplier,
-                damage_type=effect.damage_type,
-                tag=tag,
-                trigger=effect.trigger,
-                max_stacks=effect.max_stacks,
-                stacks=1,
-                on_event=effect.on_event,
-                base_duration=duration,
-                weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
             )
+            result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
+            return
+        existing = find_stackable_status(effect_target, status_type, effect.stat)
+        if existing and effect.max_stacks > 1:
+            existing.stacks = min(effect.max_stacks, existing.stacks + 1)
+            previous_delta = existing.applied_delta
+            existing.applied_delta = existing.stacks * magnitude
+            set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) - previous_delta + existing.applied_delta)
+            existing.duration = duration
+            existing.max_stacks = effect.max_stacks
+            result.events.append(f"{actor_name(effect_target)}'s {status_type} refreshed.")
+            return
+        applied_delta = magnitude
+        set_stat(effect_target, effect.stat, get_stat(effect_target, effect.stat) + applied_delta)
+
+    effect_target.active_statuses.append(
+        ActiveStatus(
+            type=status_type,
+            magnitude=magnitude,
+            duration=duration,
+            tick_timing=effect.tick_timing,
+            stat=effect.stat,
+            applied_delta=applied_delta,
+            scale=effect.scale,
+            multiplier=effect.multiplier,
+            damage_type=effect.damage_type,
+            tag=tag,
+            trigger=effect.trigger,
+            max_stacks=effect.max_stacks,
+            stacks=1,
+            on_event=effect.on_event,
+            base_duration=duration,
+            weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
         )
-        result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
-        return
+    )
+    result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
+    return
 
-    if effect.type == "heal":
-        before = actor.hp
-        actor.hp = min(effective_max_hp(actor), actor.hp + round_half_up(effect.magnitude * rank_mult))
-        result.total_healing += actor.hp - before
-        result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
-        return
 
-    if effect.type == "swap_weapon":
-        if not isinstance(actor, Player):
-            raise ValueError("only players can swap weapons")
-        actor.equipped_weapon_id = effect.status_type
-        result.events.append(f"{actor.name} swapped weapon.")
-        return
+def _effect_heal(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    before = actor.hp
+    actor.hp = min(effective_max_hp(actor), actor.hp + round_half_up(effect.magnitude * rank_mult))
+    result.total_healing += actor.hp - before
+    result.events.append(f"{actor_name(actor)} healed {actor.hp - before} HP.")
+    return
 
-    if effect.type == "stat_bonus":
-        if not isinstance(actor, Player):
-            raise ValueError("stat bonuses are only supported for players")
-        actor.stat_bonuses[effect.stat] = actor.stat_bonuses.get(effect.stat, 0) + effect.magnitude
-        set_stat(actor, effect.stat, get_stat(actor, effect.stat) + effect.magnitude)
-        if effect.stat == "max_mana":
-            actor.mana = min(effective_max_mana(actor), actor.mana + effect.magnitude)
-        if effect.stat == "max_hp":
-            actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
-        result.events.append(f"{actor.name} gained {effect.magnitude} {effect.stat}.")
-        return
 
-    if effect.type == "applied_status_mod":
-        if not isinstance(actor, Player):
-            raise ValueError("status modifiers are only supported for players")
-        current = actor.applied_status_mods.setdefault(effect.modifies_status_type, {})
-        current["magnitude"] = current.get("magnitude", 0) + effect.mod_magnitude
-        current["duration"] = current.get("duration", 0) + effect.mod_duration
-        result.events.append(f"{actor.name}'s {effect.modifies_status_type} effects improved.")
-        return
+def _effect_swap_weapon(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("only players can swap weapons")
+    actor.equipped_weapon_id = effect.status_type
+    result.events.append(f"{actor.name} swapped weapon.")
+    return
 
-    if effect.type == "immunity":
-        if not isinstance(actor, Player):
-            raise ValueError("immunity passives are only supported for players")
-        actor.immunity_tags.add(effect.tag)
-        result.events.append(f"{actor.name} gained immunity to {effect.tag}.")
-        return
 
-    if effect.type == "conditional_damage_mod":
-        if not isinstance(actor, Player):
-            raise ValueError("conditional damage modifiers are only supported for players")
-        actor.conditional_damage_mods.append(effect.conditional)
-        result.events.append(f"{actor.name} gained a conditional damage modifier.")
-        return
+def _effect_stat_bonus(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("stat bonuses are only supported for players")
+    actor.stat_bonuses[effect.stat] = actor.stat_bonuses.get(effect.stat, 0) + effect.magnitude
+    set_stat(actor, effect.stat, get_stat(actor, effect.stat) + effect.magnitude)
+    if effect.stat == "max_mana":
+        actor.mana = min(effective_max_mana(actor), actor.mana + effect.magnitude)
+    if effect.stat == "max_hp":
+        actor.hp = min(effective_max_hp(actor), actor.hp + effect.magnitude)
+    result.events.append(f"{actor.name} gained {effect.magnitude} {effect.stat}.")
+    return
 
-    if effect.type == "elemental_attack_mod":
-        if not isinstance(actor, Player):
-            raise ValueError("elemental attack modifiers are only supported for players")
-        actor.elemental_attack_mods.append({"damage_type": effect.damage_type, "mod_value": effect.magnitude})
-        result.events.append(f"{actor.name}'s basic attacks now deal extra {effect.damage_type} damage.")
-        return
 
-    raise ValueError(f"unknown effect type: {effect.type}")
+def _effect_applied_status_mod(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("status modifiers are only supported for players")
+    current = actor.applied_status_mods.setdefault(effect.modifies_status_type, {})
+    current["magnitude"] = current.get("magnitude", 0) + effect.mod_magnitude
+    current["duration"] = current.get("duration", 0) + effect.mod_duration
+    result.events.append(f"{actor.name}'s {effect.modifies_status_type} effects improved.")
+    return
+
+
+def _effect_immunity(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("immunity passives are only supported for players")
+    actor.immunity_tags.add(effect.tag)
+    result.events.append(f"{actor.name} gained immunity to {effect.tag}.")
+    return
+
+
+def _effect_conditional_damage_mod(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("conditional damage modifiers are only supported for players")
+    actor.conditional_damage_mods.append(effect.conditional)
+    result.events.append(f"{actor.name} gained a conditional damage modifier.")
+    return
+
+
+def _effect_elemental_attack_mod(actor, target, effect_target, effect, result, *, weapon, rng,
+                  weapon_scaled, rank_mult, rank_duration_bonus):
+    if not isinstance(actor, Player):
+        raise ValueError("elemental attack modifiers are only supported for players")
+    actor.elemental_attack_mods.append({"damage_type": effect.damage_type, "mod_value": effect.magnitude})
+    result.events.append(f"{actor.name}'s basic attacks now deal extra {effect.damage_type} damage.")
+    return
+
+
+# The dispatch table apply_effect reads. "damage" and "instant_damage" are the
+# same mechanic; new effect types register here with their own handler.
+EFFECT_HANDLERS = {
+    "damage": _effect_damage,
+    "instant_damage": _effect_damage,
+    "instant_heal": _effect_instant_heal,
+    "drain": _effect_drain,
+    "apply_status": _effect_apply_status,
+    "heal": _effect_heal,
+    "swap_weapon": _effect_swap_weapon,
+    "stat_bonus": _effect_stat_bonus,
+    "applied_status_mod": _effect_applied_status_mod,
+    "immunity": _effect_immunity,
+    "conditional_damage_mod": _effect_conditional_damage_mod,
+    "elemental_attack_mod": _effect_elemental_attack_mod,
+}
+
 
 
 def deal_damage(
