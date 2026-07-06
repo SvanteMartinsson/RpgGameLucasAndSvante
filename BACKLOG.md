@@ -1103,7 +1103,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** tre slots med metadata; autosave triggar deklarerat; död → val fungerar; gamla
   savegame.json migreras till slot 1; tester för slot-IO + autosave-trigger.
 
-#### B72 — Stridskänsla: flytande skadesiffror + träff-feedback  · *känsla/polish* · liten · risk LÅG
+#### B72 — Stridskänsla: flytande skadesiffror + träff-feedback  · ✅ **KLAR (S1+S2)** · frame-verifierad headless
+- **KLAR:** per skade-komponent flyter "-N" upp och tonar ut (typ-färgad: physical vit / fire orange /
+  frost isblå / poison grön / holy guld / lightning gul; **crit = stor font + "!" + skärmskak** 6 frames);
+  heals flyter gröna "+N" över helaren; **målet blinkar vitt** 2 frames (enemy-sprite BLEND_RGB_MAX,
+  hero-boxen ljus); **hit-pause 3 frames på dödsslag** (floaters fryser). Datat kommer ur
+  `ActionResolution.damage_components` som förutsett — inga regeländringar. Skaken appliceras på
+  canvasen FÖRE present() → skalningen intakt. **Av/på via `combat_fx`** i settings.json + rad i
+  settings-skärmen (B70-kroken). 7 tester; 900 gröna. Frame-sekvens verifierad (flash+floater → norm+stigen).
 - **Vad:** När skada landar: siffran flyter upp från målet och tonar ut (färg efter skadetyp/crit —
   återanvänd chatlog-paletten), målets sprite blinkar vit en frame, en kort skärmskakning på crits
   och tunga träffar, ~2 frames hit-pause på dödsslag. Upplevelsen: varje träff KÄNNS — striden får

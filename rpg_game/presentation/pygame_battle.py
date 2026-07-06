@@ -28,6 +28,7 @@ from rpg_game.core import combat, entities
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
+from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import ui
@@ -162,6 +163,13 @@ class BattleApp:
     def __post_init__(self) -> None:
         if self.event_log is None:            # standalone fight: own the shared log
             self.event_log = collections.deque(maxlen=chatlog.LOG_HISTORY_MAX)
+        # B72 combat feel: floating damage numbers + hit feedback (toggleable).
+        self._combat_fx = bool(user_settings.load().get("combat_fx", True))
+        self._floaters: list = []       # [x, y, age, max_age, surface]
+        self._blink_enemy = 0           # frames of white flash left
+        self._blink_hero = 0
+        self._shake = 0                 # frames of screen shake left
+        self._freeze = 0                # hit-pause frames (floaters hold still)
         # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
         # infra only), so it stays a no-op until an apply-slice calls hover.add().
         self.hover = ui.HoverTracker()
@@ -290,6 +298,8 @@ class BattleApp:
         if result.loot_drop is not None:
             self.push_log(_loot_line(result.loot_drop), chatlog.rarity_color(result.loot_drop.rarity))
 
+        self._spawn_combat_fx(result)   # B72: floaters / blink / shake / hit-pause
+
         self.set_mode("combat")
 
         if result.outcome == "blocked":
@@ -411,6 +421,7 @@ class BattleApp:
         self.screen.fill(BG)
         snapshot = build_snapshot(self.engine)
         self._draw_stage()
+        self._draw_combat_fx()          # B72: floaters over the stage
         self._draw_chatbox()
         self._draw_hud_vitals(snapshot)
         self.buttons = []
@@ -429,7 +440,81 @@ class BattleApp:
         self.hover.update(mouse, pygame.time.get_ticks())
         if self.hover.active is not None:
             ui.draw_tooltip(self.screen, self.hover.active, mouse, self.font, self.font_sm)
+        if self._shake > 0:             # B72: brief screen shake on crits
+            self._shake -= 1
+            offset = (-2, 2)[self._shake % 2], (1, -1)[self._shake % 2]
+            shifted = self.screen.copy()
+            self.screen.fill(BG)
+            self.screen.blit(shifted, offset)
         self._transform = present(self.display, self.screen, BG)
+
+    # -- B72: combat feel (floating numbers + hit feedback) -------------------
+
+    FX_TYPE_COLORS = {
+        "physical": (235, 235, 235), "fire": (240, 140, 70),
+        "frost": (120, 190, 240), "poison": (120, 205, 120),
+        "holy": (235, 210, 120), "lightning": (250, 230, 90),
+    }
+
+    def _fx_anchor(self, over_enemy: bool) -> tuple[int, int]:
+        if over_enemy:
+            return (STAGE.right - 48 - 70, GROUND_Y - 170)
+        return (STAGE.x + 48 + 50, GROUND_Y - 140)
+
+    def _spawn_floater(self, text: str, color, over_enemy: bool, big: bool = False) -> None:
+        font = self.font_lg if big else self.font
+        surface = font.render(text, True, color)
+        x, y = self._fx_anchor(over_enemy)
+        jitter = (len(self._floaters) % 3 - 1) * 16   # deterministic spread
+        self._floaters.append([x + jitter, y, 0, 45, surface])
+
+    def _spawn_combat_fx(self, result) -> None:
+        """Turn a consumed CombatTurnResult into stage feedback: one floater per
+        damage component (colour by type, crits big), heal floaters, a white
+        blink on whoever was hit, shake on crits and a short hit-pause on a
+        kill. Everything behind the combat_fx setting."""
+        if not self._combat_fx:
+            return
+        player_name = self.engine.player.name
+        for resolution in result.action_resolutions:
+            actor_is_player = resolution.actor_name == player_name
+            hits_enemy = actor_is_player   # self-target heals handled separately
+            crit = resolution.critical_hits > 0
+            for component in resolution.damage_components:
+                color = self.FX_TYPE_COLORS.get(component.damage_type, (235, 235, 235))
+                text = f"-{component.amount}" + ("!" if crit else "")
+                self._spawn_floater(text, color, over_enemy=hits_enemy, big=crit)
+            if resolution.damage_components:
+                if hits_enemy:
+                    self._blink_enemy = 2
+                else:
+                    self._blink_hero = 2
+                if crit:
+                    self._shake = 6
+            if resolution.total_healing:
+                self._spawn_floater(f"+{resolution.total_healing}", (120, 205, 140),
+                                    over_enemy=not actor_is_player)
+        if result.outcome in ("victory", "defeat"):
+            self._freeze = 3   # a short hit-pause lands the final blow
+
+    def _draw_combat_fx(self) -> None:
+        """Age + draw the floaters (they rise and fade); frozen during hit-pause."""
+        if self._freeze > 0:
+            self._freeze -= 1
+        else:
+            for floater in self._floaters:
+                floater[1] -= 1.2          # rise
+                floater[2] += 1            # age
+            self._floaters = [f for f in self._floaters if f[2] < f[3]]
+        for x, y, age, max_age, surface in self._floaters:
+            faded = surface.copy()
+            faded.set_alpha(max(0, 255 - int(255 * age / max_age)))
+            self.screen.blit(faded, (int(x), int(y)))
+
+    def _blit_blink(self, sprite, rect) -> None:
+        flash = sprite.copy()
+        flash.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
+        self.screen.blit(flash, rect)
 
     def _panel(self, rect: pygame.Rect, title: str = "") -> None:
         pygame.draw.rect(self.screen, PANEL, rect, border_radius=8)
@@ -499,7 +584,11 @@ class BattleApp:
     def _draw_enemy_sprite(self, enemy) -> None:
         sprite = enemy_sprite(enemy.id)
         if sprite is not None:
-            self.screen.blit(sprite, self._enemy_sprite_rect(*sprite.get_size()))
+            rect = self._enemy_sprite_rect(*sprite.get_size())
+            self.screen.blit(sprite, rect)
+            if self._blink_enemy > 0:            # B72: white hit-flash
+                self._blink_enemy -= 1
+                self._blit_blink(sprite, rect)
         else:
             # No sprite file (hollow_worg, arena duelists) -> placeholder block at
             # the enemy's tier size, same baseline. No crash.
@@ -513,7 +602,10 @@ class BattleApp:
         # same groundline. Drops in when hero art arrives.
         height = TIER_HEIGHT["medium"]
         rect = self._hero_sprite_rect(int(height * 0.5), height)
-        pygame.draw.rect(self.screen, HERO_BOX, rect, border_radius=6)
+        box = HERO_BOX if self._blink_hero <= 0 else (245, 245, 245)   # B72 flash
+        if self._blink_hero > 0:
+            self._blink_hero -= 1
+        pygame.draw.rect(self.screen, box, rect, border_radius=6)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
 
     def _log_visible(self) -> int:

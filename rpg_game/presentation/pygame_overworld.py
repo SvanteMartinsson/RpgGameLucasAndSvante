@@ -2343,6 +2343,12 @@ class OverworldApp:
                          f"Minimap: {'On' if self.show_minimap else 'Off'}   (N)",
                          (lambda: (setattr(self, 'show_minimap', not self.show_minimap),
                                    self._persist_settings())))
+        y += 50
+        fx_on = bool(self._settings.get("combat_fx", True))
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                         f"Combat FX: {'On' if fx_on else 'Off'}",
+                         (lambda: (self._settings.update(combat_fx=not fx_on),
+                                   user_settings.save(self._settings))))
         y += 58
         self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
         y += 26
