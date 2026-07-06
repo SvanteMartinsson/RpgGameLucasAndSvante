@@ -263,8 +263,9 @@ class OverlaysMixin:
         equipped_ids = set(eng.player.equipped_skill_ids)
         left, middle, right = self._skills_talents_regions(panel)
 
-        self.screen.blit(self.font_sm.render(T.skills_hint(len(equipped_ids)), True, TEXT_DIM),
-                         (left.x, left.y))
+        self.screen.blit(self.font_sm.render(
+            self._fit_text(T.skills_hint(len(equipped_ids)), left.width, self.font_sm),
+            True, TEXT_DIM), (left.x, left.y))
         skills = eng.equippable_skills()
         if not skills:
             self.screen.blit(self.font.render(T.NO_SKILLS, True, TEXT_DIM), (left.x, left.y + 30))
@@ -276,8 +277,9 @@ class OverlaysMixin:
             enabled = is_eq or len(equipped_ids) < 4
             self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled)
 
-        self.screen.blit(self.font_sm.render(T.talents_hint(eng.player.talent_points), True, WARN),
-                         (middle.x, middle.y))
+        self.screen.blit(self.font_sm.render(
+            self._fit_text(T.talents_hint(eng.player.talent_points), middle.width, self.font_sm),
+            True, WARN), (middle.x, middle.y))
         class_nodes = self.class_talent_nodes()
         selected = self.selected_talent_node()
         max_nodes = max(1, (middle.height - 32) // 32)

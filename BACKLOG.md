@@ -213,7 +213,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   applicering: "You were poisoned by Quick Attack!" — källa (action/vapen) ska nämnas.
 - **Acceptans:** varje status-applicering på spelaren ger en rad med källa; test.
 
-#### B78 — Människoläsbara skill-/talent-texter (bort med råa stat-namn)
+#### B78 — Människoläsbara skill-/talent-texter  · ✅ **KLAR** (nattbatch: STAT_LABELS/PERCENT_STATS/STATUS_LABELS i talent_text — 'buff +50 damage_dealt_mod' → '+50% damage dealt for 3 rounds'; mitigation/stun/DoT-fraser; skills-hint kortad + _fit_text i båda kolumnrubrikerna = kollisionen borta; 3 tester låser att råa stat-namn aldrig når menyer)
 - **Lucas (skärmdump):** "buff +50 damage_dealt_mod for 3 rounds (self); buff +25
   damage_taken_mod ..." är obegriplig även för byggarna.
 - **Förslag:** central **formatter** i presentationen (effekt-spec → spelartext, t.ex.

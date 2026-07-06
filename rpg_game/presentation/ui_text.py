@@ -231,7 +231,8 @@ SYSTEM_QUIT = "Quit"
 
 
 def skills_hint(equipped_count: int) -> str:
-    return f"Equipped {equipped_count}/4 — click to equip/unequip."
+    # Short — the hint must fit its 220px skills column (B78 collision fix).
+    return f"Equipped {equipped_count}/4 — click to swap."
 
 
 def store_hint(gold: int) -> str:

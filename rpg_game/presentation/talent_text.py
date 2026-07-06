@@ -24,6 +24,41 @@ class TalentDetail:
     next_rank: str = ""
 
 
+# B78: player-facing words for internal stat names — raw identifiers like
+# "damage_dealt_mod" must never reach a menu. Percent-stats phrase as "+N% ...".
+STAT_LABELS = {
+    "power": "damage",
+    "damage": "damage",
+    "hp": "HP",
+    "max_hp": "max HP",
+    "max_mana": "max mana",
+    "mana": "mana",
+    "wisdom": "Wisdom",
+    "speed": "Speed",
+    "armor": "Armor",
+    "crit_chance": "crit chance",
+    "evasion_chance": "evasion",
+    "accuracy_mod": "accuracy",
+    "damage_dealt_mod": "damage dealt",
+    "damage_taken_mod": "damage taken",
+}
+PERCENT_STATS = {"crit_chance", "evasion_chance", "accuracy_mod",
+                 "damage_dealt_mod", "damage_taken_mod"}
+# Friendly names for applied statuses (tag beats status_type when set).
+STATUS_LABELS = {
+    "fire": "burning", "poison": "poison", "skip_turn": "stun",
+    "mitigation": "damage block", "burn": "burning", "toxin": "poison",
+    "freeze": "freeze (skip a turn)", "chill": "chill", "snare": "snare",
+}
+
+
+def stat_label(stat: str, magnitude: int) -> str:
+    label = STAT_LABELS.get(stat, stat.replace("_", " "))
+    sign = "+" if magnitude >= 0 else ""
+    unit = "%" if stat in PERCENT_STATS else ""
+    return f"{sign}{magnitude}{unit} {label}"
+
+
 def describe_effect(effect) -> str:
     kind = effect.type
     if kind in {"damage", "instant_damage"}:
@@ -37,21 +72,30 @@ def describe_effect(effect) -> str:
     if kind == "apply_status":
         status = effect.status_type or effect.damage_type
         where = "self" if effect.target == "self" else "enemy"
+        rounds = f"for {effect.duration} rounds" if effect.duration != 1 else "for 1 round"
         if status in {"buff", "debuff"}:
-            sign = "+" if effect.magnitude >= 0 else ""
-            return f"{status} {sign}{effect.magnitude} {effect.stat} for {effect.duration} rounds ({where})"
+            return f"{stat_label(effect.stat, effect.magnitude)} {rounds} ({where})"
         if status == "reflect":
             amount = f"{effect.multiplier}x Power" if effect.scale == "power" else str(effect.magnitude)
-            return f"reflect {amount} {effect.damage_type} for {effect.duration} rounds ({where})"
-        return f"apply {status} {effect.magnitude} for {effect.duration} rounds ({where})"
+            return f"reflect {amount} {effect.damage_type} damage {rounds} ({where})"
+        name = STATUS_LABELS.get(getattr(effect, "tag", "") or status, status)
+        if status == "mitigation":
+            return f"block {effect.magnitude} damage per hit {rounds} ({where})"
+        if status == "skip_turn" or getattr(effect, "tag", "") == "freeze":
+            return f"{name} — the target loses its turn ({where})"
+        if effect.magnitude and effect.damage_type:
+            return f"{name}: {effect.magnitude} {effect.damage_type}/round {rounds} ({where})"
+        if getattr(effect, "stat", ""):
+            return f"{name}: {stat_label(effect.stat, effect.magnitude)} {rounds} ({where})"
+        return f"{name} {rounds} ({where})"
     if kind == "stat_bonus":
-        return f"+{effect.magnitude} {effect.stat}"
+        return stat_label(effect.stat, effect.magnitude)
     if kind == "conditional_damage_mod":
-        return "conditional damage bonus"
+        return "bonus damage under a condition"
     if kind == "applied_status_mod":
-        return f"improve {effect.modifies_status_type} effects"
+        return f"your {STATUS_LABELS.get(effect.modifies_status_type, effect.modifies_status_type)} effects grow stronger"
     if kind == "immunity":
-        return f"immunity to {effect.tag}"
+        return f"immunity to {STATUS_LABELS.get(effect.tag, effect.tag)}"
     return kind
 
 
