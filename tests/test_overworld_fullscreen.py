@@ -7,7 +7,9 @@ surface size — not on exact pixel dimensions.
 """
 
 import os
+import tempfile
 import unittest
+from unittest import mock
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -78,6 +80,15 @@ class FullscreenToggleTest(unittest.TestCase):
         pygame.quit()
 
     def setUp(self):
+        # B70: keep user settings out of these display tests (and vice versa).
+        self._settings_tmp = tempfile.TemporaryDirectory()
+        from rpg_game.presentation import settings as user_settings
+        patcher = mock.patch.object(
+            user_settings, "SETTINGS_PATH",
+            f"{self._settings_tmp.name}/settings.json")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(self._settings_tmp.cleanup)
         self.app = OverworldApp()
 
     def test_toggle_flips_state_and_rebuilds_surface_without_crashing(self):

@@ -4,7 +4,9 @@ character creation / battle) instead of resetting to a tiny default — the
 """
 
 import os
+import tempfile
 import unittest
+from unittest import mock
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")

@@ -39,6 +39,7 @@ from pytmx.util_pygame import load_pygame
 from rpg_game.core import combat, encounters, progression, saveslots
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.pygame_canvas import (
     _debug_display, acquire_display, desktop_size, fit_size, open_window, present,
@@ -58,6 +59,7 @@ from rpg_game.presentation.talent_text import (
 from rpg_game.presentation import town_cluster
 from rpg_game.presentation import fog
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui
 from rpg_game.presentation.ui import Button
 
@@ -607,7 +609,10 @@ class OverworldApp:
             self.windowed_size = self._inherited_size
         else:
             self.windowed_size = fit_size(self.view_size)
-        self.fullscreen = False
+        # B70: user settings apply at startup (fullscreen must precede the first
+        # _apply_display_mode; log rows/minimap are applied where they init).
+        self._settings = user_settings.load()
+        self.fullscreen = bool(self._settings.get("fullscreen", False))
         # Initial canvas; draw() resizes it to the live display each frame (fluid
         # overworld) so the world fills the window and the camera shows more map.
         self.screen = pygame.Surface(self.view_size)
@@ -653,7 +658,7 @@ class OverworldApp:
         self._playtime_accum = 0.0                   # fractional seconds carry
         self._was_in_town = self.world.town_place_id() is not None
         self._pending_tags: list = []                # queued 'Upgradable' row tags
-        self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
+        self.show_minimap = bool(self._settings.get("minimap", True))   # B11/B70 (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
         # (rebuilt only when the revealed-tile count changes).
         self._map_terrain = None
@@ -665,7 +670,7 @@ class OverworldApp:
         # -> push_log. Deep scrollback (LOG_HISTORY_MAX), a player-resizable visible
         # height (log_visible), and a scroll offset for reading older lines.
         self.event_log: "collections.deque" = collections.deque(maxlen=LOG_HISTORY_MAX)
-        self.log_visible = LOG_VISIBLE_DEFAULT
+        self.log_visible = max(LOG_VISIBLE_MIN, min(int(self._settings.get("log_visible", LOG_VISIBLE_DEFAULT)), LOG_VISIBLE_MAX))
         self.log_scroll = 0      # lines scrolled up from the bottom (0 = newest visible)
         self.running = True
         self.exit_reason = ""
@@ -749,6 +754,7 @@ class OverworldApp:
     def resize_log(self, delta: int) -> None:
         """Grow/shrink the chatbox by `delta` visible lines, clamped."""
         self.log_visible = max(LOG_VISIBLE_MIN, min(self.log_visible + delta, LOG_VISIBLE_MAX))
+        self._persist_settings()
         self.log_scroll = min(self.log_scroll, self._log_scroll_max())
 
     # -- display mode -------------------------------------------------------
@@ -775,10 +781,17 @@ class OverworldApp:
         self.display = pygame.display.get_surface() or self.display
         _debug_display(f"overworld {'big' if self.fullscreen else 'windowed'}", self.display)
 
+    def _persist_settings(self) -> None:
+        """B70: write the current display/HUD prefs to settings.json."""
+        self._settings.update(fullscreen=self.fullscreen, log_visible=self.log_visible,
+                              minimap=self.show_minimap)
+        user_settings.save(self._settings)
+
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
         self._apply_display_mode()
         self._log_display("toggle_fullscreen")
+        self._persist_settings()
 
     # -- wild encounters + battle loop --------------------------------------
 
@@ -1303,6 +1316,7 @@ class OverworldApp:
             return
         if event.key == pygame.K_n:
             self.show_minimap = not self.show_minimap   # B11 Slice 2
+            self._persist_settings()
             return
         if event.key == pygame.K_b:
             self.toggle_overlay("bestiary")             # B66 codex
@@ -2307,6 +2321,39 @@ class OverworldApp:
         self._add_button(back, T.BACK, self._close_tome_shop)
         self._draw_buttons()
 
+    # -- B70: settings overlay --------------------------------------------------
+
+    def _overlay_settings(self, panel: pygame.Rect) -> None:
+        """B70: display/HUD settings — every change applies immediately AND
+        persists to settings.json. Volume rows arrive with B69."""
+        self.screen.blit(self.font_sm.render(
+            "Changes apply immediately and persist.", True, TEXT_DIM),
+            (panel.x + 20, panel.y + 56))
+        y = panel.y + 92
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                         f"Fullscreen: {'On' if self.fullscreen else 'Off'}   (F11)",
+                         self.toggle_fullscreen)
+        y += 50
+        self._add_button(pygame.Rect(panel.x + 20, y, 180, 42),
+                         f"Log rows: {self.log_visible} -", (lambda: self.resize_log(-1)))
+        self._add_button(pygame.Rect(panel.x + 210, y, 180, 42),
+                         f"Log rows: {self.log_visible} +", (lambda: self.resize_log(1)))
+        y += 50
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                         f"Minimap: {'On' if self.show_minimap else 'Off'}   (N)",
+                         (lambda: (setattr(self, 'show_minimap', not self.show_minimap),
+                                   self._persist_settings())))
+        y += 58
+        self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
+        y += 26
+        for line in ("WASD / arrows — move        E / Enter — interact (doors, chests)",
+                     "M — world map        N — minimap        B — bestiary",
+                     "C — character        I — inventory        K — skills & talents",
+                     "+ / - — log size        PgUp / PgDn — scroll log        F11 — fullscreen",
+                     "Esc — menu / back"):
+            self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (panel.x + 20, y))
+            y += 22
+
     # -- B71: death screen -----------------------------------------------------
 
     def _draw_death_screen(self) -> None:
@@ -2889,6 +2936,8 @@ class OverworldApp:
         self._add_button(pygame.Rect(panel.x + 20, panel.y + 92, panel.width - 40, 42),
                          T.SYSTEM_SAVE, self.save_game)
         self._add_button(pygame.Rect(panel.x + 20, panel.y + 144, panel.width - 40, 42),
+                         "Settings", (lambda: setattr(self, "overlay", "settings")))
+        self._add_button(pygame.Rect(panel.x + 20, panel.y + 196, panel.width - 40, 42),
                          T.SYSTEM_QUIT, self.quit_game)
 
     def _screen_talents(self, panel) -> None:
@@ -3003,6 +3052,7 @@ def start_menu_slot_options() -> list[tuple[str, str]]:
     if auto is not None:
         options.append((f"load:{auto.path}",
                         f"Autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"))
+    options.append(("settings", "Settings"))     # B70
     options.append(("quit", T.START_QUIT))
     return options
 
@@ -3124,10 +3174,72 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
         clock.tick(FPS)
 
 
+def settings_menu() -> None:
+    """B70: the start-menu settings screen — rows cycle their value on click and
+    persist immediately (fullscreen takes effect when the game starts; in-game
+    the same settings live in the Esc menu and apply on the spot)."""
+    values = user_settings.load()
+    display = acquire_display((WIDTH, HEIGHT))
+    screen = pygame.Surface(display.get_size())
+    offset = (0, 0, 1.0)
+    font = pygame.font.SysFont("menlo,consolas,monospace", 20)
+    font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
+    clock = pygame.time.Clock()
+    log_steps = [5, 8, 10, 12, 14, 18]
+    while True:
+        if screen.get_size() != display.get_size():
+            screen = pygame.Surface(display.get_size())
+        rows = [
+            ("fullscreen", f"Fullscreen: {'On' if values['fullscreen'] else 'Off'}"),
+            ("log", f"Log rows: {values['log_visible']}"),
+            ("minimap", f"Minimap: {'On' if values['minimap'] else 'Off'}"),
+            ("back", T.BACK),
+        ]
+        buttons, title_pos, _ = start_menu_layout(display.get_size(), rows)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.VIDEORESIZE:
+                display = set_display_mode((event.w, event.h))
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = to_canvas(event.pos, offset)
+                for button in buttons:
+                    if not button.rect.collidepoint(click):
+                        continue
+                    if button.on_click == "back":
+                        return
+                    if button.on_click == "fullscreen":
+                        values["fullscreen"] = not values["fullscreen"]
+                    elif button.on_click == "minimap":
+                        values["minimap"] = not values["minimap"]
+                    elif button.on_click == "log":
+                        current = values["log_visible"]
+                        bigger = [n for n in log_steps if n > current]
+                        values["log_visible"] = bigger[0] if bigger else log_steps[0]
+                    user_settings.save(values)
+        screen.fill(BG)
+        title = font_lg.render("Settings", True, ACCENT)
+        screen.blit(title, title.get_rect(center=title_pos))
+        mouse = to_canvas(pygame.mouse.get_pos(), offset)
+        for button in buttons:
+            color = BTN_HOVER if button.rect.collidepoint(mouse) else BTN
+            pygame.draw.rect(screen, color, button.rect, border_radius=8)
+            pygame.draw.rect(screen, BTN_EDGE, button.rect, width=1, border_radius=8)
+            label = font.render(button.label, True, TEXT)
+            screen.blit(label, label.get_rect(center=button.rect.center))
+        offset = present(display, screen, BG)
+        clock.tick(FPS)
+
+
 def engine_from_start_menu(save_path: str = SAVE_PATH) -> GameEngine | None:
     message = ""
     while True:
         choice = start_menu(save_path, message)
+        if choice == "settings":                 # B70: edit prefs, back to the menu
+            settings_menu()
+            continue
         try:
             return engine_from_start_choice(choice, save_path)
         except ValueError as error:

@@ -1055,7 +1055,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** ljud spelar vid deklarerade händelser; volym justerbar (via B70); headless-körning
   tyst utan krasch; assets licens-dokumenterade; sviten grön.
 
-#### B70 — Inställningsmeny  · *stödsystem* · liten · risk LÅG
+#### B70 — Inställningsmeny  · ✅ **KLAR (S1)** · render-verifierad headless
+- **KLAR:** `presentation/settings.py` (settings.json i roten, gitignorerad; defaults-merge, aldrig-
+  krascha-skrivning, call-time-path för testbarhet). **Appliceras vid uppstart** (fullscreen före
+  första display-mode; log-rader clampade; minimap). **Alla tre mutatorer persisterar direkt** (F11,
+  +/-, N — och samma reglage i skärmen). **Två ingångar:** in-game Esc→System→Settings (overlay med
+  Fullscreen/Log rows −+/Minimap + tangent-översikt) och **startmenyns Settings** (egen mini-loop,
+  cykla-på-klick). Fullscreen-toggle-testet + b70-testerna isolerade mot tempfil (fångade en äkta
+  test-föroreningsbugg: toggle-testet skrev riktiga settings.json). 7 tester; 893 gröna.
+  *Volymreglage = S2 när B69 (ljud) byggs.*
 - **Vad:** En Settings-skärm (från startmeny + ESC-meny): musik-/effektvolym (B69), fullskärm/fönster
   (toggle finns — får ett hem), loggstorlek (resize_log finns — får UI), och en läsbar tangent-
   översikt (M/K/C/I/ESC…). Inställningar persisteras i en settings.json separat från saven.
