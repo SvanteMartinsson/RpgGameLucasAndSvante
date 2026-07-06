@@ -138,11 +138,19 @@ class GameEngine:
             return persistence.LoadResult(False, "No save file found.")
         except json.JSONDecodeError:
             return persistence.LoadResult(False, "Save file is corrupted.")
+        # B59: lift old saves through the migration table, then verify cross-field
+        # invariants with a named error instead of loading silently-drifted state.
+        version = data.get("version", 1) if isinstance(data, dict) else 1
         player_data = data.get("player", data)
-        player = persistence.deserialize_player(player_data, self.content.start_place_id)
+        try:
+            player_data = persistence.migrate_player_data(player_data, version)
+            player = persistence.deserialize_player(player_data, self.content.start_place_id)
+            persistence.verify_invariants(player)
+        except ValueError as error:
+            return persistence.LoadResult(False, f"Save file is invalid: {error}")
+        # Derived fields are REBUILT, never read from the save: gear modifiers
+        # (which fold in upgrade deltas) + talent_skill_ranks.
         equipment.recompute_gear_modifiers(player, self.content)
-        # B36: re-derive talent_skill_ranks (not persisted) and reconcile passive
-        # contributions to the loaded ranks, migrating old rank-1 saves.
         talents.sync_runtime(player, self.content)
         self.state = GameState(player=player, content=self.content)
         return persistence.LoadResult(True, "Game loaded.")

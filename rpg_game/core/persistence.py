@@ -1,20 +1,36 @@
 """Serialize and restore the mutable game state to/from plain dicts.
 
 Only the runtime `Player` state is persisted; static `GameContent` is reloaded
-from the data files on load. Deserialization defaults every field so save files
-from an older structure (missing fields) load without crashing.
+from the data files on load.
+
+B59 hardening — three guarantees:
+  * ONE field table (`PLAYER_FIELDS`) drives both directions, so a new Player
+    field cannot be serialized-but-not-restored (or vice versa). Fields that are
+    DERIVED at runtime are declared in `DERIVED_FIELDS`; a field in neither set
+    fails the round-trip coverage test.
+  * Saves carry a schema version. Old saves are lifted step-by-step through the
+    `MIGRATIONS` table (version -> migration) before deserialization — ad-hoc
+    key-juggling lives in exactly one place per version bump.
+  * `verify_invariants` checks cross-field invariants (talent_ranks is the
+    source of truth for learned_talent_ids) at load with a named error.
+
+Derived fields are REBUILT after load by the engine (equipment.recompute_gear_
+modifiers -> upgrades.recompute_upgrade_modifiers, talents.sync_runtime); they
+are never read from a save.
 """
 
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dataclass_fields
 
 from rpg_game.core import entities
 from rpg_game.core.entities import ActiveStatus, GameState, Inventory, Player
 
-
-SAVE_VERSION = 1
+# Bump on EVERY schema change and add a MIGRATIONS entry lifting the previous
+# version one step. Version 1 = everything up to the pre-B59 schema (including
+# older key layouts that were patched ad hoc — now materialized in 1 -> 2).
+SAVE_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -71,136 +87,176 @@ def deserialize_status(data: dict) -> ActiveStatus:
     )
 
 
+# --- the field table ---------------------------------------------------------
+# name -> (to_json, from_json). from_json receives the raw JSON value or None
+# (key absent) and must return the field value, applying the default itself.
+
+def _int(default: int = 0):
+    return (lambda v: v, lambda raw: int(raw) if raw is not None else default)
+
+
+def _float(default: float):
+    return (lambda v: v, lambda raw: float(raw) if raw is not None else default)
+
+
+def _str(default: str = ""):
+    return (lambda v: v, lambda raw: str(raw) if raw is not None else default)
+
+
+def _str_tuple():
+    return (lambda v: list(v), lambda raw: tuple(raw) if raw else ())
+
+
+def _str_set():
+    return (lambda v: sorted(v), lambda raw: set(raw) if raw else set())
+
+
+def _dict_of(cast):
+    return (lambda v: dict(v),
+            lambda raw: {key: cast(value) for key, value in raw.items()} if raw else {})
+
+
+def _list_of_dicts():
+    return (lambda v: [dict(item) for item in v],
+            lambda raw: [dict(item) for item in raw] if raw else [])
+
+
+PLAYER_FIELDS: dict[str, tuple] = {
+    "name": _str("Hero"),
+    "player_class": _str("fighter"),
+    "level": _int(1),
+    "xp": _int(0),
+    "xp_required": _int(100),
+    "hp": _int(1),
+    "max_hp": _int(1),
+    "base_damage": _int(0),
+    "armor": _int(0),
+    "gold": _int(0),
+    "equipped_weapon_id": _str(""),
+    "inventory": (
+        lambda inv: {"consumables": dict(inv.consumables)},
+        lambda raw: Inventory(consumables={k: int(v) for k, v in (raw or {}).get("consumables", {}).items()}),
+    ),
+    "current_place_id": _str(""),      # "" is post-filled with default_place_id
+    "respawn_place_id": _str(""),      # "" is post-filled with default_place_id
+    "owned_weapon_ids": _str_tuple(),
+    "owned_gear_ids": _str_tuple(),
+    "equipped_gear": _dict_of(str),
+    "mana": _int(0),
+    "wisdom": _int(0),
+    "speed": _int(0),
+    "crit_chance": _int(0),
+    "crit_mult": _float(2.0),
+    "evasion_chance": _int(0),
+    "damage_dealt_mod": _int(0),
+    "damage_taken_mod": _int(0),
+    "equipped_skill_ids": _str_tuple(),
+    "talent_points": _int(0),
+    "learned_skill_ids": _str_tuple(),
+    "learned_talent_ids": _str_set(),
+    "talent_ranks": _dict_of(int),
+    "resistances": _dict_of(float),
+    "active_statuses": (
+        lambda statuses: [serialize_status(status) for status in statuses],
+        lambda raw: [deserialize_status(status) for status in raw] if raw else [],
+    ),
+    "stat_bonuses": _dict_of(int),
+    "applied_status_mods": (
+        lambda v: {key: dict(value) for key, value in v.items()},
+        lambda raw: {key: {ik: int(iv) for ik, iv in value.items()} for key, value in raw.items()} if raw else {},
+    ),
+    "cooldowns": _dict_of(int),
+    "accuracy_mod": _int(0),
+    "immunity_tags": _str_set(),
+    "tags": _str_set(),
+    "conditional_damage_mods": _list_of_dicts(),
+    "elemental_attack_mods": _list_of_dicts(),
+    "pending_stat_choices": _int(0),
+    "completed_tournament_ids": _str_set(),
+    "item_upgrades": _dict_of(str),
+    # B11 fog-of-war: base64 of the reveal bitset ("" when nothing revealed).
+    "revealed_tiles": (
+        lambda bits: base64.b64encode(bytes(bits)).decode("ascii"),
+        lambda raw: bytearray(base64.b64decode(raw or "")),
+    ),
+}
+
+# Runtime-derived Player fields — never persisted, always rebuilt after load
+# (equipment.recompute_gear_modifiers / talents.sync_runtime, called by the
+# engine). The coverage test enforces PLAYER_FIELDS ∪ DERIVED_FIELDS == Player.
+DERIVED_FIELDS = {
+    "max_mana",                    # derived from wisdom (+ gear/upgrade bonuses)
+    "gear_stat_modifiers",         # recomputed from equipped_gear
+    "talent_skill_ranks",          # rebuilt from talent_ranks
+    "upgrade_stat_bonuses",        # rebuilt from item_upgrades
+    "weapon_upgrade_components",   # rebuilt from item_upgrades
+}
+
+
 def serialize_player(player: Player) -> dict:
-    return {
-        "name": player.name,
-        "player_class": player.player_class,
-        "level": player.level,
-        "xp": player.xp,
-        "xp_required": player.xp_required,
-        "hp": player.hp,
-        "max_hp": player.max_hp,
-        "base_damage": player.base_damage,
-        "armor": player.armor,
-        "gold": player.gold,
-        "equipped_weapon_id": player.equipped_weapon_id,
-        "current_place_id": player.current_place_id,
-        "respawn_place_id": player.respawn_place_id,
-        "owned_weapon_ids": list(player.owned_weapon_ids),
-        "owned_gear_ids": list(player.owned_gear_ids),
-        "equipped_gear": dict(player.equipped_gear),
-        "mana": player.mana,
-        "wisdom": player.wisdom,
-        "speed": player.speed,
-        "crit_chance": player.crit_chance,
-        "crit_mult": player.crit_mult,
-        "evasion_chance": player.evasion_chance,
-        "damage_dealt_mod": player.damage_dealt_mod,
-        "damage_taken_mod": player.damage_taken_mod,
-        "equipped_skill_ids": list(player.equipped_skill_ids),
-        "learned_skill_ids": list(player.learned_skill_ids),
-        "talent_points": player.talent_points,
-        "learned_talent_ids": sorted(player.learned_talent_ids),
-        "talent_ranks": dict(player.talent_ranks),
-        "resistances": dict(player.resistances),
-        "active_statuses": [serialize_status(status) for status in player.active_statuses],
-        "stat_bonuses": dict(player.stat_bonuses),
-        "applied_status_mods": {key: dict(value) for key, value in player.applied_status_mods.items()},
-        "cooldowns": dict(player.cooldowns),
-        "accuracy_mod": player.accuracy_mod,
-        "immunity_tags": sorted(player.immunity_tags),
-        "tags": sorted(player.tags),
-        "conditional_damage_mods": [dict(mod) for mod in player.conditional_damage_mods],
-        "elemental_attack_mods": [dict(mod) for mod in player.elemental_attack_mods],
-        "pending_stat_choices": player.pending_stat_choices,
-        "completed_tournament_ids": sorted(player.completed_tournament_ids),
-        "item_upgrades": dict(player.item_upgrades),
-        # B11 fog-of-war: base64 of the reveal bitset ("" when nothing revealed).
-        "revealed_tiles": base64.b64encode(bytes(player.revealed_tiles)).decode("ascii"),
-        "inventory": {"consumables": dict(player.inventory.consumables)},
-    }
-
-
-def _migrate_talent_ranks(data: dict) -> dict[str, int]:
-    """B36: prefer the stored per-node ranks; migrate an older save (only
-    learned_talent_ids) by granting every previously-learned node rank 1."""
-    ranks = data.get("talent_ranks")
-    if ranks:
-        return {key: int(value) for key, value in ranks.items() if int(value) >= 1}
-    return {tid: 1 for tid in data.get("learned_talent_ids", ())}
-
-
-def _migrate_learned_ids(data: dict) -> set[str]:
-    """Keep the invariant: learned == the set of nodes at rank >= 1."""
-    return set(_migrate_talent_ranks(data))
+    return {name: to_json(getattr(player, name)) for name, (to_json, _) in PLAYER_FIELDS.items()}
 
 
 def deserialize_player(data: dict, default_place_id: str = "") -> Player:
-    inventory_data = data.get("inventory", {})
-    inventory = Inventory(
-        consumables={key: int(value) for key, value in inventory_data.get("consumables", {}).items()}
-    )
-    return Player(
-        name=data.get("name", "Hero"),
-        player_class=data.get("player_class", "fighter"),
-        level=data.get("level", 1),
-        xp=data.get("xp", 0),
-        xp_required=data.get("xp_required", 100),
-        hp=data.get("hp", 1),
-        max_hp=data.get("max_hp", 1),
-        base_damage=data.get("base_damage", 0),
-        armor=data.get("armor", 0),
-        gold=data.get("gold", 0),
-        equipped_weapon_id=data.get("equipped_weapon_id", ""),
-        inventory=inventory,
-        current_place_id=data.get("current_place_id") or default_place_id,
-        # Migration: legacy saves stored the purchased respawn in last_rest_place_id
-        # while respawn_place_id was auto-set by movement (unreliable). If the
-        # legacy key is present, trust the purchased value (or default Hordanita);
-        # otherwise the new respawn_place_id is the single source of truth.
-        respawn_place_id=(
-            (data.get("last_rest_place_id") or default_place_id)
-            if "last_rest_place_id" in data
-            else (data.get("respawn_place_id") or default_place_id)
-        ),
-        owned_weapon_ids=tuple(data.get("owned_weapon_ids", ())),
-        owned_gear_ids=tuple(data.get("owned_gear_ids", ())),
-        equipped_gear={key: str(value) for key, value in data.get("equipped_gear", {}).items()},
-        mana=data.get("mana", 0),
-        # max_mana is derived from wisdom; old saves only stored max_mana, so fall
-        # back to max_mana // MANA_PER_WISDOM when wisdom is absent.
-        wisdom=data.get("wisdom", data.get("max_mana", 0) // entities.MANA_PER_WISDOM),
-        speed=data.get("speed", 0),
-        crit_chance=data.get("crit_chance", 0),
-        crit_mult=data.get("crit_mult", 2.0),
-        evasion_chance=data.get("evasion_chance", 0),
-        damage_dealt_mod=data.get("damage_dealt_mod", 0),
-        damage_taken_mod=data.get("damage_taken_mod", 0),
-        equipped_skill_ids=tuple(data.get("equipped_skill_ids", ())),
-        learned_skill_ids=tuple(data.get("learned_skill_ids", ())),
-        talent_points=data.get("talent_points", 0),
-        learned_talent_ids=_migrate_learned_ids(data),
-        talent_ranks=_migrate_talent_ranks(data),
-        resistances={key: float(value) for key, value in data.get("resistances", {}).items()},
-        active_statuses=[deserialize_status(status) for status in data.get("active_statuses", ())],
-        stat_bonuses={key: int(value) for key, value in data.get("stat_bonuses", {}).items()},
-        applied_status_mods={
-            key: {inner_key: int(inner_value) for inner_key, inner_value in value.items()}
-            for key, value in data.get("applied_status_mods", {}).items()
-        },
-        cooldowns={key: int(value) for key, value in data.get("cooldowns", {}).items()},
-        accuracy_mod=data.get("accuracy_mod", 0),
-        immunity_tags=set(data.get("immunity_tags", ())),
-        tags=set(data.get("tags", ())),
-        conditional_damage_mods=[dict(mod) for mod in data.get("conditional_damage_mods", ())],
-        elemental_attack_mods=[dict(mod) for mod in data.get("elemental_attack_mods", ())],
-        pending_stat_choices=data.get("pending_stat_choices", 0),
-        completed_tournament_ids=set(data.get("completed_tournament_ids", ())),
-        # B37 Slice 2: old saves predate upgrades -> nothing upgraded.
-        item_upgrades={str(k): str(v) for k, v in data.get("item_upgrades", {}).items()},
-        # B11: old saves predate fog -> empty bitset (all hidden).
-        revealed_tiles=bytearray(base64.b64decode(data.get("revealed_tiles", "") or "")),
-    )
+    kwargs = {name: from_json(data.get(name)) for name, (_, from_json) in PLAYER_FIELDS.items()}
+    kwargs["current_place_id"] = kwargs["current_place_id"] or default_place_id
+    kwargs["respawn_place_id"] = kwargs["respawn_place_id"] or default_place_id
+    return Player(**kwargs)
+
+
+# --- migrations ---------------------------------------------------------------
+
+def _migrate_v1_to_v2(data: dict) -> dict:
+    """Materialize the pre-B59 ad-hoc rules as an explicit migration:
+    * legacy purchased respawn lived in last_rest_place_id — trust it over the
+      movement-polluted respawn_place_id;
+    * wisdom is derived from a stored max_mana when absent (pre-wisdom saves);
+    * talent_ranks synthesized from learned_talent_ids (pre-B36 saves), and
+      learned_talent_ids re-derived from ranks (the invariant's source of truth).
+    """
+    data = dict(data)
+    if "last_rest_place_id" in data:
+        data["respawn_place_id"] = data.pop("last_rest_place_id") or ""
+    if "wisdom" not in data:
+        data["wisdom"] = data.get("max_mana", 0) // entities.MANA_PER_WISDOM
+    ranks = data.get("talent_ranks") or {tid: 1 for tid in data.get("learned_talent_ids", ())}
+    data["talent_ranks"] = {key: int(value) for key, value in ranks.items() if int(value) >= 1}
+    data["learned_talent_ids"] = sorted(data["talent_ranks"])
+    return data
+
+
+MIGRATIONS = {
+    1: _migrate_v1_to_v2,
+}
+
+
+def migrate_player_data(data: dict, version: int) -> dict:
+    """Lift a player dict from `version` to SAVE_VERSION one step at a time."""
+    while version < SAVE_VERSION:
+        step = MIGRATIONS.get(version)
+        if step is None:
+            raise ValueError(f"no migration from save version {version}")
+        data = step(data)
+        version += 1
+    return data
+
+
+def verify_invariants(player: Player) -> None:
+    """Cross-field invariants a loaded player must satisfy (named error, not a
+    silent drift): talent_ranks is the source of truth for learned_talent_ids."""
+    ranked = {talent_id for talent_id, rank in player.talent_ranks.items() if rank >= 1}
+    if player.learned_talent_ids != ranked:
+        raise ValueError(
+            "save invariant broken: learned_talent_ids "
+            f"{sorted(player.learned_talent_ids)} != rank>=1 nodes {sorted(ranked)}")
+    negative = [talent_id for talent_id, rank in player.talent_ranks.items() if rank < 1]
+    if negative:
+        raise ValueError(f"save invariant broken: non-positive talent ranks for {sorted(negative)}")
+
+
+def persisted_field_names() -> set[str]:
+    """All Player dataclass fields that must be covered by PLAYER_FIELDS."""
+    return {f.name for f in dataclass_fields(Player)} - DERIVED_FIELDS
 
 
 def serialize_state(state: GameState) -> dict:

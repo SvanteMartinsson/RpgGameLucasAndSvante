@@ -159,6 +159,7 @@ class RespawnPersistenceTest(unittest.TestCase):
             engine = _engine()
             engine.save(path)
             data = json.load(open(path))
+            data["version"] = 1                              # faithful legacy save (B59)
             data["player"]["last_rest_place_id"] = "burg_146"
             data["player"]["respawn_place_id"] = "burg_146"  # whatever movement left
             json.dump(data, open(path, "w"))
@@ -174,6 +175,7 @@ class RespawnPersistenceTest(unittest.TestCase):
             engine = _engine()
             engine.save(path)
             data = json.load(open(path))
+            data["version"] = 1                              # faithful legacy save (B59)
             data["player"]["last_rest_place_id"] = ""        # never purchased
             data["player"]["respawn_place_id"] = "burg_146"  # auto-set garbage
             json.dump(data, open(path, "w"))

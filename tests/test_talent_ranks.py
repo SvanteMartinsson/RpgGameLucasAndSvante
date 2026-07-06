@@ -86,7 +86,8 @@ class TalentRankStateTest(unittest.TestCase):
 
     def test_old_save_without_ranks_migrates_each_learned_to_rank_1(self):
         legacy = {"learned_talent_ids": ["cleric_light_l1_smite", "cleric_light_l3_devotion"]}
-        restored = persistence.deserialize_player(legacy)
+        # B59: legacy shapes are lifted through the migration table before deserialize.
+        restored = persistence.deserialize_player(persistence.migrate_player_data(legacy, 1))
         self.assertEqual(restored.talent_ranks,
                          {"cleric_light_l1_smite": 1, "cleric_light_l3_devotion": 1})
         self.assertEqual(restored.learned_talent_ids, set(restored.talent_ranks))

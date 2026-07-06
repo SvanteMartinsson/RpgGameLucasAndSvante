@@ -794,7 +794,16 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** apply_effect < ~40 rader dispatch; en handler per effekt-typ med egna tester;
   run_combat_turn läsbart fasindelad; sviten grön utan testdiffar.
 
-#### B59 — Save-schema-härdning: version, central fälttabell, invariant-check vid load  · *strukturell* · medel · prio HÖG
+#### B59 — Save-schema-härdning  · ✅ **KLAR**
+- **KLAR:** (a) `SAVE_VERSION=2` + `MIGRATIONS`-tabell (1→2 materialiserar de gamla ad-hoc-reglerna:
+  last_rest_place_id→respawn, wisdom ur max_mana, ranks ur learned); (b) EN central `PLAYER_FIELDS`-
+  tabell driver serialize+deserialize (39 fält) + `DERIVED_FIELDS` deklarerade (5: max_mana/gear_mods/
+  talent_skill_ranks/upgrade_bonuses/weapon_components — rebuilds vid load verifierade i koden);
+  (c) `verify_invariants` vid load (talent_ranks ↔ learned, namngivet fel → LoadResult(False));
+  (d) coverage-test failar när nytt Player-fält saknar klassificering + round-trip genom RIKTIG JSON
+  med icke-default i varje fält. STEG 0-fynd: upgrade-rebuilds sker via recompute_gear_modifiers→
+  recompute_upgrade_modifiers (kommentarernas påstående verifierat). 10 nya tester; 2 legacy-fixtures
+  uppdaterade till migrations-ingången. 819 gröna.
 - **Vad:** (a) Bumpa `SAVE_VERSION` vid varje schemaändring + en migrations-tabell (version→migrering)
   i stället för ad-hoc-funktioner; (b) central serialize/deserialize-tabell för Players ~50 fält så nya
   fält inte kan glömmas i endera riktningen; (c) invariant-verifiering vid load (talent_ranks ↔
