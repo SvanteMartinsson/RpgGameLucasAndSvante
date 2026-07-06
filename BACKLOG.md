@@ -708,7 +708,11 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
   ### Kodhälsa & infrastruktur (systemgenomlysning 2026-07-04, arkitekt)
 
-#### B53 — CI-pipeline: compileall + båda testsviterna på varje push  · *strukturell* · liten · prio HÖG
+#### B53 — CI-pipeline: compileall + båda testsviterna på varje push  · ✅ **KLAR** (`a79bdb0`)
+- **KLAR:** `.github/workflows/tests.yml` — två jobb per push/PR: `core` (beroendefri python,
+  presentation-tester skippar, 17s) + `full` (requirements + pygame headless via SDL dummy, 1m27s).
+  Båda kör compileall först. Verifierat: grön på master; **avsiktligt trasig push på tempbranch → röd**
+  (probe-branchen raderad). Acceptans uppfylld.
 - **Vad:** GitHub Actions-workflow som på varje push/PR kör (a) `python3 -m compileall -q rpg_game tests`,
   (b) systemsviten (`python3 -m unittest discover -s tests`), (c) venv-jobbet med `requirements.txt`
   (pygame-beroende tester, headless via dummy-videodriver).
