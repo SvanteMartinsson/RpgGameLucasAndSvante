@@ -645,6 +645,8 @@ class OverworldApp:
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
         self.tome_building: str | None = None        # B38: open mage-tower tome shop building id
         self._bridge_img_cache: dict = {}            # B52: gid -> rotated deck image (or None)
+        self.bestiary_index = 0                      # B66: selected codex row
+        self._bestiary_sprite_cache: dict = {}       # enemy_id -> (thumb, silhouette)
         self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.show_minimap = True                     # B11 Slice 2: always-on minimap (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
@@ -1213,6 +1215,13 @@ class OverworldApp:
         if event.key == pygame.K_F11:
             self.toggle_fullscreen()
             return
+        if self.overlay == "bestiary":              # B66: arrow-key row selection
+            if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
+                self.move_bestiary_selection(1)
+                return
+            if event.key in (pygame.K_UP, pygame.K_LEFT):
+                self.move_bestiary_selection(-1)
+                return
         if self.overlay == "skills_talents":
             if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
                 self.move_talent_selection(1)
@@ -1255,6 +1264,9 @@ class OverworldApp:
             return
         if event.key == pygame.K_n:
             self.show_minimap = not self.show_minimap   # B11 Slice 2
+            return
+        if event.key == pygame.K_b:
+            self.toggle_overlay("bestiary")             # B66 codex
             return
         # Chatbox resize/scroll: walk-only. Under menus the chatbox is visible but
         # read-only ('+' grows, '-' shrinks; PageUp/PageDown scroll).
@@ -1776,6 +1788,109 @@ class OverworldApp:
             else:
                 pygame.draw.rect(world, PLAYER_COLOR, payload, border_radius=4)
                 pygame.draw.rect(world, PLAYER_EDGE, payload, width=2, border_radius=4)
+
+    # -- B66: bestiary codex --------------------------------------------------
+
+    def move_bestiary_selection(self, delta: int) -> None:
+        from rpg_game.core import bestiary
+        total = len(bestiary.codex_enemy_ids(self.engine.content))
+        if total:
+            self.bestiary_index = (self.bestiary_index + delta) % total
+
+    def _bestiary_thumb(self, enemy_id: str):
+        """(thumbnail, silhouette) for an enemy's battle sprite, cached. The
+        silhouette (dark fill, alpha kept) is shown while only 'seen'."""
+        if enemy_id in self._bestiary_sprite_cache:
+            return self._bestiary_sprite_cache[enemy_id]
+        path = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites",
+                            "generated", f"{enemy_id}.png")
+        thumb = shadow = None
+        try:
+            raw = pygame.image.load(path).convert_alpha()
+            w, h = raw.get_size()
+            scale = min(150 / w, 150 / h)
+            thumb = pygame.transform.smoothscale(raw, (max(1, int(w * scale)), max(1, int(h * scale))))
+            shadow = thumb.copy()
+            shadow.fill((28, 30, 40), special_flags=pygame.BLEND_RGB_MIN)
+        except (pygame.error, FileNotFoundError):
+            pass
+        self._bestiary_sprite_cache[enemy_id] = (thumb, shadow)
+        return thumb, shadow
+
+    def _overlay_bestiary(self, panel: pygame.Rect) -> None:
+        """B66: the codex — left a scrollable roster (unseen rows dimmed as ???),
+        right the selected enemy: sprite or silhouette, level band, and its
+        traits/weaknesses/skills once UNLOCKED (Identify once or 5 kills)."""
+        from rpg_game.core import bestiary
+        rows = bestiary.entries(self.engine.content, self.engine.player)
+        if not rows:
+            return
+        self.bestiary_index %= len(rows)
+        seen, unlocked, total = bestiary.progress(self.engine.content, self.engine.player)
+        self.screen.blit(self.font_sm.render(
+            f"Seen {seen}/{total}   ·   Known {unlocked}/{total}   ·   arrows browse",
+            True, TEXT_DIM), (panel.x + 20, panel.y + 56))
+
+        # Roster rows are Buttons (the shared row idiom): "> " marks the selection,
+        # unseen creatures show as ??? in the restricted (dimmed) style.
+        list_rect = pygame.Rect(panel.x + 20, panel.y + 84, 300, panel.height - 150)
+        row_h = 30
+        visible = max(1, list_rect.height // row_h)
+        start = max(0, min(self.bestiary_index - visible // 2, len(rows) - visible))
+        for i, entry in enumerate(rows[start:start + visible]):
+            idx = start + i
+            rect = pygame.Rect(list_rect.x, list_rect.y + i * row_h, list_rect.width, row_h - 4)
+            marker = "> " if idx == self.bestiary_index else "  "
+            name = entry.name if entry.seen else "???"
+            band = f"  ·  Lv {entry.level_min}-{entry.level_max}" if entry.unlocked else ""
+            self._add_button(rect, f"{marker}{name}{band}",
+                             (lambda n=idx: setattr(self, "bestiary_index", n)),
+                             True, restricted=not entry.seen)
+
+        entry = rows[self.bestiary_index]
+        dx = panel.x + 350
+        detail = pygame.Rect(dx, panel.y + 84, panel.right - dx - 20, panel.height - 150)
+        thumb, shadow = self._bestiary_thumb(entry.id)
+        sprite = (thumb if entry.unlocked else shadow) if entry.seen else None
+        if sprite is not None:
+            self.screen.blit(sprite, (detail.x, detail.y))
+        ty = detail.y
+        tx = detail.x + 170
+        title = entry.name if entry.seen else "Unknown creature"
+        self.screen.blit(self.font_lg.render(title, True, ACCENT if entry.unlocked else TEXT_DIM), (tx, ty))
+        ty += 34
+        if not entry.seen:
+            self.screen.blit(self.font_sm.render("You have not met this creature yet.", True, TEXT_DIM), (tx, ty))
+            return
+        if not entry.unlocked:
+            need = bestiary.KILL_UNLOCK - entry.kills
+            for line in (f"Defeated: {entry.kills}",
+                         f"Identify it, or defeat {need} more,",
+                         "to reveal its secrets."):
+                self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (tx, ty))
+                ty += 22
+            return
+        self.screen.blit(self.font_sm.render(
+            f"Lv {entry.level_min}-{entry.level_max}   ·   defeated {entry.kills}", True, TEXT), (tx, ty))
+        ty += 24
+        if entry.traits:
+            self.screen.blit(self.font_sm.render("Traits: " + ", ".join(entry.traits), True, TEXT), (tx, ty))
+            ty += 24
+        weak = [t for t, v in sorted(entry.resistances.items()) if v > 1.0]
+        resist = [t for t, v in sorted(entry.resistances.items()) if 0 < v < 1.0]
+        immune = [t for t, v in sorted(entry.resistances.items()) if v == 0]
+        for label, values, colour in (("Weak to", weak, GOOD), ("Resists", resist, WARN),
+                                      ("Immune", immune, BAD)):
+            if values:
+                self.screen.blit(self.font_sm.render(f"{label}: " + ", ".join(values), True, colour), (tx, ty))
+                ty += 22
+        if entry.skills:
+            ty += 6
+            self.screen.blit(self.font_sm.render("Abilities:", True, TEXT), (tx, ty))
+            ty += 22
+            for name in entry.skills[:6]:
+                self.screen.blit(self.font_sm.render(f"· {name}", True, TEXT_DIM), (tx, ty))
+                ty += 20
 
     def _load_chest_sprites(self) -> dict:
         """B63: (theme, opened) -> chest sprite, cropped from the theme's props

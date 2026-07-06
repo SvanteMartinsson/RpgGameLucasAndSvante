@@ -439,6 +439,11 @@ class Player:
     completed_tournament_ids: set[str] = field(default_factory=set)
     # B63: world chests this player has looted (chest ids; a chest opens once).
     opened_chest_ids: tuple[str, ...] = ()
+    # B66 bestiary: enemies encountered, identified, and per-enemy kill counts.
+    # An entry UNLOCKS (details visible) via Identify OR enough kills.
+    bestiary_seen: set[str] = field(default_factory=set)
+    bestiary_identified: set[str] = field(default_factory=set)
+    bestiary_kills: dict[str, int] = field(default_factory=dict)
     # B37 Slice 2: permanent one-time upgrades. item_id -> chosen variant id
     # (presence == upgraded). The applied deltas live in upgrade_stat_bonuses /
     # weapon_upgrade_components (derived, NOT persisted) — never in damage_bonus.

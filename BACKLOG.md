@@ -962,7 +962,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   förberedelse (sim N≥200 för extremer, playtest för känsla); alla fyra → slutstrid → victory-skärm;
   persistens av fällda bossar; tester för fas-AI.
 
-#### B66 — Bestiarium (kunskaps-codex över fiender)  · *gameplay-system* · liten-medel · risk LÅG
+#### B66 — Bestiarium (kunskaps-codex över fiender)  · ✅ **KLAR (S1+S2)** · render-verifierad headless
+- **KLAR:** `core/bestiary.py` — mött/identifierat/kills på spelaren (3 nya persist-fält via
+  B59-tabellen); **upplåsning = Identify EN gång ELLER 5 kills** (`KILL_UNLOCK`). Engine-hooks:
+  `create_encounter`→seen, `_handle_victory`→kill-count, Identify→identified. **Codex-skärm på B**
+  (overlay): vänster roster (32 vilda, sorterad på nivå; osedda = "???" dimmade via restricted-stilen,
+  "> "-markör + Lv-band på upplåsta; piltangenter + klick), höger detaljer — sprite (silhuett tills
+  upplåst: mörkfylld alpha-kopia), nivåband, kills, traits, **färgade svagheter** (Weak grön / Resists
+  amber / Immune röd ur resistansmatrisen) + abilities. **Designval:** arena-duellanter exkluderade
+  (människor ≠ vilda fauna; codex = 32 av 42). 11 tester; 867 gröna. *Slice 3 (samlar-belöning) = ej byggd.*
 - **Vad:** En codex-skärm (meny-val) som fylls i medan man spelar: möt en fiende → namn+silhuett
   registreras; använd Identify (finns redan: identify_enemy/EnemyReveal) eller döda N st → traits,
   resistanser, skills och loot-tabell låses upp. Upplevelsen: skadestegen och trait-systemet — spelets

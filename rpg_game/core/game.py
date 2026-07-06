@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import bestiary, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -271,6 +271,7 @@ class GameEngine:
     def create_encounter(self) -> Enemy | None:
         enemy = world.create_encounter(self.player, self.content, self.rng)
         if enemy is not None:
+            bestiary.mark_seen(self.player, enemy.id)   # B66: it is in the codex now
             self._begin_encounter()
         return enemy
 
@@ -448,6 +449,7 @@ class GameEngine:
             if actor is player:
                 if is_identify:
                     enemy_reveal = combat.identify_enemy(enemy, self.content.actions)
+                    bestiary.mark_identified(player, enemy.id)   # B66: details unlock
                     events.append(f"Identified {enemy.name}.")
                 else:
                     weapon = self.content.weapons[player.equipped_weapon_id]
@@ -751,6 +753,7 @@ class GameEngine:
         player.gold += gold
         xp_gained = progression.level_scaled_xp(enemy.xp_reward, player.level, enemy.level)
         levels_gained = progression.award_xp(player, xp_gained)
+        bestiary.record_kill(player, enemy.id)   # B66: kills count toward unlock
         events.append(f"{enemy.name} was defeated.")
         events.append(f"Gained {xp_gained} XP and {gold} gold.")
         if levels_gained:

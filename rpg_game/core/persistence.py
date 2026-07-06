@@ -154,6 +154,9 @@ PLAYER_FIELDS: dict[str, tuple] = {
     "talent_points": _int(0),
     "learned_skill_ids": _str_tuple(),
     "opened_chest_ids": _str_tuple(),   # B63 world chests
+    "bestiary_seen": _str_set(),        # B66 bestiary
+    "bestiary_identified": _str_set(),
+    "bestiary_kills": _dict_of(int),
     "learned_talent_ids": _str_set(),
     "talent_ranks": _dict_of(int),
     "resistances": _dict_of(float),
