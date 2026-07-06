@@ -588,7 +588,16 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 #### B45 — Minisjö (5–8 tiles) att gå runt  · *nytt (vatten-/regenerate-lagret)*
 - **Vad:** En liten insjö någonstans som landmärke/omväg (Lucas-önskad). **Not:** ligger i vatten-lagret (regenerate_overworld), inte prop-scattern → egen slice; flood-fill-verifieras. **Acceptans:** sjö placerad, gångbar runtom, reachability grön, test.
 
-#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · *öppet beslut*
+#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · 🟡 **PoC KLAR — Lucas beslutar på bild**
+- **PoC (2026-07-06):** `docs/b47_poc/` — före/efter för cainos↔skog, skog↔mire och
+  heath-sömmen. Teknik: **alpha-crossfade av ground-tiles** i ett ±4-tiles-band
+  (8 alfasteg; förblandade tile-bilder som syntetiska gids byggda EN gång vid
+  kartladdning → noll per-frame-kostnad, ~121 extra bilder, rör inga seeds, ingen
+  PNG-retusch). **Bedömning:** klart mjukare på båda vertikala sömmarna; heath-sömmen
+  följer till stor del en flod och behöver knappt åtgärd. Skavank: svag kolumn-
+  bandning — production lägger hash-jitter ±1 alfasteg per tile. **Beslut:** (a) bygg
+  production-varianten (liten slice, load-time pass bakom konstant `BLEND_BAND`),
+  (b) acceptera hårda gränser.
 - **Vad:** Zon-till-zon-färgskiften (gul kärna / mörkgrön skog / grågrön swamp) upplevs hackiga. **Not:** paletten är **inbränd i tema-PNG:erna** → INTE fixbart via tile-placering. Öppet beslut: retuscha tema-PNG-paletterna för mjukare övergång, eller acceptera. **Acceptans:** beslut fattat; om åtgärd — mjukare zon-gräns verifierad i render.
 
 ### Chatt/HUD (nytt)
