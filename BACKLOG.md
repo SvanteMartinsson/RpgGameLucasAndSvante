@@ -228,7 +228,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   många man INTE sett. **Förslag:** hjul-/piltangent-scroll i rostern (markören driver
   visningsfönstret som i shop-listor) + "Sedda X/Y"-rad i panelhuvudet.
 
-#### B80 — Boss-lya efter seger: vad ska stå kvar?  · 🟢 **BESLUTAT (a)** — invänta GO
+#### B80 — Boss-lya efter seger  · ✅ **KLAR** (nattbatch: `_sync_lairs` äger block/avblock genom init/seger/load — fälld boss försvinner HELT, tilen avblockeras, E gör inget; husk-koden borttagen; test låser hela kedjan)
 - **BESLUT (Lucas 2026-07-06):** "har inga bra assets, vi tar bara bort den helt sålänge"
   → **(a) fälld boss försvinner helt**. Implementationsnot: lya-tilen måste AVBLOCKERAS
   efter seger (annars osynlig vägg) — blocked-settet justeras vid seger + vid load för

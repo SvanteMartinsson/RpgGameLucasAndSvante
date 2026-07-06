@@ -298,3 +298,19 @@ class BossOverworldTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_felled_boss_vanishes_and_its_tile_unblocks(self):
+        """B80: no husk — the lair empties, unblocks, and E does nothing."""
+        engine = self.app.engine
+        tile = tuple(engine.content.bosses["rotfang"].lair_tile)
+        self.assertIn(tile, self.app.world.blocked)
+        enemy = engine.challenge_boss("rotfang")
+        enemy.hp = 0
+        engine._handle_victory(enemy, [])
+        self.app.resolve_battle_outcome("victory", enemy)
+        self.assertNotIn(tile, self.app.world.blocked)
+        self.assertNotIn(tile, self.app.lair_tiles)
+        self._stand_beside("rotfang")
+        self.assertFalse(self.app._try_challenge_boss())
+        engine.player.defeated_boss_ids.discard("rotfang")   # restore shared app state
+        self.app._sync_lairs()

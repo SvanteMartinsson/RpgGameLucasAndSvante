@@ -511,12 +511,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                             for chest in self.engine.content.chests.values()}
         self.world.blocked |= set(self.chest_tiles)
         self._chest_sprites = self._load_chest_sprites()
-        # B65: boss lairs are solid landmarks — the boss itself stands on its
-        # tile (darkened once felled). Blocked before the encounter map freezes.
-        self.lair_tiles = {tuple(boss.lair_tile): boss.id
-                           for boss in self.engine.content.bosses.values()}
-        self.world.blocked |= set(self.lair_tiles)
-        self._lair_sprites: dict = {}   # boss_id -> (alive, felled) | None, lazy
+        # B65/B80: boss lairs are solid landmarks while the boss LIVES — a felled
+        # boss disappears entirely and its tile unblocks (Lucas: no husk).
+        self.lair_tiles = {}
+        self._sync_lairs()
+        self._lair_sprites: dict = {}   # boss_id -> sprite | None, lazy
         # B55: freeze the tile geometry the CORE pacing rule reads (towns, the
         # B32 no-encounter zone, road tiles). The base rate stays a live attribute
         # (self.encounter_rate) so runtime tuning and tests keep working.
@@ -812,6 +811,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             else:
                 self.set_toast(T.victory_over(enemy.name), GOOD, log=False)
                 self.autosave("battle")               # B71: autosave after a victory
+                if getattr(enemy, "boss", False):
+                    self._sync_lairs()   # B80: the felled boss vanishes from the world
                 # B65: felling the final boss ends the main goal — show the ending
                 # once (a loaded finished save never re-triggers it).
                 if getattr(enemy, "boss", False) and not self._end_shown \
@@ -887,6 +888,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if tile is not None:
             self.world.set_tile(*tile)
         self._move_accum_x = self._move_accum_y = 0.0
+        self._sync_lairs()   # B80: the loaded run decides which lairs still stand
         self.sync_location()
         self.mode = "walk"
         self._end_shown = self.engine.main_goal_complete()   # B65: track the loaded run
@@ -1417,6 +1419,18 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             chatlog.push_rich(self.event_log, parts)
             return True
         return False
+
+    def _sync_lairs(self) -> None:
+        """B80: (re)derive the living lairs from the player's defeated set —
+        felled bosses vanish and their tiles unblock. Runs at init, after a
+        boss victory and after every load (each may change the set)."""
+        defeated = self.engine.player.defeated_boss_ids
+        living = {tuple(boss.lair_tile): boss.id
+                  for boss in self.engine.content.bosses.values()
+                  if boss.id not in defeated}
+        self.world.blocked -= set(self.lair_tiles) - set(living)
+        self.world.blocked |= set(living)
+        self.lair_tiles = living
 
     def _try_challenge_boss(self) -> bool:
         """B65 E/Enter: a lair on an adjacent tile. First press announces the

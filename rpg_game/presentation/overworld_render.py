@@ -605,42 +605,37 @@ class MapRenderMixin:
             world.blit(sprite, (cx * tw - ox, (cy + 1) * th - oy - sprite.get_height()))
 
     def _lair_sprite(self, boss_id: str):
-        """(alive, felled) overworld sprites for a boss — its battle art scaled
-        to loom two tiles tall; the felled variant is darkened to a husk. A
-        missing sprite degrades to None (lair still blocks + challenges)."""
+        """The living boss's overworld sprite — its battle art scaled to loom
+        two tiles tall. A missing sprite degrades to None (the lair still
+        blocks + challenges). B80: no felled variant — a beaten boss vanishes."""
         cached = self._lair_sprites.get(boss_id, False)
         if cached is not False:
             return cached
         boss = self.engine.content.bosses[boss_id]
         path = os.path.join(SPRITE_DIR, f"{boss.enemy_id}.png")
-        pair = None
+        sprite = None
         try:
             raw = pygame.image.load(path).convert_alpha()
             target_h = self.world.th * 2
             width = max(1, round(raw.get_width() * target_h / raw.get_height()))
-            alive = pygame.transform.scale(raw, (width, target_h))
-            felled = alive.copy()
-            felled.fill((70, 70, 82), special_flags=pygame.BLEND_RGB_MIN)
-            pair = (alive, felled)
+            sprite = pygame.transform.scale(raw, (width, target_h))
         except (pygame.error, FileNotFoundError):
-            pair = None
-        self._lair_sprites[boss_id] = pair
-        return pair
+            sprite = None
+        self._lair_sprites[boss_id] = sprite
+        return sprite
 
     def _draw_lairs(self, world: "pygame.Surface", ox: int, oy: int,
                     left: int, right: int, top: int, bottom: int) -> None:
-        """B65: draw every lair boss in view, bottom-anchored on its tile;
-        defeated state reads from the player's persisted defeated_boss_ids."""
+        """B65/B80: draw every LIVING lair boss in view, bottom-anchored on its
+        tile; felled bosses are gone (lair_tiles only holds the living)."""
         tw, th = self.world.tw, self.world.th
-        defeated = self.engine.player.defeated_boss_ids
-        for boss in self.engine.content.bosses.values():
-            bx, by = boss.lair_tile
+        for tile, boss_id in self.lair_tiles.items():
+            bx, by = tile
             if not (left - 2 <= bx < right + 2 and top - 2 <= by < bottom + 3):
                 continue
-            pair = self._lair_sprite(boss.id)
-            if pair is None:
+            sprite = self._lair_sprite(boss_id)
+            if sprite is None:
                 continue
-            sprite = pair[1] if boss.id in defeated else pair[0]
             x = bx * tw - ox + (tw - sprite.get_width()) // 2
             world.blit(sprite, (x, (by + 1) * th - oy - sprite.get_height()))
 
