@@ -422,11 +422,13 @@ class OverlaysMixin:
         self.bestiary_index %= len(rows)
         seen, unlocked, total = bestiary.progress(self.engine.content, self.engine.player)
         self.screen.blit(self.font_sm.render(
-            f"Seen {seen}/{total}   ·   Known {unlocked}/{total}   ·   arrows browse",
+            f"Seen {seen}/{total}   ·   Known {unlocked}/{total}   ·   arrows/wheel browse",
             True, TEXT_DIM), (panel.x + 20, panel.y + 56))
 
         # Roster rows are Buttons (the shared row idiom): "> " marks the selection,
-        # unseen creatures show as ??? in the restricted (dimmed) style.
+        # unseen creatures show as ??? in the restricted (dimmed) style. B79: the
+        # window follows the selection (wheel/arrows) and shows how much lies
+        # beyond each edge, so the full codex is reachable and its size readable.
         list_rect = pygame.Rect(panel.x + 20, panel.y + 84, 300, panel.height - 150)
         row_h = 30
         visible = max(1, list_rect.height // row_h)
@@ -440,6 +442,13 @@ class OverlaysMixin:
             self._add_button(rect, f"{marker}{name}{band}",
                              (lambda n=idx: setattr(self, "bestiary_index", n)),
                              True, restricted=not entry.seen)
+        if start > 0:
+            self.screen.blit(self.font_sm.render(f"^ {start} more ^", True, TEXT_DIM),
+                             (list_rect.x + 8, list_rect.y - 18))
+        below = len(rows) - (start + visible)
+        if below > 0:
+            self.screen.blit(self.font_sm.render(f"v {below} more v", True, TEXT_DIM),
+                             (list_rect.x + 8, list_rect.bottom + 2))
 
         entry = rows[self.bestiary_index]
         dx = panel.x + 350

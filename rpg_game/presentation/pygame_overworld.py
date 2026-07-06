@@ -1164,7 +1164,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self.display = set_display_mode(self.windowed_size)
                 self._log_display("resize")
             elif event.type == pygame.MOUSEWHEEL:
-                if self._log_interactive():   # scroll only in walk; read-only under menus
+                if self.overlay == "bestiary":
+                    self.move_bestiary_selection(-event.y)   # B79: wheel browses the codex
+                elif self._log_interactive():   # scroll only in walk; read-only under menus
                     self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
                 self._handle_key(event)

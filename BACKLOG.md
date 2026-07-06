@@ -223,7 +223,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 - **Även:** skills-skärmens rubrik-kollision ("Equipped 1/4 …" skriver över "Talent
   points: …") fixas här eller i B40 S-slicen — en av dem äger fixen, inte båda.
 
-#### B79 — Bestiarium: scrollbar roster + sedda-räknare
+#### B79 — Bestiarium: scrollbar roster + sedda-räknare  · ✅ **KLAR** (nattbatch: STEG 0 visade att fönstret redan följer selektionen och Seen X/Y fanns — det som saknades var mushjuls-bläddring + "^/v N more"-indikatorer; båda byggda, 2 tester)
 - **Lucas:** listan är låst till de ~14 första; man vill scrolla och få känsla för hur
   många man INTE sett. **Förslag:** hjul-/piltangent-scroll i rostern (markören driver
   visningsfönstret som i shop-listor) + "Sedda X/Y"-rad i panelhuvudet.

@@ -141,3 +141,38 @@ class CodexScreenTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(HAVE_PYGAME, "pygame/pytmx not installed")
+class BestiaryScrollTests(unittest.TestCase):
+    """B79: the codex roster is browsable past the first window."""
+
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        cls.app = OverworldApp()
+
+    @classmethod
+    def tearDownClass(cls):
+        pygame.quit()
+
+    def test_wheel_browses_the_codex(self):
+        self.app.overlay = "bestiary"
+        self.app.bestiary_index = 0
+        pygame.event.post(pygame.event.Event(pygame.MOUSEWHEEL, y=-1))
+        self.app.handle_events()
+        self.assertEqual(self.app.bestiary_index, 1)
+        self.app.overlay = ""
+
+    def test_window_follows_a_deep_selection(self):
+        self.app.screen = pygame.Surface((1024, 680))
+        self.app.overlay = "bestiary"
+        self.app.bestiary_index = 20            # beyond the first window
+        self.app.buttons = []
+        self.app.hover.begin()
+        self.app._draw_overlay_screen()
+        labels = [b.label for b in self.app.buttons]
+        self.assertTrue(any(label.startswith("> ") for label in labels))
+        self.app.overlay = ""
+        self.app.bestiary_index = 0
