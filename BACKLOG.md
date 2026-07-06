@@ -27,10 +27,16 @@ B43/B38/B11 S2/B41/B25**. Föregående: **B35/B36/B37 S1+2**, **Wisdom A+B**, **
 **B8 S2a**, **B11 S1**, **B40 S1**, unified chatbox, **B24-flaggan**.
 Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
 
-**▶ Pågår / nästa:** **B44** (chatt v4 — STEG 0 klar; delad-log-modell + strukturerade
-combat-events = egen slice) · **B40 apply-slices S2–S5** (render-HALT/skärm) · **B8 Slice 2b**
-(per-stad butik + tjänste-triggrar). **B64 dungeons = PARKERAD** (Lucas 2026-07-06: väntar
-på karta som stödjer interiörer).
+**✅ Även klart (dagbatch 2026-07-06):** **B44+B16.1** (chatt v4: segmentfärger, röd
+vs-dig-skada, All/Combat-flikar) · **B56** (OverworldApp 3423→1969 rader, tre mixin-
+moduler, render-identiskt) · **B62** (ekonomi-sim + N=300-rapport) · **B48-förarbete**
+(zon-referenskarta `docs/ZONE_MAP.png`) · **B47-PoC** (blend-beslutsbilder `docs/b47_poc/`).
+
+**▶ Pågår / nästa:** **B40 apply-slices S2–S5** (render-HALT/skärm; redigerar nu
+`overworld_overlays`) · **B8 Slice 2b** (per-stad butik + tjänste-triggrar; shrine/board
+väntar på B22/B23-rundor) · **B47-beslut** (Lucas: blend eller inte, på PoC-bilderna) ·
+**B48-designrunda** (encounter-områden mot referenskartan). **B64 dungeons = PARKERAD**
+(Lucas 2026-07-06: väntar på karta som stödjer interiörer).
 
 **Härnäst (öppet, ej byggt):** *Playtest 2026-07-02:* **B48** (per-zon spawn-authoring ⭐) ·
 **B49** (fiende-level i combat) · **B50** (combat-logg-scroll) · **B51** (busk-färg minimap) ·
@@ -800,7 +806,21 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   beteende-identiskt verifierat (rate-kurvan matchar uppmätt baseline); sim kan räkna encounters
   per simulerad resa.
 
-#### B56 — Dela upp OverworldApp (gud-klass 2856 rader → moduler)  · *strukturell* · stor · prio MEDEL
+#### B56 — Dela upp OverworldApp (gud-klass 2856 rader → moduler)  · ✅ **KLAR (extraktion 1-3)** · render-identiskt verifierad
+- **KLAR (2026-07-06, Lucas-GO):** tre beteende-bevarande mixin-extraktioner, en per
+  commit, verbatim-flytt via ast-radintervall (B58-metoden): **(1) `overworld_render`**
+  (24 metoder: _draw_map/towns/graves/cobble/chests/lairs/broar, M-karta, minimap +
+  42 visuella konstanter inkl. delade paletten), **(2) `overworld_buildings`** (24
+  metoder: dörrmeny, store, tome-shop, apothecary, upgrade-station + service-
+  tabellerna), **(3) `overworld_overlays`** (19 metoder: character/inventory/skills/
+  system/settings/bestiarium + turnerings-/döds-/victory-skärmarna — B40 S2-S5
+  redigerar nu EN modul). Skalet re-exporterar alla flyttade namn (testers imports
+  intakta); delad chrome bor kvar i skalet och nås via self. **3423 → 1969 rader.**
+  Render-identiskt: före/efter byte-identiska på stad/söm/lya/M-karta per extraktion.
+  **HALT-hanterat mål:** ~1200-radersmålet nås inte av de tre namngivna extraktionerna
+  ensamma — kvarvarande skal = loop/events/actions/HUD/världsklasser (= post (4) "kvar").
+  Vidare slimning (start-meny-modul, Overworld/ZoneConfig-modul) = valfri uppföljning,
+  bäst EFTER B40 S2-S5. 937 tester gröna genom alla tre stegen.
 - **Vad:** `pygame_overworld.py` bär ≥12 ansvarskluster i en klass. Extrahera i steg: (1) kart-/terräng-
   rendering (map overlay, minimap, town/bridge/grave-draw) → egen modul; (2) byggnadsmenyer (tome-shop,
   upgrade-station, store) → egen; (3) overlays (character/inventory/skills/tournaments) → egen (naturligt
