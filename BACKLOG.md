@@ -908,7 +908,18 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** roten fri från worldgen-skript; tools/worldgen/README med regen-flöde + varning;
   inga trasiga referenser; orefererat skript raderat eller motiverat.
 
-#### B62 — Sim-utökning: ekonomi- och loot-flödesmätning  · *strukturell (mätverktyg)* · medel · prio MEDEL
+#### B62 — Sim-utökning: ekonomi- och loot-flödesmätning  · ✅ **KLAR**
+- **KLAR (2026-07-06):** `simulate_economy_band` i `core/simulation.py` (mäter via
+  RIKTIGA spawn-vägen `world.create_encounter` inkl. rare-rolls; deterministisk per
+  seed; delat content → snabb) + CLI `python3 -m rpg_game.tools.simulate_economy`.
+  Rapport per zon-band: win%, guld-in (kill + säljvärde av drops), drop-rate +
+  rarity-fördelning, material-inflöde, rest-tryck (skada/fight → fights/rest →
+  guld-ut/fight) och NETTO guld/fight. 5 tester (identitets-/formel-lås). **N=300-
+  fynd (fighter, seed 42):** netto/fight 11→56→59→108g över banden; **säljvärdet av
+  drops passerar kill-guldet från skogen** (59 vs 26g) — droptabellerna är ekonomins
+  verkliga spak; **rest slutar vara en sink efter cainos** (~19-28g/fight mot 56-108g
+  inflöde). Tuning-underlag till B8 2b/B22: late-sinks bör prisas mot ~50-100g/fight-
+  överskott. Inga balansändringar (mätverktyg).
 - **Vad:** Bygg ut `core/simulation.py` med en ekonomi-harness: simulera N resor/fights per level-band
   och rapportera guld in (drops, sälj) / guld ut (rest, potions, upgrades, resor), drop-rates per
   rarity/tier (N≥200), och material-inflöde (miscellaneous per zon). Encounter-delen förutsätter B55.

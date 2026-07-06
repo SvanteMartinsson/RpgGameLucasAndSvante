@@ -234,3 +234,138 @@ def simulate_matrix(
 def _average(values) -> float:
     values = list(values)
     return sum(values) / len(values) if values else 0.0
+
+
+# --- B62: economy / loot-flow measurement ------------------------------------
+# A MEASURING harness, no balance rules: N seeded wild fights per zone band via
+# the REAL spawn path (world.create_encounter incl. rare rolls), reporting gold
+# in (kills + sell value of drops), drop rates per rarity, material inflow, and
+# the rest-cost pressure (damage taken -> fights per rest -> gold out per fight).
+
+@dataclass(frozen=True)
+class EconomyBandReport:
+    class_id: str
+    place_id: str
+    level: int
+    trials: int
+    win_rate: float
+    average_turns: float
+    average_kill_gold: float        # gold per VICTORIOUS fight from the kill
+    average_sell_value: float       # sell value of drops per victorious fight
+    drop_rate: float                # share of victories that dropped an item
+    rarity_counts: tuple[tuple[str, int], ...]   # sorted (rarity, count)
+    material_counts: tuple[tuple[str, int], ...]  # sorted (item_id, count), consumables only
+    average_damage_taken: float     # per fight (win or lose)
+    player_max_hp: int
+    rest_cost: int                  # a full rest in this band's zone
+    fights_per_rest: float          # max_hp / avg damage taken
+    rest_cost_per_fight: float      # rest_cost / fights_per_rest
+    net_gold_per_fight: float       # kill + sell - rest share (victories weighted by win rate)
+
+
+def simulate_economy_band(
+    class_id: str,
+    place_id: str,
+    *,
+    level: int,
+    trials: int = 200,
+    seed: int = 0,
+    use_skills: bool = True,
+    rest_zone: int = 1,
+    max_turns: int = 50,
+    content=None,
+) -> EconomyBandReport:
+    """Measure the gold/loot flow of `trials` wild fights at `place_id`'s pool
+    with an on-`level` player. Deterministic per seed. Uses the public engine
+    API + the real spawn path; nothing here changes game rules."""
+    from rpg_game.core import store, world
+    from rpg_game.core.data_loader import load_content
+
+    content = content or load_content()
+    category = {"fighter": "melee", "tank": "melee", "rogue": "melee",
+                "cleric": "magic", "mage": "magic", "hunter": "ranged"}[class_id]
+    weapon_id = best_weapon_for(content, category, level)
+
+    wins = 0
+    turns_total = 0
+    kill_gold_total = 0
+    sell_total = 0.0
+    drops = 0
+    rarity_counter: dict[str, int] = {}
+    material_counter: dict[str, int] = {}
+    damage_taken_total = 0
+    player_max_hp = 0
+
+    for index in range(trials):
+        engine = GameEngine(content=content, rng=random.Random(seed + index))
+        engine.start_new_game(f"{class_id.title()} Econ", class_id)
+        if weapon_id is not None:
+            engine.player.owned_weapon_ids = (*engine.player.owned_weapon_ids, weapon_id)
+            engine.player.equipped_weapon_id = weapon_id
+        if level > 1:
+            _level_player(engine, level, _DEFAULT_MAIN.get(class_id, "damage"))
+        engine.player.hp = engine.effective_stat("max_hp")
+        engine.player.mana = engine.effective_stat("max_mana")
+        engine.player.current_place_id = place_id
+        player_max_hp = engine.effective_stat("max_hp")
+        start_hp = engine.player.hp
+
+        enemy = world.create_encounter(engine.player, engine.content, engine.rng)
+        if enemy is None:
+            continue
+        outcome = "timeout"
+        turns = 0
+        final = None
+        while turns < max_turns:
+            turns += 1
+            final = _take_turn(engine, enemy, use_skills)
+            if final.outcome in {"victory", "defeat"}:
+                outcome = final.outcome
+                break
+        turns_total += turns
+        damage_taken_total += max(0, start_hp - engine.player.hp)
+
+        if outcome != "victory" or final is None:
+            continue
+        wins += 1
+        kill_gold_total += final.gold_gained
+        drop = final.loot_drop
+        if drop is not None:
+            drops += 1
+            rarity_counter[drop.rarity] = rarity_counter.get(drop.rarity, 0) + 1
+            if drop.kind == "weapon":
+                sell_total += store.sell_value(content.weapons[drop.item_id].price)
+            elif drop.kind == "gear":
+                sell_total += store.gear_sell_value(content.gear_items[drop.item_id])
+            else:
+                sell_total += store.sell_value(content.items[drop.item_id].price)
+                material_counter[drop.item_id] = material_counter.get(drop.item_id, 0) + 1
+
+    from rpg_game.core import progression
+    win_rate = wins / trials if trials else 0.0
+    average_damage = damage_taken_total / trials if trials else 0.0
+    rest_cost = progression.rest_cost(rest_zone)
+    fights_per_rest = (player_max_hp / average_damage) if average_damage > 0 else float("inf")
+    rest_share = rest_cost / fights_per_rest if fights_per_rest else 0.0
+    avg_kill_gold = kill_gold_total / wins if wins else 0.0
+    avg_sell = sell_total / wins if wins else 0.0
+    net = win_rate * (avg_kill_gold + avg_sell) - rest_share
+    return EconomyBandReport(
+        class_id=class_id,
+        place_id=place_id,
+        level=level,
+        trials=trials,
+        win_rate=win_rate,
+        average_turns=turns_total / trials if trials else 0.0,
+        average_kill_gold=avg_kill_gold,
+        average_sell_value=avg_sell,
+        drop_rate=drops / wins if wins else 0.0,
+        rarity_counts=tuple(sorted(rarity_counter.items())),
+        material_counts=tuple(sorted(material_counter.items())),
+        average_damage_taken=average_damage,
+        player_max_hp=player_max_hp,
+        rest_cost=rest_cost,
+        fights_per_rest=fights_per_rest,
+        rest_cost_per_fight=rest_share,
+        net_gold_per_fight=net,
+    )
