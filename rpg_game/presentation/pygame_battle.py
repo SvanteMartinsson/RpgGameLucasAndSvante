@@ -270,6 +270,15 @@ class BattleApp:
         if _HEALED_RE.match(event):
             self.push_log(event, chatlog.HEAL)
             return
+        # B77: statuses that land on YOU are called out (amber apply, red ticks).
+        match = _AFFECTED_RE.match(event)
+        if match:
+            self.push_log(event, WARN if match.group("who") == self.engine.player.name else TEXT)
+            return
+        match = _TICK_RE.match(event)
+        if match and match.group("who") == self.engine.player.name:
+            self.push_log(event, chatlog.DAMAGE)
+            return
         self.push_log(event)
 
     # -- command dispatch ---------------------------------------------------
@@ -830,6 +839,9 @@ class BattleApp:
 _DEALT_RE = re.compile(
     r"^(?P<head>.+?'s .+? (?:dealt|drained) )(?P<body>.+?)(?P<tail> (?:to|from) (?P<target>.+?)\.)$")
 _HEALED_RE = re.compile(r"^.+? healed \d+ HP\.$")
+# B77: status events — the apply line (now source-tagged by core) and the DoT tick.
+_AFFECTED_RE = re.compile(r"^(?P<who>.+?) is affected by .+\.$")
+_TICK_RE = re.compile(r"^(?P<who>.+?) took \d+ .+? damage from .+\.$")
 
 
 def _article(noun: str) -> str:

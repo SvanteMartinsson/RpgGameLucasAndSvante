@@ -206,7 +206,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 - **Förslag:** LOG_PANEL till vänster (~60 % bredd, full HUD-höjd), VITALS+stats staplade
   ovanför ACTIONS till höger. Render-HALT: skiss/screenshot till Lucas före låsning.
 
-#### B77 — Logga NÄR en status appliceras ("You were poisoned by ...!")
+#### B77 — Logga NÄR en status appliceras  · ✅ **KLAR** (nattbatch: STEG 0 — apply-raden fanns men var källös och statusar kan överleva från förra striden; nu bär core-raden källan "X is affected by poison (Plague Leap)." och battle färgar amber-mot-dig + röda DoT-ticks; 2 tester)
 - **Lucas:** tick-raderna finns ("Hero took 3 poison damage") men själva appliceringen
   syns inte. **STEG 0:** hitta vilka apply-vägar som inte loggar (fiende-on-hit/procs
   misstänks; spelarens apply_status loggar "affected by"). En egen färgad rad per

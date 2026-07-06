@@ -1015,7 +1015,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
                     weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
                 )
             )
-            result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
+            result.events.append(f"{actor_name(effect_target)} is affected by {status_type} ({result.action_name}).")
             return
         existing = find_stackable_status(effect_target, status_type, effect.stat)
         if existing and effect.max_stacks > 1:
@@ -1050,7 +1050,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
             weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
         )
     )
-    result.events.append(f"{actor_name(effect_target)} is affected by {status_type}.")
+    result.events.append(f"{actor_name(effect_target)} is affected by {status_type} ({result.action_name}).")
     return
 
 

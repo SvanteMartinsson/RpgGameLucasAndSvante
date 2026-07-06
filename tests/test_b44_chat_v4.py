@@ -191,3 +191,44 @@ class OverworldTabTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(HAVE_PYGAME, "pygame/pytmx not installed")
+class StatusEventTests(unittest.TestCase):
+    """B77: status applications carry their source and colour when they hit YOU."""
+
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+
+    @classmethod
+    def tearDownClass(cls):
+        pygame.quit()
+
+    def _battle(self):
+        engine = GameEngine(rng=random.Random(0))
+        engine.start_new_game("Hero", "fighter")
+        enemy = engine.content.enemies["boss_rotfang"].create_enemy()
+        return BattleApp(engine=engine, enemy=enemy, standalone=False,
+                         event_log=collections.deque())
+
+    def test_apply_event_names_the_source_action(self):
+        battle = self._battle()
+        result = combat.resolve_action(
+            battle.enemy, battle.engine.player,
+            battle.engine.content.actions["rat_king_plague_leap"],
+            random.Random(0))
+        applies = [e for e in result.events if "is affected by" in e]
+        self.assertTrue(applies, result.events)
+        self.assertIn("(Plague Leap)", applies[0])
+
+    def test_apply_against_you_is_amber_and_tick_is_red(self):
+        battle = self._battle()
+        battle.event_log.clear()
+        battle._push_combat_event("Hero is affected by poison (Plague Leap).")
+        self.assertEqual(battle.event_log[-1][1], (235, 180, 90))   # WARN
+        battle._push_combat_event("Hero took 3 poison damage from poison.")
+        self.assertEqual(battle.event_log[-1][1], chatlog.DAMAGE)
+        battle._push_combat_event("Cave Bear took 3 poison damage from poison.")
+        self.assertNotEqual(battle.event_log[-1][1], chatlog.DAMAGE)
