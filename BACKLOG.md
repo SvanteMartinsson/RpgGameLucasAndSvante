@@ -27,6 +27,13 @@ B43/B38/B11 S2/B41/B25**. Föregående: **B35/B36/B37 S1+2**, **Wisdom A+B**, **
 **B8 S2a**, **B11 S1**, **B40 S1**, unified chatbox, **B24-flaggan**.
 Äldre: B1/B5/B6/B7/B7.1/B9/B14/B15/B19/B20/B39.
 
+**✅ Klart (nattbatch 2026-07-06→07):** **B74** (load-buggen: exakt tile persisteras) ·
+**B75** (rundsekvensering 0,5 s + skip-setting) · **B76** (battle-layout v2) · **B77**
+(status-appliceringar med källa) · **B78** (läsbara skill-texter) · **B79** (bestiarium-
+scroll) · **B80** (fälld boss försvinner) · **B81** (kistor −15 %) · **B82** (chips i
+panelen) · **B47** (zonsöms-blend i produktion, draw-time-overrides) · **B83** (player
+walk/idle-animationer, 8 riktningar). Sviten 953→980.
+
 **✅ Även klart (dagbatch 2026-07-06):** **B44+B16.1** (chatt v4: segmentfärger, röd
 vs-dig-skada, All/Combat-flikar) · **B56** (OverworldApp 3423→1969 rader, tre mixin-
 moduler, render-identiskt) · **B62** (ekonomi-sim + N=300-rapport) · **B48-förarbete**
