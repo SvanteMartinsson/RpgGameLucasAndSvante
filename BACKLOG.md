@@ -72,7 +72,17 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
-- **Cainos-skiss mottagen (Lucas 2026-07-06, avstämd — invänta GO):** tre överlappande
+- **Mörk skog-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** VIT nord x84-147/
+  y2-40 = boar+wolf+bear · BLÅ väst-mitt x83-133/y24-75 = goblin_raider+cave_bear ·
+  GRÖN syd x83-157/y66-99 = thornling+goblin_shaman · GUL öst x122-158/y0-99 =
+  treant+broodmother. Öppet: fallback (=blå?), strangling_vine (zon-rare vs låg vikt i
+  grön+gul — Claude-rek grön+gul), grönas överkant ~y66.
+- **Hollow worg-BESLUT (Lucas 2026-07-06):** blir RARE i heath (låg vikt i B48-modellen;
+  cursed_wight behåller rare_encounter-slotten) + BÅDA kompensationerna för holy-kedjan:
+  gravewarden_blade läggs på cursed_wights tabell OCH i chest_heath_4 (tier-5-kistan).
+  Motiv: melee-spelarens Barrow King-förberedelse får inte bli ~3× långsammare.
+  Byggs i B48-batchen.
+- **Cainos-skiss LÅST (Lucas 2026-07-06):** tre överlappande
   rekt-områden ritade på ZONE_MAP: GRÖN=stag (västremsa x0-30/y0-72 + hela sydbandet
   y73-99), GUL=undead (nordficka x31-52/y0-28 + östkolumn x52-82/y0-97), BLÅ=generalister
   dog/rat/spider/goblin (mittband x3-80/y30-72 runt START). **Modellbeslut ur skissen:
