@@ -2264,50 +2264,12 @@ class OverworldApp:
         return pygame.Rect(panel.x + 20, panel.y + 56, panel.width - 40, panel.height - 126)
 
     def _fit_text(self, text: str, max_width: int, font: pygame.font.Font | None = None) -> str:
-        font = font or self.font
-        if max_width <= 0 or font.size(text)[0] <= max_width:
-            return text
-        ellipsis = "..."
-        if font.size(ellipsis)[0] > max_width:
-            return ""
-        fitted = text
-        while fitted and font.size(f"{fitted}{ellipsis}")[0] > max_width:
-            fitted = fitted[:-1]
-        return f"{fitted.rstrip()}{ellipsis}"
+        # B57: delegates to THE shared ellipsis-fit in ui.
+        return ui.fit(text, font or self.font, max_width)
 
     def _wrapped_lines_pixels(self, text: str, max_width: int, font: pygame.font.Font | None = None) -> list[str]:
-        font = font or self.font
-        if max_width <= 0:
-            return [""]
-        if not text:
-            return [""]
-        words = text.split()
-        lines: list[str] = []
-        current = ""
-        for word in words:
-            candidate = word if not current else f"{current} {word}"
-            if font.size(candidate)[0] <= max_width:
-                current = candidate
-                continue
-            if current:
-                lines.append(current)
-                current = ""
-            if font.size(word)[0] <= max_width:
-                current = word
-            else:
-                chunk = ""
-                for char in word:
-                    candidate = f"{chunk}{char}"
-                    if font.size(candidate)[0] <= max_width:
-                        chunk = candidate
-                    else:
-                        if chunk:
-                            lines.append(chunk)
-                        chunk = char
-                current = chunk
-        if current:
-            lines.append(current)
-        return lines or [""]
+        # B57: delegates to THE shared wrap in ui.
+        return ui.wrap(text, font or self.font, max_width)
 
     def _draw_store_screen(self) -> None:
         title = T.STORE_TITLES.get(self.store_category, T.SCREEN_TITLES["store"])

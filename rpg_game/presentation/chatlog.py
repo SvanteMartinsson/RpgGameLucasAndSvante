@@ -58,33 +58,10 @@ def push(event_log, message: str, color=TEXT) -> bool:
 
 
 def wrap_lines(text: str, max_width: int, font: "pygame.font.Font") -> list[str]:
-    """Word-wrap text to max_width px, breaking over-long words by character."""
-    if max_width <= 0 or not text:
-        return [text or ""]
-    lines: list[str] = []
-    current = ""
-    for word in text.split():
-        candidate = word if not current else f"{current} {word}"
-        if font.size(candidate)[0] <= max_width:
-            current = candidate
-            continue
-        if current:
-            lines.append(current)
-            current = ""
-        if font.size(word)[0] <= max_width:
-            current = word
-        else:                                   # break a word too long for the box
-            chunk = ""
-            for char in word:
-                if font.size(f"{chunk}{char}")[0] <= max_width:
-                    chunk += char
-                else:
-                    lines.append(chunk)
-                    chunk = char
-            current = chunk
-    if current:
-        lines.append(current)
-    return lines or [""]
+    """Word-wrap text to max_width px. B57: delegates to THE shared wrap in ui
+    (kept as a thin adapter for this module's argument order)."""
+    from rpg_game.presentation import ui
+    return ui.wrap(text, font, max_width)
 
 
 def visual_lines(event_log, width: int, font: "pygame.font.Font") -> list[tuple[str, tuple, bool]]:

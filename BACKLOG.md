@@ -779,7 +779,13 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** pygame_overworld.py < ~1200 rader; extraherade moduler med tydliga gränssnitt;
   render-identiskt (referens-screenshots före/efter); sviten grön.
 
-#### B57 — En text-wrap: konsolidera tre implementationer till ui  · *strukturell* · liten · prio MEDEL
+#### B57 — En text-wrap: konsolidera tre implementationer till ui  · ✅ **KLAR**
+- **KLAR:** `ui.wrap` (word-wrap + teckenbrytning, aldrig tomma fragment) + `ui.fit` (ellipsis)
+  är DEN enda implementationen; `chatlog.wrap_lines` och overworldens `_wrapped_lines_pixels`/
+  `_fit_text` är tunna delegater (samma signaturer — alla call-sites + tester orörda). STEG 0-diff:
+  kärnalgoritmen var identisk i alla tre; supersetet tog _wrapped_lines_pixels tomma-fragment-guard
+  (skillnad bara i aldrig-förekommande enteckens-bredd-fall). 7 lås-tester (wrap/char-break/tomt/
+  ellipsis/delegering). 836 gröna.
 - **Vad:** `ui._wrap`, `chatlog.wrap_lines` och `pygame_overworld._wrapped_lines_pixels`/`_fit_text` är
   tre parallella wrap/trunkerings-implementationer. Gör `ui`-versionen till den enda (superset:
   word-wrap + teckenbrytning av överlånga ord + ellipsis-fit) och låt chatlog + overworld använda den.

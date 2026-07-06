@@ -107,8 +107,10 @@ class HoverTracker:
             self.active = payload                # dwell satisfied -> show it
 
 
-def _wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
-    """Greedy word-wrap to max_width px (character-breaks an over-long word)."""
+def wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
+    """B57: THE text wrap — greedy word-wrap to max_width px, character-breaking
+    an over-long word. The single implementation behind chatlog.wrap_lines and
+    the overworld's _wrapped_lines_pixels, so wrap-edge bugs get fixed once."""
     if max_width <= 0 or not text:
         return [text or ""]
     lines: list = []
@@ -128,12 +130,30 @@ def _wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
                 if font.size(f"{chunk}{ch}")[0] <= max_width:
                     chunk += ch
                 else:
-                    lines.append(chunk)
+                    if chunk:                     # never emit an empty fragment
+                        lines.append(chunk)
                     chunk = ch
             current = chunk
     if current:
         lines.append(current)
     return lines or [""]
+
+
+_wrap = wrap  # internal alias (draw_tooltip et al.)
+
+
+def fit(text: str, font: "pygame.font.Font", max_width: int) -> str:
+    """B57: THE ellipsis-fit — return text unchanged if it fits, else truncate
+    with a trailing "..." (empty when not even the ellipsis fits)."""
+    if max_width <= 0 or font.size(text)[0] <= max_width:
+        return text
+    ellipsis = "..."
+    if font.size(ellipsis)[0] > max_width:
+        return ""
+    fitted = text
+    while fitted and font.size(f"{fitted}{ellipsis}")[0] > max_width:
+        fitted = fitted[:-1]
+    return f"{fitted.rstrip()}{ellipsis}"
 
 
 def draw_tooltip(screen, tooltip: "Tooltip", anchor, title_font, body_font,
