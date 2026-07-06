@@ -141,9 +141,12 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   **stegvis** (kö, ~400–600 ms per aktion; logg-rader + B72-FX triggas per steg i stället
   för allt på en gång). Knapparna disabled tills kön är tom; klick/Space snabbspolar.
   Kärnan orörd — resolutionerna ligger redan per aktör i initiativordning.
-- **Öppet val (Lucas):** fast delay (rek.) eller klicka-för-nästa-steg?
-- **Acceptans:** sekventiell uppspelning; input blockerad under rundan; skipp funkar;
-  FX/logg synkade per steg; tester för kö-tömning + input-lås.
+- **BESLUT (Lucas 2026-07-06):** **0,5 s per aktion**; "klicka sig förbi" blir en
+  **setting (B70-raden), default AV** — utan settingen är rundan olåst först när
+  uppspelningen är klar.
+- **Acceptans:** sekventiell uppspelning à 0,5 s; input blockerad under rundan;
+  klick-skipp fungerar ENDAST med settingen på; FX/logg synkade per steg; tester för
+  kö-tömning + input-lås + settingen.
 
 #### B76 — Battle-layout v2: vitals till höger, längre combatlogg
 - **Lucas (skärmdump):** flytta HP/Mana/XP + stats + vapen till HÖGER sida ovanför
@@ -174,11 +177,13 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   många man INTE sett. **Förslag:** hjul-/piltangent-scroll i rostern (markören driver
   visningsfönstret som i shop-listor) + "Sedda X/Y"-rad i panelhuvudet.
 
-#### B80 — Boss-lya efter seger: vad ska stå kvar?  ⭐ Lucas-beslut
-- **Lucas:** grå husk "ser fattigt ut". Alternativ: **(a)** bossen försvinner helt +
-  tilen avblockeras (renast; risk: platsen tappar historia), **(b)** kvarleva-prop
-  (benhög/trofé ur props-arken, liten och stilren), **(c)** dagens mörka siluett (utgår).
-- **Claude-rek:** (b) om props-arken har en passande sprite (STEG 0 kollar), annars (a).
+#### B80 — Boss-lya efter seger: vad ska stå kvar?  · 🟢 **BESLUTAT (a)** — invänta GO
+- **BESLUT (Lucas 2026-07-06):** "har inga bra assets, vi tar bara bort den helt sålänge"
+  → **(a) fälld boss försvinner helt**. Implementationsnot: lya-tilen måste AVBLOCKERAS
+  efter seger (annars osynlig vägg) — blocked-settet justeras vid seger + vid load för
+  redan fällda; E på tom tile gör inget ("lair lies silent"-raden utgår). Husk-koden tas
+  bort. Kan återbesökas med prop-kvarleva när bättre assets finns.
+- ~~Alternativ: (b) kvarleva-prop, (c) mörk siluett.~~
 
 #### B81 — Kistor: minska sprite-storleken 15 %
 - Ren render-skalning (target-höjd ×0.85 i chest-ritningen); kollision/E-interaktion
@@ -685,7 +690,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 #### B45 — Minisjö (5–8 tiles) att gå runt  · *nytt (vatten-/regenerate-lagret)*
 - **Vad:** En liten insjö någonstans som landmärke/omväg (Lucas-önskad). **Not:** ligger i vatten-lagret (regenerate_overworld), inte prop-scattern → egen slice; flood-fill-verifieras. **Acceptans:** sjö placerad, gångbar runtom, reachability grön, test.
 
-#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · 🟡 **PoC KLAR — Lucas beslutar på bild**
+#### B47 — Zonfärgs-övergångar (palett)  ⭐ designbärande (art)  · 🟢 **BESLUTAT: bygg blenden** (Lucas 2026-07-06: "Jag gillar din PoC, vi kör på detta") — production-slice vid GO (load-time syntetiska gids, `BLEND_BAND=4`, + hash-jitter mot kolumnbandning; render-verifieras mot PoC-bilderna)
 - **PoC (2026-07-06):** `docs/b47_poc/` — före/efter för cainos↔skog, skog↔mire och
   heath-sömmen. Teknik: **alpha-crossfade av ground-tiles** i ett ±4-tiles-band
   (8 alfasteg; förblandade tile-bilder som syntetiska gids byggda EN gång vid
