@@ -13,7 +13,9 @@ pip install -r requirements.txt          # pygame + pytmx (helst i en venv)
 python3 -m rpg_game.presentation.pygame_overworld
 ```
 
-Eller den beroendefria **terminal-versionen**:
+Eller det beroendefria **terminal-läget** (B60: ett *debug-/röktest-läge* för
+core, inte ett fullt spel-läge — feature-fryst; saknar bl.a. upgrade-stationer,
+skill-tomes, karta/minimap och overworld-promenaden):
 
 ```sh
 python3 -m rpg_game

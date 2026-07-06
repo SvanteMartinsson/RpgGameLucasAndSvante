@@ -840,7 +840,10 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** round-trip-test över alla persisterade fält; invariant-check vid load med tydligt fel;
   nytt-fält-utan-serialisering får testet att faila; gammal save laddar via migrations-tabellen.
 
-#### B60 — Terminal-lagrets öde: supportat läge eller debug-verktyg (beslut)  · *strukturell (beslut)* · liten · prio LÅG
+#### B60 — Terminal-lagrets öde  · ✅ **BESLUTAT: (a) debug-/röktest-läge** (Lucas-GO på våg 1-planen)
+- **Beslut:** alternativ (a) — terminal.py deklareras som **debug-/röktest-läge** med uttalad
+  feature-frysning (nya features byggs i Pygame, porteras ej; terminal-hål = by design). Dokumenterat
+  i CLAUDE.md (Status) + README (körnings-avsnittet, med exempel på vad läget saknar). Ingen kod ändrad.
 - **Vad:** `terminal.py` (809 rader) är `__main__`-entrypoint och testad, men har driftat: saknar
   upgrade-stationer, tome-shop, minimap m.m. Besluta: (a) deklarera det som debug-/smoke-läge med
   uttalad feature-frysning (dokumentera vad det INTE stödjer i README/CLAUDE.md), eller (b) lyfta det

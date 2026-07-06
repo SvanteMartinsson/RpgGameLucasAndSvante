@@ -14,6 +14,12 @@ Python-porten är spelbar i terminalen och har tester för strid, klasser,
 talanger, world loading, loot, vapenkrav, progression, enemy AI, Identify,
 save/load, turneringar, presentationssnapshots och tuning-simulering.
 
+**Terminal-lägets scope (B60-beslut):** `terminal.py` är ett **debug-/röktest-läge**
+för core med uttalad feature-frysning — nya features byggs i Pygame-lagret och
+porteras INTE till terminalen (den saknar medvetet upgrade-stationer, skill-tomes,
+karta/minimap m.m.). Ett terminal-hål är by design, inte en bugg. Läget behålls
+som billig, testbärande core-rök via `python3 -m rpg_game`.
+
 ## Körning
 
 Starta spelet:
