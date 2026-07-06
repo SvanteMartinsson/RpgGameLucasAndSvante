@@ -72,13 +72,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
-- **Cursed mire-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** VIT topp
-  x159-239/y0-18 + östkust x226-239/y0-96 = mudcrab · GUL HELA zonen = bog_leech
-  (baslager = fallback) · RÖD mitt-nord x172-222/y2-71 = bog_wraith+witchlight ·
-  GRÖN öst-syd x187-239/y40-97 = tar_beast · BLÅ hag-kärr x178-204/y72-89 = bog_hag.
-  **Öppet:** (1) mire_lurker + rotting_fiend saknas i skissen — utgår eller glömda?
-  (rotting_fiend kan tematiskt flytta till heath); (2) hag-vikt: Claude-rek måttlig
-  vikt inom lilla fickan (istf zon-rare 6 %), rare-slotten lämnas tom.
+- **Cursed mire-skiss LÅST (Lucas 2026-07-06):** VIT topp x159-239/y0-18 + östkust
+  x226-239/y0-96 = mudcrab · GUL HELA zonen = bog_leech (baslager = fallback) ·
+  RÖD mitt-nord x172-222/y2-71 = bog_wraith+witchlight · GRÖN öst-syd x187-239/y40-97 =
+  tar_beast **+ mire_lurker** (Claude-beslut på delegation: tunga fysiska träskbrutar
+  ihop, sydost = "tunga träsket" mot Yagra) · BLÅ hag-ficka x178-204/y72-89 = bog_hag
+  med MÅTTLIG vikt (Lucas-OK; sällsynthet via liten yta, zon-rare-slotten lämnas tom).
+  **rotting_fiend flyttar till grave heath** (undead ≠ swamp; Lucas placerar i heath-
+  skissen, annars heaths allmänna undead-lager).
 - **Mörk skog-skiss LÅST (Lucas 2026-07-06):** VIT nord x84-147/
   y2-40 = boar+wolf+bear · BLÅ väst-mitt x83-133/y24-75 = goblin_raider+cave_bear ·
   GRÖN syd x83-157/y66-99 = thornling+goblin_shaman · GUL öst x122-158/y0-99 =
