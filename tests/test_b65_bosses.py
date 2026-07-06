@@ -295,10 +295,6 @@ class BossOverworldTests(unittest.TestCase):
         self.assertEqual(T.appears(_enemy_article(enemy), enemy.name),
                          "Rotfang, the Rat King appears!")
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_felled_boss_vanishes_and_its_tile_unblocks(self):
         """B80: no husk — the lair empties, unblocks, and E does nothing."""
         engine = self.app.engine
@@ -314,3 +310,7 @@ if __name__ == "__main__":
         self.assertFalse(self.app._try_challenge_boss())
         engine.player.defeated_boss_ids.discard("rotfang")   # restore shared app state
         self.app._sync_lairs()
+
+
+if __name__ == "__main__":
+    unittest.main()
