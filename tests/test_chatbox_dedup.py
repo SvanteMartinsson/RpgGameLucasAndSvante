@@ -64,23 +64,29 @@ class ChatboxDedupTest(unittest.TestCase):
         drop = LootDrop(item_id="hp_potion", name="Healing Potion", kind="consumable",
                         tier=1, rarity="common")
         battle._consume_result(self._victory_result(enemy, drop))
-        texts = [t for t, _c in log]
+        texts = [chatlog.plain(t) for t, _c in log]
 
-        loot = [(t, c) for t, c in log if t.startswith("Loot:")]
+        # B44: the loot row is a Segments line — only the item NAME carries the
+        # rarity colour, the "Loot: " prefix stays plain text.
+        loot = [t for t, _c in log if chatlog.plain(t).startswith("Loot:")]
         self.assertEqual(len(loot), 1, texts)                       # exactly one Loot line
-        loot_text, loot_color = loot[0]
-        self.assertNotIn("[", loot_text)                            # no "[common]" text
-        self.assertEqual(loot_color, chatlog.rarity_color("common"))  # rarity shown by colour
+        segments = loot[0]
+        self.assertIsInstance(segments, chatlog.Segments)
+        self.assertNotIn("[", segments.text)                        # no "[common]" text
+        name_segment = dict(segments)["Healing Potion"]
+        self.assertEqual(name_segment, chatlog.rarity_color("common"))
         self.assertFalse([t for t in texts if "dropped:" in t], texts)  # verbose line gone
 
     def test_battle_end_is_not_doubled(self):
         battle, enemy, log = self._victory_battle()
         battle._consume_result(self._victory_result(enemy, drop=None))
-        texts = [t for t, _c in log]
+        texts = [chatlog.plain(t) for t, _c in log]
 
         self.assertEqual(texts.count("Victory!"), 1, texts)
-        self.assertEqual(texts.count("+5 XP"), 1, texts)
-        self.assertEqual(texts.count("+7 gold"), 1, texts)
+        # B44: XP and gold share ONE row (each part its own colour), still no dups.
+        reward_rows = [t for t in texts if "+5 XP" in t]
+        self.assertEqual(len(reward_rows), 1, texts)
+        self.assertIn("+7 gold", reward_rows[0])
         # Core narration is suppressed in the log (still returned by the engine).
         self.assertNotIn(f"{enemy.name} was defeated.", texts)
         self.assertNotIn("Gained 5 XP and 7 gold.", texts)

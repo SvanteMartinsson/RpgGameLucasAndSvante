@@ -93,6 +93,7 @@ class ChestDataTests(unittest.TestCase):
 
 try:
     import pygame
+    from rpg_game.presentation import chatlog
     from rpg_game.presentation.pygame_overworld import OverworldApp
     HAVE_PYGAME = True
 except Exception:  # pragma: no cover
@@ -126,7 +127,7 @@ class ChestUITests(unittest.TestCase):
         self.app.world.set_tile(29, 40)          # beside chest_cainos_1 (30,40)
         self.assertTrue(self.app._try_open_chest())
         self.assertIn("chest_cainos_1", self.app.engine.player.opened_chest_ids)
-        texts = [text for text, _ in self.app.event_log]
+        texts = [chatlog.plain(text) for text, _ in self.app.event_log]
         self.assertTrue(any("open the chest" in t for t in texts))
         self.assertTrue(any(t.startswith("+") and "gold" in t for t in texts))
 

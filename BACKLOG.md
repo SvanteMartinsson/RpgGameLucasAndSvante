@@ -386,7 +386,13 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   zoomade världen) → ett `_draw_log` matat av en **deque** som ackumulerar events.
   Liten, ren feature ovanpå befintlig HUD-stil. Enkel batch.
 
-#### B16.1 — Combat-logg i overworld-loggen + flikar (ALL/Combat)  · *del av B16*
+#### B16.1 — Combat-logg i overworld-loggen + flikar (ALL/Combat)  · ✅ **KLAR (ihop med B44)**
+- **KLAR (2026-07-06):** alla battle-rader kanal-taggas `combat` (delade dequen gör
+  att de redan överlevde till overworld); **[All][Combat]-flikchips** på loggpanelens
+  överkant filtrerar (klickbara endast i free-walk, read-only under overlays — samma
+  regel som scroll; fikbyte nollar scrollen). **Playtest-notisen verifierad redan
+  fixad:** heal-raden är i dag "Undead Priest healed 18 HP." — rätt subjekt och
+  belopp (lagades på vägen av B58-handler-arbetet); ingen ändring behövdes.
 - Combat-rader överlever battle→overworld; flikar filtrerar. **Playtest-notis:** städa
   heal-loggningen — `priest_heal` loggar spelarens HP som "target", förvirrande; visa
   vem som healas och hur mycket.
@@ -602,7 +608,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
 ### Chatt/HUD (nytt)
 
-#### B44 — Chatt-logg v4-polish: segment-färg + per-träff skada  · *nytt (uppskjutet från chatt-unifieringen)*
+#### B44 — Chatt-logg v4-polish: segment-färg + per-träff skada  · ✅ **KLAR (ihop med B16.1)** · render-verifierad headless
+- **KLAR (2026-07-06, Lucas-GO):** chatlog v4 — payload kan vara `Segments`
+  ((text, färg), …) med segment-medveten word-wrap; `ChannelText` (str-subklass)
+  taggar rader med kanal utan att bryta någon konsument. **Synligt:** skada MOT
+  spelaren renderas röd (colourizer mot core-narrationens kanoniska form — matchar
+  den inte passerar raden oförändrad), heal-rader gröna, victory ger EN rad
+  "+XP +guld" i varsin färg, loot-raden färgar BARA itemnamnet (rarity), kist-rader
+  slår ihop guld+loot på en rad. Beslut: core-events förblir strängar (ingen
+  parallell result-väg); färg åker på formen, test-låst. 13 nya tester.
 - **Vad:** Två uppskjutna förbättringar i den unifierade loggen: (a) **segment-färg per rad** (item-namn i rarity-färg + guld-belopp i amber på samma rad, inte hela raden en färg); (b) **per-träff skada i rött** (skada mot spelaren).
 - **Not:** Båda kräver en rikare log-modell: (a) rader som färgade **segment** i stället för en färg/rad; (b) **strukturerade combat-events** (skadetyp/mål) i stället för färdig-formaterad text. **Acceptans:** loot-rad visar färgat itemnamn + amber guld; skada-mot-spelare renderas röd; tester för segment-rendering + event→färg.
 

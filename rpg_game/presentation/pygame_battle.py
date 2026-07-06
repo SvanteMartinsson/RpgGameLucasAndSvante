@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import collections
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 
@@ -250,7 +251,26 @@ class BattleApp:
     # -- logging ------------------------------------------------------------
 
     def push_log(self, text: str, color: tuple[int, int, int] = TEXT) -> None:
-        chatlog.push(self.event_log, text, color)
+        # B16.1: every battle line is channel-tagged so the overworld log can filter.
+        chatlog.push(self.event_log, text, color, channel=chatlog.CHANNEL_COMBAT)
+
+    def push_rich(self, parts, color: tuple[int, int, int] = TEXT) -> None:
+        chatlog.push_rich(self.event_log, parts, color, channel=chatlog.CHANNEL_COMBAT)
+
+    def _push_combat_event(self, event: str) -> None:
+        """B44: colourize core narration by its canonical shape — the damage
+        numbers turn red when YOU are the target, heal lines go green; anything
+        unrecognized passes through unchanged."""
+        match = _DEALT_RE.match(event)
+        if match and match.group("target") == self.engine.player.name:
+            self.push_rich([(match.group("head"), TEXT),
+                            (match.group("body"), chatlog.DAMAGE),
+                            (match.group("tail"), TEXT)])
+            return
+        if _HEALED_RE.match(event):
+            self.push_log(event, chatlog.HEAL)
+            return
+        self.push_log(event)
 
     # -- command dispatch ---------------------------------------------------
 
@@ -297,12 +317,15 @@ class BattleApp:
                 continue
             if result.loot_drop is not None and "dropped:" in event:
                 continue   # shown as a rarity-coloured loot line instead of "[rare]" text
-            self.push_log(event)
+            self._push_combat_event(event)   # B44: red vs-you damage, green heals
         if result.enemy_reveal is not None:
             for line in _reveal_lines(result.enemy_reveal):
                 self.push_log(line, ACCENT)
         if result.loot_drop is not None:
-            self.push_log(_loot_line(result.loot_drop), chatlog.rarity_color(result.loot_drop.rarity))
+            # B44: only the item NAME carries the rarity colour, not the whole row.
+            drop = result.loot_drop
+            name = getattr(drop, "item_name", None) or getattr(drop, "name", "loot")
+            self.push_rich([("Loot: ", TEXT), (name, chatlog.rarity_color(drop.rarity))])
 
         self._spawn_combat_fx(result)   # B72: floaters / blink / shake / hit-pause
 
@@ -321,10 +344,16 @@ class BattleApp:
             return
         if result.outcome == "victory":
             self.push_log(T.VICTORY_LOG, chatlog.HEAL)
+            # B44: XP and gold share ONE row, each part in its own colour.
+            reward_parts = []
             if result.xp_gained:
-                self.push_log(T.xp_gain(result.xp_gained), chatlog.XP)
+                reward_parts.append((T.xp_gain(result.xp_gained), chatlog.XP))
             if result.gold_gained:
-                self.push_log(T.gold_gain(result.gold_gained), chatlog.GOLD)
+                if reward_parts:
+                    reward_parts.append(("   ", TEXT))
+                reward_parts.append((T.gold_gain(result.gold_gained), chatlog.GOLD))
+            if reward_parts:
+                self.push_rich(reward_parts)
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning
@@ -796,6 +825,13 @@ class BattleApp:
 # --- formatting helpers ----------------------------------------------------
 
 
+# B44: the canonical core narration shapes (combat.format_damage_event and the
+# heal handlers). Colour rides on the SHAPE — unmatched lines pass through plain.
+_DEALT_RE = re.compile(
+    r"^(?P<head>.+?'s .+? (?:dealt|drained) )(?P<body>.+?)(?P<tail> (?:to|from) (?P<target>.+?)\.)$")
+_HEALED_RE = re.compile(r"^.+? healed \d+ HP\.$")
+
+
 def _article(noun: str) -> str:
     return "an" if noun[:1].lower() in "aeiou" else "a"
 
@@ -837,10 +873,6 @@ def enemy_nameplate(enemy) -> str:
     return f"{enemy.name}   Lv {enemy.level}"
 
 
-def _loot_line(loot):
-    # Rarity is conveyed by the line's COLOUR (chatlog), so no "[rare]" text here.
-    name = getattr(loot, "item_name", None) or getattr(loot, "name", "loot")
-    return f"Loot: {name}"
 
 
 # --- entry point -----------------------------------------------------------

@@ -683,6 +683,7 @@ class OverworldApp:
         self.event_log: "collections.deque" = collections.deque(maxlen=LOG_HISTORY_MAX)
         self.log_visible = max(LOG_VISIBLE_MIN, min(int(self._settings.get("log_visible", LOG_VISIBLE_DEFAULT)), LOG_VISIBLE_MAX))
         self.log_scroll = 0      # lines scrolled up from the bottom (0 = newest visible)
+        self.log_tab = "all"     # B16.1: "all" | "combat" — chatbox channel filter
         self.running = True
         self.exit_reason = ""
         self.playtest_logger = PlaytestLogger()
@@ -2021,10 +2022,12 @@ class OverworldApp:
                 self.push_log(result.message, TEXT_DIM)
                 return True
             self.push_log(result.message, TEXT)
-            self.push_log(f"+{result.gold} gold", chatlog.GOLD)
+            # B44: gold and the rarity-coloured item name share ONE row.
+            parts = [(f"+{result.gold} gold", chatlog.GOLD)]
             if result.drop is not None:
-                self.push_log(f"Loot: {result.drop.name}",
-                              chatlog.rarity_color(result.drop.rarity))
+                parts.append(("   Loot: ", TEXT))
+                parts.append((result.drop.name, chatlog.rarity_color(result.drop.rarity)))
+            chatlog.push_rich(self.event_log, parts)
             return True
         return False
 
@@ -3098,14 +3101,39 @@ class OverworldApp:
         width = self._log_rect().width - 8 * 2  # both-side padding
         return chatlog.visual_lines(self.event_log, width, self.font_sm)
 
+    def _log_channel(self) -> str | None:
+        """B16.1: the active tab's channel filter (None = the ALL tab)."""
+        return None if self.log_tab == "all" else chatlog.CHANNEL_COMBAT
+
+    def _set_log_tab(self, tab: str) -> None:
+        self.log_tab = tab
+        self.log_scroll = 0   # a new filter = a new bottom; snap to newest
+
     def _draw_log(self) -> None:
         """The single on-screen chatbox (shared with battle): semi-transparent
         panel, bottom-left, showing the visible lines ending at the scroll
-        position."""
+        position. B16.1: [All][Combat] tab chips sit on the panel's top edge."""
+        rect = self._log_rect()
         self.log_scroll = chatlog.draw(
-            self.screen, self._log_rect(), self.event_log, self.font_sm,
+            self.screen, rect, self.event_log, self.font_sm,
             visible=self._log_visible_now(), scroll=self.log_scroll,
-            interactive=self._log_interactive(), edge=PANEL_EDGE, accent=ACCENT)
+            interactive=self._log_interactive(), edge=PANEL_EDGE, accent=ACCENT,
+            channel=self._log_channel())
+        chip_h = self.font_sm.get_height() + 6
+        chip_x = rect.x
+        for tab_id, tab_label in (("all", "All"), ("combat", "Combat")):
+            width = self.font_sm.size(tab_label)[0] + 16
+            chip = pygame.Rect(chip_x, rect.top - chip_h + 1, width, chip_h)
+            active = self.log_tab == tab_id
+            pygame.draw.rect(self.screen, (36, 42, 58) if active else (22, 26, 36),
+                             chip, border_top_left_radius=4, border_top_right_radius=4)
+            pygame.draw.rect(self.screen, PANEL_EDGE, chip, width=1,
+                             border_top_left_radius=4, border_top_right_radius=4)
+            self.screen.blit(self.font_sm.render(
+                tab_label, True, TEXT if active else TEXT_DIM), (chip.x + 8, chip.y + 3))
+            if self._log_interactive():   # read-only under menus/overlays (like scroll)
+                self._add_button(chip, "", (lambda t=tab_id: self._set_log_tab(t)), True)
+            chip_x += width + 3
 
     # -- main loop ----------------------------------------------------------
 
