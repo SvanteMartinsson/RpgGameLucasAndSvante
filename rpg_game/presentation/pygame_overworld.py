@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat, progression
+from rpg_game.core import combat, encounters, progression
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import ui_text as T
@@ -181,13 +181,13 @@ WATER_BLOCK_THRESHOLD = 0.6
 # across the window (Platinum-style). Integer zoom only -> crisp pixel art. Integer
 # steps mean the actual tiles-in-width jumps in steps (12 here -> ~12-13 wide).
 ZOOM_TARGET_TILES_W = 12
-# Encounter heatmap (B12): wilderness gets safer near towns and along roads. The
-# per-step rate is the zone base scaled by distance to the nearest town — zero on
-# a town and its immediate ring, ramping to full a few tiles out — and reduced on
-# cobble path tiles (roads are travelled, less ambush). All tunable.
-ENCOUNTER_SAFE_RADIUS = 1     # town + adjacent tiles: no encounters
-ENCOUNTER_RAMP_TILES = 3      # tiles over which the rate ramps from 0 to full
-ENCOUNTER_PATH_FACTOR = 0.6   # -40% on a road/path tile
+# Encounter heatmap (B12): wilderness gets safer near towns and along roads.
+# B55: the RULE lives in core/encounters.py (engine logic, simulable); the shell
+# builds the tile geometry (EncounterMap) once and asks per step. Aliased here
+# so there is ONE source of truth for the numbers.
+ENCOUNTER_SAFE_RADIUS = encounters.SAFE_RADIUS
+ENCOUNTER_RAMP_TILES = encounters.RAMP_TILES
+ENCOUNTER_PATH_FACTOR = encounters.PATH_FACTOR
 # B32: a hub is a whole CLUSTER, not one tile. Encounters are zero on every cluster
 # tile (footprints, plaza, doors, cobble) plus this many tiles of margin around it,
 # so you can never be ambushed on a town's own streets or its doorstep.
@@ -578,6 +578,14 @@ class OverworldApp:
                 for dx in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
                     for dy in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
                         self._safe_tiles.add((cx + dx, cy + dy))
+        # B55: freeze the tile geometry the CORE pacing rule reads (towns, the
+        # B32 no-encounter zone, road tiles). The base rate stays a live attribute
+        # (self.encounter_rate) so runtime tuning and tests keep working.
+        self._encounter_map = encounters.EncounterMap(
+            town_tiles=frozenset(self.world.town_tiles),
+            safe_tiles=frozenset(self._safe_tiles),
+            path_tiles=frozenset(self._build_path_tiles()),
+        )
         self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
@@ -752,43 +760,41 @@ class OverworldApp:
     def maybe_encounter(self):
         """Roll a per-step wild encounter. Returns an enemy or None.
 
-        Only in wilderness; uses the engine's seeded RNG and its existing
-        encounter generation for the current region (set by sync_location).
+        B55: the pacing RULE (rate heatmap + the roll) lives in core/encounters;
+        this shell provides the geometry and the engine's seeded RNG. In town no
+        rng draw is consumed — stream-identical to the pre-B55 behaviour.
         """
         if self.world.town_place_id() is not None:
-            return None
+            return None      # in town: no rng draw (stream-identical to pre-B55)
         if self.engine.rng.random() < self.encounter_rate_at(self.world.current_tile):
             return self.engine.create_encounter()
         return None
 
-    def _nearest_town_dist(self, tile) -> int:
-        tx, ty = tile
-        return min((max(abs(tx - x), abs(ty - y)) for (x, y) in self.world.town_tiles),
-                   default=99)
-
-    def _on_path(self, tile) -> bool:
-        x, y = tile
+    def _build_path_tiles(self) -> set:
+        """Scan the ground layer ONCE for road/cobble tiles (the autotile road
+        indices of the grass sheets) — the core pacing rule reads a plain set."""
         try:
             ground = self.world.tmx.get_layer_by_name("ground")
         except (ValueError, KeyError):
-            return False
-        gid = ground.data[y][x]
-        return any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387))
+            return set()
+        tiles = set()
+        for y, row in enumerate(ground.data):
+            for x, gid in enumerate(row):
+                if any(fg <= gid < fg + 64 and (gid - fg) >= 32 for fg in (3, 387)):
+                    tiles.add((x, y))
+        return tiles
+
+    def _nearest_town_dist(self, tile) -> int:
+        return encounters.nearest_town_dist(self._encounter_map, tile)
+
+    def _on_path(self, tile) -> bool:
+        return tile in self._encounter_map.path_tiles
 
     def encounter_rate_at(self, tile) -> float:
-        """Per-step encounter chance at a tile: 0 anywhere on a town cluster + its
-        margin (B32) or next to any town anchor, ramping to the zone base a few
-        tiles out, reduced on roads. (B12 heatmap.)"""
-        if tile in self._safe_tiles:
-            return 0.0
-        dist = self._nearest_town_dist(tile)
-        if dist <= ENCOUNTER_SAFE_RADIUS:
-            return 0.0
-        ramp = min(1.0, (dist - ENCOUNTER_SAFE_RADIUS) / ENCOUNTER_RAMP_TILES)
-        rate = self.encounter_rate * ramp
-        if self._on_path(tile):
-            rate *= ENCOUNTER_PATH_FACTOR
-        return rate
+        """Per-step encounter chance at a tile (B12 heatmap; RULE in core). The
+        road check routes through self._on_path so that seam stays mockable."""
+        return encounters.encounter_rate_at(self._encounter_map, tile,
+                                            self.encounter_rate, on_path=self._on_path(tile))
 
     def start_battle(self, enemy) -> None:
         """Hand off to the battle shell, then return to the overworld."""

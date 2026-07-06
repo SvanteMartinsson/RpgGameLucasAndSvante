@@ -743,7 +743,15 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** varje id-referens i data valideras vid load; ett injicerat stavfel i varje kategori
   ger ValueError med tydligt meddelande; sviten grön.
 
-#### B55 — Flytta encounter-taktningen till core (rate-heatmap som motorlogik)  · *strukturell* · medel · prio HÖG
+#### B55 — Flytta encounter-taktningen till core  · ✅ **KLAR**
+- **KLAR:** `core/encounters.py` äger B12-regeln (SAFE_RADIUS/RAMP/PATH_FACTOR + `EncounterMap`
+  med town/safe/path-tiles som rena sets, `encounter_rate_at`, `should_encounter`) + journey-mätning
+  för sim (`journey_encounter_load` deterministisk + `simulate_journey` seedad). Skalet fryser
+  geometrin en gång (`_build_path_tiles` skannar ground-lagret vid init), delegerar rate-frågan och
+  behåller `_on_path` som mockbar seam (`on_path`-override i core). **Beteende-identiskt:** rng-ström
+  bevarad (i stad = inget drag; vildmark = exakt ett), alla 12 baseline-tester gröna OFÖRÄNDRADE.
+  10 nya core-tester låser exakta kurvan (0 → 1/3 → 2/3 → full, ×0.6 väg). 829 gröna. Enabler för
+  B48-authoring + B62/B67.
 - **Vad:** `encounter_rate_at`, `_nearest_town_dist`, `_on_path` och slumpdragningen i `maybe_encounter`
   (pygame_overworld rad ~752–792) flyttas till core (t.ex. `core/encounters.py`), parametriserad på
   tile-position + stads-/väg-data. Presentationen frågar bara "encounter nu? (tile)" per steg.
