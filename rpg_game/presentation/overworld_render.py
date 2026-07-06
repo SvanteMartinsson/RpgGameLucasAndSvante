@@ -154,6 +154,7 @@ BRIDGE_TILESETS = {"water_bridge", "bridge_halfdeck"}
 PROPS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "props")
 
 CHEST_CLOSED_RECT = (96, 30, 32, 31)
+CHEST_SCALE = 0.85   # B81: Lucas playtest — chests were ~15% too large
 
 CHEST_OPEN_RECT = (96, 76, 32, 49)
 
@@ -578,8 +579,12 @@ class MapRenderMixin:
                 path = os.path.join(PROPS_DIR, "generated", f"04-TX-Props__{theme}.png")
             try:
                 sheet = pygame.image.load(path).convert_alpha()
-                sprites[(theme, False)] = sheet.subsurface(pygame.Rect(*CHEST_CLOSED_RECT)).copy()
-                sprites[(theme, True)] = sheet.subsurface(pygame.Rect(*CHEST_OPEN_RECT)).copy()
+                # B81: chests read a touch large in the world — render at 85%.
+                for opened, crop in ((False, CHEST_CLOSED_RECT), (True, CHEST_OPEN_RECT)):
+                    raw = sheet.subsurface(pygame.Rect(*crop))
+                    sprites[(theme, opened)] = pygame.transform.scale(
+                        raw, (max(1, round(raw.get_width() * CHEST_SCALE)),
+                              max(1, round(raw.get_height() * CHEST_SCALE))))
             except (pygame.error, FileNotFoundError):
                 sprites[(theme, False)] = sprites[(theme, True)] = None
         return sprites

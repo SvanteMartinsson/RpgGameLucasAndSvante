@@ -236,7 +236,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
   bort. Kan återbesökas med prop-kvarleva när bättre assets finns.
 - ~~Alternativ: (b) kvarleva-prop, (c) mörk siluett.~~
 
-#### B81 — Kistor: minska sprite-storleken 15 %
+#### B81 — Kistor: minska sprite-storleken 15 %  · ✅ **KLAR** (nattbatch: `CHEST_SCALE=0.85` vid sprite-load; kollision/E oförändrad)
 - Ren render-skalning (target-höjd ×0.85 i chest-ritningen); kollision/E-interaktion
   oförändrad. Render-verifieras headless.
 
