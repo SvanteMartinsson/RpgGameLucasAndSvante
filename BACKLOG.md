@@ -723,7 +723,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** grön/röd status på push i GitHub; båda sviterna + compileall körs; en avsiktligt
   trasig test-push blir röd.
 
-#### B54 — Load-time cross-referens-validering av content (fail fast, inte tyst skip)  · *strukturell* · liten · prio HÖG
+#### B54 — Load-time cross-referens-validering av content (fail fast)  · ✅ **KLAR**
+- **KLAR:** `_validate_content_refs` i data_loader validerar VARJE id-referens vid load: classes→
+  vapen/skills, enemies→actions/ai-actions/loot/unique-items, rare_table→items, tomes→teaches,
+  upgrades→target/material, talents→class/action, places→encounters/rare/store/connections. Policy
+  beslutad per punkten: okänt id = ValueError vid load (runtime-guards i combat kvar som ofarligt
+  försvar — kan inte längre dölja trasig data). Riktiga datan verifierad ren. 15 injicerings-tester
+  (ett stavfel per kategori → namngivet fel). 809 gröna. *Not: core_zone→places-validering bor i
+  presentation-lagret (ZoneConfig) och ingick ej.*
 - **Vad:** `data_loader.load_content` validerar idag turneringar/gear men INTE: enemy `action_ids`,
   loot-tabellernas item-ids, tome-`teaches`, upgrade-receptens target/material-ids. Lägg samma
   `raise ValueError`-validering för dessa + besluta policyn: okänt id = fel vid load (ersätter dagens

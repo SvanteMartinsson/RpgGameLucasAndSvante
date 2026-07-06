@@ -293,6 +293,8 @@ def load_content() -> GameContent:
 
     _validate_gear(equipment_slots, gear_items)
     _validate_tournaments(tournaments, enemies, places, weapons, items)
+    _validate_content_refs(classes, weapons, gear_items, items, actions, talents,
+                           enemies, places, rare_loot_table, upgrade_recipes)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -331,6 +333,72 @@ def _validate_tournaments(tournaments, enemies, places, weapons, items) -> None:
         for item_id in tournament.reward.item_ids:
             if item_id not in weapons and item_id not in items:
                 raise ValueError(f"{tournament.id} references unknown reward {item_id}")
+
+
+def _validate_content_refs(classes, weapons, gear_items, items, actions, talents,
+                           enemies, places, rare_loot_table, upgrade_recipes) -> None:
+    """B54: every id-reference in content must resolve at load — a typo fails HERE
+    with a named error instead of silently dropping a skill or crashing mid-fight.
+    (Runtime guards in combat.py stay as harmless defence; they can no longer hide
+    bad data.)"""
+    def lootable(item_id) -> bool:
+        return item_id in weapons or item_id in gear_items or item_id in items
+
+    for cls in classes.values():
+        if cls.starting_weapon_id not in weapons:
+            raise ValueError(f"class {cls.id} references unknown starting weapon {cls.starting_weapon_id}")
+        for skill_id in cls.starting_skill_ids:
+            if skill_id not in actions:
+                raise ValueError(f"class {cls.id} references unknown starting skill {skill_id}")
+
+    for enemy in enemies.values():
+        for action_id in enemy.action_ids:
+            if action_id not in actions:
+                raise ValueError(f"enemy {enemy.id} references unknown action {action_id}")
+        for rule in enemy.ai:
+            rule_action = str(rule.get("action", ""))
+            if rule_action and rule_action not in actions:
+                raise ValueError(f"enemy {enemy.id} ai references unknown action {rule_action}")
+        for table_name, table in (("loot_table", enemy.loot_table), ("unique_table", enemy.unique_table)):
+            for entry in table:
+                if not lootable(entry.get("item_id")):
+                    raise ValueError(f"enemy {enemy.id} {table_name} references unknown item {entry.get('item_id')}")
+
+    for entry in rare_loot_table:
+        if not lootable(entry.get("item_id")):
+            raise ValueError(f"rare_table references unknown item {entry.get('item_id')}")
+
+    for item in items.values():
+        if item.kind == "tome" and item.teaches not in actions:
+            raise ValueError(f"tome {item.id} teaches unknown action {item.teaches}")
+
+    for recipe in upgrade_recipes.values():
+        if recipe.item_id not in weapons and recipe.item_id not in gear_items:
+            raise ValueError(f"upgrade recipe targets unknown item {recipe.item_id}")
+        for variant in recipe.variants:
+            for material_id, _count in variant.materials:
+                if material_id not in items:
+                    raise ValueError(
+                        f"upgrade {recipe.item_id}/{variant.id} references unknown material {material_id}")
+
+    for talent in talents.values():
+        if talent.class_id not in classes:
+            raise ValueError(f"talent {talent.id} references unknown class {talent.class_id}")
+        if talent.node_type == "active" and talent.action_id and talent.action_id not in actions:
+            raise ValueError(f"talent {talent.id} references unknown action {talent.action_id}")
+
+    for place in places.values():
+        for enemy_id in place.encounters:
+            if enemy_id not in enemies:
+                raise ValueError(f"place {place.id} references unknown encounter {enemy_id}")
+        if place.rare_encounter and place.rare_encounter not in enemies:
+            raise ValueError(f"place {place.id} references unknown rare encounter {place.rare_encounter}")
+        for item_id in place.store_inventory:
+            if not lootable(item_id):
+                raise ValueError(f"place {place.id} store references unknown item {item_id}")
+        for connection in place.connections:
+            if connection.to not in places:
+                raise ValueError(f"place {place.id} connects to unknown place {connection.to}")
 
 
 def _effect_from_json(effect: dict[str, Any]) -> EffectSpec:
