@@ -1,5 +1,5 @@
 {
-  "_comment": "Spelbar overworld (fri-g\u00e5ng, Modell B). #3-expansion: kartan \u00e4r 240x208 (option A, parametrisk terr\u00e4ng). Nord (y<100): cainos x<=82, mork_skog 83-158, cursed_mire >=159. S\u00f6der om seamen (y>=100) \u00e4r grave_heath. Towns = lokationer man g\u00e5r in i; wild_region_place_id = motorns encounter-pool i k\u00e4rn-vildmark. Gates sp\u00e4rrar v\u00e4gen ut mot ospelbara zoner. Allt h\u00e4r \u00e4r data/tunbart. Terr\u00e4ngen genereras av overworld_layout.py + regenerate_overworld.py.",
+  "_comment": "Spelbar overworld (fri-gång, Modell B). #3-expansion: kartan är 240x208 (option A, parametrisk terräng). Nord (y<100): cainos x<=82, mork_skog 83-158, cursed_mire >=159. Söder om seamen (y>=100) är grave_heath. Towns = lokationer man går in i; wild_region_place_id = motorns encounter-pool i kärn-vildmark. Gates spärrar vägen ut mot ospelbara zoner. Allt här är data/tunbart. Terrängen genereras av overworld_layout.py + regenerate_overworld.py.",
   "map": "overworld.tmx",
   "start_tile": [
     51,
@@ -21,7 +21,7 @@
       "min_tile_x": 83
     }
   ],
-  "_ground_themes_comment": "Presentation + respawn-zon: vilken tile-theme som m\u00e5lar varje zons basmark. Nordbanden driver zone_for_tile (respawn-kostnad) och alignar med wild_regions; grave_heath (y>=100) \u00f6verrider s\u00f6derut. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets finns registrerade.",
+  "_ground_themes_comment": "Presentation + respawn-zon: vilken tile-theme som målar varje zons basmark. Nordbanden driver zone_for_tile (respawn-kostnad) och alignar med wild_regions; grave_heath (y>=100) överrider söderut. mork_skog/cursed_mire/frostfell/ash_waste/karr tilesets finns registrerade.",
   "ground_themes": [
     {
       "theme": "cainos",
@@ -241,5 +241,578 @@
       ],
       "message_key": "gate_verralda_south"
     }
-  ]
+  ],
+  "spawn_areas": [
+    {
+      "id": "cainos_stag_west",
+      "rect": [
+        0,
+        0,
+        30,
+        72
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "wild_stag",
+          "weight": 60
+        }
+      ]
+    },
+    {
+      "id": "cainos_stag_south",
+      "rect": [
+        0,
+        73,
+        82,
+        99
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "wild_stag",
+          "weight": 60
+        }
+      ]
+    },
+    {
+      "id": "cainos_undead_north",
+      "rect": [
+        31,
+        0,
+        52,
+        28
+      ],
+      "color": [
+        230,
+        220,
+        80
+      ],
+      "enemies": [
+        {
+          "id": "undead",
+          "weight": 60
+        }
+      ]
+    },
+    {
+      "id": "cainos_undead_east",
+      "rect": [
+        52,
+        0,
+        82,
+        97
+      ],
+      "color": [
+        230,
+        220,
+        80
+      ],
+      "enemies": [
+        {
+          "id": "undead",
+          "weight": 60
+        }
+      ]
+    },
+    {
+      "id": "cainos_generalists",
+      "rect": [
+        3,
+        30,
+        80,
+        72
+      ],
+      "color": [
+        70,
+        90,
+        220
+      ],
+      "enemies": [
+        {
+          "id": "wild_dog",
+          "weight": 25
+        },
+        {
+          "id": "giant_rat",
+          "weight": 25
+        },
+        {
+          "id": "giant_spider",
+          "weight": 25
+        },
+        {
+          "id": "goblin_scrapper",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "id": "skog_beast_north",
+      "rect": [
+        84,
+        2,
+        147,
+        40
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "enemies": [
+        {
+          "id": "razortusk_boar",
+          "weight": 30
+        },
+        {
+          "id": "dire_wolf",
+          "weight": 30
+        },
+        {
+          "id": "cave_bear",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "skog_goblin_west",
+      "rect": [
+        83,
+        24,
+        133,
+        75
+      ],
+      "color": [
+        70,
+        90,
+        220
+      ],
+      "enemies": [
+        {
+          "id": "goblin_raider",
+          "weight": 45
+        },
+        {
+          "id": "cave_bear",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "skog_plant_south",
+      "rect": [
+        83,
+        66,
+        157,
+        99
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "thornling",
+          "weight": 40
+        },
+        {
+          "id": "goblin_shaman",
+          "weight": 30
+        },
+        {
+          "id": "strangling_vine",
+          "weight": 8
+        }
+      ]
+    },
+    {
+      "id": "skog_deep_east",
+      "rect": [
+        122,
+        0,
+        158,
+        99
+      ],
+      "color": [
+        230,
+        220,
+        80
+      ],
+      "enemies": [
+        {
+          "id": "treant",
+          "weight": 35
+        },
+        {
+          "id": "broodmother_spider",
+          "weight": 35
+        },
+        {
+          "id": "strangling_vine",
+          "weight": 8
+        }
+      ]
+    },
+    {
+      "id": "mire_leech_all",
+      "rect": [
+        159,
+        0,
+        239,
+        99
+      ],
+      "color": [
+        230,
+        220,
+        80
+      ],
+      "enemies": [
+        {
+          "id": "bog_leech",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "mire_crab_coast_north",
+      "rect": [
+        159,
+        0,
+        239,
+        18
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "enemies": [
+        {
+          "id": "mutated_mudcrab",
+          "weight": 45
+        }
+      ]
+    },
+    {
+      "id": "mire_crab_coast_east",
+      "rect": [
+        226,
+        0,
+        239,
+        96
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "enemies": [
+        {
+          "id": "mutated_mudcrab",
+          "weight": 45
+        }
+      ]
+    },
+    {
+      "id": "mire_spirits",
+      "rect": [
+        172,
+        2,
+        222,
+        71
+      ],
+      "color": [
+        220,
+        70,
+        60
+      ],
+      "enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 30
+        },
+        {
+          "id": "witchlight",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "mire_tar_east",
+      "rect": [
+        187,
+        40,
+        239,
+        97
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "tar_beast",
+          "weight": 35
+        },
+        {
+          "id": "mire_lurker",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "mire_hag_bog",
+      "rect": [
+        178,
+        72,
+        204,
+        89
+      ],
+      "color": [
+        40,
+        40,
+        140
+      ],
+      "enemies": [
+        {
+          "id": "bog_hag",
+          "weight": 8
+        }
+      ]
+    },
+    {
+      "id": "heath_entry_northwest",
+      "rect": [
+        2,
+        101,
+        91,
+        162
+      ],
+      "color": [
+        40,
+        40,
+        140
+      ],
+      "enemies": [
+        {
+          "id": "undead",
+          "weight": 30
+        },
+        {
+          "id": "undead_priest",
+          "weight": 25
+        },
+        {
+          "id": "rotting_fiend",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "id": "heath_ghoul_west",
+      "rect": [
+        0,
+        133,
+        72,
+        207
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "ghoul",
+          "weight": 35
+        },
+        {
+          "id": "grave_hound",
+          "weight": 35
+        }
+      ]
+    },
+    {
+      "id": "heath_ghoul_south",
+      "rect": [
+        72,
+        187,
+        139,
+        207
+      ],
+      "color": [
+        90,
+        200,
+        90
+      ],
+      "enemies": [
+        {
+          "id": "ghoul",
+          "weight": 35
+        },
+        {
+          "id": "grave_hound",
+          "weight": 35
+        }
+      ]
+    },
+    {
+      "id": "heath_worg_column",
+      "rect": [
+        42,
+        100,
+        91,
+        207
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "enemies": [
+        {
+          "id": "shade",
+          "weight": 40
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 6
+        }
+      ]
+    },
+    {
+      "id": "heath_elite_east",
+      "rect": [
+        132,
+        100,
+        209,
+        199
+      ],
+      "color": [
+        220,
+        70,
+        60
+      ],
+      "enemies": [
+        {
+          "id": "undead_priest",
+          "weight": 20
+        },
+        {
+          "id": "skeleton_warrior",
+          "weight": 35
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 12
+        }
+      ]
+    },
+    {
+      "id": "heath_northeast_pocket",
+      "rect": [
+        180,
+        100,
+        230,
+        142
+      ],
+      "color": [
+        190,
+        80,
+        220
+      ],
+      "enemies": [
+        {
+          "id": "undead_priest",
+          "weight": 30
+        },
+        {
+          "id": "rotting_fiend",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "id": "heath_palegate",
+      "rect": [
+        170,
+        144,
+        235,
+        207
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "enemies": [
+        {
+          "id": "shade",
+          "weight": 40
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 6
+        }
+      ]
+    }
+  ],
+  "spawn_fallbacks": {
+    "burg_54": [
+      {
+        "id": "wild_dog",
+        "weight": 25
+      },
+      {
+        "id": "giant_rat",
+        "weight": 25
+      },
+      {
+        "id": "giant_spider",
+        "weight": 25
+      },
+      {
+        "id": "goblin_scrapper",
+        "weight": 25
+      }
+    ],
+    "burg_146": [
+      {
+        "id": "goblin_raider",
+        "weight": 45
+      },
+      {
+        "id": "cave_bear",
+        "weight": 30
+      }
+    ],
+    "burg_320": [
+      {
+        "id": "bog_leech",
+        "weight": 30
+      }
+    ],
+    "burg_121": [
+      {
+        "id": "ghoul",
+        "weight": 35
+      },
+      {
+        "id": "grave_hound",
+        "weight": 35
+      }
+    ]
+  },
+  "_spawn_comment": "B48: spawn_areas = Lucas's ritade, MEDVETET överlappande områden. Poolen på en tile = UNION av alla träffande areas (vikter summeras per fiende); tom union -> spawn_fallbacks[wild-region-platsen]. Rects är inklusiva [x0,y0,x1,y1]; color = skissens färg (används av render_zone_map). Bossar får ALDRIG ligga här (valideras)."
 }

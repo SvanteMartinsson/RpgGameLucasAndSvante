@@ -198,7 +198,7 @@ mörknar till en husk och kan inte om-farmas. **Alla fyra zonbossar → Pale Gat
 
 | boss | zon (lya) | lvl | traits → matchup | signatur (AI-faser) | belöning |
 |---|---|---|---|---|---|
-| **Rotfang, the Rat King** | cainos (12,22) | 4 | beast+vermin → fire ×2.0, frost ×0.65 | Plague Leap (telegraf + toxin) · <50%: Warren Frenzy (power-buff) | 150 g + Warren Signet (ring) |
+| **Rotfang, the Rat King** | cainos (14,88) | 4 | beast+vermin → fire ×2.0, frost ×0.65 | Plague Leap (telegraf + toxin) · <50%: Warren Frenzy (power-buff) | 150 g + Warren Signet (ring) |
 | **The Briar Queen** | mork_skog (139,30) | 8 | plant → fire ×2.0, frost ×0.65 | Crushing Boughs (telegraf) · <50%: Verdant Renewal (heal + törne-reflect) | 300 g + Briarheart Amulet |
 | **Hagmother Yagra** | cursed_mire (209,44) | 10 | cursed+swamp → frost ×2.0, holy ×1.5; fys/fire/poison ×0.65 | Drowning Grasp (telegraf frost) + Withering Curse (power-debuff) · <50%: Swampskin (heal + mitigation) | 400 g + Hagbone Idol |
 | **The Barrow King** | grave_heath (70,165) | 12 | undead+cursed → holy ×2.0; poison IMMUN; fys/frost ×0.65 | Soul Harvest (telegraf drain) · <66%: Bone Shield (mitigation) · <33%: Grave Storm (frost+chill) | 600 g + Crown of the Barrow King |
@@ -210,16 +210,29 @@ nivå ≈ 41–96 % vinst; fel verktyg ≈ 0–41 %** — skadestegen ÄR fajten
 mot de heliga väggarna. Känd lucka: mage-skörheten (B25) gör L10+-bossar till
 väggar för mage i sim — eskalerad till den uppskjutna klassbalansrundan.
 
-## Koppling till world.json
+## Koppling till world.json + spawn-områden (B48)
 
 Overworld-zonerna kartläggs i `maps/core_zone.json`: `ground_themes` sätter
 tile-bandet (cainos x≤82 · mork_skog x83–158 · cursed_mire x≥159 · grave_heath
-y≥100) och `wild_regions` pekar varje band mot **en plats vars `encounters`-pool
-styr zonen**: cainos→`burg_54` (default), mork_skog→`burg_146`, cursed_mire→
-`burg_320`, grave_heath→`burg_121`. Zon-nivåbandet sätts som `level_min/level_max`
-på den platsen (överstyr fiendens egna band vid roll). Den tuffaste per zon ligger
-som `rare_encounter` (+`rare_chance`). Menyresans övriga platser behåller sina
-egna småpooler. (Senare kan `derive_world.py` tilldela roller per tier — inte nu.)
+y≥100) och `wild_regions` pekar varje band mot **en plats** (cainos→`burg_54`,
+mork_skog→`burg_146`, cursed_mire→`burg_320`, grave_heath→`burg_121`) som ger
+zon-identitet: nivåband (`level_min/level_max` på platsen överstyr fiendens
+band), respawn och "Wilds near X"-namnet.
+
+**VAD som spawnar styrs av `spawn_areas` (B48, Lucas-ritade):** viktade,
+**medvetet överlappande** rektanglar; poolen på en tile = UNION av alla
+träffande områden (vikter för samma fiende summeras), tom union → zonens
+`spawn_fallbacks`-pool. Regeln bor i `core/spawns.py` (`pool_at`), skalet
+skickar tile-poolen in i `engine.create_encounter(pool=...)`. Se
+`docs/ZONE_MAP.png` för alla 22 områden (regenerera:
+`.venv/bin/python -m rpg_game.tools.worldgen.render_zone_map`).
+
+**Platslösa vägar** (terminal-röken, sims utan tile) hoppar över poolen och
+använder platsens klassiska `encounters` + `rare_encounter` — oförändrat.
+I tile-spelet är rare-mekaniken ersatt av låga vikter (strangling_vine i
+plant-områdena, bog_hag i sin ficka, hollow_worg vikt 6 mot shades 40,
+cursed_wight vikt 12 i elit-öst). Menyresans övriga platser behåller sina
+egna småpooler.
 
 ## Invarianter att låsa i test
 

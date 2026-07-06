@@ -78,8 +78,17 @@ def render(out_path: str) -> None:
         surf.blit(back, (x - 3, y - 1))
         surf.blit(img, (x, y))
 
-    # Zone titles with pool + level band
+    # B48: the drawn spawn areas (union-of-overlaps) as outlines in sketch colours
     content = app.engine.content
+    for spawn_area in content.spawn_areas:
+        x0, y0, x1, y1 = spawn_area.rect
+        rect = pygame.Rect(x0 * SCALE, y0 * SCALE,
+                           (x1 - x0 + 1) * SCALE, (y1 - y0 + 1) * SCALE)
+        pygame.draw.rect(surf, spawn_area.color, rect, 3)
+        label(spawn_area.id.split("_", 1)[1],
+              (rect.x + 6, rect.y + 4), spawn_area.color)
+
+    # Zone titles with pool + level band
     titles = {"cainos": (6, 4), "mork_skog": (86, 4), "cursed_mire": (162, 4),
               "grave_heath": (6, 104)}
     for zone, (tx, ty) in titles.items():

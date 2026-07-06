@@ -4,8 +4,8 @@
     "enemy_id": "boss_rotfang",
     "zone": "cainos",
     "lair_tile": [
-      12,
-      22
+      14,
+      88
     ],
     "requires_defeated": [],
     "reward_gold": 150,

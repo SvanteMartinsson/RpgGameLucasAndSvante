@@ -2129,6 +2129,11 @@
         "item_id": "sanctified_recurve",
         "weight": 8,
         "rarity_tier": 5
+      },
+      {
+        "item_id": "gravewarden_blade",
+        "weight": 8,
+        "rarity_tier": 5
       }
     ],
     "unique_table": [

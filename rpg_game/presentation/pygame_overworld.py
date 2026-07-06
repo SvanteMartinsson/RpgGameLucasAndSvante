@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat, encounters, progression, saveslots
+from rpg_game.core import combat, encounters, progression, saveslots, spawns
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import settings as user_settings
@@ -729,11 +729,17 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         B55: the pacing RULE (rate heatmap + the roll) lives in core/encounters;
         this shell provides the geometry and the engine's seeded RNG. In town no
         rng draw is consumed — stream-identical to the pre-B55 behaviour.
+        B48: WHAT spawns comes from the tile's drawn areas (union of overlaps,
+        core/spawns) — the shell owns the tile, the core owns the rule.
         """
         if self.world.town_place_id() is not None:
             return None      # in town: no rng draw (stream-identical to pre-B55)
-        if self.engine.rng.random() < self.encounter_rate_at(self.world.current_tile):
-            return self.engine.create_encounter()
+        tile = self.world.current_tile
+        if self.engine.rng.random() < self.encounter_rate_at(tile):
+            pool = spawns.pool_at(self.engine.content.spawn_areas,
+                                  self.engine.content.spawn_fallbacks,
+                                  tile, self.zone.wild_region_at(tile))
+            return self.engine.create_encounter(pool=pool)
         return None
 
     def _build_path_tiles(self) -> set:

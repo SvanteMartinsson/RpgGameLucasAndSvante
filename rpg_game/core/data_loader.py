@@ -279,6 +279,26 @@ def load_content() -> GameContent:
         for row in _read_json("chests.json")
     }
 
+    # B48: drawn spawn areas + per-region fallbacks (from the zone map config).
+    from rpg_game.core.spawns import SpawnArea
+    try:
+        core_zone = _read_json("maps/core_zone.json")
+    except FileNotFoundError:
+        core_zone = {}
+    spawn_areas = tuple(
+        SpawnArea(
+            id=row["id"],
+            rect=tuple(row["rect"]),
+            enemies=tuple((e["id"], int(e["weight"])) for e in row["enemies"]),
+            color=tuple(row.get("color", (200, 200, 200))),
+        )
+        for row in core_zone.get("spawn_areas", ())
+    )
+    spawn_fallbacks = {
+        place_id: tuple((e["id"], int(e["weight"])) for e in pool)
+        for place_id, pool in core_zone.get("spawn_fallbacks", {}).items()
+    }
+
     # B65: zone bosses and their lairs.
     bosses = {
         row["id"]: BossDef(
@@ -343,6 +363,7 @@ def load_content() -> GameContent:
     _validate_chests(chests, weapons, gear_items, items)
     _validate_brews(brew_recipes, items)
     _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests)
+    _validate_spawns(spawn_areas, spawn_fallbacks, enemies, places)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -361,6 +382,8 @@ def load_content() -> GameContent:
         chests=chests,
         brew_recipes=brew_recipes,
         bosses=bosses,
+        spawn_areas=spawn_areas,
+        spawn_fallbacks=spawn_fallbacks,
     )
 
 
@@ -440,6 +463,42 @@ def _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests
     for boss in bosses.values():
         if boss.lair_tile in chest_tiles:
             raise ValueError(f"boss {boss.id} lair collides with a chest tile")
+
+
+def _validate_spawns(spawn_areas, spawn_fallbacks, enemies, places) -> None:
+    """B48: every spawn-area/fallback reference must resolve; weights positive;
+    rects sane; bosses may never enter a spawn pool (they only live in lairs)."""
+    seen_ids = set()
+    for area in spawn_areas:
+        if area.id in seen_ids:
+            raise ValueError(f"duplicate spawn area id {area.id}")
+        seen_ids.add(area.id)
+        x0, y0, x1, y1 = area.rect
+        if not (0 <= x0 <= x1 and 0 <= y0 <= y1):
+            raise ValueError(f"spawn area {area.id} has a malformed rect {area.rect}")
+        if not area.enemies:
+            raise ValueError(f"spawn area {area.id} has an empty pool")
+        for enemy_id, weight in area.enemies:
+            enemy = enemies.get(enemy_id)
+            if enemy is None:
+                raise ValueError(f"spawn area {area.id} references unknown enemy {enemy_id}")
+            if enemy.boss:
+                raise ValueError(f"boss enemy {enemy_id} must not be in spawn area {area.id}")
+            if weight <= 0:
+                raise ValueError(f"spawn area {area.id} has a non-positive weight for {enemy_id}")
+    for place_id, pool in spawn_fallbacks.items():
+        if place_id not in places:
+            raise ValueError(f"spawn fallback references unknown place {place_id}")
+        if not pool:
+            raise ValueError(f"spawn fallback for {place_id} is empty")
+        for enemy_id, weight in pool:
+            enemy = enemies.get(enemy_id)
+            if enemy is None:
+                raise ValueError(f"spawn fallback {place_id} references unknown enemy {enemy_id}")
+            if enemy.boss:
+                raise ValueError(f"boss enemy {enemy_id} must not be in spawn fallback {place_id}")
+            if weight <= 0:
+                raise ValueError(f"spawn fallback {place_id} has a non-positive weight for {enemy_id}")
 
 
 def _validate_content_refs(classes, weapons, gear_items, items, actions, talents,

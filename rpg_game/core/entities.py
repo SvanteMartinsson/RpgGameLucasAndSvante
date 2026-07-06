@@ -516,6 +516,9 @@ class GameContent:
     chests: dict[str, ChestDef] = field(default_factory=dict)   # B63 world chests
     brew_recipes: dict = field(default_factory=dict)             # B68 alchemy
     bosses: dict[str, BossDef] = field(default_factory=dict)     # B65 zone bosses
+    # B48: Lucas's drawn spawn areas (union-of-overlaps) + per-region fallbacks.
+    spawn_areas: tuple = ()
+    spawn_fallbacks: dict = field(default_factory=dict)
 
 
 @dataclass

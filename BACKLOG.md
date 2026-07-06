@@ -71,7 +71,23 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (rampar 0→full över 3 tiles från stad), cobble/väg-tiles ×0.6. Öppna igen bara om kurvan ska tunas
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
-#### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
+#### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · ✅ **KLAR** (Lucas-GO 2026-07-06)
+- **KLAR:** union-modellen byggd — `core/spawns.py` (`SpawnArea`, `pool_at`: union av
+  alla träffande områden, vikter summeras per fiende; tom → `spawn_fallbacks[region]`;
+  `weighted_pick` = ett rng-drag). **22 Lucas-ritade områden** + 4 fallbacks authorade i
+  `maps/core_zone.json` (inkl. skissfärger); pool-param trädd genom
+  `engine.create_encounter(pool)` → `world.create_encounter` — **platslösa vägar
+  (terminal/sims) oförändrade** (behåller place-pool + rare-slot; beslut: world.json
+  rörs INTE). Skalet skickar tile-poolen i `maybe_encounter` (B55-mönstret: skalet äger
+  tilen, core äger regeln). `_validate_spawns` fail-fast (okänd fiende, boss i pool,
+  vikt ≤0, trasig rect, dubblett-id, tom fallback). **Rotfang → (14,88)** (snap-
+  verifierad, stadsavstånd 35). **Holy-kompensationen:** gravewarden_blade på
+  cursed_wights tabell + chest_heath_4. Rares som vikter: vine 8 i plant-områdena,
+  hag 8 i sin ficka (~21 % i västra halvan, utspädd mot tar-landet), worg 6 vs shade 40
+  (13 % i Pale Gate-hörnet, 3 % i väst-kolumnens blandzoner), wight 12 i elit-öst.
+  Distributions-verifierat på 10 representativa tiles + 300 seedade motor-drag.
+  `docs/ZONE_MAP.png` omrenderad med alla områden som facit. 16 nya tester;
+  **953 gröna**. ENEMIES.md-sektionen omskriven.
 - **Grave heath-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** BLÅ nordväst
   x2-91/y101-162 = undead+priest+rotting_fiend (mjuk entré) · GRÖN väst-syd x0-72/
   y133-207 + syd-mitt x72-139/y187-207 = ghoul+grave_hound · VIT kolumn väst x42-91/

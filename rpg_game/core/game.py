@@ -271,8 +271,10 @@ class GameEngine:
         """Set location directly for free-walk arrival (no adjacency gate)."""
         return world.enter_place(self.player, self.content, place_id)
 
-    def create_encounter(self) -> Enemy | None:
-        enemy = world.create_encounter(self.player, self.content, self.rng)
+    def create_encounter(self, pool=None) -> Enemy | None:
+        """B48: `pool` (weighted (enemy_id, weight) list) spawns from the tile's
+        drawn areas; without it the classic place pool applies (terminal/sims)."""
+        enemy = world.create_encounter(self.player, self.content, self.rng, pool=pool)
         if enemy is not None:
             bestiary.mark_seen(self.player, enemy.id)   # B66: it is in the codex now
             self._begin_encounter()

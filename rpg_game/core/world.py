@@ -98,17 +98,27 @@ def scale_enemy_to_level(enemy: Enemy, base_level: int, target_level: int) -> No
     enemy.damage = max(1, round_half_up(enemy.damage * (1 + DAMAGE_GROWTH_PER_LEVEL * delta)))
 
 
-def create_encounter(player: Player, content: GameContent, rng: random.Random) -> Enemy | None:
+def create_encounter(player: Player, content: GameContent, rng: random.Random,
+                     pool=None) -> Enemy | None:
     """Generate a wild encounter: roll a level in the enemy's range and scale
     its stats to it. Tournament opponents do NOT use this path (see
-    GameEngine.create_tournament_opponent), so their fixed levels never roll."""
+    GameEngine.create_tournament_opponent), so their fixed levels never roll.
+
+    B48: with `pool` (a weighted (enemy_id, weight) sequence from
+    spawns.pool_at) the enemy comes from the tile's drawn areas; the region's
+    level band still applies. Tile-less callers (terminal, sims) omit it and
+    keep the classic place-pool + rare-slot path unchanged."""
     place = get_current_place(player, content)
-    if not place.encounters:
-        return None
-    if place.rare_encounter and rng.random() < place.rare_chance:
-        enemy_id = place.rare_encounter
+    if pool:
+        from rpg_game.core import spawns
+        enemy_id = spawns.weighted_pick(tuple(pool), rng)
     else:
-        enemy_id = rng.choice(place.encounters)
+        if not place.encounters:
+            return None
+        if place.rare_encounter and rng.random() < place.rare_chance:
+            enemy_id = place.rare_encounter
+        else:
+            enemy_id = rng.choice(place.encounters)
     template = content.enemies[enemy_id]
     enemy = template.create_enemy()
     scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng, region=place))
