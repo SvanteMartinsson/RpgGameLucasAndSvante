@@ -72,6 +72,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
+- **Cainos-skiss mottagen (Lucas 2026-07-06, avstämd — invänta GO):** tre överlappande
+  rekt-områden ritade på ZONE_MAP: GRÖN=stag (västremsa x0-30/y0-72 + hela sydbandet
+  y73-99), GUL=undead (nordficka x31-52/y0-28 + östkolumn x52-82/y0-97), BLÅ=generalister
+  dog/rat/spider/goblin (mittband x3-80/y30-72 runt START). **Modellbeslut ur skissen:
+  överlapp = pool-UNION** (alla träffande områdens viktade pooler summeras — first-match-
+  wins ersätts). Fallback utanför områden: blå-poolen (bekräftas). Vikter: Claude utkastar,
+  uniform start. **Rotfang-lyan flyttas** till sydvästkanten ~(14,88) (snap-verifieras).
+  Övriga zoner ritas av Lucas efter Cainos-låsning.
 - **Referenskarta (2026-07-06):** `docs/ZONE_MAP.png` — M-map-schematiken med zon-band,
   alla 17 städer namngivna, pool-städerna markerade (guld), B65-lyorna och START.
   Regenerera: `.venv/bin/python -m rpg_game.tools.worldgen.render_zone_map`.
