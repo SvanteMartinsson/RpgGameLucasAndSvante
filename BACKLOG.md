@@ -72,11 +72,18 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · *playtest #1*
-- **Mörk skog-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** VIT nord x84-147/
+- **Cursed mire-skiss mottagen (Lucas 2026-07-06, avstämning pågår):** VIT topp
+  x159-239/y0-18 + östkust x226-239/y0-96 = mudcrab · GUL HELA zonen = bog_leech
+  (baslager = fallback) · RÖD mitt-nord x172-222/y2-71 = bog_wraith+witchlight ·
+  GRÖN öst-syd x187-239/y40-97 = tar_beast · BLÅ hag-kärr x178-204/y72-89 = bog_hag.
+  **Öppet:** (1) mire_lurker + rotting_fiend saknas i skissen — utgår eller glömda?
+  (rotting_fiend kan tematiskt flytta till heath); (2) hag-vikt: Claude-rek måttlig
+  vikt inom lilla fickan (istf zon-rare 6 %), rare-slotten lämnas tom.
+- **Mörk skog-skiss LÅST (Lucas 2026-07-06):** VIT nord x84-147/
   y2-40 = boar+wolf+bear · BLÅ väst-mitt x83-133/y24-75 = goblin_raider+cave_bear ·
   GRÖN syd x83-157/y66-99 = thornling+goblin_shaman · GUL öst x122-158/y0-99 =
-  treant+broodmother. Öppet: fallback (=blå?), strangling_vine (zon-rare vs låg vikt i
-  grön+gul — Claude-rek grön+gul), grönas överkant ~y66.
+  treant+broodmother. Fallback = blå (samma mönster som Cainos); strangling_vine =
+  låg vikt i grön+gul (istf zon-rare); grön överkant y66 bekräftad.
 - **Hollow worg-BESLUT (Lucas 2026-07-06):** blir RARE i heath (låg vikt i B48-modellen;
   cursed_wight behåller rare_encounter-slotten) + BÅDA kompensationerna för holy-kedjan:
   gravewarden_blade läggs på cursed_wights tabell OCH i chest_heath_4 (tier-5-kistan).
