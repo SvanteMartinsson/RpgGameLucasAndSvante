@@ -240,7 +240,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 - Ren render-skalning (target-höjd ×0.85 i chest-ritningen); kollision/E-interaktion
   oförändrad. Render-verifieras headless.
 
-#### B82 — Chatt-flikarna får inte skymma vitals  · **BUGG (B16.1-följdfel)**
+#### B82 — Chatt-flikarna får inte skymma vitals  · ✅ **KLAR** (nattbatch: chipsen bor nu INUTI panelen som header-remsa, texten börjar under; en synlig rad spenderas på remsan; test låser chip⊂panel)
 - **Lucas (skärmdump):** [All][Combat]-chipsen ligger ovanpå XP-baren. **Regel:**
   HP/Mana/XP ska ALDRIG ockluderas av loggen/chipsen. **Förslag:** rita chipsen INUTI
   loggpanelens övre kant (overlay på panelens första rad) i stället för ovanför panelen;

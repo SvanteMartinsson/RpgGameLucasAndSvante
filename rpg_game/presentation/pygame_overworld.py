@@ -1696,18 +1696,24 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
     def _draw_log(self) -> None:
         """The single on-screen chatbox (shared with battle): semi-transparent
         panel, bottom-left, showing the visible lines ending at the scroll
-        position. B16.1: [All][Combat] tab chips sit on the panel's top edge."""
+        position. B16.1/B82: the [All][Combat] tab chips live INSIDE the panel
+        as a header strip — the vitals above are never occluded (one visible
+        row is spent on the strip instead)."""
         rect = self._log_rect()
+        chip_h = self.font_sm.get_height() + 6
+        text_rect = pygame.Rect(rect.x, rect.y + chip_h, rect.width, rect.height - chip_h)
         self.log_scroll = chatlog.draw(
-            self.screen, rect, self.event_log, self.font_sm,
-            visible=self._log_visible_now(), scroll=self.log_scroll,
+            self.screen, text_rect, self.event_log, self.font_sm,
+            visible=max(1, self._log_visible_now() - 1), scroll=self.log_scroll,
             interactive=self._log_interactive(), edge=PANEL_EDGE, accent=ACCENT,
             channel=self._log_channel())
-        chip_h = self.font_sm.get_height() + 6
+        strip = pygame.Surface((rect.width, chip_h), pygame.SRCALPHA)
+        strip.fill((10, 12, 18, 200))
+        self.screen.blit(strip, (rect.x, rect.y))
         chip_x = rect.x
         for tab_id, tab_label in (("all", "All"), ("combat", "Combat")):
             width = self.font_sm.size(tab_label)[0] + 16
-            chip = pygame.Rect(chip_x, rect.top - chip_h + 1, width, chip_h)
+            chip = pygame.Rect(chip_x, rect.y, width, chip_h)
             active = self.log_tab == tab_id
             pygame.draw.rect(self.screen, (36, 42, 58) if active else (22, 26, 36),
                              chip, border_top_left_radius=4, border_top_right_radius=4)
