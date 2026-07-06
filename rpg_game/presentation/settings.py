@@ -18,6 +18,7 @@ DEFAULTS = {
     "log_visible": 10,     # chatbox rows (LOG_VISIBLE_MIN..MAX)
     "minimap": True,       # B11 minimap on by default
     "combat_fx": True,     # B72 floaters/blink/shake
+    "combat_skip": False,  # B75 skip-click through round playback (Lucas: default off)
 }
 
 

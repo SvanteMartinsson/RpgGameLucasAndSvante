@@ -141,6 +141,7 @@ class OverworldEncounterTest(unittest.TestCase):
                 battle.apply_stat("hp")
             else:
                 battle.issue_turn("attack")
+                battle.flush_sequence()   # B75: drain the staged playback
         # Single battles pause on a result view; pressing continues and finishes.
         self.assertEqual(battle.mode, "result")
         battle._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE, unicode=" "))

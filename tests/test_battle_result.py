@@ -46,6 +46,7 @@ class BattleResultTest(unittest.TestCase):
                 battle.apply_stat("hp")
             else:
                 battle.issue_turn("attack")
+                battle.flush_sequence()   # B75: drain the staged playback
 
     def test_single_battle_pauses_on_result_before_returning(self):
         engine = GameEngine()
@@ -78,6 +79,7 @@ class BattleResultTest(unittest.TestCase):
                 battle.apply_stat("hp")
             else:
                 battle.issue_turn("attack")
+                battle.flush_sequence()   # B75: drain the staged playback
         self.assertIn(battle.mode, ("victory_idle", "game_over"))
 
 

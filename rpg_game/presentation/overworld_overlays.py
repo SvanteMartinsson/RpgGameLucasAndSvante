@@ -376,6 +376,12 @@ class OverlaysMixin:
                          f"Combat FX: {'On' if fx_on else 'Off'}",
                          (lambda: (self._settings.update(combat_fx=not fx_on),
                                    user_settings.save(self._settings))))
+        y += 50
+        skip_on = bool(self._settings.get("combat_skip", False))
+        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                         f"Combat skip-click: {'On' if skip_on else 'Off'}",
+                         (lambda: (self._settings.update(combat_skip=not skip_on),
+                                   user_settings.save(self._settings))))
         y += 58
         self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
         y += 26

@@ -64,6 +64,7 @@ class ChatboxDedupTest(unittest.TestCase):
         drop = LootDrop(item_id="hp_potion", name="Healing Potion", kind="consumable",
                         tier=1, rarity="common")
         battle._consume_result(self._victory_result(enemy, drop))
+        battle.flush_sequence()   # B75
         texts = [chatlog.plain(t) for t, _c in log]
 
         # B44: the loot row is a Segments line — only the item NAME carries the
@@ -80,6 +81,7 @@ class ChatboxDedupTest(unittest.TestCase):
     def test_battle_end_is_not_doubled(self):
         battle, enemy, log = self._victory_battle()
         battle._consume_result(self._victory_result(enemy, drop=None))
+        battle.flush_sequence()   # B75
         texts = [chatlog.plain(t) for t, _c in log]
 
         self.assertEqual(texts.count("Victory!"), 1, texts)

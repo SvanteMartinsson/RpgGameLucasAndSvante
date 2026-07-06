@@ -40,6 +40,8 @@ from rpg_game.presentation.pygame_canvas import acquire_display, present, set_di
 
 WIDTH, HEIGHT = 1024, 680
 FPS = 60
+# B75: round playback — one actor per this many frames (0.5 s @60), Lucas-locked.
+SEQUENCE_FRAMES = 30
 
 PAD = 16
 # B76 (Lucas playtest): STAGE on top, then a two-column band — the combat LOG
@@ -174,7 +176,13 @@ class BattleApp:
         if self.event_log is None:            # standalone fight: own the shared log
             self.event_log = collections.deque(maxlen=chatlog.LOG_HISTORY_MAX)
         # B72 combat feel: floating damage numbers + hit feedback (toggleable).
-        self._combat_fx = bool(user_settings.load().get("combat_fx", True))
+        settings_values = user_settings.load()
+        self._combat_fx = bool(settings_values.get("combat_fx", True))
+        # B75: staged round playback + the skip-click opt-in (default OFF).
+        self._combat_skip = bool(settings_values.get("combat_skip", False))
+        self._sequence: list = []       # queued (lines, resolution) steps
+        self._seq_timer = 0
+        self._seq_finale = None
         self._floaters: list = []       # [x, y, age, max_age, surface]
         self._blink_enemy = 0           # frames of white flash left
         self._blink_hero = 0
@@ -287,13 +295,15 @@ class BattleApp:
     # -- command dispatch ---------------------------------------------------
 
     def issue_turn(self, action_id: str) -> None:
+        if self._locked:              # B75: the round must finish playing out
+            return
         if self.enemy is None or self.mode not in {"combat", "submenu"}:
             return
         result = self.engine.run_combat_turn(self.enemy, action_id)
         self._consume_result(result)
 
     def issue_flee(self) -> None:
-        if not self.allow_flee:
+        if not self.allow_flee or self._locked:
             return
         if self.enemy is None or self.mode != "combat":
             return
@@ -319,17 +329,87 @@ class BattleApp:
     def _consume_result(self, result: combat.CombatTurnResult, fled_action: bool = False) -> None:
         if self.playtest_logger is not None and self.enemy is not None:
             self.playtest_logger.combat_result(result, self.enemy, build_snapshot(self.engine), self.location_id)
-        # B39: the core still RETURNS its battle-end narration (kept for tests), but
-        # the chatbox shows only the short presentation lines below ("Victory!" /
-        # "+N XP" / "+N gold" / "Loot: ..."). Suppress the core duplicates so each
-        # outcome logs exactly one set of lines.
+        # B75: the round PLAYS BACK one actor at a time (SEQUENCE_FRAMES apart);
+        # input stays locked until the whole round has resolved. The first step
+        # fires immediately so the player's own action feels instant. The B39
+        # suppression (core battle-end narration vs the short presentation
+        # lines) applies per step.
         suppressed = self._suppressed_narration(result)
-        for event in result.events:
-            if event in suppressed:
+        for step_lines, resolution in self._sequence_steps(result):
+            kept = [line for line in step_lines
+                    if line not in suppressed
+                    and not (result.loot_drop is not None and "dropped:" in line)]
+            if kept or resolution is not None:
+                self._sequence.append((kept, resolution))
+        self._seq_finale = lambda: self._finish_result(result, fled_action)
+        self._advance_step()          # instant feedback for the acting side
+        self._seq_timer = SEQUENCE_FRAMES
+        if not self._sequence:        # single-step rounds resolve at once
+            self._run_finale()
+
+    def _sequence_steps(self, result):
+        """Split the flat event list into per-actor steps: each resolution's
+        events appear contiguously and in order, so they form one step; lines
+        between/after resolutions (round-start statuses, end-of-round ticks)
+        become their own tick-steps."""
+        pending = list(result.events)
+        steps = []
+        for resolution in result.action_resolutions:
+            if not resolution.events:
+                steps.append(([], resolution))
                 continue
-            if result.loot_drop is not None and "dropped:" in event:
-                continue   # shown as a rarity-coloured loot line instead of "[rare]" text
-            self._push_combat_event(event)   # B44: red vs-you damage, green heals
+            try:
+                idx = pending.index(resolution.events[0])
+            except ValueError:
+                steps.append(([], resolution))
+                continue
+            if pending[:idx]:
+                steps.append((pending[:idx], None))
+            steps.append((pending[idx:idx + len(resolution.events)], resolution))
+            pending = pending[idx + len(resolution.events):]
+        if pending:
+            steps.append((pending, None))
+        return steps
+
+    def _advance_step(self) -> None:
+        if not self._sequence:
+            return
+        step_lines, resolution = self._sequence.pop(0)
+        for line in step_lines:
+            self._push_combat_event(line)
+        if resolution is not None:
+            self._spawn_resolution_fx(resolution)
+        if not self._sequence:
+            self._run_finale()
+
+    def _run_finale(self) -> None:
+        finale, self._seq_finale = self._seq_finale, None
+        if finale is not None:
+            finale()
+
+    def _tick_sequence(self) -> None:
+        """Per-frame playback clock (called from the run loop)."""
+        if not self._sequence:
+            return
+        self._seq_timer -= 1
+        if self._seq_timer <= 0:
+            self._advance_step()
+            self._seq_timer = SEQUENCE_FRAMES
+
+    def flush_sequence(self) -> None:
+        """Drain the playback instantly (skip-click when enabled; tests)."""
+        while self._sequence:
+            self._advance_step()
+        self._run_finale()
+
+    @property
+    def _locked(self) -> bool:
+        """True while a round is playing back — no new orders accepted."""
+        return bool(self._sequence)
+
+    def _finish_result(self, result: combat.CombatTurnResult, fled_action: bool) -> None:
+        """Everything that happens once the round has fully played out:
+        reveal/loot lines, the final-blow hit-pause, and the outcome flow."""
         if result.enemy_reveal is not None:
             for line in _reveal_lines(result.enemy_reveal):
                 self.push_log(line, ACCENT)
@@ -338,8 +418,8 @@ class BattleApp:
             drop = result.loot_drop
             name = getattr(drop, "item_name", None) or getattr(drop, "name", "loot")
             self.push_rich([("Loot: ", TEXT), (name, chatlog.rarity_color(drop.rarity))])
-
-        self._spawn_combat_fx(result)   # B72: floaters / blink / shake / hit-pause
+        if result.outcome in ("victory", "defeat") and self._combat_fx:
+            self._freeze = 3   # the final blow lands with a short hit-pause
 
         self.set_mode("combat")
 
@@ -426,6 +506,10 @@ class BattleApp:
             self._handle_key(event)
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self._locked:
+                if self._combat_skip:   # B75: skip-click is a setting, default OFF
+                    self.flush_sequence()
+                return
             pos = to_canvas(event.pos, self._transform)
             for button in self.buttons:
                 if button.enabled and button.rect.collidepoint(pos):
@@ -516,33 +600,39 @@ class BattleApp:
         self._floaters.append([x + jitter, y, 0, 45, surface])
 
     def _spawn_combat_fx(self, result) -> None:
-        """Turn a consumed CombatTurnResult into stage feedback: one floater per
-        damage component (colour by type, crits big), heal floaters, a white
-        blink on whoever was hit, shake on crits and a short hit-pause on a
-        kill. Everything behind the combat_fx setting."""
+        """Turn a whole CombatTurnResult into stage feedback at once (tests /
+        instant paths). The sequenced playback (B75) spawns per resolution."""
+        if not self._combat_fx:
+            return
+        for resolution in result.action_resolutions:
+            self._spawn_resolution_fx(resolution)
+        if result.outcome in ("victory", "defeat"):
+            self._freeze = 3   # a short hit-pause lands the final blow
+
+    def _spawn_resolution_fx(self, resolution) -> None:
+        """One actor's stage feedback: a floater per damage component (colour by
+        type, crits big), heal floaters, a white blink on whoever was hit and
+        shake on crits. Behind the combat_fx setting."""
         if not self._combat_fx:
             return
         player_name = self.engine.player.name
-        for resolution in result.action_resolutions:
-            actor_is_player = resolution.actor_name == player_name
-            hits_enemy = actor_is_player   # self-target heals handled separately
-            crit = resolution.critical_hits > 0
-            for component in resolution.damage_components:
-                color = self.FX_TYPE_COLORS.get(component.damage_type, (235, 235, 235))
-                text = f"-{component.amount}" + ("!" if crit else "")
-                self._spawn_floater(text, color, over_enemy=hits_enemy, big=crit)
-            if resolution.damage_components:
-                if hits_enemy:
-                    self._blink_enemy = 2
-                else:
-                    self._blink_hero = 2
-                if crit:
-                    self._shake = 6
-            if resolution.total_healing:
-                self._spawn_floater(f"+{resolution.total_healing}", (120, 205, 140),
-                                    over_enemy=not actor_is_player)
-        if result.outcome in ("victory", "defeat"):
-            self._freeze = 3   # a short hit-pause lands the final blow
+        actor_is_player = resolution.actor_name == player_name
+        hits_enemy = actor_is_player   # self-target heals handled separately
+        crit = resolution.critical_hits > 0
+        for component in resolution.damage_components:
+            color = self.FX_TYPE_COLORS.get(component.damage_type, (235, 235, 235))
+            text = f"-{component.amount}" + ("!" if crit else "")
+            self._spawn_floater(text, color, over_enemy=hits_enemy, big=crit)
+        if resolution.damage_components:
+            if hits_enemy:
+                self._blink_enemy = 2
+            else:
+                self._blink_hero = 2
+            if crit:
+                self._shake = 6
+        if resolution.total_healing:
+            self._spawn_floater(f"+{resolution.total_healing}", (120, 205, 140),
+                                over_enemy=not actor_is_player)
 
     def _draw_combat_fx(self) -> None:
         """Age + draw the floaters (they rise and fade); frozen during hit-pause."""
@@ -738,7 +828,8 @@ class BattleApp:
         if self.allow_flee:
             specs.append((*T.ACTION_FLEE, self.issue_flee, True))
         for rect, (label, hotkey, cb, enabled) in zip(self._action_rects(len(specs)), specs):
-            self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb, enabled, hotkey=hotkey))
+            self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb,
+                                       enabled and not self._locked, hotkey=hotkey))
 
     def _build_submenu(self, snapshot):
         options = self._submenu_options(snapshot)
@@ -827,6 +918,7 @@ class BattleApp:
         while self.running:
             for event in pygame.event.get():
                 self.handle_event(event)
+            self._tick_sequence()   # B75: round playback clock
             self.draw()
             self.clock.tick(FPS)
         if self.standalone:

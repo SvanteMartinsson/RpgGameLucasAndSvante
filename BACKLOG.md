@@ -184,7 +184,7 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 - **Acceptans:** save i vildmark → load → samma tile; gammal save laddar via fallback;
   död→respawn opåverkad; test för round-trip + migration.
 
-#### B75 — Rundsekvensering i strid (turordning synlig, input-låst under rundan)
+#### B75 — Rundsekvensering i strid  · ✅ **KLAR** (nattbatch: rundan spelas upp per aktör à 0,5 s — `_sequence_steps` delar flata event-listan på resolutionsgränserna, B72-FX triggar per steg, första steget direkt; input+knappar låsta under uppspelning; victory/loot/mode i finalen; skip-klick = setting `combat_skip`, default AV, rad i Settings; 5 tester + flush_sequence för synkrona anropare)
 - **Lucas:** aktörerna upplevs slå samtidigt; man kan spamma A genom striden. Önskat:
   se vem som agerar först/sist med delay mellan aktionerna, och ingen ny input förrän
   hela rundan spelats upp. Ger även kroken för framtida spell-animationer.
