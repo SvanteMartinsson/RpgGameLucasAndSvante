@@ -469,6 +469,10 @@ class Player:
     # B65: zone bosses this player has felled (boss ids from bosses.json).
     # A defeated boss stays defeated; the final boss gates on the other four.
     defeated_boss_ids: set[str] = field(default_factory=set)
+    # B74: the exact overworld tile the player stood on (kept fresh by the
+    # shell's sync_location). Empty = legacy save -> restore at the place's town
+    # tile instead. Fixes wild-save loads teleporting to the pool-container town.
+    overworld_tile: tuple[int, ...] = ()
     # B37 Slice 2: permanent one-time upgrades. item_id -> chosen variant id
     # (presence == upgraded). The applied deltas live in upgrade_stat_bonuses /
     # weapon_upgrade_components (derived, NOT persisted) — never in damage_bonus.

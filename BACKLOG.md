@@ -170,7 +170,7 @@ chatt-färgerna, flikarna (funktion), alkemi-priser, dödsflödet, boss-balansen
 L3 efter flera försök + potions" = förberedelse-loopen fungerar — balans ligger kvar).
 Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 
-#### B74 — Load-bug: fel stad efter vildmarks-save  · **BUGG · PRIO HÖG**
+#### B74 — Load-bug: fel stad efter vildmarks-save  · ✅ **KLAR** (nattbatch 2026-07-06: `overworld_tile` persisteras via B59-tabellen, sync_location håller det färskt; load återställer exakt tile med fallback till stads-tilen för legacy/blockerade tiles; 4 tester)
 - **Symptom (Lucas):** startade om och spawnade i Guaredama — en stad han aldrig besökt —
   i stället för Hordanita.
 - **Rotorsak (BEKRÄFTAD i kod):** i vildmarken sätter `sync_location`

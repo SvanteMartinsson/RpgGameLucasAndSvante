@@ -159,6 +159,9 @@ PLAYER_FIELDS: dict[str, tuple] = {
     "bestiary_identified": _str_set(),
     "bestiary_kills": _dict_of(int),
     "defeated_boss_ids": _str_set(),    # B65 zone bosses
+    # B74: exact overworld tile ((x, y); empty = legacy save, town fallback)
+    "overworld_tile": (lambda v: list(v),
+                       lambda raw: tuple(int(n) for n in raw) if raw else ()),
     "learned_talent_ids": _str_set(),
     "talent_ranks": _dict_of(int),
     "resistances": _dict_of(float),

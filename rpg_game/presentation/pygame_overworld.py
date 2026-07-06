@@ -525,7 +525,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             safe_tiles=frozenset(self._safe_tiles),
             path_tiles=frozenset(self._build_path_tiles()),
         )
-        self.world.set_tile(*self.town_tile_by_place.get(self.engine.player.current_place_id, self.zone.start_tile))
+        # B74: a loaded engine restores its exact saved tile; otherwise the
+        # place's town tile (fresh games, legacy saves).
+        start_tile = self._restore_tile() or self.zone.start_tile
+        self.world.set_tile(*start_tile)
         self.sync_location()
         self.view_size = (min(self.world.map_px_w, 960), min(self.world.map_px_h, 640))
         # Inherit the prior window's size (already a valid on-screen size) so the
@@ -642,6 +645,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         zone-2 pool/respawn), towns set their own place.
         """
         place_id = self.world.town_place_id() or self.zone.wild_region_at(self.world.current_tile)
+        # B74: the save carries the EXACT tile (sync_location is the choke point
+        # every movement/teleport passes), so loads never snap to the region's
+        # pool-container town again.
+        self.engine.player.overworld_tile = tuple(self.world.current_tile)
         if place_id != self.engine.player.current_place_id:
             self.engine.enter_place(place_id)
         in_town = self.world.town_place_id() is not None
@@ -876,7 +883,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if not result.success:
             self.push_log(result.message, BAD)
             return
-        tile = self.town_tile_by_place.get(self.engine.player.current_place_id)
+        tile = self._restore_tile()
         if tile is not None:
             self.world.set_tile(*tile)
         self._move_accum_x = self._move_accum_y = 0.0
@@ -884,6 +891,15 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.mode = "walk"
         self._end_shown = self.engine.main_goal_complete()   # B65: track the loaded run
         self.push_log("Game loaded.", GOOD)
+
+    def _restore_tile(self) -> tuple[int, int] | None:
+        """B74: where a loaded save puts the player — the saved EXACT tile when
+        present and still walkable, else the place's town tile (legacy saves,
+        or a tile that content changes have since blocked)."""
+        saved = tuple(getattr(self.engine.player, "overworld_tile", ()) or ())
+        if len(saved) == 2 and saved not in self.world.blocked:
+            return saved
+        return self.town_tile_by_place.get(self.engine.player.current_place_id)
 
     def quit_game(self) -> None:
         self.exit_reason = "menu"
