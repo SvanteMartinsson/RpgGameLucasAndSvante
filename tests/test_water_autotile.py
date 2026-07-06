@@ -18,7 +18,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 try:
     import pygame
-    import generate_water_autotiles as gw
+    from rpg_game.tools.worldgen import generate_water_autotiles as gw
 
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard

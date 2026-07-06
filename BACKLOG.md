@@ -851,7 +851,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Not:** Rent beslut + dokumentation vid (a); (b) är en egen större post och föreslås INTE nu.
 - **Acceptans:** beslut fattat och dokumenterat; vid (a) en rad i CLAUDE.md om terminal-lägets scope.
 
-#### B61 — Verktygs-hygien: worldgen-skripten ur repo-roten  · *strukturell* · liten · prio LÅG
+#### B61 — Verktygs-hygien: worldgen-skripten ur repo-roten  · ✅ **KLAR**
+- **KLAR:** 7 skript flyttade till `rpg_game/tools/worldgen/` (git mv); `generate_bridge_halfdecks.py`
+  **raderad** (grep bekräftade 0 kod-/test-referenser — bara backloggens egen notis). README med
+  regen-flöde + **determinism-varningen** (delad rp-ström → orelaterade dekor-diffar; granska TMX-diffen
+  som helhet). Fixat vid flytt: `overworld_layout._DATA` (__file__-relativ → ../../data),
+  `regenerate_overworld`s sibling-import + 3 test-importer → paket-sökvägar. Modul importerbar +
+  datapath verifierad. Roten fri från .py-skript. 843 gröna. *Observation (utanför scope): `scratchpad/`
+  ligger också spårad i roten — kandidat för egen städning.*
 - **Vad:** Åtta skript i repo-roten (`regenerate_overworld.py`, `overworld_layout.py`, `recolor_themes.py`,
   `crispen_water.py`, `unify_overworld_theme.py`, `generate_water_autotiles.py`, `extend_verralda.py`,
   `generate_bridge_halfdecks.py`) flyttas till `rpg_game/tools/worldgen/` med en README som beskriver

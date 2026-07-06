@@ -19,7 +19,8 @@ import json
 import math
 import os
 
-_DATA = os.path.join(os.path.dirname(__file__), "rpg_game/data")
+# B61: this module lives in rpg_game/tools/worldgen/ -> the data dir is ../../data.
+_DATA = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "data"))
 WORLD_JSON = os.path.join(_DATA, "world.json")
 ZONE_JSON = os.path.join(_DATA, "maps/core_zone.json")
 

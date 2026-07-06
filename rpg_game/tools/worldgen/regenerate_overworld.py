@@ -16,7 +16,7 @@ import json
 import random
 import re
 
-import overworld_layout as L
+from rpg_game.tools.worldgen import overworld_layout as L
 
 TMX = "rpg_game/data/maps/overworld.tmx"
 WORLD = "rpg_game/data/world.json"

@@ -15,7 +15,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 try:
     import pygame
-    import recolor_themes as rt
+    from rpg_game.tools.worldgen import recolor_themes as rt
 
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard

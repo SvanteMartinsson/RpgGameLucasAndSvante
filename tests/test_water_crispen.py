@@ -13,7 +13,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 try:
     import pygame
-    import crispen_water as cw
+    from rpg_game.tools.worldgen import crispen_water as cw
 
     DEPS_OK = True
 except Exception:  # pragma: no cover - import guard
