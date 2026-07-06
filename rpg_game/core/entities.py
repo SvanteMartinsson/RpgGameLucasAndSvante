@@ -489,6 +489,7 @@ class GameContent:
     rare_loot_table: tuple[dict[str, object], ...] = ()
     upgrade_recipes: dict[str, UpgradeRecipe] = field(default_factory=dict)
     chests: dict[str, ChestDef] = field(default_factory=dict)   # B63 world chests
+    brew_recipes: dict = field(default_factory=dict)             # B68 alchemy
 
 
 @dataclass

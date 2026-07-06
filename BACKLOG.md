@@ -1007,7 +1007,17 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 - **Acceptans:** event triggas med authored frekvens; val ger deklarerade utfall; per-zon-tabeller;
   determinism med seed; tester för motor + utfall.
 
-#### B68 — Alkemi: brygg potions av materials  · *gameplay-/ekonomisystem* · medel · risk LÅG-MEDEL
+#### B68 — Alkemi: brygg potions av materials  · ✅ **KLAR (S1+S2)** · render-verifierad headless
+- **KLAR:** `core/alchemy.py` + `brews.json` (6 recept: lesser_hp/hp/mana/antidote/greater_hp/
+  greater_mana av rat_pelt/bone_dust/tattered_cloth/worg_tooth/grave_iron/chill_crystal/blessed_ash) —
+  konsumera material+guld → potion. **Balansregel test-låst:** varje brygd billigare än butikspris
+  (inkl. materialvärde) men aldrig gratis; greater-pots får en ny förvärvsväg (butiker säljer dem
+  fortfarande inte — konsistent med mana-ekonomins regel). Load-validering (okänt output/material →
+  ValueError). Apothecary-skärm: rad per recept med have/need per material + guld, dimmad tills
+  bryggbar; klick bryggar + loggar. **Motiverat beslut (interim):** apothecary-byggnaden är kuliss
+  utan dörr (B8 2b:s jobb) → bryggningen bor i general-shopens meny ("Brew potions") och flyttas till
+  apothecary-dörren när den finns (en rad). 9 tester; 876 gröna. *Zon-resistans-brygder = framtida
+  (kräver consumable→status-wiring).*
 - **Vad:** Apothecary-byggnaden (finns som kuliss i B8) får en funktion: brygg potions av
   miscellaneous-materials + guld — recept i upgrade-receptens stil (venom_gland+bone_dust → antidote;
   2×herb → hp-potion; zonmaterial → resistans-brygd mot zonens skadetyp). Upplevelsen: dropp-högen

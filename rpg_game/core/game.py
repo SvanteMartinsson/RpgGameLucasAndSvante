@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import bestiary, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -667,6 +667,16 @@ class GameEngine:
             self.collect_loot(drop)
         self.player.opened_chest_ids = (*self.player.opened_chest_ids, chest_id)
         return chests.ChestResult(True, "You open the chest.", gold=gold, drop=drop)
+
+    # --- B68: alchemy ---------------------------------------------------------
+    def brew_recipes(self) -> list:
+        return sorted(self.content.brew_recipes.values(), key=lambda r: r.gold)
+
+    def brew(self, recipe_id: str) -> alchemy.BrewResult:
+        recipe = self.content.brew_recipes.get(recipe_id)
+        if recipe is None:
+            return alchemy.BrewResult(False, "Unknown recipe.")
+        return alchemy.brew(self.player, self.content, recipe)
 
     # --- B38: skill tomes, sold at mage-tower buildings ---------------------
     def tomes_for_sale(self, building_id: str) -> list:

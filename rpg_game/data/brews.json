@@ -1,0 +1,14 @@
+[
+  { "id": "brew_lesser_hp", "output": "lesser_hp_potion", "gold": 8,
+    "materials": { "rat_pelt": 2 } },
+  { "id": "brew_hp", "output": "hp_potion", "gold": 20,
+    "materials": { "bone_dust": 3 } },
+  { "id": "brew_mana", "output": "mana_potion", "gold": 40,
+    "materials": { "tattered_cloth": 3 } },
+  { "id": "brew_antidote", "output": "antidote", "gold": 25,
+    "materials": { "worg_tooth": 1, "bone_dust": 1 } },
+  { "id": "brew_greater_hp", "output": "greater_hp_potion", "gold": 70,
+    "materials": { "grave_iron": 2, "blessed_ash": 1 } },
+  { "id": "brew_greater_mana", "output": "greater_mana_potion", "gold": 90,
+    "materials": { "chill_crystal": 2, "blessed_ash": 1 } }
+]

@@ -251,6 +251,18 @@ def load_content() -> GameContent:
     rare_loot_table = tuple(_read_json("loot.json").get("rare_table", ()))
     upgrade_recipes = _load_upgrade_recipes()
 
+    # B68: alchemy brew recipes.
+    from rpg_game.core.alchemy import BrewRecipe
+    brew_recipes = {
+        row["id"]: BrewRecipe(
+            id=row["id"],
+            output=row["output"],
+            gold=row.get("gold", 0),
+            materials=tuple(sorted(row.get("materials", {}).items())),
+        )
+        for row in _read_json("brews.json")
+    }
+
     # B63: placed world chests (empty dict when the file is absent).
     chests = {
         row["id"]: ChestDef(
@@ -311,6 +323,7 @@ def load_content() -> GameContent:
     _validate_content_refs(classes, weapons, gear_items, items, actions, talents,
                            enemies, places, rare_loot_table, upgrade_recipes)
     _validate_chests(chests, weapons, gear_items, items)
+    _validate_brews(brew_recipes, items)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -327,6 +340,7 @@ def load_content() -> GameContent:
         rare_loot_table=rare_loot_table,
         upgrade_recipes=upgrade_recipes,
         chests=chests,
+        brew_recipes=brew_recipes,
     )
 
 
@@ -350,6 +364,19 @@ def _validate_tournaments(tournaments, enemies, places, weapons, items) -> None:
         for item_id in tournament.reward.item_ids:
             if item_id not in weapons and item_id not in items:
                 raise ValueError(f"{tournament.id} references unknown reward {item_id}")
+
+
+def _validate_brews(brew_recipes, items) -> None:
+    """B68: brew outputs must be real consumables; materials real items."""
+    for recipe in brew_recipes.values():
+        output = items.get(recipe.output)
+        if output is None or output.kind != "consumable":
+            raise ValueError(f"brew {recipe.id} outputs unknown/non-consumable {recipe.output}")
+        for material_id, count in recipe.materials:
+            if material_id not in items:
+                raise ValueError(f"brew {recipe.id} references unknown material {material_id}")
+            if count < 1:
+                raise ValueError(f"brew {recipe.id} has a non-positive count for {material_id}")
 
 
 def _validate_chests(chests, weapons, gear_items, items) -> None:

@@ -1243,6 +1243,8 @@ class OverworldApp:
                 self.mode = "walk"
             elif self.mode == "tome_shop":
                 self._close_tome_shop()
+            elif self.mode == "apothecary":
+                self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
                 self.mode = "walk"
             elif self.mode == "tournament_intermission":
@@ -1347,6 +1349,8 @@ class OverworldApp:
             self._draw_store_screen()
         elif self.mode == "tome_shop":
             self._draw_tome_shop()
+        elif self.mode == "apothecary":
+            self._draw_apothecary()
         elif self.mode == "tournaments":
             self._draw_tournament_list_screen()
         elif self.mode == "tournament_confirm":
@@ -2212,6 +2216,12 @@ class OverworldApp:
         if self.engine.tomes_for_sale(building_id):
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Study skill tomes",
                              (lambda b=building_id: self._open_tome_shop(b)), True)
+            y += 52
+        # B68: brewing. INTERIM home: the general shop's counter — moves to the
+        # apothecary building's own door when B8 2b gives it one.
+        if building_id == "shop" and self.engine.brew_recipes():
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Brew potions",
+                             (lambda: self._open_apothecary()), True)
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
         self._add_button(back, T.BACK, self._close_building_menu)
         self._draw_buttons()
@@ -2256,6 +2266,42 @@ class OverworldApp:
             y += 46
         back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
         self._add_button(back, T.BACK, self._close_tome_shop)
+        self._draw_buttons()
+
+    # -- B68: apothecary brewing ----------------------------------------------
+
+    def _open_apothecary(self) -> None:
+        self.building_menu = None
+        self.mode = "apothecary"
+
+    def _brew(self, recipe_id: str) -> None:
+        result = self.engine.brew(recipe_id)
+        self.push_log(result.message, GOOD if result.success else BAD)
+
+    def _draw_apothecary(self) -> None:
+        """B68: the brewing screen — one row per recipe showing output, the
+        materials you have vs need, and the gold cost; dimmed until affordable."""
+        from rpg_game.core import alchemy
+        panel = self._overlay_panel("Apothecary — Brewing")
+        player = self.engine.player
+        self.screen.blit(self.font_sm.render(
+            f"Gold: {player.gold}    ·    materials come from drops and chests",
+            True, TEXT_DIM), (panel.x + 20, panel.y + 60))
+        y = panel.y + 92
+        for recipe in self.engine.brew_recipes():
+            output = self.engine.content.items[recipe.output].name
+            parts = []
+            for material_id, count in recipe.materials:
+                have = player.inventory.count(material_id)
+                name = self.engine.content.items[material_id].name
+                parts.append(f"{name} {have}/{count}")
+            label = f"{output}   —   {' + '.join(parts)}   ·   {recipe.gold}g"
+            can = alchemy.brew_blocker(player, recipe) is None
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
+                             (lambda rid=recipe.id: self._brew(rid)), can)
+            y += 46
+        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 
     # -- B37 Slice 2: upgrade station ---------------------------------------
