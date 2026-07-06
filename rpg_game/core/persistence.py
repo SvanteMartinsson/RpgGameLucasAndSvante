@@ -153,6 +153,7 @@ PLAYER_FIELDS: dict[str, tuple] = {
     "equipped_skill_ids": _str_tuple(),
     "talent_points": _int(0),
     "learned_skill_ids": _str_tuple(),
+    "opened_chest_ids": _str_tuple(),   # B63 world chests
     "learned_talent_ids": _str_set(),
     "talent_ranks": _dict_of(int),
     "resistances": _dict_of(float),

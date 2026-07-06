@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -647,6 +647,24 @@ class GameEngine:
 
     def use_consumable(self, item_id: str) -> inventory.UseItemResult:
         return inventory.use_consumable(self.player, self.content, item_id)
+
+    # --- B63: world loot chests ----------------------------------------------
+    def open_chest(self, chest_id: str) -> chests.ChestResult:
+        """Open a placed world chest: one-time gold + one rolled item (through the
+        normal LootDrop/collect path). Opened ids persist on the player."""
+        chest = self.content.chests.get(chest_id)
+        if chest is None:
+            return chests.ChestResult(False, "There is no chest here.")
+        if chests.is_opened(self.player, chest_id):
+            return chests.ChestResult(False, "The chest is empty.")
+        gold, entry = chests.roll_chest(chest, self.content, self.rng)
+        self.player.gold += gold
+        drop = None
+        if entry is not None:
+            drop = chests.make_drop(entry, self.content)
+            self.collect_loot(drop)
+        self.player.opened_chest_ids = (*self.player.opened_chest_ids, chest_id)
+        return chests.ChestResult(True, "You open the chest.", gold=gold, drop=drop)
 
     # --- B38: skill tomes, sold at mage-tower buildings ---------------------
     def tomes_for_sale(self, building_id: str) -> list:

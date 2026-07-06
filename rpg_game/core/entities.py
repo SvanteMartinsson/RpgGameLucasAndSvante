@@ -189,6 +189,20 @@ class ConsumableItem:
 
 
 @dataclass(frozen=True)
+class ChestDef:
+    """B63: a placed world chest. `tile` is the overworld tile it occupies
+    (solid; opened state lives on the player), `theme` picks the props sheet,
+    `tier_cap` gates the loot table like the enemy rare-table caps do."""
+    id: str
+    tile: tuple[int, int]
+    theme: str
+    gold_min: int
+    gold_max: int
+    tier_cap: int
+    loot_table: tuple[dict[str, object], ...] = ()
+
+
+@dataclass(frozen=True)
 class LootDrop:
     item_id: str
     name: str
@@ -423,6 +437,8 @@ class Player:
     elemental_attack_mods: list[dict[str, object]] = field(default_factory=list)
     pending_stat_choices: int = 0
     completed_tournament_ids: set[str] = field(default_factory=set)
+    # B63: world chests this player has looted (chest ids; a chest opens once).
+    opened_chest_ids: tuple[str, ...] = ()
     # B37 Slice 2: permanent one-time upgrades. item_id -> chosen variant id
     # (presence == upgraded). The applied deltas live in upgrade_stat_bonuses /
     # weapon_upgrade_components (derived, NOT persisted) — never in damage_bonus.
@@ -467,6 +483,7 @@ class GameContent:
     places: dict[str, Place]
     rare_loot_table: tuple[dict[str, object], ...] = ()
     upgrade_recipes: dict[str, UpgradeRecipe] = field(default_factory=dict)
+    chests: dict[str, ChestDef] = field(default_factory=dict)   # B63 world chests
 
 
 @dataclass

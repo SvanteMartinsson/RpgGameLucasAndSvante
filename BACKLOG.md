@@ -891,7 +891,16 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
 
   ### Nya system (expansionsdesign 2026-07-04, arkitekt)
 
-#### B63 — Lootkistor i världen (world containers)  · *innehållssystem* · liten-medel · risk LÅG
+#### B63 — Lootkistor i världen  · ✅ **KLAR (S1+S2)** · render-verifierad headless
+- **KLAR:** 16 kistor (4/zon, BFS-verifierade vildmarks-tiles) i `chests.json` med per-zon
+  guld-band + viktade tier-cappade tabeller (cainos cap2 → heath cap4; **chest_heath_4 cap5** =
+  bortersta hörnets godbit med veteran_ring/yew_warbow). `core/chests.py` + `engine.open_chest`
+  (samma LootDrop/collect-väg som enemy-drops, seedad rng); `opened_chest_ids` persist (B59-tabellen).
+  **STEG 0-fyndet höll:** props-arken har BÅDE stängd (96,30,32,31) och öppen (96,76,32,49) kista i
+  alla tema-recolours — ingen improviserad open-sprite behövdes. Kistor solida (blockerar), **E bredvid**
+  öppnar (dörr-mönstret), logg: "You open the chest" + guld (amber) + "Loot: X" (rarity-färg).
+  Load-validering à la B54 (`_validate_chests`). 13 tester (core/data/UI); 856 gröna. Headless-render
+  verifierad stängd→öppen. *Kart-pin för öppnad kista = valfri framtida polish; B64 konsumerar systemet.*
 - **Vad:** Placerade kistor i overworlden som spelaren går fram till och öppnar → loot-roll (guld,
   materials, ibland gear/vapen ur zonens tabell). Kistan byter till öppen sprite och förblir tömd
   (persisterad). Sex tema-varianter finns REDAN som färdig art (moss/swamp/neutral + snow/frost/ash

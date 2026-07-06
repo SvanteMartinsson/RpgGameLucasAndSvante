@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from rpg_game.core.entities import (
+    ChestDef,
     Connection,
     ConsumableItem,
     CombatAction,
@@ -250,6 +251,20 @@ def load_content() -> GameContent:
     rare_loot_table = tuple(_read_json("loot.json").get("rare_table", ()))
     upgrade_recipes = _load_upgrade_recipes()
 
+    # B63: placed world chests (empty dict when the file is absent).
+    chests = {
+        row["id"]: ChestDef(
+            id=row["id"],
+            tile=tuple(row["tile"]),
+            theme=row.get("theme", "cainos"),
+            gold_min=row.get("gold_min", 0),
+            gold_max=row.get("gold_max", 0),
+            tier_cap=row.get("tier_cap", 3),
+            loot_table=tuple(row.get("loot_table", ())),
+        )
+        for row in _read_json("chests.json")
+    }
+
     world = _read_json("world.json")
     # core_zone is the SINGLE SOURCE for town services: it drives which cluster
     # (and thus which trade building) a town renders, so has_store must derive from
@@ -295,6 +310,7 @@ def load_content() -> GameContent:
     _validate_tournaments(tournaments, enemies, places, weapons, items)
     _validate_content_refs(classes, weapons, gear_items, items, actions, talents,
                            enemies, places, rare_loot_table, upgrade_recipes)
+    _validate_chests(chests, weapons, gear_items, items)
 
     return GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -310,6 +326,7 @@ def load_content() -> GameContent:
         places=places,
         rare_loot_table=rare_loot_table,
         upgrade_recipes=upgrade_recipes,
+        chests=chests,
     )
 
 
@@ -333,6 +350,17 @@ def _validate_tournaments(tournaments, enemies, places, weapons, items) -> None:
         for item_id in tournament.reward.item_ids:
             if item_id not in weapons and item_id not in items:
                 raise ValueError(f"{tournament.id} references unknown reward {item_id}")
+
+
+def _validate_chests(chests, weapons, gear_items, items) -> None:
+    """B63: every chest loot entry must resolve (same fail-fast policy as B54)."""
+    for chest in chests.values():
+        if not chest.loot_table:
+            raise ValueError(f"chest {chest.id} has an empty loot table")
+        for entry in chest.loot_table:
+            item_id = entry.get("item_id")
+            if item_id not in weapons and item_id not in gear_items and item_id not in items:
+                raise ValueError(f"chest {chest.id} references unknown item {item_id}")
 
 
 def _validate_content_refs(classes, weapons, gear_items, items, actions, talents,

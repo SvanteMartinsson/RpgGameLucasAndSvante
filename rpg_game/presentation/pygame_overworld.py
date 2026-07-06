@@ -263,6 +263,12 @@ GATE_COLOR = (150, 90, 70)
 # B52: seam bridge decks are authored with vertical planks; rotate them 90° at
 # render so the planks run across the walking direction (Lucas's fix).
 BRIDGE_TILESETS = {"water_bridge", "bridge_halfdeck"}
+# B63: world chests. Closed/open sprites live at fixed rects in the Cainos props
+# sheet (same layout in every generated theme recolour). Chest tiles are SOLID;
+# stand next to one and press E/Enter to open it.
+PROPS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "props")
+CHEST_CLOSED_RECT = (96, 30, 32, 31)
+CHEST_OPEN_RECT = (96, 76, 32, 49)
 
 
 # --- zone config -----------------------------------------------------------
@@ -578,6 +584,12 @@ class OverworldApp:
                 for dx in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
                     for dy in range(-SAFE_TILE_MARGIN, SAFE_TILE_MARGIN + 1):
                         self._safe_tiles.add((cx + dx, cy + dy))
+        # B63: chests are solid world objects — block their tiles (before the
+        # encounter map freezes) and load the per-theme closed/open sprites.
+        self.chest_tiles = {tuple(chest.tile): chest.id
+                            for chest in self.engine.content.chests.values()}
+        self.world.blocked |= set(self.chest_tiles)
+        self._chest_sprites = self._load_chest_sprites()
         # B55: freeze the tile geometry the CORE pacing rule reads (towns, the
         # B32 no-encounter zone, road tiles). The base rate stays a live attribute
         # (self.encounter_rate) so runtime tuning and tests keep working.
@@ -1264,6 +1276,8 @@ class OverworldApp:
                 door = self.door_index.get(self.world.current_tile)
                 if door is not None:
                     self._interact_door(*door)
+                    return
+                self._try_open_chest()   # B63: open an adjacent chest
 
     def update(self) -> None:
         if self.overlay or self.mode != "walk":
@@ -1763,6 +1777,60 @@ class OverworldApp:
                 pygame.draw.rect(world, PLAYER_COLOR, payload, border_radius=4)
                 pygame.draw.rect(world, PLAYER_EDGE, payload, width=2, border_radius=4)
 
+    def _load_chest_sprites(self) -> dict:
+        """B63: (theme, opened) -> chest sprite, cropped from the theme's props
+        sheet (cainos original; generated recolours share the layout). A missing
+        sheet degrades to None (chest still blocks + opens, just invisible)."""
+        sprites: dict = {}
+        themes = {chest.theme for chest in self.engine.content.chests.values()}
+        for theme in themes:
+            if theme == "cainos":
+                path = os.path.join(PROPS_DIR, "cainos", "TX Props.png")
+            else:
+                path = os.path.join(PROPS_DIR, "generated", f"04-TX-Props__{theme}.png")
+            try:
+                sheet = pygame.image.load(path).convert_alpha()
+                sprites[(theme, False)] = sheet.subsurface(pygame.Rect(*CHEST_CLOSED_RECT)).copy()
+                sprites[(theme, True)] = sheet.subsurface(pygame.Rect(*CHEST_OPEN_RECT)).copy()
+            except (pygame.error, FileNotFoundError):
+                sprites[(theme, False)] = sprites[(theme, True)] = None
+        return sprites
+
+    def _draw_chests(self, world: "pygame.Surface", ox: int, oy: int,
+                     left: int, right: int, top: int, bottom: int) -> None:
+        """Draw every chest in view, bottom-anchored on its tile; open state reads
+        from the player's persisted opened_chest_ids."""
+        tw, th = self.world.tw, self.world.th
+        opened = set(self.engine.player.opened_chest_ids)
+        for chest in self.engine.content.chests.values():
+            cx, cy = chest.tile
+            if not (left - 1 <= cx < right + 1 and top - 1 <= cy < bottom + 2):
+                continue
+            sprite = self._chest_sprites.get((chest.theme, chest.id in opened))
+            if sprite is None:
+                continue
+            world.blit(sprite, (cx * tw - ox, (cy + 1) * th - oy - sprite.get_height()))
+
+    def _try_open_chest(self) -> bool:
+        """E/Enter: open a chest on an adjacent tile (chests are solid, so the
+        player always stands next to one). Returns True if a chest was there."""
+        px, py = self.world.current_tile
+        for tile in ((px + 1, py), (px - 1, py), (px, py + 1), (px, py - 1)):
+            chest_id = self.chest_tiles.get(tile)
+            if chest_id is None:
+                continue
+            result = self.engine.open_chest(chest_id)
+            if not result.success:
+                self.push_log(result.message, TEXT_DIM)
+                return True
+            self.push_log(result.message, TEXT)
+            self.push_log(f"+{result.gold} gold", chatlog.GOLD)
+            if result.drop is not None:
+                self.push_log(f"Loot: {result.drop.name}",
+                              chatlog.rarity_color(result.drop.rarity))
+            return True
+        return False
+
     def _bridge_deck_image(self, gid, image):
         """B52: rotate seam bridge-deck tiles 90° so their planks run across the
         walking direction. Cached per gid; non-bridge tiles pass through."""
@@ -1815,6 +1883,7 @@ class OverworldApp:
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
                         world.blit(self._bridge_deck_image(gid, image), dest)
+        self._draw_chests(world, ox, oy, left, right, top, bottom)   # B63
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
         for (tx, ty), place_id in self.world.town_tiles.items():
             label_xy = (self.zone.town_labels.get((tx, ty), place_id),
