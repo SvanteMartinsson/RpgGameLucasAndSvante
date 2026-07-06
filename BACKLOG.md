@@ -702,3 +702,341 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   prickar, rena en-tile-buskar, stadscobble matchar zonens gräs.
 - **has_store från core_zone** (`dd74c8b`) — has_store härleds ur core_zone (single source); rest/store-
   gating fixad. *(Kurerat butiksinnehåll för de 9 nyaktiverade stores = B43, öppen.)*
+
+
+
+
+  ### Kodhälsa & infrastruktur (systemgenomlysning 2026-07-04, arkitekt)
+
+#### B53 — CI-pipeline: compileall + båda testsviterna på varje push  · *strukturell* · liten · prio HÖG
+- **Vad:** GitHub Actions-workflow som på varje push/PR kör (a) `python3 -m compileall -q rpg_game tests`,
+  (b) systemsviten (`python3 -m unittest discover -s tests`), (c) venv-jobbet med `requirements.txt`
+  (pygame-beroende tester, headless via dummy-videodriver).
+- **Avsikt:** 794 tester skyddar bara den som kör dem. Idag upptäcks en trasig push först vid nästa
+  lokala körning — med två samarbetande parter (Lucas + Svante) och nattbatchar är det ett riskfönster.
+- **Not:** STEG 0: verifiera att pygame-testerna kör headless (SDL_VIDEODRIVER=dummy) — annars markera
+  vilka som kräver display och kör dem i venv-jobbet med dummy-driver. Ingen kodändring i spelet.
+- **Acceptans:** grön/röd status på push i GitHub; båda sviterna + compileall körs; en avsiktligt
+  trasig test-push blir röd.
+
+#### B54 — Load-time cross-referens-validering av content (fail fast, inte tyst skip)  · *strukturell* · liten · prio HÖG
+- **Vad:** `data_loader.load_content` validerar idag turneringar/gear men INTE: enemy `action_ids`,
+  loot-tabellernas item-ids, tome-`teaches`, upgrade-receptens target/material-ids. Lägg samma
+  `raise ValueError`-validering för dessa + besluta policyn: okänt id = fel vid load (ersätter dagens
+  blandning av tyst skip i `combat.py:202,759` och KeyError-krasch i `combat.py:843`).
+- **Avsikt:** Ett stavfel i enemies.json gör idag att en fiende ljudlöst tappar en skill — osynligt i
+  test och spel. 42 fiender × 79 actions × växande content: fel ska smälla vid load, inte försvinna.
+- **Not:** STEG 0: inventera ALLA id-referenser i datafilerna (enemies→actions/loot, loot→items/weapons/
+  gear, upgrades→items/materials, tomes→actions, classes→skills/weapons) och lista vilka som saknar
+  validering. Befintliga tester som medvetet använder trasiga ids kan behöva fixtures.
+- **Acceptans:** varje id-referens i data valideras vid load; ett injicerat stavfel i varje kategori
+  ger ValueError med tydligt meddelande; sviten grön.
+
+#### B55 — Flytta encounter-taktningen till core (rate-heatmap som motorlogik)  · *strukturell* · medel · prio HÖG
+- **Vad:** `encounter_rate_at`, `_nearest_town_dist`, `_on_path` och slumpdragningen i `maybe_encounter`
+  (pygame_overworld rad ~752–792) flyttas till core (t.ex. `core/encounters.py`), parametriserad på
+  tile-position + stads-/väg-data. Presentationen frågar bara "encounter nu? (tile)" per steg.
+- **Avsikt:** NÄR fiender dyker upp är spelregler, inte rendering. I core blir taktningen (a) simbar —
+  sim kan äntligen mäta res-fara/encounters-per-resa, (b) delad med terminal-läget, (c) rätt lager för
+  B12:s nivåtak-diskussion och B48:s spawn-authoring att bygga på.
+- **Not:** STEG 0: mät nuvarande beteende (rate-värden per avstånd/väg) och lås det med tester FÖRE
+  flytt — flytten ska vara beteende-identisk (samma rng-ström om möjligt; annars dokumentera skiftet).
+  Kräver att core får tillgång till stads-positioner + path-tiles (finns i core_zone/TMX-data — avgör
+  minsta dataryta som behöver exponeras). Enabler för B12/B48; bygg denna FÖRST.
+- **Acceptans:** encounter-taktning i core med egna enhetstester; pygame-skalet anropar core;
+  beteende-identiskt verifierat (rate-kurvan matchar uppmätt baseline); sim kan räkna encounters
+  per simulerad resa.
+
+#### B56 — Dela upp OverworldApp (gud-klass 2856 rader → moduler)  · *strukturell* · stor · prio MEDEL
+- **Vad:** `pygame_overworld.py` bär ≥12 ansvarskluster i en klass. Extrahera i steg: (1) kart-/terräng-
+  rendering (map overlay, minimap, town/bridge/grave-draw) → egen modul; (2) byggnadsmenyer (tome-shop,
+  upgrade-station, store) → egen; (3) overlays (character/inventory/skills/tournaments) → egen (naturligt
+  ihop med B40 S2–S5 som ändå skriver om dem); (4) kvar: app-skal (loop, events, engine-wiring, HUD).
+- **Avsikt:** Varje B40-apply-slice, varje ny byggnadsfunktion (B8 2b, B22, B23) och varje kart-feature
+  landar idag i samma fil — merge-yta, lästid och regressionsrisk växer för varje slice.
+- **Not:** REN refaktor, beteende-bevarande, en extraktion per commit. SAMORDNA med B40 S2–S5: gör
+  extraktion (3) som del av respektive apply-slice i stället för dubbelarbete. STEG 0: rita beroende-
+  kartan (vilka metoder delar state) innan snittet läggs. Inga nya features i denna post.
+- **Acceptans:** pygame_overworld.py < ~1200 rader; extraherade moduler med tydliga gränssnitt;
+  render-identiskt (referens-screenshots före/efter); sviten grön.
+
+#### B57 — En text-wrap: konsolidera tre implementationer till ui  · *strukturell* · liten · prio MEDEL
+- **Vad:** `ui._wrap`, `chatlog.wrap_lines` och `pygame_overworld._wrapped_lines_pixels`/`_fit_text` är
+  tre parallella wrap/trunkerings-implementationer. Gör `ui`-versionen till den enda (superset:
+  word-wrap + teckenbrytning av överlånga ord + ellipsis-fit) och låt chatlog + overworld använda den.
+- **Avsikt:** Samma buggklass (wrap-kanter, breda tecken) ska fixas på ETT ställe; B40-apply-slices
+  bygger tooltips/rader ovanpå wrap och ska inte ärva tre beteenden.
+- **Not:** STEG 0: diffa de tre (chatlog bryter över-långa ord per tecken; fit trunkerar med "…") och
+  bygg supersetet med tester som låser alla tre beteendena innan bytet.
+- **Acceptans:** en wrap-implementation i ui; chatlog + overworld delegerar; wrap-tester täcker
+  ord-brytning, teckenbrytning, ellipsis; render-identiskt i logg + overlays.
+
+#### B58 — Combat-resolutionens megafunktioner: dispatch per effekt-typ  · *strukturell* · medel · prio MEDEL
+- **Vad:** `apply_effect` (209 rader, 14 effekt-typer i en if/elif-kedja), `resolve_action` (~80) och
+  `game.run_combat_turn` (114) fasindelas: effekt-typ → handler-tabell (`EFFECT_HANDLERS[type]`),
+  turn-flödet → namngivna faser (initiativ → aktion → on-hit → statusar → cooldowns → utfall).
+- **Avsikt:** Varje ny mekanik (B41-procs var senast) växer samma funktioner; en dispatch-tabell gör
+  nästa effekt-typ till en isolerad handler + test i stället för en ny gren mitt i 209 rader.
+- **Not:** REN refaktor, beteende-bevarande — 794 gröna tester är skyddsnätet; kör sviten per
+  extraherad handler. INGA balansändringar i denna post. STEG 0: lista alla effekt-typer + var de
+  konsumeras (combat + talents + upgrades delar EffectSpec).
+- **Acceptans:** apply_effect < ~40 rader dispatch; en handler per effekt-typ med egna tester;
+  run_combat_turn läsbart fasindelad; sviten grön utan testdiffar.
+
+#### B59 — Save-schema-härdning: version, central fälttabell, invariant-check vid load  · *strukturell* · medel · prio HÖG
+- **Vad:** (a) Bumpa `SAVE_VERSION` vid varje schemaändring + en migrations-tabell (version→migrering)
+  i stället för ad-hoc-funktioner; (b) central serialize/deserialize-tabell för Players ~50 fält så nya
+  fält inte kan glömmas i endera riktningen; (c) invariant-verifiering vid load (talent_ranks ↔
+  learned_talent_ids; deriverade fält REBYGGS alltid: talent_skill_ranks, upgrade_stat_bonuses,
+  weapon_upgrade_components); (d) round-trip-test som failar när ett nytt Player-fält saknar
+  serialisering.
+- **Avsikt:** Saven är spelarens hela progression. Schemat har vuxit kraftigt (ranks, upgrades, tomes,
+  wisdom, fog-bitset) på version 1 med invarianter som bara lever i kommentarer — en glömd rad i
+  persistence = tyst progressionsförlust.
+- **Not:** STEG 0: inventera vilka Player-fält som persisteras vs deriveras idag (kommentarerna påstår —
+  verifiera mot koden) och skriv round-trip-testet FÖRST så gapet syns. Bakåtkompatibilitet: gamla
+  v1-saves ska fortsätta ladda (migrations-tabellen börjar med dagens migreringar).
+- **Acceptans:** round-trip-test över alla persisterade fält; invariant-check vid load med tydligt fel;
+  nytt-fält-utan-serialisering får testet att faila; gammal save laddar via migrations-tabellen.
+
+#### B60 — Terminal-lagrets öde: supportat läge eller debug-verktyg (beslut)  · *strukturell (beslut)* · liten · prio LÅG
+- **Vad:** `terminal.py` (809 rader) är `__main__`-entrypoint och testad, men har driftat: saknar
+  upgrade-stationer, tome-shop, minimap m.m. Besluta: (a) deklarera det som debug-/smoke-läge med
+  uttalad feature-frysning (dokumentera vad det INTE stödjer i README/CLAUDE.md), eller (b) lyfta det
+  till paritet, eller (c) pensionera det (entrypoint → pygame). Rekommendation: (a) — det är billigt,
+  testbärande och bra för core-rök, men ska inte låtsas vara ett fullt spel-läge.
+- **Avsikt:** Odefinierad status gör att varje ny feature tyst ökar driften och ingen vet om ett
+  terminal-hål är en bugg eller by design.
+- **Not:** Rent beslut + dokumentation vid (a); (b) är en egen större post och föreslås INTE nu.
+- **Acceptans:** beslut fattat och dokumenterat; vid (a) en rad i CLAUDE.md om terminal-lägets scope.
+
+#### B61 — Verktygs-hygien: worldgen-skripten ur repo-roten  · *strukturell* · liten · prio LÅG
+- **Vad:** Åtta skript i repo-roten (`regenerate_overworld.py`, `overworld_layout.py`, `recolor_themes.py`,
+  `crispen_water.py`, `unify_overworld_theme.py`, `generate_water_autotiles.py`, `extend_verralda.py`,
+  `generate_bridge_halfdecks.py`) flyttas till `rpg_game/tools/worldgen/` med en README som beskriver
+  regen-flödet + determinism-varningen (regen shufflar delad rp-ström → orelaterade diffar).
+  `generate_bridge_halfdecks.py` är orefererad — verifiera och radera eller dokumentera.
+- **Avsikt:** Roten ska visa spel + dokumentation, inte engångs-verktyg; determinism-fällan har redan
+  bitit oss en gång (bush-fixen) och ska stå skriven vid verktygen.
+- **Not:** STEG 0: grep import-/doc-referenser per skript (uppmätt: bridge_halfdecks=0 refs) innan
+  flytt/radering; uppdatera sökvägar i docs som pekar på dem.
+- **Acceptans:** roten fri från worldgen-skript; tools/worldgen/README med regen-flöde + varning;
+  inga trasiga referenser; orefererat skript raderat eller motiverat.
+
+#### B62 — Sim-utökning: ekonomi- och loot-flödesmätning  · *strukturell (mätverktyg)* · medel · prio MEDEL
+- **Vad:** Bygg ut `core/simulation.py` med en ekonomi-harness: simulera N resor/fights per level-band
+  och rapportera guld in (drops, sälj) / guld ut (rest, potions, upgrades, resor), drop-rates per
+  rarity/tier (N≥200), och material-inflöde (miscellaneous per zon). Encounter-delen förutsätter B55.
+- **Avsikt:** B22 (enchant-priser), B8 2b (butiksinnehåll per stad) och framtida guld-sinks ska tunas
+  mot mätdata, inte ögonmått — samma princip som weapon-aware-simmen gav B37.
+- **Not:** MÄTVERKTYG, ingen balansändring. STEG 0: definiera rapportformatet med Lucas (vilka kolumner
+  gör tuning-beslut möjliga). Tuning-poster som följer av mätningen skapas separat och märks *tuning*.
+- **Acceptans:** en sim-körning ger guld-in/ut + drop-rate-tabell per level-band; deterministisk med
+  seed; används i minst en verklig tuning-fråga (t.ex. rest-kostnad vs guld-inflöde) som beslutsunderlag.
+
+
+
+
+
+  ### Nya system (expansionsdesign 2026-07-04, arkitekt)
+
+#### B63 — Lootkistor i världen (world containers)  · *innehållssystem* · liten-medel · risk LÅG
+- **Vad:** Placerade kistor i overworlden som spelaren går fram till och öppnar → loot-roll (guld,
+  materials, ibland gear/vapen ur zonens tabell). Kistan byter till öppen sprite och förblir tömd
+  (persisterad). Sex tema-varianter finns REDAN som färdig art (moss/swamp/neutral + snow/frost/ash
+  för framtida zoner) — de saknar bara ett system. Spelarens upplevelse: fog-kartan avslöjar inte
+  bara terräng längre; bakom udden kan det stå något att HITTA.
+- **Avsikt:** Utforskning belönas idag bara med karta-avtäckning och encounters. Kistor ger fysiska
+  upptäckter — skäl att gå den längre vägen, kolla vikar, runda minisjön (B45).
+- **Not:** Hakar i: loot-/rarity-systemet (B6-droptables, authored rarity), persistens (öppnade kistor
+  → save, jfr revealed_tiles-mönstret), fog/minimap (öppnad kista kan bli kart-pin), zonteman.
+  Placering authoras i core_zone-stil (data). STEG 0: var i pipelinen props ritas + kollideras så
+  kistan blir interagerbar à la dörr. Rarity-viktning per zon-band ska respektera rare_tier_cap.
+  KONKURRENS: B64 (dungeons) vill använda samma kist-system som rums-belöning — bygg DENNA först,
+  B64 konsumerar den.
+- **Slices:** (1) kist-entitet + interaktion + loot-roll + persistens, 3–5 handplacerade kistor i
+  cainos (render-HALT); (2) zon-utrullning med per-zon-tabeller + tema-sprites + kart-pin;
+  (3) [valfri] sällsynt "låst kista" som kräver nyckel-item (drop från elit) → mini-mål.
+- **Acceptans:** kista syns/öppnas/lootar/förblir tömd över save-load; loot respekterar zon + tier-cap;
+  minst N kistor per zon; tester för roll + persistens.
+
+#### B64 — Dungeons: instansierade interiörer med kurerade strider  · *innehållssystem* · stor · risk MEDEL-HÖG
+- **Vad:** Ingångar i världen (grotta/ruin/gravvalv) som leder till en egen liten karta (5–10 rum i
+  eget TMX): kurerade encounters i stället för slump, ett tema (t.ex. spindelbo → vermin), en
+  loot-kista (B63) i slutet och plats för en boss (B65). Spelaren kan lämna, men läkning är begränsad
+  därinne → ett åtagande, inte en promenad. Upplevelsen: "jag går IN i något" — koncentrerad fara
+  med tydlig payoff, mot overworldens strösslade encounters.
+- **Avsikt:** All strid sker idag på samma yta med samma rytm. Dungeons ger loopen kadens:
+  förberedelse (potions, rätt vapen mot temat via skadestegen) → åtagande → klimax → hemresa.
+- **Not:** Hakar i: TMX-pipeline (Overworld-klassen kan sannolikt återanvändas för interiör-kartor —
+  STEG 0: mät vad som är overworld-specifikt i den), encounter-taktning (kurerade rum i st. f. rate
+  — bygger renare OVANPÅ B55 om den godkänns), B63-kistor, trait-teman (max 2 traits styr dungeonens
+  identitet), B48-authoring (dungeon = extremfallet av per-område-spawn). Kräver interiör-tileset
+  (Cainos har grott-/dungeon-set — verifiera licens/tillgång, annars begränsad ny asset-yta).
+  STÖRSTA nya system i listan → egen designrunda före bygge (rum-graf? nycklar? respawn?).
+- **Slices:** (1) interiör-kartladdning + in/ut-övergång med EN handbyggd testdungeon utan strid
+  (render-HALT); (2) kurerade encounters per rum + begränsad läkning + kista i slutet; (3) första
+  riktiga dungeonen (tema, 5–10 rum, authored i data); (4) boss-rum (kopplar B65).
+- **Acceptans:** ingång→interiör→utgång stabil inkl. save inne; kurerade strider triggar per rum;
+  temat läses (fiender+tileset); kistan i slutet lootar; reachability i interiören verifierad; tester.
+
+#### B65 — Zonbossar + huvudmål (spelets ryggrad och slut)  · *innehållssystem* · medel-stor · risk MEDEL
+- **Vad:** En namngiven boss per zon (4 st) med signaturmekanik byggd på BEFINTLIGA primitiv — främst
+  telegraferade laddningsattacker (charging_action_id finns redan i combat) + statusar + trait-matrisen
+  (max 2 traits, fasta stegen: bossen är inget nytt mattesystem, bara en STARK, läsbar fiende med
+  faser via hp_percent-AI som redan finns). Att fälla alla fyra öppnar slutkonfrontationen → spelet
+  får ett SLUT med victory-skärm. Upplevelsen: en riktning ("jag är här för att...") och fyra
+  minnesvärda väggar som kräver förberedelse.
+- **Avsikt:** Loopen saknar mål — inget "klart", ingen anledning att bli stark UTÖVER att bli stark.
+  Bossar ger progressionen en adress och zonerna varsin krona.
+- **Not:** Hakar i: enemy-AI:ns ai_condition_met/hp_percent (fas-beteende), charging (telegraph),
+  traits/resistanser (bossens svaghet lär spelaren skadestegen), turnerings-buffmönstret (stat-
+  skalning finns), B64 (boss-rum är naturliga hem — men v1 kan bo i overworld-lyor för att inte
+  blockeras av dungeons), B23-quests (huvudmålet KAN uttryckas som quest-kedja när B23 finns — inte
+  ett beroende). Belönings-items = designbärande (HALT, Lucas väljer signatur). STEG 0: mät vad
+  enemy-AI:n klarar idag (multi-fas? summon?) innan signaturmekanik låses.
+- **Slices:** (1) boss-ramverk: elit-markering, fas-AI via hp-trösklar, telegraph-mönster + FÖRSTA
+  bossen i en overworld-lya (render+balans-HALT); (2) bossar 2–4 med varsin signatur + zon-placering;
+  (3) huvudmåls-arc: bossräknare, slutkonfrontation, victory-skärm + credits.
+- **Acceptans:** varje boss har läsbar signatur (telegraph syns i loggen/UI), är klarbar on-level med
+  förberedelse (sim N≥200 för extremer, playtest för känsla); alla fyra → slutstrid → victory-skärm;
+  persistens av fällda bossar; tester för fas-AI.
+
+#### B66 — Bestiarium (kunskaps-codex över fiender)  · *gameplay-system* · liten-medel · risk LÅG
+- **Vad:** En codex-skärm (meny-val) som fylls i medan man spelar: möt en fiende → namn+silhuett
+  registreras; använd Identify (finns redan: identify_enemy/EnemyReveal) eller döda N st → traits,
+  resistanser, skills och loot-tabell låses upp. Upplevelsen: skadestegen och trait-systemet — spelets
+  taktiska kärna — blir SYNLIG kunskap man samlar, i stället för något man måste komma ihåg från
+  stridsloggen.
+- **Avsikt:** Trait/resistans-systemet är djupt men osynligt mellan strider; Identify är underanvänt.
+  Bestiariet gör lärandet till progression och belönar att möta ALLT (42 fiender är värda att visa upp).
+- **Not:** Hakar i: EnemyReveal (datat finns — det saknar bara persistens + skärm), enemy-sprites
+  (porträtt = befintlig art nedskalad), B40-menyspecen (bygg skärmen MED den delade UI-grunden +
+  hover-tooltips), save (sedda/identifierade per enemy_id). Ev. liten belöning vid komplett zon-
+  sida (guld/titel) = valfri slice. STEG 0: vad EnemyReveal exponerar idag vs vad codexen vill visa.
+- **Slices:** (1) persistens av mött/identifierat + codex-skärm med namn/sprite/nivåband (render-HALT);
+  (2) upplåsning av traits/resist/loot via Identify-eller-N-kills + hover-detaljer enligt B40-spec;
+  (3) [valfri] samlar-belöning per komplett zon.
+- **Acceptans:** möt→syns, identifiera→detaljer; persisterar; skärmen följer menyspecen; tester för
+  upplåsnings-regler.
+
+#### B67 — Reshändelser (text-val i vildmarken)  · *gameplay-system* · liten-medel · risk LÅG
+- **Vad:** Sällsynt (i st. f. en encounter) triggas en text-händelse i loggen/panel med 2–3 val:
+  "En övergiven kärra: rota igenom (loot, risk för bakhåll) / gå vidare" · "Ett vägaltare: offra 20
+  guld (+buff till nästa strid) / vila blicken (+liten heal)" · "Skadad handelsman: hjälp (guld senare
+  i staden) / ignorera". Utfall använder BEFINTLIGA primitiv: guld, items, statusar, encounter-start.
+  Upplevelsen: vildmarken pratar — resor får smak och små beslut utan en enda ny asset.
+- **Avsikt:** Mellan strider är resandet händelselöst; events ger variation och återspelbarhet till
+  själva vandrandet — den aktivitet spelaren gör mest av.
+- **Not:** Hakar i: encounter-rollen (event ersätter en encounter-slot — renast OVANPÅ B55 i core så
+  sim kan räkna event-frekvens), chatlog/overlay-UI (valen som knappar via delade Button), economy,
+  statussystemet (buff till nästa strid = ActiveStatus). Events authoras i data (events.json:
+  villkor per zon, vikt, val→utfall). Ton/texter = Lucas godkänner (HALT på första batchen).
+  STEG 0: var i maybe_encounter-flödet en event-gren renast hakar in.
+- **Slices:** (1) event-motor (data-driven: trigger, val, utfall) + 3 handskrivna events i cainos
+  (HALT på text+frekvens); (2) zon-specifika event-tabeller (~4–6/zon) + villkor (nivå, guld);
+  (3) [valfri] kedje-event ("handelsmannen minns dig" vid stadsbesök).
+- **Acceptans:** event triggas med authored frekvens; val ger deklarerade utfall; per-zon-tabeller;
+  determinism med seed; tester för motor + utfall.
+
+#### B68 — Alkemi: brygg potions av materials  · *gameplay-/ekonomisystem* · medel · risk LÅG-MEDEL
+- **Vad:** Apothecary-byggnaden (finns som kuliss i B8) får en funktion: brygg potions av
+  miscellaneous-materials + guld — recept i upgrade-receptens stil (venom_gland+bone_dust → antidote;
+  2×herb → hp-potion; zonmaterial → resistans-brygd mot zonens skadetyp). Upplevelsen: dropp-högen
+  med "skräp" blir råvaror, och förberedelse inför en svår strid (boss! dungeon!) får en verkstad.
+- **Avsikt:** Materials har idag EN sink (item-upgrades, engångs). Alkemi ger en ÅTERKOMMANDE sink +
+  gör consumable-ekonomin spelardriven i st. f. bara butiksköpt.
+- **Not:** Hakar i: upgrade-systemets recept-mönster (samma dataform, annan output — STEG 0: mät hur
+  mycket av upgrades.py som kan återanvändas rakt av), miscellaneous-items (B42 la zon-material),
+  B8 2b (apothecary-triggern — kan bygga före eller efter), B63/B64/B65 (kistor/dungeons/bossar
+  matar och motiverar brygderna). DESIGNUTRYMMES-KONKURRENS med B22 (enchant-vendors): båda är
+  material+guld-sinks vid stationer. REKOMMENDATION: alkemi FÖRE enchants — mindre (consumables är
+  enklare än permanenta item-modifikationer), återanvänder upgrade-mönstret rakare, och ger B65-
+  bossarna förberedelse-djup direkt. B22 därefter med lärdomarna.
+- **Slices:** (1) recept-data + brygg-core (konsumera→skapa, persistens ej nödvändig — potions är
+  vanliga items) + tester; (2) apothecary-UI enligt B40-menyspecen (render-HALT); (3) recept-batch
+  per zon (zonmaterial → zon-relevant brygd) + balans-pass mot droprates (sim/B62 om godkänd).
+- **Acceptans:** recept konsumerar material+guld och ger item; UI visar krav/ägt (dämpat om ej
+  råd, B40-spec); zonrecept känns zonknutna; ingen brygd trivialiserar (extremkoll via sim); tester.
+
+#### B69 — Ljud: musik + effekter (pygame.mixer)  · *stödsystem* · medel · risk MEDEL
+- **Vad:** Spelet är idag HELT tyst. Lägg ett tunt ljudlager: zonmusik (en loop per zon + stads-tema),
+  stridsmusik, och effekter för de tunga ögonblicken (träff, crit, level-up, loot, kista, dörr,
+  knapptryck). Upplevelsen transformeras för i princip varje minut av spel — tystnad → atmosfär.
+- **Avsikt:** Känsla/atmosfär är loopens mest eftersatta dimension; ljud är den enskilt största
+  förändringen per byggtimme som finns kvar i projektet.
+- **Not:** Hakar i: pygame.mixer (finns i beroendet redan — ingen ny teknik), event-punkter som redan
+  är tydliga i koden (resolve_battle_outcome, push_log-ögonblicken, level-up-modalen, dörr-interaktion).
+  ASSET-KÄLLA = risken: CC0-bibliotek (Kenney/OpenGameArt/freesound) håller assetbördan rimlig för
+  två personer — Lucas väljer/godkänner paletten (HALT på ljudval, precis som sprites). Volym-
+  kontroll kräver B70 (bygg B70:s skelett först eller ihop). STEG 0: mixer-init headless-säkert
+  (CI/tester får inte kräva ljuddevice — dummy-driver).
+- **Slices:** (1) ljudmotor: init, kanaler, volym-API, graceful headless + 3 UI-ljud (HALT på känsla);
+  (2) stridsljud (träff/crit/seger/nederlag) + level-up/loot; (3) musik: zon-loopar + strids-tema +
+  crossfade vid battle-övergång.
+- **Acceptans:** ljud spelar vid deklarerade händelser; volym justerbar (via B70); headless-körning
+  tyst utan krasch; assets licens-dokumenterade; sviten grön.
+
+#### B70 — Inställningsmeny  · *stödsystem* · liten · risk LÅG
+- **Vad:** En Settings-skärm (från startmeny + ESC-meny): musik-/effektvolym (B69), fullskärm/fönster
+  (toggle finns — får ett hem), loggstorlek (resize_log finns — får UI), och en läsbar tangent-
+  översikt (M/K/C/I/ESC…). Inställningar persisteras i en settings.json separat från saven.
+  Upplevelsen: spelet känns som en produkt, inte ett prototyp-fönster.
+- **Avsikt:** Reglagen finns utspridda som tangenter utan upptäckbarhet; ljudet (B69) KRÄVER volym-
+  kontroll. Billigaste "färdigt spel"-signalen i listan.
+- **Not:** Hakar i: B40-menyspecen (byggs som första NYA skärm på delade grunden — bra stresstest av
+  S1-komponenterna), pygame_canvas (fixed-layout-mönstret för startmenyn finns), B69 (volym-API).
+  STEG 0: inventera alla runtime-reglage som idag bara nås via tangent.
+- **Slices:** (1) settings-skärm + persistens (fullskärm, loggstorlek, tangent-översikt) (render-HALT);
+  (2) volymreglage när B69 S1 finns.
+- **Acceptans:** nås från start+ESC; ändringar tar effekt direkt + persisterar över omstart; följer
+  B40-spec; tester för persistens.
+
+#### B71 — Save-slots + autosave + dödsflöde  · *stödsystem* · liten-medel · risk LÅG
+- **Vad:** Tre namngivna save-slots (i st. f. hårdkodade savegame.json) med metadata i menyn (namn,
+  klass, level, plats, speltid) + AUTOSAVE vid stadsentré och efter strid (separat slot) + ett värdigt
+  dödsflöde: "Du föll" → ladda senaste autosave / senaste manuella / huvudmeny. Upplevelsen: trygghet —
+  experimentera, dö mot en boss (B65!), förlora minuter i stället för timmar.
+- **Avsikt:** En slot + bara manuell save är riskabelt precis när spelet får farligare innehåll
+  (bossar, dungeons). Skyddar spelarens tid.
+- **Not:** Hakar i: persistence (ren utökning av path-hanteringen; RIDER på B59-härdningen om den
+  godkänns — annars fristående), start_menu_options (slot-väljare ersätter binär new/load),
+  resolve_battle_outcome (autosave-krok + dödsflödet bor där). STEG 0: mät nuvarande death→respawn-
+  flöde innan dödsskärmen läggs på. Speltids-räknare = nytt litet persisterat fält.
+- **Slices:** (1) slot-infra (3 slots + metadata + väljar-UI i startmenyn); (2) autosave-krokar
+  (stadsentré, post-battle) + dödsskärm med laddningsval (render-HALT).
+- **Acceptans:** tre slots med metadata; autosave triggar deklarerat; död → val fungerar; gamla
+  savegame.json migreras till slot 1; tester för slot-IO + autosave-trigger.
+
+#### B72 — Stridskänsla: flytande skadesiffror + träff-feedback  · *känsla/polish* · liten · risk LÅG
+- **Vad:** När skada landar: siffran flyter upp från målet och tonar ut (färg efter skadetyp/crit —
+  återanvänd chatlog-paletten), målets sprite blinkar vit en frame, en kort skärmskakning på crits
+  och tunga träffar, ~2 frames hit-pause på dödsslag. Upplevelsen: varje träff KÄNNS — striden får
+  vikt utan en enda regeländring.
+- **Avsikt:** Striden är mekaniskt djup men taktilt platt; detta är billigaste vägen till att varje
+  strid (spelarens vanligaste aktivitet) känns bättre.
+- **Not:** Hakar i: pygame_battle (sprite-rendering + en enkel partikel/float-lista i draw-loopen),
+  ActionResolution/DamageComponent (siffror + typ finns i resultatet REDAN — per-träff-datat räcker
+  för siffror även innan B44:s strukturerade LOGG-events; notera relationen: B44 handlar om loggen,
+  detta om scenen), chatlog-paletten (färgkonsekvens). STEG 0: mät var i battle-draw ett flytande
+  lager renast ligger + att skakning inte stör canvas-skalningen (pygame_canvas-offset).
+- **Slices:** (1) flytande skadesiffror + vit blink (render-HALT); (2) skärmskak på crit + hit-pause
+  på kill + [valfri] enkel partikel-puff vid död.
+- **Acceptans:** siffror/blink/skak triggar rätt och stör inte layouten (canvas-skalning intakt);
+  kan stängas av (krok för B70); render-review; sviten grön.
+
+#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · *känsla/polish* · liten-medel · risk LÅG-MEDEL
+- **Vad:** Ett tunt atmosfärslager i overworlden per zon: eldflugor/pollendamm i mork_skog, låg
+  dimslöja som driver i cursed_mire, aska/gnistor i grave_heath, varmt dis i cainos — några dussin
+  långsamma partiklar + en svag färg-overlay. Upplevelsen: zonerna FÅR sin stämning i rörelse, och
+  det mildrar synligt de hårda zon-färgskarvarna (B47) utan att röra tema-PNG:erna.
+- **Avsikt:** Zonerna skiljer sig i palett men känns statiska; ambiens ger identitet per zon och är
+  delvis ett svar på B47:s öppna art-beslut på systemväg i stället för asset-väg.
+- **Not:** Hakar i: _draw_map-pipelinen (partikellagret ovanpå världen, FÖRE HUD — STEG 0: mät fps-
+  utrymme med viewport-culling + zoom, partiklar i skärmrymd inte världsrymd för billighet),
+  zone_for_tile (val av preset), B47 (relationen: B73 mildrar, B47 löser grund-paletten — säg det
+  öppet; B73 kan göra B47 onödig eller vice versa → Lucas väljer väg efter S1-render).
+- **Slices:** (1) partikelmotor + EN zon (mork_skog eldflugor) (render+fps-HALT); (2) preset per zon
+  + svag färg-overlay + av/på i settings (B70).
+- **Acceptans:** partiklar per zon utan fps-tapp (mät före/efter); togglebar; zon-skarven upplevs
+  mjukare (Lucas-review); render-review per zon.
