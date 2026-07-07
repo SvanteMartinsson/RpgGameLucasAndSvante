@@ -279,6 +279,21 @@ class ZoneConfig:
                 return index
         return 1
 
+    def economy_zone_for_tile(self, tile: tuple[int, int]) -> int:
+        """B8 2b: the ECONOMY zone for fast-travel pricing. Unlike zone_for_tile
+        (x-only, kept for rest/respawn costs), the southern grave-heath band
+        wins on y FIRST, then the west->east x-bands apply. Indexes line up
+        with progression.FAST_TRAVEL_ZONE_NET (1..3 = x-bands, 4 = heath)."""
+        tx, ty = tile
+        x_bands = [t for t in self.ground_themes if t[3] <= 0]
+        for _theme, _min_x, _max_x, min_y, _max_y in self.ground_themes:
+            if min_y > 0 and ty >= min_y:
+                return len(x_bands) + 1
+        for index, (_theme, min_x, max_x, _min_y, _max_y) in enumerate(x_bands, start=1):
+            if min_x <= tx <= max_x:
+                return index
+        return 1
+
 
 # --- movement model (pure, headless-testable) ------------------------------
 
@@ -856,6 +871,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self.mode = "tournaments"
             else:
                 self.set_toast(T.TOURNAMENT_NONE, TEXT_DIM)
+        elif action == "brew":            # B8 2b: the apothecary door
+            self._open_apothecary()
+        elif action == "fast_travel":     # B8 2b: the stable door
+            self._open_fast_travel()
         elif action == "save":
             self.save_game()
 
@@ -1251,7 +1270,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self.mode = "walk"
             elif self.mode == "tome_shop":
                 self._close_tome_shop()
-            elif self.mode == "apothecary":
+            elif self.mode in ("apothecary", "fast_travel"):
                 self.mode = "walk"
             elif self.mode == "death":
                 self.mode = "walk"
@@ -1371,6 +1390,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self._draw_tome_shop()
         elif self.mode == "apothecary":
             self._draw_apothecary()
+        elif self.mode == "fast_travel":
+            self._draw_fast_travel()   # B8 2b: the stable coach board
         elif self.mode == "death":
             self._draw_death_screen()
         elif self.mode == "victory":

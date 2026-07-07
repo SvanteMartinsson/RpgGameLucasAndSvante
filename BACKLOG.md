@@ -314,7 +314,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   avstånd; path-tiles −30–50%; fiendenivå nära start tak:at (t.ex. ≤ spelarnivå+2);
   sim visar rate- och nivå-kurvan mot mål; test för rate-/nivåfunktionen.
 
-#### B8 — Städerna som funktionsdrivna kluster  ⭐ designbärande  · 🟢 **Slice 2a KLAR** (system: tier-styrt kluster i alla 17) · 2b (tuning) + tjänste-triggrar kvar
+#### B8 — Städerna som funktionsdrivna kluster  ⭐ designbärande  · 🟢 **Slice 2b KLAR** (per-stad butik + apothecary/stable-dörrar + snabbresa) · Lucas-tuning av roster/priser kvar
 - **Slice 2a KLAR** (`78cbce0`/`e74ffd2`/`17f6207`, Lucas-godkänd render): kluster generaliserat
   till ALLA 17 städer, tier-styrt (capital|city|town|village) läst ur core_zone (`tier`/`shop_category`/
   `prop` = PROVISORISK seed för 2b). `town_cluster.CLUSTER_TEMPLATES` + `resolve_template()` lägger ut
@@ -322,9 +322,25 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   endast där turnering finns (burg_5/67/146/121); kuliss-byggnader renderar men saknar dörr/cobble.
   Sprites nycklade på (id,facing). B32 encounters=0 på alla kluster; reachability + ingen-footprint-i-vatten
   verifierad på riktiga kollisionen för alla 17. 637 tester gröna.
-- **Kvar:** **2b** = slutlig tier-tilldelning + roster/orientering (mot per-stad-render) + per-stad VARIERAT
-  butiks-INNEHÅLL (egen ekonomi-slice) + tjänster på kuliss (apothecary→potions, shrine→enchanter,
-  stable→snabbresa, town_hall→board).
+- **2b KLAR (våg 3):** (1) **Per-stad butiker:** alla 13 butiksstäder har författade sortiment
+  (default-fyran borta) — kategori-städer säljer BARA sin kategori, capital+city allt; vapen i butik =
+  endast common-rarity, inga greater pots, ingen t5-gear (bossbelöningar); capital orörd.
+  (2) **Gear-priser tier-skalade** (`GEAR_TIER_VALUE` 20/55/140/280/480 + rarity): gamla platta
+  26–72g gav bort t3–t5; nu ≈2–3 fights i hemzonen per del. **Omkörd B62-sim (N=300):** netto
+  11,6 → 57,8 → 65,3 → 116,0 g/fight (kurvan intakt, sälj-inflödet +2–8g av gear-värdena).
+  (3) **Apothecary-dörren:** BUILDING_FUNCTION apothecary→brew; interim-knappen i general-shopen
+  BORTA (B68-flytten klar). (4) **Stable→snabbresa:** coach-nät mellan UPPTÄCKTA stall (fog-gated);
+  pris = core-regel `progression.fast_travel_cost(dist, avresezon)` ankrad i B62-netton
+  (FAST_TRAVEL_ZONE_NET 11/56/59/108, grannhopp ≈ 2 fights, "dyrare söderut" via avresezonen);
+  `engine.fast_travel` äger guld+platsbyte; `economy_zone_for_tile` (heath = y-band 4).
+  (5) **Prop-roster v4 (mitt UTKAST — Lucas tunar):** torn 117/67/105 (+146 dött fält) för
+  tome/armour-täckning N+S; stall 235 (N-skog)/200 (NE "Estables")/54 (V)/53 (SE); apotek 219
+  (mire)/149 (heath-city). Shrines 293/320 orörda (B22).
+- **Tuning-noter till Lucas (2b-restlista):** (a) cainos/skog saknar apotek och cainos saknar
+  stall — slot-bristen är verklig (11 prop-slots, 5 tjänstefamiljer); tier-uppgradering av t.ex.
+  burg_235→town skulle ge fler slots. (b) burg_121 (Alherralba, by + turnering) har butiksdata men
+  INGEN butiksdörr (village-@flex äts av town_hall) — förslag: tier→town. (c) capital-mallen är
+  låst byte-identisk → inget stall i startstaden; närmsta nod = Jinosa (106,44).
 - **Vad:** Packade kluster runt ett **torg**, **tiered storlek** (liten/medium/hub),
   hus nedskalade (~0.6, justerbar load-tid), **cobble-wayfinding-nät** till varje
   ingång, **y-sort**, mallbaserad komposition anchored relativt stadens tile.

@@ -14,7 +14,9 @@ import pygame
 from rpg_game.core import progression, store
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import fog
 from rpg_game.presentation import item_text
+from rpg_game.presentation import ui
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.overworld_render import ACCENT, BAD, GOOD, TEXT, TEXT_DIM, WARN
 
@@ -32,6 +34,10 @@ BUILDING_FUNCTION = {
     "barracks": "store",
     "church": "relocate_respawn",
     "town_hall": "tournaments",
+    # B8 2b: the service props got their doors — brewing moved home from the
+    # general shop's counter, and stables run the coach network (fast travel).
+    "apothecary": "brew",
+    "stable": "fast_travel",
 }
 
 # Each trade building opens its own slice of the town store (a category filter on
@@ -55,6 +61,8 @@ BUILDING_TITLES = {
     "church": "Church",
     "town_hall": "Town Hall",
     "tower": "Mage Tower",
+    "apothecary": "Apothecary",
+    "stable": "Stable",
 }
 
 
@@ -71,6 +79,8 @@ class BuildingMenusMixin:
         if func == "store" and not self.engine.current_place().has_store:
             func = None
         elif func == "tournaments" and not self.engine.available_tournaments():
+            func = None
+        elif func == "brew" and not self.engine.brew_recipes():
             func = None
         # A door opens a menu if it offers a service OR an upgrade station (the mage
         # tower has no store/rest service — only armour upgrades).
@@ -113,6 +123,10 @@ class BuildingMenusMixin:
             info = f"Current respawn: {current.name if current else 'none'}"
         elif func == "tournaments":
             label = "Tournaments"
+        elif func == "brew":
+            label = "Brew potions"
+        elif func == "fast_travel":
+            label = "Fast travel (coach)"
         else:
             label = None   # station-only building (mage tower): no store/rest service
         y = panel.y + 80
@@ -137,11 +151,8 @@ class BuildingMenusMixin:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Study skill tomes",
                              (lambda b=building_id: self._open_tome_shop(b)), True)
             y += 52
-        # B68: brewing. INTERIM home: the general shop's counter — moves to the
-        # apothecary building's own door when B8 2b gives it one.
-        if building_id == "shop" and self.engine.brew_recipes():
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Brew potions",
-                             (lambda: self._open_apothecary()), True)
+        # B68/B8 2b: brewing moved home — the apothecary door (BUILDING_FUNCTION)
+        # is now the only counter; the general shop's interim button is gone.
         back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self._close_building_menu)
         self._draw_buttons()
@@ -193,6 +204,78 @@ class BuildingMenusMixin:
     def _open_apothecary(self) -> None:
         self.building_menu = None
         self.mode = "apothecary"
+
+    # -- B8 2b: stable fast travel -------------------------------------------
+
+    def _open_fast_travel(self) -> None:
+        self.building_menu = None
+        self.mode = "fast_travel"
+
+    def _stable_towns(self):
+        """(place_id, tile, label) for every stable town, from the zone data."""
+        meta = self.zone.town_meta or {}
+        return [(pid, tile, self.zone.town_labels.get(tile, pid))
+                for tile, pid in self.zone.towns.items()
+                if meta.get(pid, {}).get("prop") == "stable"]
+
+    def _fast_travel_offers(self):
+        """(place_id, tile, label, cost) per reachable destination: another
+        stable town whose tile the player has DISCOVERED (fog). The price is
+        core's rule — distance x the departure zone's economy (B62)."""
+        player = self.engine.player
+        here = self.world.current_tile
+        zone = self.zone.economy_zone_for_tile(here)
+        offers = []
+        for pid, tile, label in sorted(self._stable_towns(), key=lambda t: t[2]):
+            if pid == player.current_place_id:
+                continue
+            if not fog.is_revealed(player.revealed_tiles, self.world.tmx.width, *tile):
+                continue
+            distance = abs(tile[0] - here[0]) + abs(tile[1] - here[1])
+            offers.append((pid, tile, label, progression.fast_travel_cost(distance, zone)))
+        return offers
+
+    def _ride_stable(self, place_id: str, tile, cost: int) -> None:
+        result = self.engine.fast_travel(place_id, cost)
+        if not result.success:
+            self.push_log(result.message, BAD)
+            return
+        self.world.set_tile(*tile)
+        self.sync_location()
+        self.mode = "walk"
+        self.push_log(result.message, GOOD)
+
+    def _draw_fast_travel(self) -> None:
+        """The coach board: one row per discovered stable town — name + fare
+        (value), distance and pricing on hover; unaffordable rows restricted."""
+        panel = self._overlay_panel("Stable — Fast travel")
+        player = self.engine.player
+        gold = player.gold
+        self.screen.blit(self.font_sm.render(
+            f"Gold: {gold}    ·    the coach only runs between stables you have found",
+            True, TEXT_DIM), (panel.x + 20, panel.y + 56))
+        offers = self._fast_travel_offers()
+        y = panel.y + 92
+        if not offers:
+            self.screen.blit(self.font.render(
+                "No other stable discovered yet — find one out in the world.",
+                True, TEXT_DIM), (panel.x + 20, y))
+        here = self.world.current_tile
+        for pid, tile, label, cost in offers:
+            distance = abs(tile[0] - here[0]) + abs(tile[1] - here[1])
+            tip = ui.Tooltip(title=label, lines=[
+                f"Distance: {distance} tiles",
+                f"Fare: {cost} gold",
+            ], body="Fares follow the danger of the roads you leave — the deeper "
+                    "south you ride from, the dearer the escort.")
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 36),
+                             label, (lambda p=pid, t=tile, c=cost: self._ride_stable(p, t, c)),
+                             enabled=True, restricted=gold < cost,
+                             value=f"{cost}g", tooltip=tip)
+            y += 44
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
+        self._draw_buttons()
 
     def _brew(self, recipe_id: str) -> None:
         result = self.engine.brew(recipe_id)

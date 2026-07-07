@@ -36,8 +36,13 @@ class ManaEconomyTests(unittest.TestCase):
         self.assertEqual(self.content.items["greater_mana_potion"].mana_amount, 100)
 
     def test_lesser_pots_are_sold_in_stores(self):
+        # B8 2b: stores are category-split — the basics rule applies to every
+        # store that sells consumables at all (generals + capital/cities);
+        # weapons/armor towns carry no potions by design.
         for pid in self.curated_ids:
             stock = set(self.content.places[pid].store_inventory)
+            if not any(i in self.content.items for i in stock):
+                continue
             self.assertTrue(LESSER_POTS <= stock, f"{pid} missing lesser pots")
 
     def test_greater_pots_are_never_sold(self):

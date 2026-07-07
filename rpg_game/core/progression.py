@@ -30,6 +30,20 @@ def rest_cost(zone: int) -> int:
     return REST_COST_ZONE1 if zone <= 1 else REST_COST_LATER
 
 
+# B8 2b: stable fast travel. The price anchors to the DEPARTURE zone's economy
+# (B62 N=300: net gold/fight per zone below) and grows with distance, so a
+# typical neighbouring hop costs ~2 fights of local income and a cross-map ride
+# from the heath ~3-4 — "dyrare söderut" by construction. Zone 4 = grave heath
+# (the southern band); 1-3 are the west->east x-bands.
+FAST_TRAVEL_ZONE_NET = {1: 11, 2: 56, 3: 59, 4: 108}
+FAST_TRAVEL_DISTANCE_SCALE = 150  # tiles for +1x the zone base
+
+
+def fast_travel_cost(distance_tiles: int, departure_zone: int) -> int:
+    base = FAST_TRAVEL_ZONE_NET.get(departure_zone, FAST_TRAVEL_ZONE_NET[4])
+    return round_half_up(base * (1.0 + distance_tiles / FAST_TRAVEL_DISTANCE_SCALE))
+
+
 # Highest loot rarity tier an enemy of a given level may drop from the shared rare
 # table. Keeps top-end weapons (tier 5 pyre_scepter/gravewarden_blade, tier 6
 # worldsplitter) rare from LOW-tier wild enemies: a level-3 bear can't hand out a

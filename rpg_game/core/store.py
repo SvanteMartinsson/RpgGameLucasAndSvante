@@ -24,6 +24,11 @@ GEAR_RARITY_VALUE = {
     "mega rare": 55,
     "legendary": 90,
 }
+# B8 2b: gear value scales with TIER like weapons do (a t5 chest can't cost one
+# fight). Tuned against the B62 economy sim (net gold/fight 11->56->59->108 per
+# zone): a piece costs roughly 30-50% of the same-tier weapon, ~2-5 fights of
+# its home zone. The old flat rarity-only value underpriced t3+ by ~5x.
+GEAR_TIER_VALUE = {1: 20, 2: 55, 3: 140, 4: 280, 5: 480}
 
 
 @dataclass(frozen=True)
@@ -63,8 +68,9 @@ def sell_value(price: int) -> int:
 
 def gear_value(gear) -> int:
     """Full shop value of a gear piece (gear has no authored price): derived from
-    its rarity + tier. Buy at full value, sell at SELL_FRACTION of it."""
-    return GEAR_RARITY_VALUE.get(gear.rarity, 10) + gear.tier * 8
+    its tier + rarity. Buy at full value, sell at SELL_FRACTION of it."""
+    tier_value = GEAR_TIER_VALUE.get(gear.tier, GEAR_TIER_VALUE[5])
+    return tier_value + GEAR_RARITY_VALUE.get(gear.rarity, 10)
 
 
 def gear_sell_value(gear) -> int:

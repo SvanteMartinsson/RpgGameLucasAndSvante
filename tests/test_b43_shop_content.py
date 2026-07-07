@@ -32,10 +32,13 @@ class ShopContentTests(unittest.TestCase):
             self.assertNotEqual(set(place.store_inventory), DEFAULT_FOUR,
                                 f"{place.id} still carries only the default four")
 
-    def test_every_store_has_at_most_one_rare(self):
+    def test_every_store_has_at_most_one_rare_weapon(self):
+        # B8 2b: gear tiers 3+ are rare BY CONSTRUCTION and now tier-priced, so
+        # armor shops may stock several; the loot-protection cap guards weapons.
         for place in self._stores():
-            rares = [i for i in place.store_inventory if self._rarity(i) == "rare"]
-            self.assertLessEqual(len(rares), 1, f"{place.id} has {len(rares)} rares: {rares}")
+            rares = [i for i in place.store_inventory
+                     if i in self.content.weapons and self._rarity(i) == "rare"]
+            self.assertLessEqual(len(rares), 1, f"{place.id} has {len(rares)} rare weapons: {rares}")
 
     def test_every_store_item_is_a_real_item(self):
         valid = set(self.content.weapons) | set(self.content.gear_items) | set(self.content.items)

@@ -32,6 +32,14 @@ class RelocateRespawnResult:
     already_set: bool = False
 
 
+@dataclass(frozen=True)
+class FastTravelResult:
+    """B8 2b: outcome of paying for a stable coach ride."""
+    success: bool
+    message: str
+    cost: int = 0
+
+
 # B13 tournament difficulty (diversified, tunable). Small/mid tournaments (<=4
 # opponents): every opponent x SMALL_HP_MULT max HP, then alternating roles by index
 # — even = TANKY (+armour, +damage), odd = BURST (+crit, +damage). The big finale
@@ -282,6 +290,23 @@ class GameEngine:
     def enter_place(self, place_id: str) -> str:
         """Set location directly for free-walk arrival (no adjacency gate)."""
         return world.enter_place(self.player, self.content, place_id)
+
+    def fast_travel(self, destination_place_id: str, cost: int) -> FastTravelResult:
+        """B8 2b: pay the coach fare and arrive. The presentation owns the map
+        geometry (which stables exist, tile distance, departure zone) and hands
+        in the fare it computed via progression.fast_travel_cost; the core owns
+        the gold rule and the place switch."""
+        place = self.content.places.get(destination_place_id)
+        if place is None:
+            return FastTravelResult(False, "No coach runs there.", cost)
+        if destination_place_id == self.player.current_place_id:
+            return FastTravelResult(False, "You are already there.", cost)
+        if self.player.gold < cost:
+            return FastTravelResult(
+                False, f"Not enough gold. The ride to {place.name} costs {cost}.", cost)
+        self.player.gold -= cost
+        self.enter_place(destination_place_id)
+        return FastTravelResult(True, f"The coach carries you to {place.name} ({cost} gold).", cost)
 
     def create_encounter(self, pool=None) -> Enemy | None:
         """B48: `pool` (weighted (enemy_id, weight) list) spawns from the tile's

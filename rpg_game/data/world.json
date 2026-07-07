@@ -21,17 +21,10 @@
       "has_store": true,
       "store_inventory": [
         "lesser_hp_potion",
-        "lesser_mana_potion",
         "hp_potion",
+        "lesser_mana_potion",
         "mana_potion",
-        "iron_hatchet",
-        "axe",
-        "recurve_bow",
-        "guard_cap",
-        "reinforced_vest",
-        "scout_leggings",
-        "hunters_jerkin",
-        "swift_ring"
+        "antidote"
       ],
       "mana_site": false,
       "port": false,
@@ -81,7 +74,7 @@
       "name": "Yeblegali",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -119,15 +112,10 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
-        "hp_potion",
         "iron_shortsword",
-        "sword",
         "maple_shortbow",
-        "hunting_bow",
-        "apprentice_wand",
-        "training_cap"
+        "iron_hatchet",
+        "sword"
       ]
     },
     {
@@ -135,7 +123,7 @@
       "name": "Guaredama",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -168,17 +156,12 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
-        "hp_potion",
-        "iron_shortsword",
-        "guard_cap",
-        "padded_vest",
-        "reinforced_vest",
-        "grip_wraps",
-        "scout_leggings",
-        "runner_boots",
-        "iron_cuirass"
+        "iron_cuirass",
+        "marcher_greaves",
+        "bearclaw_grips",
+        "windstep_boots",
+        "tusk_pendant",
+        "heartwood_ring"
       ]
     },
     {
@@ -186,7 +169,7 @@
       "name": "Condillosca",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -216,16 +199,10 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
-        "hp_potion",
-        "sword",
-        "iron_longsword",
         "recurve_bow",
-        "willow_bow",
-        "adept_wand",
-        "guard_cap",
-        "steel_greatsword"
+        "iron_longsword",
+        "apprentice_wand",
+        "axe"
       ]
     },
     {
@@ -278,19 +255,19 @@
       "description": "A fortified town with a working market.",
       "has_store": true,
       "store_inventory": [
+        "adept_wand",
+        "steel_longsword",
+        "willow_longbow",
+        "apprentice_cowl",
+        "hunters_jerkin",
+        "seer_pendant",
+        "oracle_loop",
+        "focus_band",
         "lesser_hp_potion",
+        "hp_potion",
         "lesser_mana_potion",
         "mana_potion",
-        "antidote",
-        "hp_potion",
-        "longsword",
-        "rimebrand",
-        "apprentice_wand",
-        "grip_wraps",
-        "runner_boots",
-        "apprentice_cowl",
-        "sage_amulet",
-        "focus_band"
+        "antidote"
       ],
       "mana_site": false,
       "port": false,
@@ -360,7 +337,7 @@
       "name": "Gaste",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -388,14 +365,7 @@
       "store_inventory": [
         "lesser_hp_potion",
         "lesser_mana_potion",
-        "hp_potion",
-        "antidote",
-        "sword",
-        "hunting_bow",
-        "training_cap",
-        "worn_boots",
-        "novice_ring",
-        "acolyte_charm"
+        "antidote"
       ]
     },
     {
@@ -403,7 +373,7 @@
       "name": "Chuequeroma",
       "type": "village",
       "description": "A small settlement, a harbor on the coast.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": true,
       "position": {
@@ -432,16 +402,11 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
         "hp_potion",
+        "mana_potion",
         "antidote",
-        "iron_hatchet",
-        "willow_bow",
-        "apprentice_cowl",
-        "scout_leggings",
-        "focus_band",
-        "seer_pendant"
+        "lesser_hp_potion",
+        "lesser_mana_potion"
       ]
     },
     {
@@ -449,7 +414,7 @@
       "name": "Cantida",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -478,15 +443,11 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
         "lesser_mana_potion",
+        "lesser_hp_potion",
         "hp_potion",
-        "iron_shortsword",
-        "maple_shortbow",
-        "threadbare_gloves",
-        "patched_trousers",
-        "swift_ring",
-        "tin_amulet"
+        "antidote",
+        "mana_potion"
       ]
     },
     {
@@ -562,7 +523,7 @@
       "name": "Estables",
       "type": "camp",
       "description": "A hunting camp at the edge of the wilds.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -586,15 +547,17 @@
       ],
       "store_inventory": [
         "lesser_hp_potion",
-        "lesser_mana_potion",
+        "longsword",
+        "adept_wand",
+        "willow_longbow",
+        "iron_helm",
+        "direpelt_cloak",
+        "grave_band",
+        "gnaw_charm",
         "hp_potion",
+        "mana_potion",
         "antidote",
-        "axe",
-        "recurve_bow",
-        "reinforced_vest",
-        "grip_wraps",
-        "sage_amulet",
-        "marcher_greaves"
+        "lesser_mana_potion"
       ]
     },
     {
@@ -602,7 +565,7 @@
       "name": "Salles",
       "type": "village",
       "description": "A small settlement, a harbor on the coast.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": true,
       "position": {
@@ -631,17 +594,20 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
         "lesser_mana_potion",
+        "lesser_hp_potion",
+        "yew_warbow",
+        "rimebrand",
+        "longsword",
+        "mystic_robe",
+        "plaguebearer_mask",
+        "duelist_gloves",
+        "tarheart_amulet",
+        "haste_circuit",
+        "crimson_signet",
         "hp_potion",
-        "antidote",
-        "sword",
-        "recurve_bow",
-        "guard_cap",
-        "reinforced_vest",
-        "runner_boots",
-        "sage_amulet",
-        "battle_amulet"
+        "mana_potion",
+        "antidote"
       ]
     },
     {
@@ -649,7 +615,7 @@
       "name": "Tierva",
       "type": "camp",
       "description": "A hunting camp at the edge of the wilds.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -673,16 +639,11 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
         "lesser_mana_potion",
         "hp_potion",
+        "mana_potion",
         "antidote",
-        "iron_longsword",
-        "willow_longbow",
-        "adept_wand",
-        "sage_amulet",
-        "oracle_loop",
-        "windstep_boots"
+        "lesser_hp_potion"
       ]
     },
     {
@@ -801,7 +762,7 @@
       "name": "Urrequena",
       "type": "village",
       "description": "A small settlement.",
-      "has_store": false,
+      "has_store": true,
       "mana_site": false,
       "port": false,
       "position": {
@@ -842,16 +803,9 @@
         }
       ],
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
-        "hp_potion",
-        "antidote",
-        "iron_shortsword",
-        "iron_longsword",
-        "axe",
-        "willow_longbow",
-        "apprentice_wand",
-        "grip_wraps"
+        "emberwand",
+        "yew_longbow",
+        "steel_longsword"
       ]
     },
     {
@@ -861,16 +815,13 @@
       "description": "A fortified town with a working market.",
       "has_store": true,
       "store_inventory": [
-        "lesser_hp_potion",
-        "lesser_mana_potion",
-        "hp_potion",
-        "emberwand",
-        "guard_cap",
         "reinforced_vest",
-        "scout_leggings",
+        "guard_cap",
         "runner_boots",
+        "grip_wraps",
+        "scout_leggings",
         "sage_amulet",
-        "iron_helm"
+        "swift_ring"
       ],
       "mana_site": false,
       "port": false,

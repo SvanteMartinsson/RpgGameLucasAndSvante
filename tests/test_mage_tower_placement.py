@@ -1,10 +1,12 @@
-"""8 mage towers spread across the zones (data-only placement, prop:"tower").
+"""Mage towers spread across the zones (data-only placement, prop:"tower").
 
 Locks WHICH towns carry the tower prop (and that the start town never does), and
 that the towns whose tier actually renders the prop get a reachable armour-station
-door. burg_146 is a town-tier tournament town: its @flex slot is town_hall, so it
-carries the prop in data but does NOT render a tower — documented here so the
-caveat is explicit.
+door. B8 2b re-rostered the props: four towers remain (cainos NW / skog city /
+heath S + the dead burg_146 field) — the other four slots became coach stables
+(burg_200/54) and apothecaries (burg_219/149), so every service family keeps
+coverage on both map halves. burg_146 is a town-tier tournament town: its @flex
+slot is town_hall, so it carries the prop in data but does NOT render a tower.
 """
 
 import json
@@ -17,10 +19,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 from rpg_game.core.data_loader import DATA_DIR
 
-TOWER_TOWNS = {
-    "burg_200", "burg_67", "burg_146", "burg_219",
-    "burg_149", "burg_54", "burg_105", "burg_117",
-}
+TOWER_TOWNS = {"burg_117", "burg_146", "burg_67", "burg_105"}
 # Renders a tower today (burg_146 is a tournament town -> @flex is town_hall).
 RENDERS_TOWER = TOWER_TOWNS - {"burg_146"}
 
@@ -33,11 +32,10 @@ except Exception:  # pragma: no cover - import guard
 
 
 class MageTowerDataTest(unittest.TestCase):
-    def test_exactly_eight_towns_carry_the_tower_prop_and_not_the_start_town(self):
+    def test_tower_roster_matches_the_b8_2b_service_map(self):
         core = json.loads((DATA_DIR / "maps" / "core_zone.json").read_text())
         tower = {t["place_id"] for t in core["towns"] if t.get("prop") == "tower"}
         self.assertEqual(tower, TOWER_TOWNS)
-        self.assertEqual(len(tower), 8)
         self.assertNotIn("burg_5", tower)   # never the start town
 
 

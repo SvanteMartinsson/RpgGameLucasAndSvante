@@ -41,8 +41,10 @@ class StoreDiversityTests(unittest.TestCase):
         union = set().union(*stocks.values())
         self.assertGreater(len(union), max(len(s) for s in stocks.values()))
 
-    def test_every_store_carries_gear_weapons_and_consumables(self):
-        for pid in self.curated_ids:
+    def test_full_service_towns_carry_gear_weapons_and_consumables(self):
+        # B8 2b: only capital/city clusters have all three trade doors; the
+        # category towns are single-door by design (weapons/armor/general).
+        for pid in ("burg_5", "burg_67", "burg_200", "burg_149"):
             kinds = {entry.kind for entry in store.get_store_entries(self.content, pid)}
             self.assertIn("gear", kinds, f"{pid} sells no gear")
             self.assertIn("weapon", kinds, f"{pid} sells no weapon")
