@@ -206,9 +206,8 @@ INV_HEADER_CONSUMABLES = "Consumables:"
 INV_HEADER_MISC = "Miscellaneous:"
 INV_HEADER_WEAPONS = "Weapons:"
 INV_NONE = "  (none)"
-EQUIP_HINT = "Click a weapon to equip (level permitting)."
-INVENTORY_HINT = "Everything you own. Pick a category; click a weapon/gear to equip it in Character."
-INV_EQUIP_HINT = "Click to equip in Character."
+# B40 S2: the old INVENTORY_HINT/EQUIP_HINT header strings are gone — the menu
+# spec bans redundant subheaders (point 5); the hover tooltips explain instead.
 INV_CATEGORY_LABELS = {
     "consumables": "Consumables",
     "miscellaneous": "Miscellaneous",

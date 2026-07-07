@@ -141,7 +141,7 @@ class BuildingMenusMixin:
         if building_id == "shop" and self.engine.brew_recipes():
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Brew potions",
                              (lambda: self._open_apothecary()), True)
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self._close_building_menu)
         self._draw_buttons()
 
@@ -181,7 +181,7 @@ class BuildingMenusMixin:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
                              (lambda t=tome.id: self._buy_tome(t)), enabled)
             y += 46
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self._close_tome_shop)
         self._draw_buttons()
 
@@ -215,7 +215,7 @@ class BuildingMenusMixin:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
                              (lambda rid=recipe.id: self._brew(rid)), can)
             y += 46
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 
@@ -273,7 +273,7 @@ class BuildingMenusMixin:
         if self.selected_upgrade_item is not None:
             self._draw_upgrade_variants(right, self.selected_upgrade_item)
 
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self._close_upgrade_station)
         self._draw_buttons()
 
@@ -328,7 +328,7 @@ class BuildingMenusMixin:
         title = T.STORE_TITLES.get(self.store_category, T.SCREEN_TITLES["store"])
         panel = self._overlay_panel(title)
         self._screen_store(panel)
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 

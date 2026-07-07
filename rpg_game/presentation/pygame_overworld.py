@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat, encounters, progression, saveslots, spawns
+from rpg_game.core import combat, encounters, progression, saveslots, spawns, store
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import settings as user_settings
@@ -114,6 +114,7 @@ from rpg_game.presentation.overworld_render import (  # noqa: F401 — re-export
 )
 from rpg_game.presentation import fog
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import item_text
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui
 from rpg_game.presentation.ui import Button
@@ -570,9 +571,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.font_sm = pygame.font.SysFont("menlo,consolas,monospace", 13)
         self.font_lg = pygame.font.SysFont("menlo,consolas,monospace", 22, bold=True)
         self.font_italic = pygame.font.SysFont("menlo,consolas,monospace", 13, italic=True)
-        # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
-        # infra only), so it stays a no-op until an apply-slice calls hover.add().
+        # Shared hover timer -> tooltip (B40 S1 infra). S2 wired the buttons in:
+        # any button with a tooltip payload registers its rect via _draw_buttons.
         self.hover = ui.HoverTracker()
+        self._row_style_cache = None   # built lazily (fonts above must exist)
         self.mode = "walk"  # walk | store | tournaments | tournament_confirm | tournament_intermission
         self.overlay = ""  # character | inventory | skills_talents | system
         self.inventory_category = "consumables"  # selected category in the inventory overlay
@@ -987,7 +989,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
     def inventory_category_items(self, category: str):
         """Items in a category for display: (item_id, label, on_click) tuples.
         Equippable items hand off to the Character panel; consumables use;
-        miscellaneous is inert."""
+        miscellaneous is inert. B40 S2: labels are bare NAMES — counts, rarity
+        and stats ride as row value / name colour / hover tooltip instead."""
         snap = build_snapshot(self.engine)
         items = self.engine.content.items
         bag = self.engine.player.inventory.consumables
@@ -999,24 +1002,56 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 if count <= 0 or usable != want_consumable:
                     continue
                 if want_consumable:
-                    rows.append((item_id, f"{items[item_id].name} x{count}",
+                    rows.append((item_id, items[item_id].name,
                                  (lambda iid=item_id: self.use_inventory_item(iid)), True))
                 else:
-                    rows.append((item_id, f"{items[item_id].name} x{count}", None, False))
+                    rows.append((item_id, items[item_id].name, None, False))
             return rows
         if category == "weapon":
             for w in snap.weapons:
-                mark = " [equipped]" if w.equipped else ""
-                rows.append((w.id, f"{T.weapon_label(w)}{mark}",
+                rows.append((w.id, w.name,
                              (lambda: self.inventory_equip_handoff("weapon")), True))
             return rows
         for gear in snap.gear:
             if gear.slot_type != category:
                 continue
-            mark = " [equipped]" if gear.equipped_slot_id else ""
-            rows.append((gear.id, f"{gear.name} [{gear.rarity}]{mark}",
+            rows.append((gear.id, gear.name,
                          (lambda st=gear.slot_type: self.inventory_equip_handoff(st)), True))
         return rows
+
+    def inventory_row_extras(self, item_id: str):
+        """B40 S2: the (value, label_color, tooltip) trio for an inventory row.
+        The action-relevant figure stays on the row (count, damage, 'equipped');
+        rarity becomes the name's colour; everything else moves to the hover
+        tooltip built by item_text."""
+        content = self.engine.content
+        player = self.engine.player
+        if item_id in content.weapons:
+            weapon = content.weapons[item_id]
+            tip = item_text.weapon_tooltip(weapon, price_line=item_text.sell_line(weapon.price))
+            if self.engine.is_upgradable(item_id):
+                tip.lines.append("Upgraded" if self.engine.is_item_upgraded(item_id)
+                                 else "Upgradable at a blacksmith or the mage tower")
+            value = "equipped" if player.equipped_weapon_id == item_id else f"+{weapon.damage_bonus} dmg"
+            return value, chatlog.rarity_color(weapon.rarity), tip
+        if item_id in content.gear_items:
+            gear = content.gear_items[item_id]
+            price_line = f"Sells for {store.gear_sell_value(gear)} gold"
+            tip = item_text.gear_tooltip(gear, price_line=price_line)
+            if self.engine.is_upgradable(item_id):
+                tip.lines.append("Upgraded" if self.engine.is_item_upgraded(item_id)
+                                 else "Upgradable at a blacksmith or the mage tower")
+            value = "equipped" if item_id in player.equipped_gear.values() else ""
+            return value, chatlog.rarity_color(gear.rarity), tip
+        item = content.items.get(item_id)
+        if item is not None:
+            # Only miscellaneous is shop-sellable (store CATEGORY_RULES), so only
+            # its tooltip talks money.
+            price_line = item_text.sell_line(item.price) if item.kind == "miscellaneous" else ""
+            tip = item_text.consumable_tooltip(item, content, price_line=price_line)
+            count = player.inventory.count(item_id)
+            return (f"x{count}" if count > 1 else ""), None, tip
+        return "", None, None
 
     def open_inventory_category(self, category: str) -> None:
         self.inventory_category = category
@@ -1579,8 +1614,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.screen.blit(self.font_lg.render(title, True, ACCENT), (panel.x + 20, panel.y + 16))
         return panel
 
-    def _add_button(self, rect, label, cb, enabled=True, restricted=False) -> None:
-        self.buttons.append(Button(rect, label, cb, enabled, restricted))
+    def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,
+                    value="", label_color=None, tooltip=None) -> None:
+        self.buttons.append(Button(rect, label, cb, enabled, restricted,
+                                   value=value, label_color=label_color, tooltip=tooltip))
 
     def _blit_upgradable_tag(self, rect: pygame.Rect, item_id: str) -> None:
         """B37 Slice 2: an italic 'Upgradable'/'Upgraded' tag on a rare+ item row.
@@ -1592,21 +1629,27 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         # the tag stays visible on top of the row.
         self._pending_tags.append((pygame.Rect(rect), item_id))
 
+    def _row_style(self) -> ui.RowStyle:
+        """B40 S2: the overworld's RowStyle — the old button palette expressed
+        through the shared renderer, so every screen draws rows ONE way."""
+        if self._row_style_cache is None:
+            self._row_style_cache = ui.RowStyle(
+                font=self.font, bg=BTN, hover=BTN_HOVER, disabled=BTN_DISABLED,
+                edge=BTN_EDGE, text=TEXT, text_dim=TEXT_DIM, value=ACCENT, pad=12)
+        return self._row_style_cache
+
     def _draw_buttons(self) -> None:
+        # B40 S2: every button renders via the shared draw_menu_row (unified
+        # chrome, spec point 6). Buttons carrying a tooltip register their rect
+        # with the hover tracker here — the >1 s dwell popup draws in draw().
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
+        style = self._row_style()
         for b in self.buttons:
-            dim = (not b.enabled) or b.restricted   # restricted = clickable but sperred-looking
-            if dim:
-                color = BTN_DISABLED
-            elif b.rect.collidepoint(mouse):
-                color = BTN_HOVER
-            else:
-                color = BTN
-            pygame.draw.rect(self.screen, color, b.rect, border_radius=6)
-            pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=6)
-            fitted = self._fit_text(b.label, b.rect.width - 24, self.font)
-            label = self.font.render(fitted, True, TEXT_DIM if dim else TEXT)
-            self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 12, b.rect.centery)))
+            row = ui.MenuRow(label=b.label, value=b.value, enabled=b.enabled,
+                             restricted=b.restricted, tooltip=b.tooltip,
+                             label_color=b.label_color)
+            ui.draw_menu_row(self.screen, b.rect, row, style,
+                             mouse=mouse, hover=self.hover, fit=self._fit_text)
         # B37 Slice 2: 'Upgradable'/'Upgraded' italic tags ride on top of the rows,
         # on a small chip so they stay legible over the label tail.
         for rect, item_id in self._pending_tags:

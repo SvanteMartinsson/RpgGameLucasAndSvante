@@ -29,6 +29,11 @@ class Button:
 
     ``on_click`` is usually a zero-arg callable, but the start menu stores a
     plain string result there, so it is typed permissively (``object``).
+
+    ``value`` / ``label_color`` / ``tooltip`` (B40 S2) carry the MenuRow trio —
+    a right-aligned figure (cost/count), a rarity colour for the name, and the
+    hover payload — so a screen whose buttons render via draw_menu_row gets the
+    menu-spec look without a second widget type.
     """
 
     rect: "pygame.Rect"
@@ -38,6 +43,9 @@ class Button:
     restricted: bool = False
     hotkey: str = ""
     sublabel: str = ""
+    value: str = ""
+    label_color: object = None
+    tooltip: object = None
 
 
 # --- hover / tooltip -------------------------------------------------------
@@ -164,9 +172,13 @@ def draw_tooltip(screen, tooltip: "Tooltip", anchor, title_font, body_font,
     pad = 10
     gap = 3
     inner_w = max(1, max_width - 2 * pad)
-    rows: list = [title_font.render(tooltip.title, True, TOOLTIP_TITLE)]
+    # Every part wraps to the panel width (B40 S2: long stat lines used to run
+    # off the panel edge); the title alone ellipsis-fits — it's a name.
+    rows: list = [title_font.render(fit(tooltip.title, title_font, inner_w),
+                                    True, TOOLTIP_TITLE)]
     for line in tooltip.lines:
-        rows.append(body_font.render(str(line), True, TOOLTIP_VALUE))
+        for wrapped in _wrap(str(line), body_font, inner_w):
+            rows.append(body_font.render(wrapped, True, TOOLTIP_VALUE))
     if tooltip.body:
         for line in _wrap(tooltip.body, body_font, inner_w):
             rows.append(body_font.render(line, True, TOOLTIP_BODY))

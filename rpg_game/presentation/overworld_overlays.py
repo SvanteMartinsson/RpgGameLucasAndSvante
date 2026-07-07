@@ -53,7 +53,8 @@ class OverlaysMixin:
         panel = self._overlay_panel(T.SCREEN_TITLES.get(self.overlay, self.overlay.capitalize()))
         renderer = getattr(self, f"_overlay_{self.overlay}")
         renderer(panel)
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        # B40 S2: wide enough for the full "Back (Esc)" label (no "Back..." cut).
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self.close_overlay)
         self._draw_buttons()
 
@@ -195,44 +196,46 @@ class OverlaysMixin:
             self._blit_upgradable_tag(rect, gear.id)
 
     def _overlay_inventory(self, panel) -> None:
+        """B40 S2: the menu spec applied. Left a bare category list (no "(N)"
+        counters, empty ones dimmed-but-selectable), right the items as uniform
+        rows — name in rarity colour, action-relevant figure (count/damage/
+        'equipped') right-aligned, stats and prices on a >1 s hover. The old
+        header strip is gone, which also removes the playtest text collision."""
         content = self._content_rect(panel)
-        self.screen.blit(self.font_sm.render(T.INVENTORY_HINT, True, TEXT_DIM), (content.x, content.y))
-
         counts = self.inventory_counts()
         if self.inventory_category not in counts:
             self.inventory_category = "consumables"
 
         gap = 20
-        list_top = content.y + 30
         overview_w = min(240, content.width // 2)
-        overview = pygame.Rect(content.x, list_top, overview_w, content.bottom - list_top)
-        items_rect = pygame.Rect(overview.right + gap, list_top, content.right - overview.right - gap, overview.height)
+        overview = pygame.Rect(content.x, content.y, overview_w, content.height)
+        items_rect = pygame.Rect(overview.right + gap, content.y,
+                                 content.right - overview.right - gap, overview.height)
 
-        # Overview: every category with its count; selecting one expands it.
         row_h = max(22, min(30, overview.height // max(1, len(T.INV_CATEGORY_LABELS))))
         for i, (key, label) in enumerate(T.INV_CATEGORY_LABELS.items()):
             rect = pygame.Rect(overview.x, overview.y + i * row_h, overview.width, row_h - 2)
-            selected = key == self.inventory_category
-            text = f"{'> ' if selected else '  '}{label} ({counts.get(key, 0)})"
-            self._add_button(rect, text, (lambda k=key: self.open_inventory_category(k)), True)
+            marker = "> " if key == self.inventory_category else "  "
+            self._add_button(rect, f"{marker}{label}",
+                             (lambda k=key: self.open_inventory_category(k)), True,
+                             restricted=not counts.get(key, 0))
 
-        # Expanded: the selected category's items.
-        label = T.INV_CATEGORY_LABELS.get(self.inventory_category, self.inventory_category)
-        self.screen.blit(self.font_sm.render(f"{label} ({counts.get(self.inventory_category, 0)})",
-                                             True, TEXT_DIM), (items_rect.x, items_rect.y - 24))
         rows = self.inventory_category_items(self.inventory_category)
         if not rows:
-            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (items_rect.x, items_rect.y))
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM),
+                             (items_rect.x, items_rect.y + 6))
             return
         max_rows = max(1, items_rect.height // 34)
-        for i, (_item_id, text, on_click, enabled) in enumerate(rows[:max_rows]):
+        for i, (item_id, name, on_click, enabled) in enumerate(rows[:max_rows]):
             rect = pygame.Rect(items_rect.x, items_rect.y + i * 34, items_rect.width, 30)
-            if on_click is None:
-                self.screen.blit(self.font.render(self._fit_text(text, items_rect.width, self.font), True, TEXT_DIM),
-                                 (rect.x, rect.y + 4))
-            else:
-                self._add_button(rect, self._fit_text(text, items_rect.width - 24, self.font), on_click, enabled)
-                self._blit_upgradable_tag(rect, _item_id)
+            value, color, tip = self.inventory_row_extras(item_id)
+            # Inert rows (miscellaneous) stay dimmed and unclickable but keep
+            # their tooltip, so junk still explains itself on hover.
+            self._add_button(rect, name, on_click, enabled and on_click is not None,
+                             value=value, label_color=color, tooltip=tip)
+        if len(rows) > max_rows:
+            self.screen.blit(self.font_sm.render(f"v {len(rows) - max_rows} more v", True, TEXT_DIM),
+                             (items_rect.x + 8, items_rect.bottom - 18))
 
     def _skills_talents_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
         content = self._content_rect(panel)
@@ -514,7 +517,7 @@ class OverlaysMixin:
             label = f"{tournament.name} ({tournament.opponent_count} fights) - {reward}{cleared}"
             rect = pygame.Rect(panel.x + 20, panel.y + 70 + i * 44, panel.width - 40, 36)
             self._add_button(rect, label, (lambda tid=tournament.id: self.select_tournament(tid)), not tournament.completed)
-        back = pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40)
+        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
         self._draw_buttons()
 
@@ -539,7 +542,7 @@ class OverlaysMixin:
                 T.TOURNAMENT_START,
                 lambda: self.start_tournament_series(tournament.id),
             )
-        self._add_button(pygame.Rect(panel.right - 130, panel.bottom - 54, 110, 40),
+        self._add_button(pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40),
                          T.BACK, lambda: setattr(self, "mode", "tournaments"))
         self._draw_buttons()
 
