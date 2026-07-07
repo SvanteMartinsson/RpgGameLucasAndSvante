@@ -150,7 +150,8 @@ class OverworldOverlayTest(unittest.TestCase):
         self.app.draw()
         labels = [button.label for button in self.app.buttons]
 
-        self.assertTrue(any("Chest: [empty]" in label for label in labels))
+        # B40 S4: an empty slot reads "Chest: —" (no bracket placeholder).
+        self.assertTrue(any("Chest: —" in label for label in labels))
         self.assertTrue(any("Padded Vest" in label for label in labels))
 
     def test_panel_hotkeys_do_not_open_in_battle(self):

@@ -394,6 +394,7 @@ class BuildingMenusMixin:
                 diff = weapon.damage_bonus - equipped.damage_bonus
                 tip.lines.append(f"Vs equipped: {diff:+} dmg" if diff
                                  else "Vs equipped: same damage")
+            self._append_upgrade_line(tip, item_id)
             return chatlog.rarity_color(weapon.rarity), tip
         if item_id in content.gear_items:
             gear = content.gear_items[item_id]
@@ -402,12 +403,20 @@ class BuildingMenusMixin:
             delta = self._gear_delta_line(gear)
             if delta:
                 tip.lines.append(delta)
+            self._append_upgrade_line(tip, item_id)
             return chatlog.rarity_color(gear.rarity), tip
         item = content.items.get(item_id)
         if item is not None:
             price_line = item_text.sell_line(item.price) if item.kind == "miscellaneous" else ""
             return None, item_text.consumable_tooltip(item, content, price_line=price_line)
         return None, None
+
+    def _append_upgrade_line(self, tip, item_id: str) -> None:
+        """B40 S4: the B37 'Upgradable' flag as a tooltip line (the overlay chip
+        collided with the value slot and is retired)."""
+        if self.engine.is_upgradable(item_id):
+            tip.lines.append("Upgraded" if self.engine.is_item_upgraded(item_id)
+                             else "Upgradable at a blacksmith or the mage tower")
 
     def _gear_delta_line(self, gear) -> str:
         """'Vs equipped: +4 hp, -1 armor' against the piece worn in the same

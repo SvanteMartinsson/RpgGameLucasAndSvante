@@ -221,6 +221,31 @@ INV_CATEGORY_LABELS = {
     "ring": "Ring",
 }
 NO_SKILLS = "No skills unlocked yet — learn talents first."
+
+# B40 S4: hover explanations for the character screen's stat grid. The Wisdom
+# line reads the core constant so the copy can never drift from the rule.
+def _mana_per_wisdom() -> int:
+    from rpg_game.core.entities import MANA_PER_WISDOM
+    return MANA_PER_WISDOM
+
+STAT_HELP = {
+    "max_hp": "Hit points. You fall at 0 — rest, potions and level-ups restore them.",
+    "wisdom": "Each point of Wisdom grants {mana} max mana.",
+    "damage": ("Your attacks and weapon-gated skills scale with this Power "
+               "plus your equipped weapon's damage bonus."),
+    "armor": ("Reduces physical damage taken. Other damage types check your "
+              "resistances instead."),
+    "speed": "Decides turn order — the faster side acts first.",
+    "crit_chance": ("Chance to crit. A crit raises the top of your damage "
+                    "range instead of doubling the hit."),
+}
+
+
+def stat_help(stat: str) -> str:
+    text = STAT_HELP.get(stat, "")
+    return text.format(mana=_mana_per_wisdom()) if "{mana}" in text else text
+
+
 STORE_BUY = "Buy"
 STORE_SELL = "Sell"
 NO_TALENTS = "No talents available to learn right now."

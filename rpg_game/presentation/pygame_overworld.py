@@ -598,7 +598,6 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.save_path = getattr(self.engine, "_save_slot_path", None) or _first_free_slot()
         self._playtime_accum = 0.0                   # fractional seconds carry
         self._was_in_town = self.world.town_place_id() is not None
-        self._pending_tags: list = []                # queued 'Upgradable' row tags
         self.show_minimap = bool(self._settings.get("minimap", True))   # B11/B70 (N toggles)
         # B11 fullscreen map caches: terrain texture (built once) + fog composite
         # (rebuilt only when the revealed-tile count changes).
@@ -1029,18 +1028,14 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if item_id in content.weapons:
             weapon = content.weapons[item_id]
             tip = item_text.weapon_tooltip(weapon, price_line=item_text.sell_line(weapon.price))
-            if self.engine.is_upgradable(item_id):
-                tip.lines.append("Upgraded" if self.engine.is_item_upgraded(item_id)
-                                 else "Upgradable at a blacksmith or the mage tower")
+            self._append_upgrade_line(tip, item_id)
             value = "equipped" if player.equipped_weapon_id == item_id else f"+{weapon.damage_bonus} dmg"
             return value, chatlog.rarity_color(weapon.rarity), tip
         if item_id in content.gear_items:
             gear = content.gear_items[item_id]
             price_line = f"Sells for {store.gear_sell_value(gear)} gold"
             tip = item_text.gear_tooltip(gear, price_line=price_line)
-            if self.engine.is_upgradable(item_id):
-                tip.lines.append("Upgraded" if self.engine.is_item_upgraded(item_id)
-                                 else "Upgradable at a blacksmith or the mage tower")
+            self._append_upgrade_line(tip, item_id)
             value = "equipped" if item_id in player.equipped_gear.values() else ""
             return value, chatlog.rarity_color(gear.rarity), tip
         item = content.items.get(item_id)
@@ -1619,15 +1614,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.buttons.append(Button(rect, label, cb, enabled, restricted,
                                    value=value, label_color=label_color, tooltip=tooltip))
 
-    def _blit_upgradable_tag(self, rect: pygame.Rect, item_id: str) -> None:
-        """B37 Slice 2: an italic 'Upgradable'/'Upgraded' tag on a rare+ item row.
-        Just the flag — the actual reforge options live at the blacksmith/mage
-        tower, not here."""
-        if not self.engine.is_upgradable(item_id):
-            return
-        # Queue it; drawn AFTER the buttons (which paint over their whole rect) so
-        # the tag stays visible on top of the row.
-        self._pending_tags.append((pygame.Rect(rect), item_id))
+    # B40 S4: the B37 'Upgradable' overlay chip is retired — it collided with
+    # the rows' right-aligned value slot. The flag now lives as a tooltip line
+    # (item_text/store_row_extras) and the reforge stations list the items.
 
     def _row_style(self) -> ui.RowStyle:
         """B40 S2: the overworld's RowStyle — the old button palette expressed
@@ -1650,17 +1639,6 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                              label_color=b.label_color)
             ui.draw_menu_row(self.screen, b.rect, row, style,
                              mouse=mouse, hover=self.hover, fit=self._fit_text)
-        # B37 Slice 2: 'Upgradable'/'Upgraded' italic tags ride on top of the rows,
-        # on a small chip so they stay legible over the label tail.
-        for rect, item_id in self._pending_tags:
-            tag = "Upgraded" if self.engine.is_item_upgraded(item_id) else "Upgradable"
-            surf = self.font_italic.render(tag, True, ACCENT)
-            chip = pygame.Rect(0, 0, surf.get_width() + 10, surf.get_height() + 4)
-            chip.midright = (rect.right - 6, rect.centery)
-            pygame.draw.rect(self.screen, BTN, chip, border_radius=4)
-            pygame.draw.rect(self.screen, PANEL_EDGE, chip, width=1, border_radius=4)
-            self.screen.blit(surf, surf.get_rect(center=chip.center))
-        self._pending_tags = []
 
 
 
