@@ -333,6 +333,9 @@ CREATE_TITLE = "Create your character"
 CREATE_NAME_LABEL = "Name:"
 CREATE_PICK_CLASS = "Pick a class:"
 CREATE_START = "Start  (Enter)"
+# B40 S5: starter-skill choice + read-only tree preview.
+CREATE_STARTER_LABEL = "Choose a starting talent (click, or Left/Right):"
+CREATE_TREE_LABEL = "Talent tree (hover a talent to read it):"
 
 
 def unknown_class(class_id: str, valid: str) -> str:

@@ -25,11 +25,12 @@ from dataclasses import dataclass, field
 
 import pygame
 
-from rpg_game.core import combat, entities
+from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import settings as user_settings
+from rpg_game.presentation import talent_text
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import ui
@@ -988,7 +989,20 @@ def enemy_nameplate(enemy) -> str:
 NAME_MAX_LEN = 18
 
 
-def _class_stat_lines(engine: GameEngine, cls) -> list[str]:
+def _class_stat_rows(engine: GameEngine, cls) -> list[tuple[str, str]]:
+    """B40 S5: (stat_key, text) rows for the class preview — no parenthetical
+    derived values (the old '(Mana X)' moved into the Wisdom hover; spec 3)."""
+    return [
+        ("max_hp", f"Max HP      {cls.max_hp}"),
+        ("damage", f"Base damage {cls.base_damage}"),
+        ("armor", f"Armor       {cls.armor}"),
+        ("wisdom", f"Wisdom      {cls.wisdom}"),
+        ("speed", f"Speed       {cls.speed}"),
+        ("crit_chance", f"Crit chance {cls.crit_chance}%"),
+    ]
+
+
+def _class_kit_lines(engine: GameEngine, cls) -> list[str]:
     weapon = engine.content.weapons.get(cls.starting_weapon_id)
     weapon_name = weapon.name if weapon else cls.starting_weapon_id
     skill_names = [
@@ -997,22 +1011,19 @@ def _class_stat_lines(engine: GameEngine, cls) -> list[str]:
         if a in engine.content.actions
     ]
     return [
-        f"Max HP      {cls.max_hp}",
-        f"Base damage {cls.base_damage}",
-        f"Armor       {cls.armor}",
-        f"Wisdom      {cls.wisdom}  (Mana {cls.wisdom * entities.MANA_PER_WISDOM})",
-        f"Speed       {cls.speed}",
-        f"Crit chance {cls.crit_chance}%",
-        "",
         f"Weapon: {weapon_name}",
         f"Skills: {', '.join(skill_names) if skill_names else 'none'}",
     ]
 
 
-def character_creation(engine: GameEngine) -> tuple[str, str]:
-    """Name entry + class selection with a live stat preview.
+def character_creation(engine: GameEngine) -> tuple[str, str, str]:
+    """B40 S5: name entry + class selection with a live preview — compact
+    stats (hover explains each, no '(Mana X)'), the starting kit, a 1-of-2
+    tier-1 starter-skill choice and the class's full talent tree read-only
+    (each node explains itself on hover).
 
-    Returns (name, class_id). Mutates nothing — caller drives start_new_game.
+    Returns (name, class_id, starter_talent_id). Mutates nothing — the caller
+    drives start_new_game + grant_starter_talent.
     """
     classes = list(engine.content.classes.values())
     pygame.init()
@@ -1027,15 +1038,33 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
 
     name = ""
     selected = 0
+    starter_ix = 0
     name_box = pygame.Rect(PAD + 110, 96, 380, 40)
     list_rects = [pygame.Rect(PAD, 200 + i * 50, 360, 42) for i in range(len(classes))]
-    preview = pygame.Rect(list_rects[0].right + PAD, 200, WIDTH - list_rects[0].right - 2 * PAD, 380)
+    preview = pygame.Rect(list_rects[0].right + PAD, 150,
+                          WIDTH - list_rects[0].right - 2 * PAD, HEIGHT - 150 - 90)
     start_rect = pygame.Rect(WIDTH // 2 - 130, HEIGHT - 70, 260, 46)
     cursor_on = True
     cursor_ticks = 0
+    hover = ui.HoverTracker()
+    row_style = ui.RowStyle(font=font_sm, bg=BTN, hover=BTN_HOVER, disabled=BTN_DISABLED,
+                            edge=BTN_EDGE, text=TEXT, text_dim=TEXT_DIM, value=ACCENT, pad=10)
+    starter_rects: list[pygame.Rect] = []
+
+    def choices():
+        return talent_text.starter_choices(engine.content, classes[selected].id)
+
+    def default_ix():
+        # Preselect the class's classic default, so Enter-through = old behaviour.
+        defaults = classes[selected].starting_skill_ids
+        return next((i for i, n in enumerate(choices()) if n.action_id in defaults), 0)
 
     def finish():
-        return (name.strip() or "Hero", classes[selected].id)
+        picks = choices()
+        starter_id = picks[min(starter_ix, len(picks) - 1)].id if picks else ""
+        return (name.strip() or "Hero", classes[selected].id, starter_id)
+
+    starter_ix = default_ix()
 
     while True:
         for event in pygame.event.get():
@@ -1048,7 +1077,12 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
                 click = to_canvas(event.pos, offset)
                 for i, rect in enumerate(list_rects):
                     if rect.collidepoint(click):
-                        selected = i
+                        if i != selected:
+                            selected = i
+                            starter_ix = default_ix()   # a new class resets the pick
+                for i, rect in enumerate(starter_rects):
+                    if rect.collidepoint(click):
+                        starter_ix = i
                 if start_rect.collidepoint(click):
                     return finish()
             if event.type == pygame.KEYDOWN:
@@ -1061,8 +1095,12 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
                     name = name[:-1]
                 elif event.key == pygame.K_TAB or event.key == pygame.K_DOWN:
                     selected = (selected + 1) % len(classes)
+                    starter_ix = default_ix()
                 elif event.key == pygame.K_UP:
                     selected = (selected - 1) % len(classes)
+                    starter_ix = default_ix()
+                elif event.key in (pygame.K_LEFT, pygame.K_RIGHT) and len(choices()) > 1:
+                    starter_ix = 1 - starter_ix
                 elif event.unicode and event.unicode.isprintable() and len(name) < NAME_MAX_LEN:
                     name += event.unicode
 
@@ -1072,6 +1110,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
             cursor_ticks = 0
 
         screen.fill(BG)
+        hover.begin()
         title = font_lg.render(T.CREATE_TITLE, True, ACCENT)
         screen.blit(title, title.get_rect(center=(WIDTH // 2, 50)))
 
@@ -1099,13 +1138,63 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
             label = font.render(cls.name, True, label_color)
             screen.blit(label, label.get_rect(midleft=(rect.x + 16, rect.centery)))
 
-        # Preview panel
+        # Preview panel: stats (hover help) + kit + starter choice + tree.
         pygame.draw.rect(screen, PANEL, preview, border_radius=8)
         pygame.draw.rect(screen, PANEL_EDGE, preview, width=1, border_radius=8)
         cls = classes[selected]
-        screen.blit(font_lg.render(cls.name, True, ACCENT), (preview.x + 16, preview.y + 14))
-        for j, line in enumerate(_class_stat_lines(engine, cls)):
-            screen.blit(font.render(line, True, TEXT), (preview.x + 16, preview.y + 64 + j * 26))
+        px, py = preview.x + 16, preview.y + 12
+        screen.blit(font_lg.render(cls.name, True, ACCENT), (px, py))
+        py += 42
+        for stat, line in _class_stat_rows(engine, cls):
+            row_rect = pygame.Rect(px, py, 260, 18)
+            screen.blit(font_sm.render(line, True, TEXT), (px, py))
+            hover.add(row_rect, ui.Tooltip(title=line.split()[0] if stat != "max_hp" else "Max HP",
+                                           body=T.stat_help(stat)))
+            py += 20
+        kit_y = preview.y + 54
+        for line in _class_kit_lines(engine, cls):
+            screen.blit(font_sm.render(
+                ui.fit(line, font_sm, preview.right - (px + 280) - 16), True, TEXT_DIM),
+                (px + 280, kit_y))
+            kit_y += 20
+
+        py += 10
+        picks = choices()
+        starter_rects = []
+        if picks:
+            screen.blit(font_sm.render(T.CREATE_STARTER_LABEL, True, ACCENT), (px, py))
+            py += 24
+            for i, node in enumerate(picks):
+                rect = pygame.Rect(px, py, min(300, preview.width - 32), 28)
+                marker = "> " if i == starter_ix else "  "
+                row = ui.MenuRow(label=f"{marker}{node.name}", value="skill",
+                                 tooltip=ui.Tooltip(title=node.name,
+                                                    lines=talent_text.node_preview_lines(engine.content, node)))
+                ui.draw_menu_row(screen, rect, row, row_style, mouse=mouse, hover=hover,
+                                 fit=lambda t, w, f: ui.fit(t, f, w))
+                if i == starter_ix:
+                    pygame.draw.rect(screen, ACCENT, rect, width=2, border_radius=6)
+                starter_rects.append(rect)
+                py += 32
+
+        py += 8
+        screen.blit(font_sm.render(T.CREATE_TREE_LABEL, True, ACCENT), (px, py))
+        py += 24
+        columns = talent_text.class_tree_columns(engine.content, cls.id)
+        col_w = max(1, (preview.width - 32) // max(1, len(columns)))
+        for ci, (branch, nodes) in enumerate(columns):
+            bx = px + ci * col_w
+            screen.blit(font_sm.render(
+                ui.fit(branch.replace("_", " ").title(), font_sm, col_w - 12), True, TEXT_DIM), (bx, py))
+            ny = py + 20
+            for node in nodes:
+                node_rect = pygame.Rect(bx, ny, col_w - 12, 16)
+                screen.blit(font_sm.render(
+                    ui.fit(f"{node.order}. {node.name}", font_sm, col_w - 12), True, TEXT), (bx, ny))
+                hover.add(node_rect, ui.Tooltip(
+                    title=node.name,
+                    lines=talent_text.node_preview_lines(engine.content, node)))
+                ny += 18
 
         # Start button
         color = BTN_HOVER if start_rect.collidepoint(mouse) else BTN
@@ -1114,6 +1203,9 @@ def character_creation(engine: GameEngine) -> tuple[str, str]:
         start_label = font.render(T.CREATE_START, True, TEXT)
         screen.blit(start_label, start_label.get_rect(center=start_rect.center))
 
+        hover.update(mouse, pygame.time.get_ticks())
+        if hover.active is not None:
+            ui.draw_tooltip(screen, hover.active, mouse, font, font_sm)
         offset = present(display, screen, BG)
         clock.tick(FPS)
 
@@ -1122,14 +1214,15 @@ def main(argv: list[str] | None = None) -> None:
     argv = argv if argv is not None else sys.argv[1:]
     class_id = argv[0] if argv else ""
     engine = GameEngine()
+    starter = ""
     if class_id:
         if class_id not in engine.content.classes:
             valid = ", ".join(engine.content.classes)
             raise SystemExit(T.unknown_class(class_id, valid))
         name = "Hero"
     else:
-        name, class_id = character_creation(engine)
-    engine.start_new_game(name, class_id)
+        name, class_id, starter = character_creation(engine)
+    engine.start_new_game(name, class_id, starter_talent_id=starter)
     BattleApp(engine).run()
 
 

@@ -67,6 +67,7 @@ class GameEngine:
         player_name: str,
         class_id: str,
         start_place_id: str | None = None,
+        starter_talent_id: str = "",
     ) -> GameState:
         normalized_class = class_id.strip().lower()
         start_place_id = start_place_id or self.content.start_place_id
@@ -77,6 +78,17 @@ class GameEngine:
 
         player_class = self.content.classes[normalized_class]
         start_place = self.content.places[start_place_id]
+        # B40 S5: the creation screen offers 1-of-2 tier-1 actives as the
+        # starting skill. The pick REPLACES the class default (still exactly one
+        # free rank-1 talent); omitted -> classes.json default, so scripted
+        # starts, the terminal and the sims are unchanged.
+        starting_skill_ids = player_class.starting_skill_ids
+        if starter_talent_id:
+            node = self.content.talents.get(starter_talent_id)
+            if (node is None or node.class_id != normalized_class
+                    or node.order != 1 or node.node_type != "active"):
+                raise ValueError(f"not a starter talent for {normalized_class}: {starter_talent_id}")
+            starting_skill_ids = (node.action_id,)
         player = Player(
             name=player_name.strip() or "Hero",
             player_class=player_class.id,
@@ -100,7 +112,7 @@ class GameEngine:
             owned_weapon_ids=(player_class.starting_weapon_id,),
             owned_gear_ids=(),
             equipped_gear={},
-            equipped_skill_ids=player_class.starting_skill_ids,
+            equipped_skill_ids=starting_skill_ids,
         )
         # The starter skill is equipped from the start, so its talent node is already
         # unlocked — mark it LEARNED (free, no point spent). Otherwise the talents UI
@@ -111,7 +123,7 @@ class GameEngine:
             for node in self.content.talents.values()
             if node.class_id == player.player_class
             and node.node_type == "active"
-            and node.action_id in player_class.starting_skill_ids
+            and node.action_id in starting_skill_ids
         }
         # B36: a learned node is rank 1 (starter skills are free rank-1 grants).
         player.talent_ranks = {tid: 1 for tid in player.learned_talent_ids}

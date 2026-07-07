@@ -1836,8 +1836,12 @@ def engine_from_start_choice(
 ) -> GameEngine | None:
     engine = GameEngine()
     if choice == "new":
-        name, class_id = creation_fn(engine)
-        engine.start_new_game(name, class_id)
+        # B40 S5: creation returns (name, class, starter_talent). Older/two-value
+        # creation fns (tests, scripted starts) still work — starter is optional
+        # and an empty pick falls back to the class default inside core.
+        name, class_id, *starter = creation_fn(engine)
+        engine.start_new_game(name, class_id,
+                              starter_talent_id=starter[0] if starter else "")
         return engine
     if choice == "load":
         result = engine.load(save_path)

@@ -685,7 +685,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Menyer & UI (nytt program)
 
-#### B40 — Menyprogram: enhetlig menyspec över ALLA skärmar  ⭐ designbärande  · 🟢 **Slice 1 KLAR** · S2–S5 (apply, render-HALT) kvar
+#### B40 — Menyprogram: enhetlig menyspec över ALLA skärmar  ⭐ designbärande  · ✅ **KLAR (S1–S5)** · render-verifierad headless (våg 3)
 - **Vad:** En single source of truth för hur alla menyer ser ut/beter sig, så menyerna slutar vara bespoke per skärm. Låst 7-punktsspec:
   1. **Progressiv disclosure** — rader visar bara namn + åtgärds-relevant siffra (t.ex. kostnad); sekundär detalj bara på hover.
   2. **Hover-tooltip** (>1 s) → panel med stats + kort förklarande text; EN delad komponent, aktiverad per meny.
@@ -698,11 +698,11 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Not:** STEG 0: idag TVÅ Button-dataclasses (pygame_overworld ~435: rect/label/on_click/enabled/restricted; pygame_battle ~119: +hotkey/sublabel), ingen hover/tooltip-infra. Slice-först; varje apply-slice = render-HALT.
 - **Slices:**
   - **S1 (grund, HALT-fri):** ✅ **KLAR** (`3b8db9a`/`8d46df3`/`d0673b9`/`866c448`, + unified chatbox `9083dac`). Delad `ui.py`: Button (superset rect/label/on_click/enabled/restricted/hotkey/sublabel) + HoverTracker/Tooltip + MenuRow/draw_menu_row (rarity-färgade namn). Beteende-bevarande migrering klar. **← S2 härnäst.**
-  - **S2:** applicera inventory (bort med "Everything you own…", dämpade tomma kategorier utan "(N)", namn synligt / stats på hover). *Playtest 2026-07-06:* rubrikraden KROCKAR med kategorirubriken ("…Pick a categMisc̶ellaneous(1)…") — layoutkollisionen fixas här.
-  - **S3:** applicera shop (namn + kostnad synligt, stats/delta på hover).
-  - **S4:** applicera character (inga parenteser, stats/förklaring på hover). *Playtest 2026-07-06:* "Gold"-raden krockar med "Stats base→+gear→total"-headern och Damage-raden trunkeras "(…" — layoutkollisionerna fixas här. Skill-/talent-texternas formatter = B78 (bygg den före/i S4-S5).
-  - **S5:** character-creation — hela klassens talangträd som read-only förhandsvisning + starter-skill-val (1 av 2 tier-1 → learned rank 1) + enhetlig chrome + bort med "(Mana X)".
-- **Acceptans (per apply-slice):** skärmen följer 7-punktsspecen; hover >1 s visar tooltip; render-HALT-godkänd av Lucas; tester.
+  - **S2 (inventory):** ✅ **KLAR** (`697d24b`). item_text.py (delade tooltip-byggare, B41-procs i klartext, säljvärden via core-regler); ui.Button bär value/label_color/tooltip och overworldens _draw_buttons ritar ALLA knappar via draw_menu_row (punkt 6 för alla skärmar på en gång). Hint-strängar borta (kollisionen med), kategorier utan "(N)" + tomma dämpade-men-klickbara, rader = rena namn i rarity-färg + xN/+dmg/equipped som value, stats/pris på hover. Fynd i render-självinspektion: draw_tooltip wrappade inte stat-rader (fixat i ui) + "Back (Esc)" trunkerades (breddat).
+  - **S3 (shop):** ✅ **KLAR** (`3d918bf`). Buy/sell-rader som menyrader (pris i value, "xN · Yg" på säljsidan), stat-texten flyttad från under-rad-blits till hover (rad 56→34 px + "v N more v" vid overflow), "Vs equipped"-delta för vapen/gear, oköpbara = restricted (klick förklarar), tome-shopen samma idiom. Död _blit_item_stats borta.
+  - **S4 (character):** ✅ **KLAR** (`91fe4e8`). 3-raders header + regioner under (_CHAR_HEADER_H) = Gold/Stats-krocken strukturellt omöjlig (geometritest); "(+weapon N)" bort från Damage-raden → hover ("Weapon bonus: +5 (Sword)"); alla stat-rader har hover-förklaring (T.stat_help, Wisdom läser MANA_PER_WISDOM); slot-rader utan "(N)" (xN-value bara på TOMMA slots, 280px-kolumn); options-rader = namn + beslutssiffra (delta/needs Lv/equipped) som value. B37-chipen pensionerad (krockade med value) → tooltip-rad + stationslistor.
+  - **S5 (creation):** ✅ **KLAR**. STEG 0-fynd: start_new_game lärde REDAN ut default-skillens talang gratis → "1 av 2" byggd som **swap**, inte tillägg: start_new_game(starter_talent_id=...) ersätter klassdefaulten (fortfarande exakt EN gratis rank-1-talang, skillen equipped); utelämnad → default (terminal/sims oförändrade). Creation returnerar (name, class, starter); default förvald (Enter-through = gammalt beteende); hela trädet som read-only-preview per gren med hover-tooltips (talent_text.node_preview_lines, B78-formattern); "(Mana X)" borta (Wisdom-hover förklarar).
+- **Acceptans:** 7-punktsspecen uppfylld på alla fyra skärmarna; hover >1 s ger tooltip överallt; renders i docs/b40_renders/ (Lucas-review efteråt per nattbatch-mönstret); 1017 tester gröna.
 
 #### B11 (tillägg) — Minimap = Slice 2  · 🟢 **BYGGD** (render-review)
 - **Vad:** Fullskärmskarta + fog (M) är Slice 1 (KLAR, `9ec6f0c`). **Slice 2 = en alltid-synlig minimap** i hörnet, återanvänder fog-bitset + terräng-texturen. **Not:** presentation-only ovanpå B11-infran. **Acceptans:** minimap visar avtäckt terräng + spelarmarkör; togglas; test.

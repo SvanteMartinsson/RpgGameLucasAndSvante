@@ -53,11 +53,12 @@ class OverworldStartTest(unittest.TestCase):
         for ch in "Greta":
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=ord(ch), unicode=ch))
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="\r"))
-        name, class_id = character_creation(engine)
+        name, class_id, starter = character_creation(engine)   # B40 S5: 3-tuple
         engine.start_new_game(name, class_id)
         app = OverworldApp(engine=engine)
         self.assertEqual(app.engine.player.name, "Greta")
         self.assertIn(class_id, engine.content.classes)
+        self.assertIn(starter, engine.content.talents)         # a real tier-1 pick
 
     def test_start_menu_opens_window_and_returns_choice(self):
         # Exercises the real set_mode((WIDTH, HEIGHT)) + button-build path that

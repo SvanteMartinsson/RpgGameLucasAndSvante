@@ -108,6 +108,47 @@ def skill_cost_text(action) -> str:
     return ", ".join(bits) if bits else "free"
 
 
+# --- B40 S5: character-creation helpers (no player exists yet) --------------
+
+def starter_choices(content, class_id: str) -> list:
+    """The two tier-1 ACTIVE talents a new character picks between (the
+    passive tier-1 weapon talents are not starter material). Deterministic
+    order (by id) so 'choice 1/2' is stable."""
+    nodes = [n for n in content.talents.values()
+             if n.class_id == class_id and n.order == 1 and n.node_type == "active"]
+    return sorted(nodes, key=lambda n: n.id)[:2]
+
+
+def node_preview_lines(content, node) -> list:
+    """Read-only tooltip lines for a talent-tree preview node, built from
+    content alone (character creation has no player state)."""
+    lines = []
+    if node.node_type == "active" and node.action_id in content.actions:
+        action = content.actions[node.action_id]
+        lines.append(f"Unlocks skill: {action.name}")
+        lines.append(skill_cost_text(action))
+        lines.extend(describe_effect(effect) for effect in action.effects)
+    else:
+        lines.append("Passive")
+        lines.extend(describe_effect(effect) for effect in node.effects)
+    if node.max_rank > 1:
+        lines.append(f"Up to rank {node.max_rank}")
+    if node.requires and node.requires in content.talents:
+        lines.append(f"Requires: {content.talents[node.requires].name}")
+    return lines
+
+
+def class_tree_columns(content, class_id: str) -> list:
+    """The class's full tree as (branch, nodes-in-order) columns for the
+    read-only creation preview."""
+    columns: dict = {}
+    for node in content.talents.values():
+        if node.class_id == class_id:
+            columns.setdefault(node.branch, []).append(node)
+    return [(branch, sorted(nodes, key=lambda n: (n.order, n.id)))
+            for branch, nodes in columns.items()]
+
+
 def describe_talent(engine: GameEngine, node) -> str:
     if node.node_type == "active" and node.action_id in engine.content.actions:
         action = engine.content.actions[node.action_id]
