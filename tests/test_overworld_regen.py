@@ -145,14 +145,18 @@ class OverworldRegenTest(unittest.TestCase):
         self.assertEqual(open_cells, [], f"unsealed non-gate border cells: {open_cells[:5]}")
 
     def test_no_isolated_interior_water_puddles(self):
-        # Every water cell flood-connects to the lake OR the sealed border sea (gate
+        # Every water cell flood-connects to a LAKE or the sealed border sea (gate
         # dry mouths legitimately split the coastal ring into arcs). No free-floating
-        # interior puddle survives.
+        # interior puddle survives. B45: the mini lake is the second deliberate
+        # water body, so it seeds the flood too.
+        from rpg_game.tools.worldgen.overworld_layout import MINI_LAKE
         walls, decor = self._layer("walls"), self._layer("decor_over")
         body = {(x, y) for y in range(H) for x in range(W)
                 if self._is_water(walls[y][x]) or self._is_bridge(decor[y][x])}
-        cx, cy, rx, ry = LAKE
-        seed = {(x, y) for (x, y) in body if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0}
+        seed = set()
+        for cx, cy, rx, ry in (LAKE, MINI_LAKE):
+            seed |= {(x, y) for (x, y) in body
+                     if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0}
         seed |= {(x, y) for (x, y) in body if x in (0, W - 1) or y in (0, H - 1)}
         self.assertTrue(seed, "no lake/border water found")
         seen, q = set(seed), deque(seed)

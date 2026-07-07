@@ -61,6 +61,14 @@ RIVER_PTS = [(136, 100), (139, 111), (132, 122), (138, 133),
              (132, 144), (136, 154), (135, 161)]
 RIVER_HALF = 1.1
 LAKE = (135, 164, 11, 6)          # cx, cy, rx, ry
+# B45: the mini lake — a landmark pond in the cainos meadow SW of the capital:
+# a 2x2 BLOCKING core ("full" water) inside a walkable shoreline ring (16
+# rendered cells; edge tiles are majority-land so you can stand at the brink).
+# Position probed against every straight town route (>=11 tiles), existing
+# water, chests, lairs AND the pocket rng (Random(83) draws unchanged), so the
+# rest of the map regenerates byte-identically around it. A skinnier ellipse
+# produces only shore tiles -> a pond you could walk THROUGH; keep rx/ry >= 1.5.
+MINI_LAKE = (44, 76, 1.5, 1.5)    # cx, cy, rx, ry
 
 # ---- derived coastline (organic, framing the map) ----
 SEA_BASE = 4.0
@@ -152,6 +160,9 @@ def water_at(gx, gy, dry):
     # lake
     if ((gx - LAKE[0]) / LAKE[2]) ** 2 + ((gy - LAKE[1]) / LAKE[3]) ** 2 <= 1.0:
         return True
+    # B45 mini lake (landmark pond — walkable all the way round, no bridge)
+    if ((gx - MINI_LAKE[0]) / MINI_LAKE[2]) ** 2 + ((gy - MINI_LAKE[1]) / MINI_LAKE[3]) ** 2 <= 1.0:
+        return True
     # river
     if _river_d(gx, gy) <= RIVER_HALF:
         return True
@@ -201,11 +212,14 @@ def water_field(dry):
 
 
 def _one_water_body(water, cell_name):
-    """Drop isolated interior water puddles. Seed the flood from the lake AND the
-    sealed border sea — gate dry mouths legitimately split the coastal ring into
-    arcs, so border arcs are kept; only free-floating interior puddles are removed."""
-    cx, cy, rx, ry = LAKE
-    seed = {(x, y) for (x, y) in water if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0}
+    """Drop isolated interior water puddles. Seed the flood from the lakes AND
+    the sealed border sea — gate dry mouths legitimately split the coastal ring
+    into arcs, so border arcs are kept; only free-floating interior puddles are
+    removed. B45: the mini lake is a DELIBERATE isolated pond, so it seeds too."""
+    seed = set()
+    for cx, cy, rx, ry in (LAKE, MINI_LAKE):
+        seed |= {(x, y) for (x, y) in water
+                 if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0}
     seed |= {(x, y) for (x, y) in water if x == 0 or x == W - 1 or y == 0 or y == H - 1}
     seen = set(seed)
     dq = collections.deque(seed)

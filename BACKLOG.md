@@ -770,8 +770,16 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Overworld & värld (nytt)
 
-#### B45 — Minisjö (5–8 tiles) att gå runt  · *nytt (vatten-/regenerate-lagret)*
-- **Vad:** En liten insjö någonstans som landmärke/omväg (Lucas-önskad). **Not:** ligger i vatten-lagret (regenerate_overworld), inte prop-scattern → egen slice; flood-fill-verifieras. **Acceptans:** sjö placerad, gångbar runtom, reachability grön, test.
+#### B45 — Minisjö att gå runt  · ✅ **KLAR (våg 3)** · kirurgisk regenerering (diff-verifierad)
+- **KLAR:** `MINI_LAKE = (44, 76, 1.5, 1.5)` i overworld_layout (cainos-ängen SV om huvudstaden) —
+  16 renderade vattenceller med **2×2 blockerande kärna** + gångbar strandring (majority-water-
+  kollisionen håller kant-tiles gåbara, så en smalare damm gick att gå IGENOM — first cut fångad
+  av eget test). Platsen probad innan bygge: ≥11 tiles från varje rak stadsrutt (ingen bro karvas
+  genom den), fritt från vatten/kistor/lairs/städer, och pocket-rng:n (Random(83)) opåverkad.
+  `_one_water_body` seedar nu från BÅDA sjöarna (medveten andra vattenkropp). **Diff-verifierad
+  regenerering: exakt 16 ändrade celler (walls-lagret, bbox 42–45×74–77), 0 drift i pockets/
+  stenar/buskar/broar.** Reachability grön; 4 tester (kärna blockerar, ring gåbar, konstant låst);
+  ZONE_MAP.png omgenererad. **Vad (bevarad):** En liten insjö som landmärke/omväg (Lucas-önskad).
 
 #### B47 — Zonfärgs-övergångar (palett)  · ✅ **KLAR** (nattbatch: production-blenden byggd som **draw-time-overrides** — 2305 förblandade tiles byggda EN gång vid load, layer-datan orörd (väg-scan/M-karta/gid-konsumenter opåverkade), `ZONE_BLEND_BAND=4` (0=av), mild deterministisk jitter; matchar PoC-utseendet Lucas godkände; renders i docs/b47_poc/b47_production_*.png; 4 tester)
 - **PoC (2026-07-06):** `docs/b47_poc/` — före/efter för cainos↔skog, skog↔mire och
