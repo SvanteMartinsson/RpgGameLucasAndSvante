@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import pygame
 
-from rpg_game.core import progression
+from rpg_game.core import progression, store
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import chatlog
+from rpg_game.presentation import item_text
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.overworld_render import ACCENT, BAD, GOOD, TEXT, TEXT_DIM, WARN
 
@@ -171,15 +172,19 @@ class BuildingMenusMixin:
             f"Gold: {gold}    ·    study a bought tome from your inventory (I) to learn it",
             True, TEXT_DIM), (panel.x + 20, y))
         y += 30
+        # B40 S3: tome rows follow the menu spec — name + price visible, the
+        # taught skill/level gate on hover; known tomes are disabled, owned or
+        # unaffordable ones restricted (dimmed, click explains).
         for tome in self.engine.tomes_for_sale(self.tome_building):
-            skill = self.engine.content.actions[tome.teaches].name
             already = tome.teaches in known
             owned = self.engine.player.inventory.count(tome.id) > 0
-            suffix = "  (known)" if already else ("  (owned)" if owned else "")
-            label = f"{tome.name}  —  {skill}  ·  Lv {tome.level_req}  ·  {tome.price}g{suffix}"
-            enabled = (not already) and gold >= tome.price
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
-                             (lambda t=tome.id: self._buy_tome(t)), enabled)
+            value = "known" if already else ("owned" if owned else f"{tome.price}g")
+            _color, tip = self.store_row_extras(tome.id)
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), tome.name,
+                             (lambda t=tome.id: self._buy_tome(t)),
+                             enabled=not already,
+                             restricted=(not already) and (owned or gold < tome.price),
+                             value=value, tooltip=tip)
             y += 46
         back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
         self._add_button(back, T.BACK, self._close_tome_shop)
@@ -333,33 +338,90 @@ class BuildingMenusMixin:
         self._draw_buttons()
 
     def _screen_store(self, panel) -> None:
+        """B40 S3: buy/sell as uniform menu rows — name in rarity colour, the
+        price as the right-aligned value, full stats + a vs-equipped delta on a
+        >1 s hover (item_text). Unaffordable rows are restricted: dimmed but
+        clickable, so the click explains what's missing."""
         eng = self.engine
         gold = build_snapshot(eng).player.gold
         self.screen.blit(self.font_sm.render(T.store_hint(gold), True, WARN),
                          (panel.x + 20, panel.y + 56))
         col_w = (panel.width - 60) // 2
-        # Each row is a price button plus the item's stats (skada/tier/mods/nivå)
-        # from StoreEntry/SellEntry.description, wrapped under it. Taller rows ->
-        # fewer fit, fine since the differentiated stores carry only one category.
         top = panel.y + 106
-        row_h = 56
+        row_h = 34
         max_rows = max(1, (panel.bottom - top - 10) // row_h)
         # The BUY column (left) shares the bottom-left corner with the chatbox; stop
         # its rows above the log rect so no item hides under the chatbox.
         buy_bottom = min(panel.bottom, self._log_rect().top)
         buy_rows = max(1, (buy_bottom - top - 10) // row_h)
         self.screen.blit(self.font.render(T.STORE_BUY, True, TEXT), (panel.x + 20, panel.y + 80))
-        for i, entry in enumerate(eng.store_entries(self.store_category)[:buy_rows]):
-            y = top + i * row_h
-            self._add_button(pygame.Rect(panel.x + 20, y, col_w, 28),
-                             f"{entry.name}  {entry.price}g", (lambda iid=entry.id: self.buy(iid)), gold >= entry.price)
-            self._blit_item_stats(entry.description, panel.x + 20, y + 30, col_w)
+        buy_entries = eng.store_entries(self.store_category)
+        for i, entry in enumerate(buy_entries[:buy_rows]):
+            color, tip = self.store_row_extras(entry.id)
+            self._add_button(pygame.Rect(panel.x + 20, top + i * row_h, col_w, 28),
+                             entry.name, (lambda iid=entry.id: self.buy(iid)),
+                             enabled=True, restricted=gold < entry.price,
+                             value=f"{entry.price}g", label_color=color, tooltip=tip)
+        if len(buy_entries) > buy_rows:
+            self.screen.blit(self.font_sm.render(f"v {len(buy_entries) - buy_rows} more v",
+                                                 True, TEXT_DIM),
+                             (panel.x + 28, top + buy_rows * row_h))
         self.screen.blit(self.font.render(T.STORE_SELL, True, TEXT), (panel.x + 40 + col_w, panel.y + 80))
-        for i, entry in enumerate(eng.sellable_entries(self.store_category)[:max_rows]):
-            y = top + i * row_h
-            self._add_button(pygame.Rect(panel.x + 40 + col_w, y, col_w, 28),
-                             f"{entry.name} x{entry.count}  {entry.value}g", (lambda iid=entry.id: self.sell(iid)))
-            self._blit_item_stats(entry.description, panel.x + 40 + col_w, y + 30, col_w)
+        sell_entries = eng.sellable_entries(self.store_category)
+        for i, entry in enumerate(sell_entries[:max_rows]):
+            color, tip = self.store_row_extras(entry.id, selling=True)
+            value = f"x{entry.count} · {entry.value}g" if entry.count > 1 else f"{entry.value}g"
+            self._add_button(pygame.Rect(panel.x + 40 + col_w, top + i * row_h, col_w, 28),
+                             entry.name, (lambda iid=entry.id: self.sell(iid)),
+                             value=value, label_color=color, tooltip=tip)
+        if len(sell_entries) > max_rows:
+            self.screen.blit(self.font_sm.render(f"v {len(sell_entries) - max_rows} more v",
+                                                 True, TEXT_DIM),
+                             (panel.x + 48 + col_w, top + max_rows * row_h))
+
+    def store_row_extras(self, item_id: str, *, selling: bool = False):
+        """B40 S3: (label_color, tooltip) for a store row. Weapons and gear add
+        a vs-equipped delta line so a buy decision reads off the hover; when
+        buying, the tooltip also shows what the item would sell back for."""
+        content = self.engine.content
+        player = self.engine.player
+        if item_id in content.weapons:
+            weapon = content.weapons[item_id]
+            price_line = "" if selling else item_text.sell_line(weapon.price)
+            tip = item_text.weapon_tooltip(weapon, price_line=price_line)
+            equipped = content.weapons.get(player.equipped_weapon_id)
+            if equipped is not None and item_id != player.equipped_weapon_id:
+                diff = weapon.damage_bonus - equipped.damage_bonus
+                tip.lines.append(f"Vs equipped: {diff:+} dmg" if diff
+                                 else "Vs equipped: same damage")
+            return chatlog.rarity_color(weapon.rarity), tip
+        if item_id in content.gear_items:
+            gear = content.gear_items[item_id]
+            price_line = "" if selling else f"Sells for {store.gear_sell_value(gear)} gold"
+            tip = item_text.gear_tooltip(gear, price_line=price_line)
+            delta = self._gear_delta_line(gear)
+            if delta:
+                tip.lines.append(delta)
+            return chatlog.rarity_color(gear.rarity), tip
+        item = content.items.get(item_id)
+        if item is not None:
+            price_line = item_text.sell_line(item.price) if item.kind == "miscellaneous" else ""
+            return None, item_text.consumable_tooltip(item, content, price_line=price_line)
+        return None, None
+
+    def _gear_delta_line(self, gear) -> str:
+        """'Vs equipped: +4 hp, -1 armor' against the piece worn in the same
+        slot type (first occupied slot); empty when nothing is worn there."""
+        content = self.engine.content
+        for slot_id, worn_id in self.engine.player.equipped_gear.items():
+            slot = content.equipment_slots.get(slot_id)
+            worn = content.gear_items.get(worn_id)
+            if slot is None or worn is None or slot.slot_type != gear.slot_type:
+                continue
+            raw = self._delta_text(dict(gear.stat_modifiers), dict(worn.stat_modifiers))
+            delta = raw.strip().strip("()")
+            return f"Vs equipped: {'no change' if delta == '=' else delta}"
+        return ""
 
     def buy(self, item_id: str) -> None:
         result = self.engine.buy_item(item_id)

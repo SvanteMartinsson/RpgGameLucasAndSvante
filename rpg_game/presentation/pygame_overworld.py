@@ -1715,7 +1715,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     # Short stat names for the compare-vs-equipped delta on equipment options.
     _DELTA_LABELS = {"damage": "dmg", "armor": "armor", "max_hp": "hp",
-                     "max_mana": "mana", "speed": "speed", "crit_chance": "crit"}
+                     "max_mana": "mana", "speed": "speed", "crit_chance": "crit",
+                     "wisdom": "wisdom"}
 
 
 
@@ -1724,16 +1725,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
 
 
-    def _blit_item_stats(self, description: str, x: int, y: int, width: int, max_lines: int = 2) -> None:
-        """Render an item's stat line (skada/tier/mods/nivå) under a store row,
-        wrapped to the column width. Stats only — no comparison."""
-        if not description:
-            return
-        for line in self._wrapped_lines_pixels(description, width - 8, self.font_sm)[:max_lines]:
-            self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (x + 4, y))
-            y += self.font_sm.get_height() + 1
-
-
+    # B40 S3: _blit_item_stats is gone — store rows moved their stat text into
+    # the shared hover tooltips (StoreEntry.description stays in core for the
+    # terminal presentation).
 
     def _log_visible_now(self) -> int:
         """Visible chatbox lines for the current mode: the player-set size in free
