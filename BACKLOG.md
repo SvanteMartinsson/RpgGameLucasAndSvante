@@ -104,6 +104,14 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   y144-207 = shade+hollow_worg(LÅG vikt) — Pale Gate-hörnet. **Öppet:** (1) lila-rutan
   bekräftas? (2) fallback = ghoul+grave_hound? (3) cursed_wight låg-måttlig vikt i röd,
   rare-slot tom (Claude-rek)?
+- **Bekräftat byggt (nattbatch 2026-07-09, STEG 0 mot `core_zone.json`):** alla tre öppna
+  frågorna ovan är redan i data — `spawn_areas` har `heath_northeast_pocket` [180,100,230,142]
+  (lila-rutan, undead_priest 30 + rotting_fiend 30), `spawn_fallbacks.burg_121` = ghoul 35 +
+  grave_hound 35 (fallback bekräftad), och `heath_elite_east` har cursed_wight vikt 12 (låg-
+  måttlig, ingen separat rare-slot). Alla 7 heath-rektanglarna + cainos/mork_skog/cursed_mire-
+  skisserna nedan matchar exakt mot koordinaterna i denna text — **hela B48-zonauktoreringen
+  är byggd**, "avstämning pågår" i rubriken ovan är inaktuell. Ingen kod ändrad, ren
+  verifiering. (Se även Odöd-pool-densitet-mätningen som använder samma data.)
 - **Cursed mire-skiss LÅST (Lucas 2026-07-06):** VIT topp x159-239/y0-18 + östkust
   x226-239/y0-96 = mudcrab · GUL HELA zonen = bog_leech (baslager = fallback) ·
   RÖD mitt-nord x172-222/y2-71 = bog_wraith+witchlight · GRÖN öst-syd x187-239/y40-97 =
@@ -300,19 +308,16 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   ut i vattnet, längs både raka kanter och hörn; reachability grön; broar funkar;
   determinism oförändrad; tester låser primitivens beteende.
 
-#### B12 — Encounter-skalning: faror mot avstånd + nivåtak nära start  · *höjd prioritet (playtest)*
-- **Vad:** Stad + närmsta rutor säkra; encounter-rate stiger med avstånd; path-tiles
-  sänker raten. **Tillägg från playtest:** ett *tak* på fiendenivå nära startområdet —
-  inte bara lägre rate, utan svagare fiender nära start.
-- **Avsikt:** Vildmarken farligare längre ut; resor meningsfulla. Och: en färsk L1–3
-  ska inte mötas av cave_bear L7/L10 direkt utanför start (3 dödsfall på ~2 min i
-  playtest = vägg före spelet börjar).
-- **Not:** STEG 0: mät `encounter_rate` / `wild_region` + hur fiende-NIVÅ väljs per
-  region (loggen visar fast band L1–L10 oberoende av spelarnivå nära start). Delar
-  besökt-data med B11. Sim-verifierbar.
-- **Acceptans (utkast — rätta):** rate ~0 på stad + angränsande tiles; stiger med
-  avstånd; path-tiles −30–50%; fiendenivå nära start tak:at (t.ex. ≤ spelarnivå+2);
-  sim visar rate- och nivå-kurvan mot mål; test för rate-/nivåfunktionen.
+#### B12 — Encounter-skalning: faror mot avstånd + nivåtak nära start  · ✅ **KLART (bägge halvor)** — se arkiv
+- **Rate-halvan KLAR:** se arkiv-posten **B12-rate** (`dd66afc`) — heatmap 0 på stad+granne,
+  ramp över 3 tiles, ×0.6 path-tiles.
+- **Nivåtak-halvan medvetet PARKERAD (Lucas-beslut, dokumenterat i samma arkivpost):**
+  fasta regionala fara-band behålls — L5 nära start är MENINGEN, inte world-scaling.
+  Denna aktiva post låg kvar som "höjd prioritet" efter att båda halvorna redan var
+  avgjorda; städat ikväll så B12 inte STEG-0:as igen av misstag.
+- **Vad (bevarad, historisk):** Stad + närmsta rutor säkra; encounter-rate stiger med
+  avstånd; path-tiles sänker raten. Tillägg från playtest: ett tak på fiendenivå nära
+  startområdet — inte bara lägre rate, utan svagare fiender nära start.
 
 #### B8 — Städerna som funktionsdrivna kluster  ⭐ designbärande  · 🟢 **Slice 2b KLAR** (per-stad butik + apothecary/stable-dörrar + snabbresa) · Lucas-tuning av roster/priser kvar
 - **Slice 2a KLAR** (`78cbce0`/`e74ffd2`/`17f6207`, Lucas-godkänd render): kluster generaliserat
@@ -402,11 +407,21 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   holy-vs-odöd stark men inte one-shot-allt givet poolandelen; tier-5 rares sällsynta
   från låg-tier wild-fiender; sim-matris visar effekten mot mål.
 
-#### Odöd-pool-densitet  · *mätuppgift (bekräftad i playtest)*
-- Loggen bekräftar den gamla öppna frågan: ~⅓ av encounters var undead/undead_priest i
-  burg_54/146/320. Om avsiktligt tematiskt = okej, men det är det som gör holy-vapnet
-  (B24) trivialiserande. **Mät** pool per region (sim/räkning); justera densitet om för
-  hög. Liten, sim-verifierbar, autonom-vänlig.
+#### Odöd-pool-densitet  · ✅ **MÄTT (nattbatch 2026-07-09) — ingen ändring**
+- **Mätmetod:** grid-samplade `pool_at()` (B48-modellen) var 2:a tile över hela 240×208-
+  kartan, viktad andel av `undead`-taggade fiender (traits, `enemies.json`) per
+  pool-region (`burg_54`=cainos, `burg_146`=mork_skog, `burg_320`=cursed_mire,
+  `burg_121`=grave_heath). Engångsskript, ej incheckat (mätning, ingen produktionskod).
+- **Resultat:** cainos 27,0 % · mork_skog 0,0 % · cursed_mire 13,8 % · **grave_heath 80,6 %**.
+- **Tolkning:** den gamla ~⅓-siffran (mätt före B48) är inaktuell — B48:s finkorniga
+  per-område-auktorering har redan spritt om odöd-tätheten: mork_skog har nu INGEN odöd
+  (rent beast/plant), cursed_mire är utspädd till 13,8 % (bara `bog_wraith`). Grave heaths
+  80,6 % är HÖG men **avsiktlig tematik**, låst av Lucas i B48:s heath-skiss (zonen heter
+  "grave heath", huserar Barrow King) — och `gravewarden_blade` är medvetet placerad DÄR
+  (cursed_wights tabell + chest_heath_4) som melee-spelarens Barrow King-förberedelse,
+  inte ett läckage. B24:s holy-nerf (2.0→1.5×) + `rare_tier_cap` (tier-5 ej droppbar <L5)
+  gäller fortfarande ovanpå. **Ingen ytterligare åtgärd** — stänger frågan mät-only, i
+  linje med B25:s presedens.
 
 #### B35 — Level-up: välj main-stat (Spår A)  · ✅ **KLAR** (`c600efc`)
 - Vid varje level-up väljer spelaren EN main-stat av **{HP, Mana, Damage, Crit}** (Speed
@@ -558,12 +573,11 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   quest-state persisterar; nytt Missions-panelval öppnar listan; tester för
   accept/complete/persist.
 
-#### B16 — Overworld-logg (RuneScape-lik)  · *redo (STEG 0 klar); batch-kandidat*
-- Halvtransparent action-logg **nere till vänster**. Loggar: **combat** (skada/utfall),
-  **drops** (vad man får), **level-ups**, **heals**, och world-events (toast).
-- STEG 0 klar (Code): `_draw_hud`-mönstret (SRCALPHA-panel, oskalad skärmrymd efter den
-  zoomade världen) → ett `_draw_log` matat av en **deque** som ackumulerar events.
-  Liten, ren feature ovanpå befintlig HUD-stil. Enkel batch.
+#### B16 — Overworld-logg (RuneScape-lik)  · ✅ **KLAR** (`17d5156`, se arkiv) — *stale duplikat städad ikväll*
+- **Fynd (nattbatch 2026-07-09):** denna aktiva post beskrev exakt det arkivet redan
+  visar byggt — deque, nere till vänster, combat/drops/level/heal — men blev aldrig
+  flyttad ut ur "Aktiva punkter" när den landade. Ingen kod ändrad; ren backlog-hygien
+  så punkten inte STEG-0:as/byggs om av misstag. Se arkivposten **B16** längre ner.
 
 #### B16.1 — Combat-logg i overworld-loggen + flikar (ALL/Combat)  · ✅ **KLAR (ihop med B44)**
 - **KLAR (2026-07-06):** alla battle-rader kanal-taggas `combat` (delade dequen gör
@@ -596,7 +610,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** N nya skills/vapen, data-drivna, sim-balanserade, test-täckta; en kort
   lista över vad som lagts till + var det kan återanvändas.
 
-#### B28 — Världsexpansion: större karta, glesare städer, kluster i alla (#3)  · 🟢 **Karta KLAR (240×208)** · kluster-i-ALLA = B8 Slice 2 kvar
+#### B28 — Världsexpansion: större karta, glesare städer, kluster i alla (#3)  · ✅ **KLAR** (karta 240×208 + kluster i alla 17 via B8 Slice 2a — se dess arkivpost)
 - **KLART (`960d0a3`/`1985e10`):** kartan expanderad 80×56 → **240×208 med parametrisk terräng
   (option A)** — `overworld_layout.py` härleder zon-band (cainos/mork_skog/cursed_mire nord,
   grave_heath söder om seam y≈100), organisk kust som tätar kanten utom gate-mynningar, seam-kanal,
@@ -606,8 +620,9 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   wild_regions. B8-klustren (burg_5, burg_67) är procedurella → följde med + renderar intakt.
   Verifierat: alla 17 städer + 3 gates nåbara (spel-sidans kollision), ingen stad i vatten, zoner rätt,
   vatten ett sammanhängande område, TMX-laddtid ~0.55s. world.json (meny-resa) orört. 630 tester gröna.
-- **Kvar:** kluster i ALLA städer med tiered storlek (hub/medium/by) = **B8 Slice 2** (egen guidad pass,
-  render per stad). Nya ZONER (tema/svårighet per band) = designbärande, egen runda.
+- **Kluster i alla städer: KLART** via **B8 Slice 2a** (tier-styrt kluster i alla 17, Lucas-
+  godkänd render) — denna posts "kvar"-rad var inaktuell, städad ikväll (nattbatch 2026-07-09).
+  Nya ZONER (tema/svårighet per band) förblir designbärande, egen runda — ej rört.
 
 ##### B28 ursprunglig kontext (bevarad)
 - **Vad (#3):** **Förstora kartan** (idag 80×56 → t.ex. ~120×84) och **sprid ut stads-
