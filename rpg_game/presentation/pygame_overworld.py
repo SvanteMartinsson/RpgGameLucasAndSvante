@@ -1156,8 +1156,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             f"Rank: {detail.rank}/{detail.max_rank}",
             f"Effect: {detail.effect}",
         ]
-        if detail.next_rank not in ("at max rank", ""):
-            lines.append(f"Next: {detail.next_rank}")
+        # B90: every rank spelled out with its computed values, current marked.
+        if detail.max_rank > 1:
+            lines.extend(detail.rank_lines)
         lines.extend([
             f"Cost: {detail.cost}",
             f"Requires: {detail.prerequisite}",

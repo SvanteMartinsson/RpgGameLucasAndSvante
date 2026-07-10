@@ -6,10 +6,11 @@ consistent across UI layers.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from rpg_game.core import combat, talents
 from rpg_game.core.game import GameEngine
+from rpg_game.core.progression import round_half_up
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,7 @@ class TalentDetail:
     prerequisite: str
     rank: int = 0
     max_rank: int = 1
-    next_rank: str = ""
+    rank_lines: tuple = ()
 
 
 # B78: player-facing words for internal stat names — raw identifiers like
@@ -224,20 +225,43 @@ def talent_can_allocate(engine: GameEngine, node) -> bool:
     return rank < talents.talent_max_rank(node)
 
 
-def talent_next_rank_text(engine: GameEngine, node) -> str:
-    """Describe what the next point buys: the magnitude step (and the +1 round of
-    duration an active skill gains at rank 3)."""
-    rank = talent_rank(engine, node)
-    max_rank = talents.talent_max_rank(node)
-    if rank == 0:
-        return "learn at rank 1"
-    if rank >= max_rank:
-        return "at max rank"
-    nxt = rank + 1
-    parts = [f"x{combat.TALENT_RANK_MULT.get(nxt, 1.0):g} magnitude"]
-    if node.node_type == "active" and nxt >= combat.TALENT_RANK_DURATION_BONUS_AT:
-        parts.append("+1 round duration")
-    return f"rank {nxt}: " + ", ".join(parts)
+def _scaled_effect(effect, mult: float, duration_bonus: int):
+    """A copy of `effect` with the B36 rank scaling baked into its numbers,
+    mirroring the engine rules (combat._effect_* and talents._recompute_passives)
+    so the description IS the computed value, never a 'x1.25 magnitude' step."""
+    changes = {}
+    if effect.type in {"damage", "instant_damage", "drain"}:
+        changes["multiplier"] = round(effect.multiplier * mult, 2)
+    elif effect.type == "apply_status":
+        if effect.scale == "power":   # power reflects read the multiplier (B86)
+            changes["multiplier"] = round(effect.multiplier * mult, 2)
+        if effect.magnitude:
+            changes["magnitude"] = round_half_up(effect.magnitude * mult)
+        if effect.duration and duration_bonus:
+            changes["duration"] = effect.duration + duration_bonus
+    elif effect.magnitude and effect.type in {"instant_heal", "heal", "stat_bonus", "elemental_attack_mod"}:
+        changes["magnitude"] = round_half_up(effect.magnitude * mult)
+    return replace(effect, **changes) if changes else effect
+
+
+def talent_rank_lines(content, node, current_rank: int = 0) -> list:
+    """B90: one line per rank with the COMPUTED values at that rank, the
+    current rank marked. Works for active skills and passive nodes."""
+    if node.node_type == "active" and node.action_id in content.actions:
+        effects = content.actions[node.action_id].effects
+        duration_scales = True   # actives gain +1 round at rank 3
+    else:
+        effects = node.effects
+        duration_scales = False
+    lines = []
+    for rank in range(1, talents.talent_max_rank(node) + 1):
+        mult, duration_bonus = combat.talent_rank_scaling(rank)
+        if not duration_scales:
+            duration_bonus = 0
+        text = "; ".join(describe_effect(_scaled_effect(e, mult, duration_bonus)) for e in effects)
+        marker = "  <- current" if rank == current_rank else ""
+        lines.append(f"Rank {rank}: {text or 'no effect data'}{marker}")
+    return lines
 
 
 def talent_detail(engine: GameEngine, node) -> TalentDetail:
@@ -250,5 +274,5 @@ def talent_detail(engine: GameEngine, node) -> TalentDetail:
         prerequisite=talent_prereq_name(engine, node),
         rank=talent_rank(engine, node),
         max_rank=talents.talent_max_rank(node),
-        next_rank=talent_next_rank_text(engine, node),
+        rank_lines=tuple(talent_rank_lines(engine.content, node, talent_rank(engine, node))),
     )
