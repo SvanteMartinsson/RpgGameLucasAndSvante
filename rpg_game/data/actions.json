@@ -143,7 +143,7 @@
         "scale": "spell",
         "multiplier": 1.2,
         "damage_type": "holy",
-        "ratio": 0.5,
+        "ratio": 0.6,
         "target": "enemy"
       }
     ]
@@ -211,7 +211,7 @@
       {
         "type": "apply_status",
         "status_type": "reflect",
-        "magnitude": 5,
+        "magnitude": 8,
         "duration": 3,
         "tick_timing": "round_end",
         "target": "self",
@@ -260,7 +260,7 @@
     "name": "Counter",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 8,
+    "mana_cost": 6,
     "requires_weapon_category": "melee",
     "effects": [
       {
@@ -339,7 +339,7 @@
     "name": "Evasion",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 6,
+    "mana_cost": 4,
     "effects": [
       {
         "type": "apply_status",
@@ -357,7 +357,7 @@
     "name": "Riposte",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 7,
+    "mana_cost": 6,
     "requires_weapon_category": "melee",
     "effects": [
       {
@@ -365,7 +365,7 @@
         "status_type": "reflect",
         "scale": "power",
         "multiplier": 1.0,
-        "duration": 3,
+        "duration": 4,
         "tick_timing": "round_end",
         "target": "self",
         "damage_type": "physical",
@@ -442,7 +442,7 @@
     "name": "Precision",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 6,
+    "mana_cost": 5,
     "requires_weapon_category": "melee",
     "effects": [
       {
@@ -451,7 +451,7 @@
         "multiplier": 1.4,
         "damage_type": "physical",
         "target": "enemy",
-        "crit_bonus": 35
+        "crit_bonus": 45
       }
     ]
   },
@@ -470,6 +470,16 @@
         "damage_type": "physical",
         "target": "enemy",
         "armor_pen": 6
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "armor",
+        "tag": "sunder",
+        "magnitude": -4,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "enemy"
       }
     ]
   },
@@ -551,7 +561,7 @@
     "name": "Frostbolt",
     "kind": "skill",
     "hit_chance": 1.0,
-    "mana_cost": 7,
+    "mana_cost": 6,
     "requires_weapon_category": "magic",
     "effects": [
       {

@@ -73,7 +73,7 @@ class FighterClassTests(unittest.TestCase):
         target = make_enemy(hp=100)
 
         # SequenceRng: [hit, multiplier-roll (0.0 -> floor 1.0x), crit-check].
-        engine.player.hp = 41
+        engine.player.hp = 51   # B95: threshold is 50% now
         normal = combat.resolve_action(
             engine.player,
             target,
@@ -84,7 +84,7 @@ class FighterClassTests(unittest.TestCase):
         self.assertEqual(normal.total_damage, 15)
 
         target = make_enemy(hp=100)
-        engine.player.hp = 40
+        engine.player.hp = 50
         boosted = combat.resolve_action(
             engine.player,
             target,

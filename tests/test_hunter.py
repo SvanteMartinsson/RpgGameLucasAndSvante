@@ -103,7 +103,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(humanoid_result.total_damage, 22)
+        self.assertEqual(humanoid_result.total_damage, 26)   # B95: beast_slayer's +2 power floor
 
         beast = make_enemy(hp=100, tags={"beast"})
         beast_result = combat.resolve_action(
@@ -113,7 +113,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(beast_result.total_damage, 28)
+        self.assertEqual(beast_result.total_damage, 33)      # 1.25x on top of the floor
 
     def test_snare_reduces_speed_and_accuracy_for_2_rounds_then_restores(self):
         engine = GameEngine(rng=SequenceRng([0.0]))

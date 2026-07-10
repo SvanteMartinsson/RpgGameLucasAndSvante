@@ -54,14 +54,15 @@ class TankClassTests(unittest.TestCase):
         combat.resolve_action(engine.player, enemy, engine.content.actions["thorns"], engine.rng)
         hit = combat.resolve_action(enemy, engine.player, always_hit_action(), engine.rng)
 
-        self.assertEqual(hit.reflected_damage, 5)
-        self.assertEqual(enemy.hp, 15)
+        self.assertEqual(hit.reflected_damage, 8)   # B95: thorns 5 -> 8
+        self.assertEqual(enemy.hp, 12)
 
         enemy.hp = 20
         miss = combat.resolve_action(enemy, engine.player, always_miss_action(), engine.rng)
 
         self.assertEqual(miss.reflected_damage, 0)
         self.assertEqual(enemy.hp, 20)
+        # (second hit block below re-baselines at 20 HP)
 
         enemy.active_statuses.append(
             ActiveStatus(type="reflect", magnitude=99, duration=1, tick_timing="round_end")
@@ -69,7 +70,7 @@ class TankClassTests(unittest.TestCase):
         enemy.hp = 20
         combat.resolve_action(enemy, engine.player, always_hit_action(), engine.rng)
 
-        self.assertEqual(enemy.hp, 15)
+        self.assertEqual(enemy.hp, 12)
 
     def test_taunt_accuracy_minus_20_for_2_rounds_then_restores(self):
         engine = GameEngine(rng=random.Random(1))
@@ -163,7 +164,7 @@ class TankClassTests(unittest.TestCase):
         engine.allocate_talent("tank_sentinel_s3_resolve")
         engine.allocate_talent("tank_sentinel_s4_fortitude")
 
-        self.assertEqual(engine.player.armor, 12)
+        self.assertEqual(engine.player.armor, 13)   # B95: bulwark armor 3 -> 4
         self.assertEqual(engine.player.max_hp, 170)
         self.assertEqual(engine.player.hp, 170)
 

@@ -63,11 +63,11 @@ class ClericClassTests(unittest.TestCase):
             weapon=engine.content.weapons["holy_mace"],
         )
 
-        # drain heals 50% of the damage dealt (half-up); the damage is now wisdom-
-        # scaled, so assert the RATIO, not a fixed number.
+        # drain heals 60% of the damage dealt (half-up, B95 sustain niche); the
+        # damage is wisdom-scaled, so assert the RATIO, not a fixed number.
         from rpg_game.core.progression import round_half_up
         self.assertGreater(result.total_damage, 0)
-        self.assertEqual(engine.player.hp, 80 + round_half_up(result.total_damage * 0.5))
+        self.assertEqual(engine.player.hp, 80 + round_half_up(result.total_damage * 0.6))
         self.assertEqual(target.hp, 100 - result.total_damage)
 
     def test_curse_reduces_power_by_4_for_3_rounds_then_restores(self):

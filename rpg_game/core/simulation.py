@@ -32,11 +32,42 @@ def _offensive_multiplier(action) -> float:
     return best
 
 
-def _choose_skill(engine: GameEngine):
+def _is_enemy_dot(skill) -> bool:
+    return any(effect.type == "apply_status"
+               and (effect.status_type in combat.DAMAGE_TYPES
+                    or (effect.tag or "") in combat.DAMAGE_TYPES)
+               and effect.target != "self"
+               for effect in skill.effects)
+
+
+def _is_self_status(skill) -> bool:
+    return any(effect.type == "apply_status" and effect.target == "self"
+               for effect in skill.effects)
+
+
+def _choose_skill(engine: GameEngine, enemy=None, smart: bool = False):
     """Skill policy: the highest-hitting equipped offensive skill the player can
     currently afford (mana). Cooldown/weapon gating is enforced by the engine — a
-    blocked cast falls back to a basic attack in _take_turn. None -> just attack."""
+    blocked cast falls back to a basic attack in _take_turn. None -> just attack.
+
+    B95 (`smart`, used by build sims): a DoT the target does not already suffer
+    is cast first, then a self-status (buff/reflect/regen) the player does not
+    already carry — both score 0 on the burst scale, so builds that took those
+    branches would otherwise never cast their signature skills. The default
+    policy is unchanged (default loadouts have no such skills)."""
     player = engine.player
+    if smart and enemy is not None:
+        for skill in engine.equipped_skills():
+            if skill.mana_cost > player.mana:
+                continue
+            if _is_enemy_dot(skill) and not combat.action_reapplies_active_dot(skill, enemy):
+                return skill
+        for skill in engine.equipped_skills():
+            if skill.mana_cost > player.mana or not _is_self_status(skill):
+                continue
+            applied_types = {e.status_type for e in skill.effects if e.type == "apply_status"}
+            if not any(status.type in applied_types for status in player.active_statuses):
+                return skill
     best, best_score = None, 0.0
     for skill in engine.equipped_skills():
         score = _offensive_multiplier(skill)
@@ -51,7 +82,7 @@ def _take_turn(engine: GameEngine, enemy, use_skills: bool):
     """One player turn. Attack-only by default; with use_skills, cast the best
     affordable skill (falling back to attack if the engine blocks it)."""
     if use_skills:
-        skill = _choose_skill(engine)
+        skill = _choose_skill(engine, enemy, smart=getattr(engine, "_sim_smart_skills", False))
         if skill is not None:
             result = engine.run_combat_turn(enemy, skill.id)
             if result.outcome != "blocked":   # blocked = mana/cooldown/weapon: no-op, retry
@@ -124,11 +155,16 @@ def simulate_fight(
     level: int = 1,
     main_stat: str | None = None,
     weapon_id: str | None = None,
+    talent_plan: tuple[str, ...] = (),
+    equip_skill_ids: tuple[str, ...] = (),
 ) -> FightSimulation:
     """Run one fight and return a compact result. Defaults reproduce the old
     attack-only L1 fight exactly; use_skills lets the player cast skills (mana +
     cooldown aware), level>1 grows it via the B35 level-up path, and weapon_id
-    equips a specific weapon (B37 weapon-aware curve)."""
+    equips a specific weapon (B37 weapon-aware curve). B95: talent_plan spends
+    one granted point per entry (repeat a node id to rank it up) and
+    equip_skill_ids swaps the equipped loadout, so branch builds can be
+    compared head-to-head."""
     engine = GameEngine(rng=random.Random(seed))
     engine.start_new_game(f"{class_id.title()} Sim", class_id)
     if weapon_id is not None:
@@ -136,6 +172,15 @@ def simulate_fight(
         engine.player.equipped_weapon_id = weapon_id
     if level > 1:
         _level_player(engine, level, main_stat or _DEFAULT_MAIN.get(class_id, "damage"))
+    for node_id in talent_plan:
+        engine.player.talent_points += 1
+        engine.allocate_talent(node_id)
+    for skill_id in equip_skill_ids:
+        if skill_id not in engine.player.equipped_skill_ids:
+            engine.equip_skill(skill_id)
+    if talent_plan or equip_skill_ids:
+        engine._sim_smart_skills = True   # build sims use the B95 smart policy
+    if level > 1 or talent_plan:
         engine.player.hp = engine.effective_stat("max_hp")    # start the fight full
         engine.player.mana = engine.effective_stat("max_mana")
     enemy = engine.content.enemies[enemy_id].create_enemy()
@@ -174,12 +219,15 @@ def simulate_matchup(
     level: int = 1,
     main_stat: str | None = None,
     weapon_id: str | None = None,
+    talent_plan: tuple[str, ...] = (),
+    equip_skill_ids: tuple[str, ...] = (),
 ) -> MatchupSimulation:
     """Run many seeded fights for one class/enemy matchup."""
     fights = [
         simulate_fight(class_id, enemy_id, seed=seed + index, max_turns=max_turns,
                        use_skills=use_skills, level=level, main_stat=main_stat,
-                       weapon_id=weapon_id)
+                       weapon_id=weapon_id, talent_plan=talent_plan,
+                       equip_skill_ids=equip_skill_ids)
         for index in range(trials)
     ]
     victories = [fight for fight in fights if fight.outcome == "victory"]

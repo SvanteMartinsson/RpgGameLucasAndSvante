@@ -63,7 +63,7 @@ class ReflectRankScalingTest(unittest.TestCase):
         combat.resolve_action(player, player, action, weapon=weapon, rng=random.Random(1))
         status = next(s for s in player.active_statuses if s.type == "reflect")
         self.assertEqual(status.scale, "flat")
-        self.assertEqual(status.magnitude, 5)
+        self.assertEqual(status.magnitude, 8)   # B95: thorns 5 -> 8
 
 
 if __name__ == "__main__":
