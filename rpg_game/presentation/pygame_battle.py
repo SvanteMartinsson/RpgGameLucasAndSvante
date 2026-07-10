@@ -29,6 +29,7 @@ from rpg_game.core import combat
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
+from rpg_game.presentation import audio
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import talent_text
 from rpg_game.presentation import ui_text as T
@@ -184,6 +185,7 @@ class BattleApp:
         self._sequence: list = []       # queued (lines, resolution) steps
         self._seq_timer = 0
         self._seq_finale = None
+        self._flushing = False          # B69: a skipped round plays no per-step SFX
         self._floaters: list = []       # [x, y, age, max_age, surface]
         self._blink_enemy = 0           # frames of white flash left
         self._blink_hero = 0
@@ -193,6 +195,8 @@ class BattleApp:
         # infra only), so it stays a no-op until an apply-slice calls hover.add().
         self.hover = ui.HoverTracker()
         pygame.init()
+        audio.init()          # B69: graceful — silent mode when no device
+        audio.ensure_music()  # carries through from the overworld, starts standalone
         pygame.display.set_caption(T.CAPTION_BATTLE)
         # Inherit the caller's display (window or fullscreen); draw to a fixed
         # canvas that present() blits centered onto it.
@@ -214,6 +218,7 @@ class BattleApp:
         if self.enemy is not None:
             # Single battle against a supplied enemy (e.g. a wild encounter).
             self.set_mode("combat")
+            audio.play("encounter")   # B69: covers wild, boss and tournament entries
             self.push_log(T.appears(_enemy_article(self.enemy), self.enemy.name), ACCENT)
             self.playtest_logger.encounter_start(self.enemy, build_snapshot(self.engine), self.location_id)
         elif self.standalone:
@@ -255,6 +260,7 @@ class BattleApp:
             return
         self.set_mode("combat")
         self.banner = ""
+        audio.play("encounter")
         self.push_log(T.appears(_enemy_article(self.enemy), self.enemy.name), ACCENT)
         self.location_id = self.engine.player.current_place_id
         if self.playtest_logger is not None:
@@ -379,7 +385,10 @@ class BattleApp:
         for line in step_lines:
             self._push_combat_event(line)
         if resolution is not None:
+            self._play_resolution_sfx(resolution)   # B69: sound rides the playback
             self._spawn_resolution_fx(resolution)
+        elif not self._flushing and any(_TICK_RE.match(line) for line in step_lines):
+            audio.play("DoT")                       # B69: end-of-round tick step
         if not self._sequence:
             self._run_finale()
 
@@ -398,10 +407,16 @@ class BattleApp:
             self._seq_timer = SEQUENCE_FRAMES
 
     def flush_sequence(self) -> None:
-        """Drain the playback instantly (skip-click when enabled; tests)."""
-        while self._sequence:
-            self._advance_step()
-        self._run_finale()
+        """Drain the playback instantly (skip-click when enabled; tests). The
+        per-step SFX stay quiet — sixteen overlapping hits is noise, and the
+        outcome sounds (level-up/death) still land in the finale."""
+        self._flushing = True
+        try:
+            while self._sequence:
+                self._advance_step()
+            self._run_finale()
+        finally:
+            self._flushing = False
 
     @property
     def _locked(self) -> bool:
@@ -436,6 +451,8 @@ class BattleApp:
                 self._show_result("fled")
             return
         if result.outcome == "victory":
+            if result.levels_gained > 0:
+                audio.play("level_up")   # B69: the ding rides the round finale
             self.push_log(T.VICTORY_LOG, chatlog.HEAL)
             # B44: XP and gold share ONE row, each part in its own colour.
             reward_parts = []
@@ -459,6 +476,7 @@ class BattleApp:
                 self._show_result("victory")
             return
         if result.outcome == "defeat":
+            audio.play("die")
             self.push_log(T.DEFEATED_LOG, chatlog.DAMAGE)
             self.enemy = None
             if self.standalone:
@@ -514,6 +532,7 @@ class BattleApp:
             pos = to_canvas(event.pos, self._transform)
             for button in self.buttons:
                 if button.enabled and button.rect.collidepoint(pos):
+                    audio.play("menu_click")
                     button.on_click()
                     return
             # Clicking anywhere advances out of idle/result states.
@@ -544,6 +563,7 @@ class BattleApp:
         key_char = event.unicode.lower() if event.unicode else ""
         for button in self.buttons:
             if button.enabled and button.hotkey and button.hotkey == key_char:
+                audio.play("menu_click")   # hotkeys are clicks too
                 button.on_click()
                 return
 
@@ -634,6 +654,34 @@ class BattleApp:
         if resolution.total_healing:
             self._spawn_floater(f"+{resolution.total_healing}", (120, 205, 140),
                                 over_enemy=not actor_is_player)
+
+    # -- B69: combat SFX (rides the same playback steps as the floaters) ------
+
+    def _play_resolution_sfx(self, resolution) -> None:
+        """One actor's sounds: potions gulp (and nothing else — a potion is not
+        a skill-heal), skills announce their cast, damage lands on the right
+        side of the field, and skill heals chime. The base attack is
+        deliberately cast-less: its sound IS the hit."""
+        if self._flushing or resolution.blocked:
+            return
+        action_id = resolution.action_id
+        if action_id.startswith("use_"):   # battle consumables (create_item_action)
+            item = self.engine.content.items.get(action_id[4:])
+            if item is not None:
+                sound = audio.potion_sound(item)
+                if sound:
+                    audio.play(sound)
+                return
+        is_player = resolution.actor_name == self.engine.player.name
+        is_base_attack = action_id == combat.PLAYER_ATTACK_ID or bool(resolution.rolled_style_id)
+        if not is_base_attack:
+            cast = audio.cast_sound(self.engine.content.actions.get(action_id), is_player)
+            if cast:
+                audio.play(cast)
+        if resolution.damage_components:   # misses/evades carry no components
+            audio.play("hit_enemy" if is_player else "get_hit")
+        if resolution.total_healing:
+            audio.play("heal")
 
     def _draw_combat_fx(self) -> None:
         """Age + draw the floaters (they rise and fade); frozen during hit-pause."""
@@ -1027,6 +1075,8 @@ def character_creation(engine: GameEngine) -> tuple[str, str, str]:
     """
     classes = list(engine.content.classes.values())
     pygame.init()
+    audio.init()          # B69: the very first screen already clicks
+    audio.ensure_music()  # the loop starts with the very first screen
     pygame.display.set_caption(T.CAPTION_CREATE)
     display = acquire_display((WIDTH, HEIGHT))
     screen = pygame.Surface((WIDTH, HEIGHT))  # fixed canvas, centered on display
@@ -1075,6 +1125,10 @@ def character_creation(engine: GameEngine) -> tuple[str, str, str]:
                 display = set_display_mode((event.w, event.h))
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
+                if (start_rect.collidepoint(click)
+                        or any(rect.collidepoint(click) for rect in list_rects)
+                        or any(rect.collidepoint(click) for rect in starter_rects)):
+                    audio.play("menu_click")   # B69: creation rows click like buttons
                 for i, rect in enumerate(list_rects):
                     if rect.collidepoint(click):
                         if i != selected:

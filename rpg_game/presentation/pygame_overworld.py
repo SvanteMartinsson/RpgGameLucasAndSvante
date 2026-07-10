@@ -39,6 +39,7 @@ from pytmx.util_pygame import load_pygame
 from rpg_game.core import combat, encounters, progression, saveslots, spawns, store
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import audio
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.pygame_canvas import (
@@ -442,6 +443,8 @@ class TournamentRun:
 class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
     def __init__(self, engine: GameEngine | None = None, zone: ZoneConfig | None = None) -> None:
         pygame.init()
+        audio.init()          # B69: graceful — silent mode when no device
+        audio.ensure_music()  # background loop; idempotent across shell hops
         pygame.display.set_caption(T.CAPTION_OVERWORLD)
         # Inherit the window the previous screen (start menu / creation / battle)
         # already opened — possibly maximized or on an external monitor — so
@@ -577,6 +580,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
         self._last_region = self.zone.wild_region_at(self._last_tile)
+        self._walk_sfx_steps = 0   # B69: footstep every 2nd tile, not a machine gun
         # Sub-pixel movement remainder (float) per axis; the int part moves the rect
         # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
         # on any teleport so no drift accumulates across a reposition.
@@ -972,6 +976,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     def use_inventory_item(self, item_id: str) -> None:
         result = self.engine.use_consumable(item_id)
+        if result.success:
+            sound = audio.potion_sound(self.engine.content.items.get(item_id))
+            if sound:
+                audio.play(sound)   # B69: tomes and misc stay silent
         self.set_toast(result.message, GOOD if result.success else BAD)
 
     # -- inventory overview (everything owned) ------------------------------
@@ -1235,6 +1243,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 pos = to_canvas(event.pos, self._transform)
                 for button in self.buttons:
                     if button.enabled and button.rect.collidepoint(pos):
+                        audio.play("menu_click")
                         button.on_click()
                         break
 
@@ -1352,6 +1361,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 tile = self.world.current_tile
                 if tile != self._last_tile:
                     self._last_tile = tile
+                    self._walk_sfx_steps += 1        # B69: soft step every 2nd tile
+                    if self._walk_sfx_steps % 2 == 0:
+                        audio.play("walk")
                     self._armed_boss_id = ""   # B65: stepping away disarms the challenge
                     region = self.zone.wild_region_at(tile)
                     if region != self._last_region and region != self.zone.wild_region_place_id:
@@ -1475,6 +1487,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             if not result.success:
                 self.push_log(result.message, TEXT_DIM)
                 return True
+            audio.play("open_chest")
             self.push_log(result.message, TEXT)
             # B44: gold and the rarity-coloured item name share ONE row.
             parts = [(f"+{result.gold} gold", chatlog.GOLD)]

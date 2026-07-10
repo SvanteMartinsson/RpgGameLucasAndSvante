@@ -13,6 +13,7 @@ import pygame
 
 from rpg_game.core import progression, store
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import audio
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import fog
 from rpg_game.presentation import item_text
@@ -279,6 +280,8 @@ class BuildingMenusMixin:
 
     def _brew(self, recipe_id: str) -> None:
         result = self.engine.brew(recipe_id)
+        if result.success:
+            audio.play("brewing")
         self.push_log(result.message, GOOD if result.success else BAD)
 
     def _draw_apothecary(self) -> None:
@@ -521,6 +524,8 @@ class BuildingMenusMixin:
 
     def sell(self, item_id: str) -> None:
         result = self.engine.sell_item(item_id)
+        if result.success:
+            audio.play("sell")
         # A successful sale reads in the item's rarity colour (unified with drops);
         # a failure stays in the failure colour.
         color = chatlog.rarity_color(self._item_rarity(item_id)) if result.success else BAD

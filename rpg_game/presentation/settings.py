@@ -19,6 +19,9 @@ DEFAULTS = {
     "minimap": True,       # B11 minimap on by default
     "combat_fx": True,     # B72 floaters/blink/shake
     "combat_skip": False,  # B75 skip-click through round playback (Lucas: default off)
+    "sound_master": 1.0,   # B69 master volume 0.0..1.0 (SFX play at master × sfx)
+    "sound_sfx": 1.0,      # B69 SFX bus volume 0.0..1.0
+    "sound_music": 1.0,    # B69 music bus volume 0.0..1.0 (loop at master × music)
 }
 
 
