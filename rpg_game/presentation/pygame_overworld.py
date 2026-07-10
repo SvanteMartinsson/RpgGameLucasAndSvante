@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import collections
 import json
+import math
 import os
 import sys
 from dataclasses import dataclass, field
@@ -1371,10 +1372,12 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if dx or dy:
             self._player_moving = True
             self._player_facing = player_facing(dx, dy, self._player_facing)
+            # B87: normalize so diagonal speed equals cardinal speed (was sqrt(2) faster).
+            speed = PLAYER_SPEED / math.sqrt(2) if dx and dy else PLAYER_SPEED
             # Accumulate sub-pixel movement; move the integer part, carry the rest.
             # int() truncates toward zero so the fraction keeps its sign both ways.
-            self._move_accum_x += dx * PLAYER_SPEED
-            self._move_accum_y += dy * PLAYER_SPEED
+            self._move_accum_x += dx * speed
+            self._move_accum_y += dy * speed
             step_x, step_y = int(self._move_accum_x), int(self._move_accum_y)
             self._move_accum_x -= step_x
             self._move_accum_y -= step_y
