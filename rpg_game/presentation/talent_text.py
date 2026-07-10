@@ -108,6 +108,17 @@ def skill_cost_text(action) -> str:
     return ", ".join(bits) if bits else "free"
 
 
+def skill_effect_lines(action) -> list:
+    """B89: what a skill DOES, as tooltip lines — effects, cost, weapon gate.
+    Shared by the tome shop, the inventory tome tooltip and the skill rows so
+    the wording never diverges."""
+    lines = [describe_effect(effect) for effect in action.effects]
+    lines.append(skill_cost_text(action))
+    if action.requires_weapon_category:
+        lines.append(f"Requires a {action.requires_weapon_category} weapon")
+    return lines
+
+
 # --- B40 S5: character-creation helpers (no player exists yet) --------------
 
 def starter_choices(content, class_id: str) -> list:

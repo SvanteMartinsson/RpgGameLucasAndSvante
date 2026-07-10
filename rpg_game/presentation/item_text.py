@@ -11,7 +11,7 @@ from __future__ import annotations
 from rpg_game.core import combat, store
 from rpg_game.presentation import ui
 from rpg_game.presentation import ui_text as T
-from rpg_game.presentation.talent_text import STATUS_LABELS, stat_label
+from rpg_game.presentation.talent_text import STATUS_LABELS, skill_effect_lines, stat_label
 
 
 def on_hit_lines(weapon) -> list:
@@ -73,6 +73,9 @@ def consumable_tooltip(item, content, *, price_line: str = "") -> ui.Tooltip:
     if item.kind == "tome":
         action = content.actions.get(item.teaches)
         lines.append(f"Teaches: {action.name if action is not None else item.teaches}")
+        if action is not None:
+            # B89: say what the taught skill DOES, with the shared skill wording.
+            lines.extend(skill_effect_lines(action))
         if item.level_req > 1:
             lines.append(f"Needs Lv {item.level_req}")
     if item.heal_amount:

@@ -22,6 +22,7 @@ from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.overworld_render import (
     ACCENT, BAD, GOOD, PANEL_EDGE, TEXT, TEXT_DIM, WARN)
 from rpg_game.presentation.talent_text import (
+    skill_effect_lines,
     talent_action_label,
     talent_can_allocate,
     talent_rank_label,
@@ -302,7 +303,10 @@ class OverlaysMixin:
             is_eq = skill.id in equipped_ids
             label = f"{'[E] ' if is_eq else '[ ]'} {skill.name}"
             enabled = is_eq or len(equipped_ids) < 4
-            self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled)
+            # B89: hovering a skill row explains what the skill does.
+            tip = ui.Tooltip(title=skill.name, lines=skill_effect_lines(skill))
+            self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled,
+                             tooltip=tip)
 
         self.screen.blit(self.font_sm.render(
             self._fit_text(T.talents_hint(eng.player.talent_points), middle.width, self.font_sm),
