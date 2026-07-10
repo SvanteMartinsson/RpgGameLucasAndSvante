@@ -121,7 +121,8 @@ class RogueClassTests(unittest.TestCase):
         self.assertEqual(hit.reflected_damage, 0)
         self.assertEqual(enemy.hp, 50)
 
-    def test_rupture_bleed_ticks_7_for_3_rounds(self):
+    def test_rupture_bleed_ticks_14_for_3_rounds(self):
+        # B94: bleed raised 7 -> 14/tick so the total tracks a same-cost nuke.
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Rogue", "rogue")
         target = make_enemy(hp=50)
@@ -129,13 +130,13 @@ class RogueClassTests(unittest.TestCase):
         combat.resolve_action(engine.player, target, engine.content.actions["rupture"], engine.rng)
 
         combat.tick_statuses(target, "round_end")
-        self.assertEqual(target.hp, 43)
-        combat.tick_statuses(target, "round_end")
         self.assertEqual(target.hp, 36)
         combat.tick_statuses(target, "round_end")
-        self.assertEqual(target.hp, 29)
+        self.assertEqual(target.hp, 22)
         combat.tick_statuses(target, "round_end")
-        self.assertEqual(target.hp, 29)
+        self.assertEqual(target.hp, 8)
+        combat.tick_statuses(target, "round_end")
+        self.assertEqual(target.hp, 8)
 
 
 def make_enemy(hp: int = 100) -> Enemy:

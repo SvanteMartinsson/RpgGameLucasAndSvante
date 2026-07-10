@@ -126,7 +126,7 @@
         "tick_timing": "round_end",
         "target": "enemy",
         "scale": "spell",
-        "multiplier": 1.0
+        "multiplier": 0.75
       }
     ]
   },
@@ -176,7 +176,7 @@
       {
         "type": "apply_status",
         "status_type": "poison",
-        "magnitude": 3,
+        "magnitude": 6,
         "duration": 3,
         "tick_timing": "round_end",
         "target": "enemy"
@@ -304,7 +304,7 @@
         "type": "apply_status",
         "status_type": "bleed",
         "tag": "physical",
-        "magnitude": 7,
+        "magnitude": 14,
         "duration": 3,
         "tick_timing": "round_end",
         "target": "enemy"
@@ -523,7 +523,9 @@
         "duration": 3,
         "tick_timing": "round_end",
         "damage_type": "fire",
-        "target": "enemy"
+        "target": "enemy",
+        "scale": "spell",
+        "multiplier": 0.75
       }
     ]
   },
@@ -713,7 +715,7 @@
         "damage_type": "poison",
         "target": "enemy",
         "scale": "spell",
-        "multiplier": 1.0
+        "multiplier": 0.75
       }
     ]
   },
@@ -1104,7 +1106,7 @@
         "damage_type": "poison",
         "target": "enemy",
         "scale": "spell",
-        "multiplier": 1.0
+        "multiplier": 0.75
       }
     ]
   },
@@ -1125,7 +1127,7 @@
         "damage_type": "fire",
         "target": "enemy",
         "scale": "spell",
-        "multiplier": 1.0
+        "multiplier": 0.75
       }
     ]
   },
@@ -1234,7 +1236,7 @@
         "tick_timing": "round_end",
         "target": "enemy",
         "tag": "poison",
-        "magnitude": 6,
+        "magnitude": 8,
         "duration": 3,
         "damage_type": "poison"
       }
@@ -1366,7 +1368,7 @@
         "tick_timing": "round_end",
         "target": "enemy",
         "tag": "poison",
-        "magnitude": 5,
+        "magnitude": 8,
         "duration": 3,
         "damage_type": "poison"
       }
@@ -1513,7 +1515,7 @@
         "type": "apply_status",
         "status_type": "poison",
         "tag": "toxin",
-        "magnitude": 4,
+        "magnitude": 6,
         "duration": 3,
         "tick_timing": "round_end",
         "damage_type": "poison",
@@ -1556,7 +1558,7 @@
         "type": "apply_status",
         "status_type": "poison",
         "tag": "toxin",
-        "magnitude": 5,
+        "magnitude": 7,
         "duration": 2,
         "tick_timing": "round_end",
         "damage_type": "poison",

@@ -144,17 +144,19 @@ class WeaponGatingTests(unittest.TestCase):
         )
         self.assertEqual(tank_engine.player.active_statuses[0].magnitude, 6)
 
+        # B94: ignite is spell-scaled now (it legitimately reads the spell
+        # source), so the flat-DoT half of this lock uses rupture instead.
         mage_engine = GameEngine(rng=random.Random(1))
         mage_engine.start_new_game("Mage", "mage")
         mage_target = make_enemy()
         combat.resolve_action(
             mage_engine.player,
             mage_target,
-            mage_engine.content.actions["ignite"],
+            mage_engine.content.actions["rupture"],
             mage_engine.rng,
             weapon=mage_engine.content.weapons["worldsplitter"],
         )
-        self.assertEqual(mage_target.active_statuses[0].magnitude, 8)
+        self.assertEqual(mage_target.active_statuses[0].magnitude, 14)
 
     def test_counter_and_riposte_reflect_scale_with_melee_weapon_bonus_and_require_melee(self):
         tank_engine = GameEngine(rng=NoCritRng([0.0]))

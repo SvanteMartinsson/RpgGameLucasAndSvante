@@ -37,7 +37,7 @@ class DotTickLoggingTest(unittest.TestCase):
         burn = [r for r in rows if r["event"] == "dot_tick" and r["kind"] == "damage"]
         self.assertTrue(burn)
         self.assertEqual(burn[0]["damage_type"], "fire")
-        self.assertEqual(burn[0]["amount"], 8)
+        self.assertEqual(burn[0]["amount"], 5)   # B94: ignite spell-scaled; enemy source = damage (7) x 0.75
         self.assertEqual(burn[0]["target"], "Tank")
         self.assertEqual(burn[0]["status"], "fire")
 
