@@ -214,14 +214,17 @@ class StatusEventTests(unittest.TestCase):
                          event_log=collections.deque())
 
     def test_apply_event_names_the_source_action(self):
+        # B88 evolved the B77 lock: a DoT landing is its own flavoured line
+        # that still names the source action (and now the source actor too).
         battle = self._battle()
         result = combat.resolve_action(
             battle.enemy, battle.engine.player,
             battle.engine.content.actions["rat_king_plague_leap"],
             random.Random(0))
-        applies = [e for e in result.events if "is affected by" in e]
+        applies = [e for e in result.events if "was poisoned by" in e]
         self.assertTrue(applies, result.events)
-        self.assertIn("(Plague Leap)", applies[0])
+        self.assertIn("Plague Leap", applies[0])
+        self.assertIn(battle.enemy.name, applies[0])
 
     def test_apply_against_you_is_amber_and_tick_is_red(self):
         battle = self._battle()

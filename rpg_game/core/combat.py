@@ -28,6 +28,16 @@ from rpg_game.core.progression import RespawnResult, round_half_up
 
 DAMAGE_TYPES = {"physical", "fire", "frost", "holy", "poison"}
 
+# B88: a DoT landing gets its own flavoured line ("X was poisoned by ...!")
+# instead of the generic "is affected by" wording, keyed by the type it ticks as.
+DOT_APPLY_VERBS = {
+    "poison": "poisoned",
+    "fire": "set ablaze",
+    "frost": "chilled",
+    "physical": "left bleeding",
+    "holy": "seared",
+}
+
 # B36 talent ranks: a talent skill's damage/heal/DoT magnitude is multiplied by
 # its rank; at rank 3 its DoT/buff/debuff durations also gain +1 round. These are
 # placeholder values, sim-tuned later (out of B36 scope).
@@ -1054,7 +1064,14 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
             weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
         )
     )
-    result.events.append(f"{actor_name(effect_target)} is affected by {status_type} ({result.action_name}).")
+    tick_type = status_type if status_type in DAMAGE_TYPES else tag
+    if tick_type in DAMAGE_TYPES:
+        # B88: DoT applications get their own flavoured line with the source.
+        verb = DOT_APPLY_VERBS[tick_type]
+        source = result.action_name if actor is effect_target or isinstance(actor, Player) else f"{actor_name(actor)}'s {result.action_name}"
+        result.events.append(f"{actor_name(effect_target)} was {verb} by {source}!")
+    else:
+        result.events.append(f"{actor_name(effect_target)} is affected by {status_type} ({result.action_name}).")
     return
 
 

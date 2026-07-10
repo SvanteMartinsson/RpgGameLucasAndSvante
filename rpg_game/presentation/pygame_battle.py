@@ -289,6 +289,11 @@ class BattleApp:
         if _HEALED_RE.match(event):
             self.push_log(event, chatlog.HEAL)
             return
+        # B88: DoT applications are their own line, coloured by damage type.
+        match = _DOT_APPLIED_RE.match(event)
+        if match:
+            self.push_log(event, self.FX_TYPE_COLORS[_DOT_VERB_TYPES[match.group("verb")]])
+            return
         # B77: statuses that land on YOU are called out (amber apply, red ticks).
         match = _AFFECTED_RE.match(event)
         if match:
@@ -1001,6 +1006,14 @@ _DEALT_RE = re.compile(
 _HEALED_RE = re.compile(r"^.+? healed \d+ HP\.$")
 # B77: status events — the apply line (now source-tagged by core) and the DoT tick.
 _AFFECTED_RE = re.compile(r"^(?P<who>.+?) is affected by .+\.$")
+# B88: DoT applications carry their tick type in the verb (see combat.DOT_APPLY_VERBS).
+_DOT_APPLIED_RE = re.compile(
+    r"^.+? was (?P<verb>poisoned|set ablaze|chilled|left bleeding|seared) by .+!$"
+)
+_DOT_VERB_TYPES = {
+    "poisoned": "poison", "set ablaze": "fire", "chilled": "frost",
+    "left bleeding": "physical", "seared": "holy",
+}
 _TICK_RE = re.compile(r"^(?P<who>.+?) took \d+ .+? damage from .+\.$")
 
 
