@@ -39,6 +39,7 @@ from pytmx.util_pygame import load_pygame
 
 from rpg_game.core import combat, encounters, progression, saveslots, spawns, store
 from rpg_game.core import events as core_events
+from rpg_game.presentation import ambience
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import audio
@@ -618,6 +619,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.selected_equipment_slot = "weapon"
         self.selected_talent_id = ""
         self.active_event = None          # B67: the travel event being shown
+        self._ambience = None             # B73: zone particle layer (lazy)
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
         self.store_category: str | None = None  # which trade building's store slice is open
@@ -1433,6 +1435,17 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     # -- rendering ----------------------------------------------------------
 
+    def _draw_ambience(self) -> None:
+        """B73 S1: mork_skog fireflies — a screen-space layer over the map,
+        under the HUD. Other themes draw nothing (presets are S2)."""
+        if self.zone.theme_for_tile(self.world.current_tile) != "mork_skog":
+            return
+        if self._ambience is None:
+            self._ambience = ambience.ParticleLayer(self.screen.get_size())
+        self._ambience.resize(self.screen.get_size())
+        self._ambience.update()
+        self._ambience.draw(self.screen)
+
     def draw(self) -> None:
         self.buttons = []
         self._tick_player_anim()   # B83: one animation tick per rendered frame
@@ -1445,6 +1458,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self.screen = pygame.Surface(self.display.get_size())
         self.screen.fill(BG)
         self._draw_map()
+        self._draw_ambience()   # B73: zone particles above the world, below HUD
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
             self._draw_vitals()
