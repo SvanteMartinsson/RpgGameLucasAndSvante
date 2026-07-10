@@ -815,6 +815,23 @@ def ai_condition_met(
     return True
 
 
+def action_reapplies_active_dot(action: CombatAction, target: Actor) -> bool:
+    """B93: would this action apply a damage-ticking status the target already
+    has? (Refreshing a running DoT wastes the round; a DIFFERENT DoT type on
+    the same target is not redundant.)"""
+    for effect in action.effects:
+        if effect.type != "apply_status" or effect.target == "self":
+            continue
+        status_type = effect.status_type or effect.damage_type
+        tag = effect.tag or status_type
+        tick_type = status_type if status_type in DAMAGE_TYPES else tag
+        if tick_type not in DAMAGE_TYPES:
+            continue
+        if actor_has_status(target, status_type) or actor_has_status(target, tag):
+            return True
+    return False
+
+
 def choose_enemy_action(
     enemy: Enemy,
     target: Actor,
@@ -826,20 +843,33 @@ def choose_enemy_action(
     Returns the first rule whose condition is true and whose action is ready
     (off cooldown + enough mana). If no rule matches, uniformly picks a ready
     non-telegraph action. Never returns an action that is not ready.
+
+    B93: an action that would re-apply a DoT the target is already suffering
+    is a wasted round, so it is skipped whenever any other choice exists; if
+    only redundant-DoT actions remain, the original behaviour applies.
     """
     ready = available_actions(enemy, actions)
     ready_by_id = {action.id: action for action in ready}
-    for rule in enemy.ai:
-        action_id = str(rule.get("action", ""))
-        action = ready_by_id.get(action_id)
-        if action is None:
-            continue
-        if ai_condition_met(enemy, target, dict(rule.get("condition", {})), actions):
-            return action
-    fallback = [action for action in ready if not action.telegraph]
-    if not fallback:
-        return None
-    return rng.choice(fallback)
+
+    def pick(skip_redundant_dot: bool) -> CombatAction | None:
+        for rule in enemy.ai:
+            action = ready_by_id.get(str(rule.get("action", "")))
+            if action is None:
+                continue
+            if skip_redundant_dot and action_reapplies_active_dot(action, target):
+                continue
+            if ai_condition_met(enemy, target, dict(rule.get("condition", {})), actions):
+                return action
+        fallback = [
+            action for action in ready
+            if not action.telegraph
+            and not (skip_redundant_dot and action_reapplies_active_dot(action, target))
+        ]
+        if not fallback:
+            return None
+        return rng.choice(fallback)
+
+    return pick(True) or pick(False)
 
 
 def enemy_take_turn(
