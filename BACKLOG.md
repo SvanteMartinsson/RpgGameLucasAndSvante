@@ -281,7 +281,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Playtest-tasks (2026-07-10) — nattbatch 2026-07-10→11
 
-#### B84 — Tome-lärd skill oanvändbar i strid (PRIO HÖG)
+#### B84 — Tome-lärd skill oanvändbar i strid (PRIO HÖG)  · ✅ **KLAR** (b8efb4b: gating var AVSEDD; UI-fix — kompakt dimm-skäl + ui.fit på battle-knappar)
 - **Vad:** Fighter köper+lär `holy_strike` via tome, equipar den — visas utgråad i strid.
 - **STEG 0-fynd (nattbatch):** AVSETT beteende — `holy_strike` har
   `requires_weapon_category: "magic"`; fighterns melee-vapen uppfyller aldrig kravet
@@ -292,7 +292,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** dimmad skill i strid visar skälet synligt; tome-shoppen visar vapenkrav
   före köp (kopplar B89); test för fighter+holy_strike-fallet.
 
-#### B85 — Turnerings-DoT hänger kvar mellan motståndare
+#### B85 — Turnerings-DoT hänger kvar mellan motståndare  · ✅ **KLAR** (03a83ef: statuses rensas i intermission)
 - **Vad:** DoT/debuffar applicerade i match 1 tickar vidare i match 2.
 - **STEG 0-fynd:** `active_statuses` rensas ingenstans i turneringsvägen; bara cooldowns
   (`_begin_encounter`) och HP/mana (`recover_between_matches`) nollställs/fylls.
@@ -300,55 +300,55 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   mellan matcher lämnas EXAKT som idag (design).
 - **Acceptans:** DoT applicerad i match 1 tickar inte i match 2; test.
 
-#### B86 — Counter-mekaniken: utredning (bugg vs designat-men-otydligt)
+#### B86 — Counter-mekaniken: utredning  · ✅ **UTREDD + rank-no-op FIXAD** (f28e62a; loggrads-/multi-hit-otydligheter → rapport)
 - **Vad:** Playtest upplever counter som förvirrande. Utred vilka skills/fiender som har
   den, hur den resolvas (timing, skada, vem träffas) och vad som loggas.
 - **Acceptans:** rapport med bedömning + repro; fix endast vid entydig bugg (med test).
 
-#### B87 — Diagonal rörelse normaliseras
+#### B87 — Diagonal rörelse normaliseras  · ✅ **KLAR** (4738d74)
 - **Vad:** Diagonal input ger full hastighet i båda axlarna (√2× snabbare än kardinal).
 - **Avsikt:** Samma fart i alla riktningar; tile-snapp/kollision oförändrad.
 - **Acceptans:** hastighetsvektorns längd lika för diagonal och kardinal rörelse; test.
 
-#### B88 — DoT-applicering som egen loggrad
+#### B88 — DoT-applicering som egen loggrad  · ✅ **KLAR** (e94fd31)
 - **Vad:** När en DoT läggs på någon skrivs en egen typ-färgad rad med källa+typ:
   "Hero was poisoned by Giant Spider's Poison Sting!".
 - **Not:** B77 lade status-appliceringar med källa — täpp bara luckan, dubbellogga inte.
 - **Acceptans:** varje DoT-applicering ger exakt en rad med källa+typ; test.
 
-#### B89 — Tome-tooltips visar vad skillen GÖR
+#### B89 — Tome-tooltips visar vad skillen GÖR  · ✅ **KLAR** (83b1459; renders docs/nightly/)
 - **Vad:** Hover i tome-shoppen, inventoryts consumables-flik och talent-/skilldetaljen
   visar skillens effekt (skada/heal, skadetyp, mana, cooldown, duration, vapenkrav) —
   återanvänder talent detail-textbygget (B78-formattern).
 - **Acceptans:** alla tre ytorna visar effekttext; headless-renders till docs/nightly/.
 
-#### B90 — Rank-beskrivningar i absoluta tal
+#### B90 — Rank-beskrivningar i absoluta tal  · ✅ **KLAR** (cf06643; renders docs/nightly/)
 - **Vad:** Talent detail visar ALLA ranker med beräknade värden ur datan ("Rank 1: 1.4x
   damage, heal 30% · Rank 2: 1.75x …"), aldrig "x1.25 magnitude". Nuvarande rank markerad.
   Gäller aktiva skills OCH passiva noder.
 - **Acceptans:** beräknat (round_half_up där tal visas), ej handskrivet; renders till
   docs/nightly/; test.
 
-#### B91 — Sälj miscellaneous i alla butiker
+#### B91 — Sälj miscellaneous i alla butiker  · ✅ **KLAR** (e6cbe37)
 - **Vad:** "miscellaneous" i sell-settet för alla butikstyper med sälj-UI; köp-sortiment orört.
 - **Acceptans:** test per butikstyp.
 
-#### B92 — Settings-paritet startmeny vs in-game
+#### B92 — Settings-paritet startmeny vs in-game  · ✅ **KLAR** (faf87b9; delad OPTIONS-definition)
 - **Vad:** Startmenyns Settings visar SAMMA alternativ som in-game-overlayn, via en delad
   options-definition så ytorna aldrig divergerar igen.
 - **Acceptans:** samma options-lista på båda ytorna; renders till docs/nightly/; test.
 
-#### B93 — Smartare fiende-AI kring DoT
+#### B93 — Smartare fiende-AI kring DoT  · ✅ **KLAR** (d9c1844)
 - **Vad:** Om målet redan har en aktiv DoT väljer AI:n en annan handling om någon finns.
 - **Acceptans:** deterministiskt, seedat test; inga andra AI-ändringar.
 
-#### B94 — DoT-styrka upp
+#### B94 — DoT-styrka upp  · ✅ **KLAR** (d8cda25; spell-DoTs trimmade IN i bandet, flats/fiender höjda — se nattrapport)
 - **Vad:** DoT:ars totala skada över durationen ska ligga ~1.3–1.6× jämförbar direktskada
   för samma kostnad; en enskild tick ej under ~4–6 % av on-level standardfiendes HP.
   Symmetriskt (spelar- och fiende-DoTs). Justeras i data, sim-verifieras.
 - **Acceptans:** sim-matris före/efter; HALT om en DoT ensam flippar en matchup >30 pp.
 
-#### B95 — Talangparitet inom träden
+#### B95 — Talangparitet inom träden  · ✅ **KLAR** (e71b549; sentinel/duelist-rest i rapporten)
 - **Vad:** Frenzy dominerar strikt över Precision/Sunder-vägen. Gå igenom ALLA klassers träd
   och åtgärda strikt dominerade val — endast skills-/talangdata (magnitud, kostnad, cooldown,
   sekundäreffekter), inte fiender/basstats/trädstruktur. Hellre nisch än sifferkapplöpning.
@@ -675,7 +675,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Innehåll & värld (kreativ expansion)
 
-#### B27 — Innehålls-variation: nya skills, vapen, stats  · *nytt (batch-kandidat, kreativ frihet)*
+#### B27 — Innehålls-variation: nya skills, vapen, stats  · ✅ **KLAR (nattbatch 2026-07-10→11, fffe3e0)** — 9 skills (6 t5-noder + 3 tomes), 7 vapen (commons i butik, rares loot-only per B8-regeln); ekonomikontroll i nattrapporten
 - **Vad:** Code har **stor frihet** att skapa nytt innehåll för variation — nya skills
   (t.ex. elementala: thunder strike / zap / incineration / holy strike / plague ooze, m.fl.),
   nya vapen, ev. nya stats/skadetyper. Lucas uppmuntrar uppfinningsrikedom.
@@ -1347,7 +1347,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** möt→syns, identifiera→detaljer; persisterar; skärmen följer menyspecen; tester för
   upplåsnings-regler.
 
-#### B67 — Reshändelser (text-val i vildmarken)  · *gameplay-system* · liten-medel · risk LÅG
+#### B67 — Reshändelser (text-val i vildmarken)  · 🟢 **S1 KLAR** (e8dce81: event-motor + 3 cainos-events, 10% av slots; HALT — texter/ton/frekvens till Lucas före S2)
 - **Vad:** Sällsynt (i st. f. en encounter) triggas en text-händelse i loggen/panel med 2–3 val:
   "En övergiven kärra: rota igenom (loot, risk för bakhåll) / gå vidare" · "Ett vägaltare: offra 20
   guld (+buff till nästa strid) / vila blicken (+liten heal)" · "Skadad handelsman: hjälp (guld senare
@@ -1499,7 +1499,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** siffror/blink/skak triggar rätt och stör inte layouten (canvas-skalning intakt);
   kan stängas av (krok för B70); render-review; sviten grön.
 
-#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · *känsla/polish* · liten-medel · risk LÅG-MEDEL
+#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 KLAR** (78786e3: partikelmotor + mork_skog-eldflugor, fps-tapp 1.2%; render+fps-HALT före S2)
 - **Vad:** Ett tunt atmosfärslager i overworlden per zon: eldflugor/pollendamm i mork_skog, låg
   dimslöja som driver i cursed_mire, aska/gnistor i grave_heath, varmt dis i cainos — några dussin
   långsamma partiklar + en svag färg-overlay. Upplevelsen: zonerna FÅR sin stämning i rörelse, och
