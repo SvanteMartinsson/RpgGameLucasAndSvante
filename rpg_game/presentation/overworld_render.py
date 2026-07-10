@@ -177,7 +177,8 @@ ZONE_BLEND_STEPS = 8
 # walk ~7.5 fps, idle 4 fps (in 60 fps render frames).
 PLAYER_WALK_SHEET = os.path.join(SPRITE_DIR, "player_walk.png")
 PLAYER_IDLE_SHEET = os.path.join(SPRITE_DIR, "player_idle.png")
-PLAYER_SPRITE_TILES = 1.5      # sprite height in tiles (feet on the tile)
+PLAYER_SPRITE_TILES = 1.05     # sprite height in tiles (feet on the tile);
+                               # 1.5 × 0.7 — Lucas: 30% mindre, husen såg små ut
 WALK_FRAME_TICKS = 8           # 60 / 8  = 7.5 fps
 IDLE_FRAME_TICKS = 15          # 60 / 15 = 4 fps
 PLAYER_DIRECTIONS = {(0, -1): 0, (1, -1): 1, (1, 0): 2, (1, 1): 3,
