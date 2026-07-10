@@ -1317,8 +1317,21 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** recept konsumerar material+guld och ger item; UI visar krav/ägt (dämpat om ej
   råd, B40-spec); zonrecept känns zonknutna; ingen brygd trivialiserar (extremkoll via sim); tester.
 
-#### B69 — Ljud: musik + effekter (pygame.mixer)  · *stödsystem* · medel · risk MEDEL
-- **Vad:** Spelet är idag HELT tyst. Lägg ett tunt ljudlager: zonmusik (en loop per zon + stads-tema),
+#### B69 — Ljud: musik + effekter (pygame.mixer)  · ✅ **S1+S2 KLARA + musik-grund** (audio-HALT godkänd 2026-07-10)
+- **KLART (`a7b54fe` + reglage `5afe898`):** `presentation/audio.py` — graceful mixer (tyst läge utan
+  device; CI/dummy verifierad åt bägge håll), WAV-cache, reserverad walk-kanal, volym = master × sfx ×
+  per-ljud-GAIN (walk/DoT lågt). 16 egengjorda ChipTone-SFX (CC0, se `ASSETS_LICENSES.md`) wirade:
+  playback-ridande stridsljud (basattack = bara träffen; magic_cast båda sidor, physical_cast endast
+  spelaren; potion-gulp ≠ skill-heal; DoT-tick; skip-flush tyst; level_up/die i finalen), encounter
+  (vild/boss/turnering), menu_click överallt inkl. creation, walk var 2:a tile, chest/brew/sell/
+  overworld-potions. **Musik:** `Pixel Heart.ogg` (tempo −10 % via ffmpeg atempo) loopar på
+  mixer.music-strömmen från första skärmen, sömlös över shell-byten; `MUSIC_GAIN 0.48` efter Lucas
+  lyssningsrunda. **B70 S2 samtidigt löst:** 0–100-reglage (klick/drag, live, persist på släpp) i
+  Settings-overlayn; nya settings-nycklar sound_master/sound_sfx/sound_music. 32 tester i
+  `test_b69_audio.py`.
+- **Kvar (S3-rest, ny slice vid behov):** filer saknas för crit/seger/loot/köp/dörr/boss-telegraf;
+  per-zon-/stridsmusik + crossfade (en global loop idag). OGG-källans licens: Lucas bekräftar.
+- **Vad (ursprung):** Spelet är idag HELT tyst. Lägg ett tunt ljudlager: zonmusik (en loop per zon + stads-tema),
   stridsmusik, och effekter för de tunga ögonblicken (träff, crit, level-up, loot, kista, dörr,
   knapptryck). Upplevelsen transformeras för i princip varje minut av spel — tystnad → atmosfär.
 - **Avsikt:** Känsla/atmosfär är loopens mest eftersatta dimension; ljud är den enskilt största
@@ -1343,7 +1356,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   Fullscreen/Log rows −+/Minimap + tangent-översikt) och **startmenyns Settings** (egen mini-loop,
   cykla-på-klick). Fullscreen-toggle-testet + b70-testerna isolerade mot tempfil (fångade en äkta
   test-föroreningsbugg: toggle-testet skrev riktiga settings.json). 7 tester; 893 gröna.
-  *Volymreglage = S2 när B69 (ljud) byggs.*
+  *S2 ✅ KLAR med B69 (`5afe898`): musikvolym-reglage 0–100 i Settings-overlayn.*
 - **Vad:** En Settings-skärm (från startmeny + ESC-meny): musik-/effektvolym (B69), fullskärm/fönster
   (toggle finns — får ett hem), loggstorlek (resize_log finns — får UI), och en läsbar tangent-
   översikt (M/K/C/I/ESC…). Inställningar persisteras i en settings.json separat från saven.
