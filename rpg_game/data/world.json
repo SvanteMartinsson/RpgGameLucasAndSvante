@@ -115,7 +115,8 @@
         "iron_shortsword",
         "maple_shortbow",
         "iron_hatchet",
-        "sword"
+        "sword",
+        "oak_charm"
       ]
     },
     {
@@ -607,7 +608,8 @@
         "crimson_signet",
         "hp_potion",
         "mana_potion",
-        "antidote"
+        "antidote",
+        "hexfire_rod"
       ]
     },
     {

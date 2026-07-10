@@ -351,6 +351,74 @@
     "damage_type": "holy",
     "category": "ranged",
     "rarity": "rare",
-    "on_hit": [{"chance": 0.2, "heal_self": 5}]
+    "on_hit": [
+      {
+        "chance": 0.2,
+        "heal_self": 5
+      }
+    ]
+  },
+  {
+    "id": "oak_charm",
+    "name": "Oak Charm",
+    "category": "magic",
+    "damage_type": "fire",
+    "damage_bonus": 4,
+    "price": 45,
+    "rarity": "common"
+  },
+  {
+    "id": "adderfang_bow",
+    "name": "Adderfang Bow",
+    "category": "ranged",
+    "damage_type": "poison",
+    "damage_bonus": 17,
+    "price": 460,
+    "rarity": "rare"
+  },
+  {
+    "id": "hexfire_rod",
+    "name": "Hexfire Rod",
+    "category": "magic",
+    "damage_type": "fire",
+    "damage_bonus": 22,
+    "price": 700,
+    "rarity": "common"
+  },
+  {
+    "id": "plaguebrand_scepter",
+    "name": "Plaguebrand Scepter",
+    "category": "magic",
+    "damage_type": "poison",
+    "damage_bonus": 23,
+    "price": 720,
+    "rarity": "rare"
+  },
+  {
+    "id": "duskrender",
+    "name": "Duskrender",
+    "category": "melee",
+    "damage_type": "physical",
+    "damage_bonus": 33,
+    "price": 1800,
+    "rarity": "rare"
+  },
+  {
+    "id": "stormpiercer",
+    "name": "Stormpiercer",
+    "category": "ranged",
+    "damage_type": "physical",
+    "damage_bonus": 32,
+    "price": 1750,
+    "rarity": "rare"
+  },
+  {
+    "id": "frostveil_staff",
+    "name": "Frostveil Staff",
+    "category": "magic",
+    "damage_type": "frost",
+    "damage_bonus": 32,
+    "price": 1800,
+    "rarity": "rare"
   }
 ]

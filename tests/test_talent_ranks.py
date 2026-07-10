@@ -48,7 +48,7 @@ class TalentMaxRankDataTest(unittest.TestCase):
 
     def test_bucket_distribution_is_24_active_17_passive_10_binary(self):
         buckets = [_classify(n, self.content.actions) for n in self.content.talents.values()]
-        self.assertEqual(buckets.count("active"), 24)
+        self.assertEqual(buckets.count("active"), 30)   # B27: +6 t5 nodes
         self.assertEqual(buckets.count("passive"), 17)
         self.assertEqual(buckets.count("binary"), 10)
 

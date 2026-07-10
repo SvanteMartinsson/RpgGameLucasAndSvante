@@ -1,9 +1,59 @@
 {
   "rare_table": [
-    { "item_id": "consecrated_maul", "weight": 10, "rarity_tier": 4 },
-    { "item_id": "venomfang", "weight": 10, "rarity_tier": 4 },
-    { "item_id": "pyre_scepter", "weight": 4, "rarity_tier": 5 },
-    { "item_id": "gravewarden_blade", "weight": 4, "rarity_tier": 5 },
-    { "item_id": "worldsplitter", "weight": 1, "rarity_tier": 6 }
+    {
+      "item_id": "consecrated_maul",
+      "weight": 10,
+      "rarity_tier": 4
+    },
+    {
+      "item_id": "venomfang",
+      "weight": 10,
+      "rarity_tier": 4
+    },
+    {
+      "item_id": "pyre_scepter",
+      "weight": 4,
+      "rarity_tier": 5
+    },
+    {
+      "item_id": "gravewarden_blade",
+      "weight": 4,
+      "rarity_tier": 5
+    },
+    {
+      "item_id": "worldsplitter",
+      "weight": 1,
+      "rarity_tier": 6
+    },
+    {
+      "item_id": "adderfang_bow",
+      "weight": 8,
+      "rarity_tier": 4
+    },
+    {
+      "item_id": "hexfire_rod",
+      "weight": 8,
+      "rarity_tier": 4
+    },
+    {
+      "item_id": "plaguebrand_scepter",
+      "weight": 4,
+      "rarity_tier": 5
+    },
+    {
+      "item_id": "duskrender",
+      "weight": 2,
+      "rarity_tier": 5
+    },
+    {
+      "item_id": "stormpiercer",
+      "weight": 2,
+      "rarity_tier": 5
+    },
+    {
+      "item_id": "frostveil_staff",
+      "weight": 2,
+      "rarity_tier": 5
+    }
   ]
 }

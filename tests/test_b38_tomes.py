@@ -15,7 +15,8 @@ from rpg_game.core.data_loader import load_content
 from rpg_game.core.game import GameEngine
 
 B27_POOL = {"zap", "thunder_strike", "incineration", "holy_strike",
-            "frost_shard", "earthen_smash", "plague_ooze", "immolate"}
+            "frost_shard", "earthen_smash", "plague_ooze", "immolate",
+            "stone_ward", "venom_lash", "sun_flare"}   # B27 batch: +3 tomes
 
 
 def _mage(level=8, gold=2000, seed=0):
@@ -43,8 +44,8 @@ class TomeDataTests(unittest.TestCase):
 class TomeShopTests(unittest.TestCase):
     def test_only_mage_towers_sell_tomes(self):
         engine = _mage()
-        self.assertEqual(len(engine.tomes_for_sale("tower")), 8)
-        self.assertEqual(len(engine.tomes_for_sale("mage_tower")), 8)
+        self.assertEqual(len(engine.tomes_for_sale("tower")), 11)
+        self.assertEqual(len(engine.tomes_for_sale("mage_tower")), 11)
         self.assertEqual(engine.tomes_for_sale("blacksmith"), [])
         self.assertEqual(engine.tomes_for_sale("barracks"), [])
 

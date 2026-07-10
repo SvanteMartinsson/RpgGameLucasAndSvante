@@ -212,5 +212,32 @@
     "level_req": 8,
     "price": 500,
     "tier": 3
+  },
+  {
+    "id": "tome_stone_ward",
+    "name": "Tome: Stone Ward",
+    "kind": "tome",
+    "teaches": "stone_ward",
+    "level_req": 4,
+    "price": 220,
+    "tier": 2
+  },
+  {
+    "id": "tome_venom_lash",
+    "name": "Tome: Venom Lash",
+    "kind": "tome",
+    "teaches": "venom_lash",
+    "level_req": 5,
+    "price": 260,
+    "tier": 2
+  },
+  {
+    "id": "tome_sun_flare",
+    "name": "Tome: Sun Flare",
+    "kind": "tome",
+    "teaches": "sun_flare",
+    "level_req": 6,
+    "price": 340,
+    "tier": 3
   }
 ]

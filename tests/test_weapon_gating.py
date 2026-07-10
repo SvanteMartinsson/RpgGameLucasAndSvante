@@ -43,6 +43,14 @@ class WeaponGatingTests(unittest.TestCase):
             "yew_warbow": "ranged",
             "adept_wand": "magic",
             "sanctified_recurve": "ranged",   # B65: hunter's holy counter (loot-only)
+            # B27 content batch
+            "oak_charm": "magic",
+            "adderfang_bow": "ranged",
+            "hexfire_rod": "magic",
+            "plaguebrand_scepter": "magic",
+            "duskrender": "melee",
+            "stormpiercer": "ranged",
+            "frostveil_staff": "magic",
         }
         self.assertEqual(
             {weapon_id: weapon.category for weapon_id, weapon in engine.content.weapons.items()},
@@ -73,6 +81,13 @@ class WeaponGatingTests(unittest.TestCase):
             "holy_strike": "magic",
             "frost_shard": "magic",
             "earthen_smash": "melee",
+            # B27 content batch: new t5 class skills
+            "executioners_swing": "melee",
+            "shield_slam": "melee",
+            "flurry": "melee",
+            "glacial_spike": "magic",
+            "pestilent_burst": "magic",
+            "serrated_bolt": "ranged",
         }
         actual = {
             action_id: action.requires_weapon_category

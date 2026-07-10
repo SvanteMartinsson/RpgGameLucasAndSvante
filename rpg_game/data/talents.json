@@ -734,5 +734,71 @@
         "target": "self"
       }
     ]
+  },
+  {
+    "id": "fighter_weaponmaster_w5_executioners_swing",
+    "class_id": "fighter",
+    "branch": "weaponmaster",
+    "order": 5,
+    "name": "Executioner's Swing",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "executioners_swing",
+    "effects": []
+  },
+  {
+    "id": "tank_guardian_g5_shield_slam",
+    "class_id": "tank",
+    "branch": "guardian",
+    "order": 5,
+    "name": "Shield Slam",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "shield_slam",
+    "effects": []
+  },
+  {
+    "id": "rogue_duelist_d5_flurry",
+    "class_id": "rogue",
+    "branch": "duelist",
+    "order": 5,
+    "name": "Flurry",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "flurry",
+    "effects": []
+  },
+  {
+    "id": "mage_cryomancer_c5_glacial_spike",
+    "class_id": "mage",
+    "branch": "cryomancer",
+    "order": 5,
+    "name": "Glacial Spike",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "glacial_spike",
+    "effects": []
+  },
+  {
+    "id": "cleric_pest_p5_pestilent_burst",
+    "class_id": "cleric",
+    "branch": "pest",
+    "order": 5,
+    "name": "Pestilent Burst",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "pestilent_burst",
+    "effects": []
+  },
+  {
+    "id": "hunter_trapper_t5_serrated_bolt",
+    "class_id": "hunter",
+    "branch": "trapper",
+    "order": 5,
+    "name": "Serrated Bolt",
+    "node_type": "active",
+    "max_rank": 3,
+    "action_id": "serrated_bolt",
+    "effects": []
   }
 ]

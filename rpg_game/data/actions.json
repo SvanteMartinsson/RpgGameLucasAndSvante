@@ -1853,5 +1853,199 @@
         "target": "self"
       }
     ]
+  },
+  {
+    "id": "executioners_swing",
+    "name": "Executioner's Swing",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 9,
+    "cooldown_rounds": 2,
+    "requires_weapon_category": "melee",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.9,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "shield_slam",
+    "name": "Shield Slam",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "cooldown_rounds": 3,
+    "requires_weapon_category": "melee",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.2,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "skip_turn",
+        "magnitude": 0,
+        "duration": 1,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "flurry",
+    "name": "Flurry",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 9,
+    "cooldown_rounds": 2,
+    "requires_weapon_category": "melee",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 0.7,
+        "damage_type": "physical",
+        "target": "enemy",
+        "hits": 3
+      }
+    ]
+  },
+  {
+    "id": "glacial_spike",
+    "name": "Glacial Spike",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 11,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "spell",
+        "multiplier": 1.8,
+        "damage_type": "frost",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "debuff",
+        "stat": "speed",
+        "tag": "chill",
+        "magnitude": -6,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "pestilent_burst",
+    "name": "Pestilent Burst",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 10,
+    "requires_weapon_category": "magic",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "spell",
+        "multiplier": 1.3,
+        "damage_type": "poison",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "poison",
+        "tag": "poison",
+        "magnitude": 6,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "damage_type": "poison",
+        "target": "enemy",
+        "scale": "spell",
+        "multiplier": 0.5
+      }
+    ]
+  },
+  {
+    "id": "serrated_bolt",
+    "name": "Serrated Bolt",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "requires_weapon_category": "ranged",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.3,
+        "damage_type": "physical",
+        "target": "enemy"
+      },
+      {
+        "type": "apply_status",
+        "status_type": "bleed",
+        "tag": "physical",
+        "magnitude": 8,
+        "duration": 2,
+        "tick_timing": "round_end",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "stone_ward",
+    "name": "Stone Ward",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "apply_status",
+        "status_type": "mitigation",
+        "magnitude": 5,
+        "duration": 3,
+        "tick_timing": "round_end",
+        "target": "self"
+      }
+    ]
+  },
+  {
+    "id": "venom_lash",
+    "name": "Venom Lash",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 7,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "spell",
+        "multiplier": 1.5,
+        "damage_type": "poison",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
+    "id": "sun_flare",
+    "name": "Sun Flare",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 8,
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "spell",
+        "multiplier": 1.7,
+        "damage_type": "holy",
+        "target": "enemy"
+      }
+    ]
   }
 ]
