@@ -32,6 +32,7 @@ from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import audio
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import talent_text
+from rpg_game.presentation import ui
 from rpg_game.presentation import ui_text as T
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import ui
@@ -908,7 +909,8 @@ class BattleApp:
             pygame.draw.rect(self.screen, color, b.rect, border_radius=5)
             pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=5)
             label_color = TEXT if b.enabled else TEXT_DIM
-            label = self.font_sm.render(b.label, True, label_color)  # compact buttons
+            fitted = ui.fit(b.label, self.font_sm, b.rect.width - 12)  # compact buttons
+            label = self.font_sm.render(fitted, True, label_color)
             self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 8, b.rect.centery)))
 
     def _draw_banner(self):
@@ -929,7 +931,7 @@ class BattleApp:
             for skill in snapshot.skills:
                 enabled = not skill.blocked_reason
                 cost = f"mana {skill.mana_cost}" if skill.mana_cost else "free"
-                sub = skill.blocked_reason or f"{cost}, cd {skill.cooldown_rounds}"
+                sub = self._blocked_hint(skill) if skill.blocked_reason else f"{cost}, cd {skill.cooldown_rounds}"
                 opts.append((skill.name, skill.id, enabled, sub))
             return opts
         if self.submenu_kind == "item":
@@ -951,6 +953,20 @@ class BattleApp:
                 opts.append((weapon.name, f"swap:{weapon.id}", weapon.equippable, sub))
             return opts
         return []
+
+    def _blocked_hint(self, skill):
+        # Compact "why is this dimmed" for the one-line skill rows (B84); the
+        # core blocked_reason sentences overflow the compact buttons.
+        player = self.engine.player
+        if player.mana < skill.mana_cost:
+            return f"mana {player.mana}/{skill.mana_cost}"
+        remaining = player.cooldowns.get(skill.id, 0)
+        if remaining > 0:
+            return f"cooldown {remaining}"
+        weapon = self.engine.content.weapons[player.equipped_weapon_id]
+        if skill.requires_weapon_category and weapon.category != skill.requires_weapon_category:
+            return f"needs {skill.requires_weapon_category} weapon"
+        return skill.blocked_reason
 
     def _has_consumables(self):
         return any(
