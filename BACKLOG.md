@@ -39,18 +39,21 @@ vs-dig-skada, All/Combat-flikar) · **B56** (OverworldApp 3423→1969 rader, tre
 moduler, render-identiskt) · **B62** (ekonomi-sim + N=300-rapport) · **B48-förarbete**
 (zon-referenskarta `docs/ZONE_MAP.png`) · **B47-PoC** (blend-beslutsbilder `docs/b47_poc/`).
 
-**▶ Pågår / nästa:** **Playtest-fynd B74–B82** (dokumenterade, DISKUSSION → GO per punkt;
-B74 load-bugg = PRIO HÖG) · **B40 apply-slices S2–S5** (render-HALT/skärm; redigerar nu
-`overworld_overlays`; S2/S4 bär playtest-kollisionerna) · **B8 Slice 2b** (per-stad butik +
-tjänste-triggrar; shrine/board väntar på B22/B23-rundor) · **B47-beslut** (Lucas: blend
-eller inte, på PoC-bilderna) · **B48-designrunda** (encounter-områden mot referenskartan).
-**B64 dungeons = PARKERAD** (Lucas 2026-07-06: väntar på karta som stödjer interiörer).
+**✅ Klart (städat 2026-07-10):** **B48–B52** (alla fem ✅, se resp. post) · **B47-beslutet**
+avgjort (blend GO → B47 ✅ KLAR i produktion) · **B48-designrundan** avslutad (Lucas-GO
+2026-07-06) · **Playtest-fynd B74–B83** alla ✅. **B69 S1+S2** (ljud + musik, audio-HALT
+godkänd) · **B70 S2** (musikvolym-reglaget).
 
-**Härnäst (öppet, ej byggt):** *Playtest 2026-07-02:* **B48** (per-zon spawn-authoring ⭐) ·
-**B49** (fiende-level i combat) · **B50** (combat-logg-scroll) · **B51** (busk-färg minimap) ·
-**B52** (broplank-flip). *Visuellt:* B44 · B16.1 (combat-flikar). *Designbärande (⭐,
-designrunda först):* B21 (sub-tile-kollision) · B22 (enchant-vendors) · B23 (quests) · B47
-(zon-färg) · B3.1→B3 (dual-class) · B10/B18 (UI). *(#2 encounter-heatmap = LIVE, B12-rate.)*
+**▶ Pågår / nästa:** **Nattbatch 2026-07-10→11: B84–B95 + kraftkurve-blocket (B93/B94/B95/
+B27) + B67 S1 + ev. B73 S1** (se sektionen "Playtest-tasks 2026-07-10" nedan) · **B40
+apply-slices S2–S5** (render-HALT/skärm; redigerar nu `overworld_overlays`; S2/S4 bär
+playtest-kollisionerna) · **B8 Slice 2b-rest** (Lucas-tuning av roster/priser; shrine/board
+väntar på B22/B23-rundor). **B64 dungeons = PARKERAD** (Lucas 2026-07-06: väntar på karta
+som stödjer interiörer).
+
+**Härnäst (öppet, ej byggt):** *Designbärande (⭐, designrunda först):* B21 (sub-tile-
+kollision) · B22 (enchant-vendors) · B23 (quests) · B3.1→B3 (dual-class) · B10/B18 (UI).
+*(#2 encounter-heatmap = LIVE, B12-rate.)*
 
 ---
 
@@ -275,6 +278,82 @@ Nedan: fynd som ska åtgärdas/beslutas. Inget byggs före GO.*
 kategorirubriken) och Character ("Gold" krockar med "Stats"-headern, truncerad
 Damage-rad) läggs som KONKRETA fixlistor på **B40 S2 (inventory) + S4 (character)** —
 det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
+
+### Playtest-tasks (2026-07-10) — nattbatch 2026-07-10→11
+
+#### B84 — Tome-lärd skill oanvändbar i strid (PRIO HÖG)
+- **Vad:** Fighter köper+lär `holy_strike` via tome, equipar den — visas utgråad i strid.
+- **STEG 0-fynd (nattbatch):** AVSETT beteende — `holy_strike` har
+  `requires_weapon_category: "magic"`; fighterns melee-vapen uppfyller aldrig kravet
+  (`combat.blocked_action_reason`, combat.py). Mana räcker (16 ≥ 7). Tome→learn→equip-kedjan
+  är korrekt.
+- **Avsikt:** Spelaren ska aldrig undra VARFÖR en skill är dimmad, och inte kunna köpa en
+  tome utan att se vapenkravet.
+- **Acceptans:** dimmad skill i strid visar skälet synligt; tome-shoppen visar vapenkrav
+  före köp (kopplar B89); test för fighter+holy_strike-fallet.
+
+#### B85 — Turnerings-DoT hänger kvar mellan motståndare
+- **Vad:** DoT/debuffar applicerade i match 1 tickar vidare i match 2.
+- **STEG 0-fynd:** `active_statuses` rensas ingenstans i turneringsvägen; bara cooldowns
+  (`_begin_encounter`) och HP/mana (`recover_between_matches`) nollställs/fylls.
+- **Avsikt:** Varje turneringsmatch startar utan stridsknutna statusar; HP/mana-persistensen
+  mellan matcher lämnas EXAKT som idag (design).
+- **Acceptans:** DoT applicerad i match 1 tickar inte i match 2; test.
+
+#### B86 — Counter-mekaniken: utredning (bugg vs designat-men-otydligt)
+- **Vad:** Playtest upplever counter som förvirrande. Utred vilka skills/fiender som har
+  den, hur den resolvas (timing, skada, vem träffas) och vad som loggas.
+- **Acceptans:** rapport med bedömning + repro; fix endast vid entydig bugg (med test).
+
+#### B87 — Diagonal rörelse normaliseras
+- **Vad:** Diagonal input ger full hastighet i båda axlarna (√2× snabbare än kardinal).
+- **Avsikt:** Samma fart i alla riktningar; tile-snapp/kollision oförändrad.
+- **Acceptans:** hastighetsvektorns längd lika för diagonal och kardinal rörelse; test.
+
+#### B88 — DoT-applicering som egen loggrad
+- **Vad:** När en DoT läggs på någon skrivs en egen typ-färgad rad med källa+typ:
+  "Hero was poisoned by Giant Spider's Poison Sting!".
+- **Not:** B77 lade status-appliceringar med källa — täpp bara luckan, dubbellogga inte.
+- **Acceptans:** varje DoT-applicering ger exakt en rad med källa+typ; test.
+
+#### B89 — Tome-tooltips visar vad skillen GÖR
+- **Vad:** Hover i tome-shoppen, inventoryts consumables-flik och talent-/skilldetaljen
+  visar skillens effekt (skada/heal, skadetyp, mana, cooldown, duration, vapenkrav) —
+  återanvänder talent detail-textbygget (B78-formattern).
+- **Acceptans:** alla tre ytorna visar effekttext; headless-renders till docs/nightly/.
+
+#### B90 — Rank-beskrivningar i absoluta tal
+- **Vad:** Talent detail visar ALLA ranker med beräknade värden ur datan ("Rank 1: 1.4x
+  damage, heal 30% · Rank 2: 1.75x …"), aldrig "x1.25 magnitude". Nuvarande rank markerad.
+  Gäller aktiva skills OCH passiva noder.
+- **Acceptans:** beräknat (round_half_up där tal visas), ej handskrivet; renders till
+  docs/nightly/; test.
+
+#### B91 — Sälj miscellaneous i alla butiker
+- **Vad:** "miscellaneous" i sell-settet för alla butikstyper med sälj-UI; köp-sortiment orört.
+- **Acceptans:** test per butikstyp.
+
+#### B92 — Settings-paritet startmeny vs in-game
+- **Vad:** Startmenyns Settings visar SAMMA alternativ som in-game-overlayn, via en delad
+  options-definition så ytorna aldrig divergerar igen.
+- **Acceptans:** samma options-lista på båda ytorna; renders till docs/nightly/; test.
+
+#### B93 — Smartare fiende-AI kring DoT
+- **Vad:** Om målet redan har en aktiv DoT väljer AI:n en annan handling om någon finns.
+- **Acceptans:** deterministiskt, seedat test; inga andra AI-ändringar.
+
+#### B94 — DoT-styrka upp
+- **Vad:** DoT:ars totala skada över durationen ska ligga ~1.3–1.6× jämförbar direktskada
+  för samma kostnad; en enskild tick ej under ~4–6 % av on-level standardfiendes HP.
+  Symmetriskt (spelar- och fiende-DoTs). Justeras i data, sim-verifieras.
+- **Acceptans:** sim-matris före/efter; HALT om en DoT ensam flippar en matchup >30 pp.
+
+#### B95 — Talangparitet inom träden
+- **Vad:** Frenzy dominerar strikt över Precision/Sunder-vägen. Gå igenom ALLA klassers träd
+  och åtgärda strikt dominerade val — endast skills-/talangdata (magnitud, kostnad, cooldown,
+  sekundäreffekter), inte fiender/basstats/trädstruktur. Hellre nisch än sifferkapplöpning.
+- **Acceptans:** sim gren-A vs gren-B per klass, ingen strikt dominans kvar; ändringslista
+  med motiveringar i rapporten.
 
 ### Overworld, kollision & karta
 
