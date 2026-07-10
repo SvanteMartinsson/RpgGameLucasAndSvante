@@ -523,6 +523,9 @@ class GameContent:
     # B48: Lucas's drawn spawn areas (union-of-overlaps) + per-region fallbacks.
     spawn_areas: tuple = ()
     spawn_fallbacks: dict = field(default_factory=dict)
+    # B67: travel events (a rare text choice instead of a wild encounter).
+    travel_event_slot_chance: float = 0.1
+    travel_events: tuple = ()
 
 
 @dataclass

@@ -38,6 +38,7 @@ import pygame
 from pytmx.util_pygame import load_pygame
 
 from rpg_game.core import combat, encounters, progression, saveslots, spawns, store
+from rpg_game.core import events as core_events
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import audio
@@ -280,6 +281,19 @@ class ZoneConfig:
             if min_x <= tx <= max_x:
                 return index
         return 1
+
+    def theme_for_tile(self, tile: tuple[int, int]) -> str:
+        """B67: the ground-theme NAME for a tile ('cainos', 'mork_skog', ...) —
+        the key travel-event tables are authored against. The southern y-band
+        (grave heath) wins first, mirroring economy_zone_for_tile."""
+        tx, ty = tile
+        for theme, _min_x, _max_x, min_y, _max_y in self.ground_themes:
+            if min_y > 0 and ty >= min_y:
+                return theme
+        for theme, min_x, max_x, _min_y, _max_y in self.ground_themes:
+            if min_x <= tx <= max_x:
+                return theme
+        return self.ground_themes[0][0] if self.ground_themes else "cainos"
 
     def economy_zone_for_tile(self, tile: tuple[int, int]) -> int:
         """B8 2b: the ECONOMY zone for fast-travel pricing. Unlike zone_for_tile
@@ -603,6 +617,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.overlay_return_mode = ""
         self.selected_equipment_slot = "weapon"
         self.selected_talent_id = ""
+        self.active_event = None          # B67: the travel event being shown
         self.selected_tournament_id = ""
         self.tournament_run: TournamentRun | None = None
         self.store_category: str | None = None  # which trade building's store slice is open
@@ -785,6 +800,18 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             return None      # in town: no rng draw (stream-identical to pre-B55)
         tile = self.world.current_tile
         if self.engine.rng.random() < self.encounter_rate_at(tile):
+            # B67: a fired slot RARELY becomes a travel event instead of a fight
+            # (the total interruption frequency does not increase). Core owns
+            # the rule; the shell owns the tile/theme.
+            if core_events.replaces_encounter(
+                    self.engine.content.travel_event_slot_chance, self.engine.rng):
+                event = core_events.pick_event(
+                    self.engine.content.travel_events,
+                    self.zone.theme_for_tile(tile), self.engine.rng)
+                if event is not None:
+                    self.active_event = event
+                    self.mode = "travel_event"
+                    return None
             pool = spawns.pool_at(self.engine.content.spawn_areas,
                                   self.engine.content.spawn_fallbacks,
                                   tile, self.zone.wild_region_at(tile))
@@ -1308,6 +1335,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self._close_tome_shop()
             elif self.mode in ("apothecary", "fast_travel"):
                 self.mode = "walk"
+            elif self.mode == "travel_event":
+                pass   # B67: an event demands a choice — Esc does not skip it
             elif self.mode == "death":
                 self.mode = "walk"
             elif self.mode == "victory":
@@ -1443,6 +1472,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self._draw_tournament_confirm_screen()
         elif self.mode == "tournament_intermission":
             self._draw_tournament_intermission_screen()
+        elif self.mode == "travel_event":
+            self._draw_travel_event()         # B67: choices as button rows
         if self.overlay == "map":
             self._draw_map_overlay()      # fullscreen, not the standard panel
         elif self.overlay:

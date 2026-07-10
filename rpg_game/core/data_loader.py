@@ -251,6 +251,10 @@ def load_content() -> GameContent:
     }
 
     rare_loot_table = tuple(_read_json("loot.json").get("rare_table", ()))
+
+    # B67: travel events (validated on parse: outcome chances sum to 1).
+    from rpg_game.core.events import parse_events
+    travel_event_slot_chance, travel_events = parse_events(_read_json("events.json"))
     upgrade_recipes = _load_upgrade_recipes()
 
     # B68: alchemy brew recipes.
@@ -378,6 +382,8 @@ def load_content() -> GameContent:
         enemies=enemies,
         places=places,
         rare_loot_table=rare_loot_table,
+        travel_event_slot_chance=travel_event_slot_chance,
+        travel_events=travel_events,
         upgrade_recipes=upgrade_recipes,
         chests=chests,
         brew_recipes=brew_recipes,

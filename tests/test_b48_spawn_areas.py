@@ -160,7 +160,14 @@ class SpawnOverworldTests(unittest.TestCase):
         self.app.encounter_rate_at = lambda tile: 1.0   # force the roll
         self.app.world.set_tile(10, 10)                 # pure stag-väst
         self.app.sync_location()
-        enemy = self.app.maybe_encounter()
+        enemy = None
+        for seed in range(10):                          # B67: skip event slots
+            self.app.engine.rng = random.Random(seed)
+            enemy = self.app.maybe_encounter()
+            if enemy is not None:
+                break
+            self.app.active_event = None
+            self.app.mode = "walk"
         self.assertEqual(enemy.id, "wild_stag")
 
     def test_maybe_encounter_mixes_in_overlaps(self):
@@ -170,7 +177,12 @@ class SpawnOverworldTests(unittest.TestCase):
         seen = set()
         for seed in range(40):
             self.app.engine.rng = random.Random(seed)
-            seen.add(self.app.maybe_encounter().id)
+            enemy = self.app.maybe_encounter()
+            if enemy is None:            # B67: ~10% of fired slots become events
+                self.app.active_event = None
+                self.app.mode = "walk"
+                continue
+            seen.add(enemy.id)
         self.assertIn("wild_stag", seen)
         self.assertTrue(seen & {"wild_dog", "giant_rat", "giant_spider", "goblin_scrapper"})
         self.assertLessEqual(seen, {"wild_stag", "wild_dog", "giant_rat",

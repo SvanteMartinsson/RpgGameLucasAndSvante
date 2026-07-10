@@ -1,0 +1,110 @@
+{
+  "event_slot_chance": 0.1,
+  "events": [
+    {
+      "id": "abandoned_cart",
+      "zone": "cainos",
+      "weight": 3,
+      "title": "An abandoned cart",
+      "text": "A trader's cart lies tipped beside the trail, its tarp flapping in the wind. Something might still be worth taking.",
+      "choices": [
+        {
+          "id": "search",
+          "label": "Search the cart",
+          "outcomes": [
+            {
+              "kind": "gold",
+              "amount": 25,
+              "chance": 0.6,
+              "text": "You pry a small coin pouch from under the seat (+25 gold)."
+            },
+            {
+              "kind": "encounter",
+              "chance": 0.4,
+              "text": "The tarp bulges - something was sleeping under it!"
+            }
+          ]
+        },
+        {
+          "id": "leave",
+          "label": "Move on",
+          "outcomes": [
+            {
+              "kind": "nothing",
+              "chance": 1.0,
+              "text": "You leave the cart to the crows."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wayside_altar",
+      "zone": "cainos",
+      "weight": 2,
+      "title": "A wayside altar",
+      "text": "A moss-grown altar stands at a fork in the trail. Old coins glitter in its offering bowl.",
+      "choices": [
+        {
+          "id": "offer",
+          "label": "Make an offering",
+          "cost_gold": 20,
+          "outcomes": [
+            {
+              "kind": "buff",
+              "stat": "damage_dealt_mod",
+              "magnitude": 25,
+              "duration": 3,
+              "chance": 1.0,
+              "text": "Warmth spreads through your sword arm. (+25% damage for 3 rounds of your next fight)"
+            }
+          ]
+        },
+        {
+          "id": "rest",
+          "label": "Rest your eyes a moment",
+          "outcomes": [
+            {
+              "kind": "heal",
+              "amount": 15,
+              "chance": 1.0,
+              "text": "The stillness eases your aches (+15 HP)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wounded_trader",
+      "zone": "cainos",
+      "weight": 2,
+      "title": "A wounded trader",
+      "text": "A trader sits against a milestone, clutching a gashed leg. His mule watches you with suspicion.",
+      "choices": [
+        {
+          "id": "help",
+          "label": "Bind his wound",
+          "outcomes": [
+            {
+              "kind": "gold",
+              "amount": 35,
+              "chance": 1.0,
+              "text": "He presses a handful of coins on you before hobbling off (+35 gold)."
+            }
+          ]
+        },
+        {
+          "id": "ignore",
+          "label": "Walk past",
+          "outcomes": [
+            {
+              "kind": "nothing",
+              "chance": 1.0,
+              "text": "His curses follow you down the trail."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

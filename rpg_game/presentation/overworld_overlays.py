@@ -672,6 +672,40 @@ class OverlaysMixin:
             y += 52
         self._draw_buttons()
 
+    def _draw_travel_event(self) -> None:
+        """B67: a travel event — title, flavour text and one button per choice.
+        The core resolves the choice; the shell applies the returned result."""
+        event = self.active_event
+        if event is None:
+            self.mode = "walk"
+            return
+        panel = self._overlay_panel(event.title)
+        y = panel.y + 60
+        for line in self._wrapped_lines_pixels(event.text, panel.width - 40, self.font_sm):
+            self.screen.blit(self.font_sm.render(line, True, TEXT), (panel.x + 20, y))
+            y += 22
+        y += 12
+        for choice in event.choices:
+            affordable = choice.cost_gold <= self.engine.player.gold
+            label = choice.label if not choice.cost_gold else f"{choice.label} ({choice.cost_gold}g)"
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
+                             (lambda c=choice.id: self._resolve_travel_event(c)), affordable)
+            y += 52
+        self._draw_buttons()
+
+    def _resolve_travel_event(self, choice_id: str) -> None:
+        from rpg_game.core import events as core_events
+        event = self.active_event
+        self.active_event = None
+        self.mode = "walk"
+        result = core_events.resolve_choice(self.engine.player, event, choice_id, self.engine.rng)
+        if result.text:
+            self.push_log(result.text, WARN if result.start_encounter else GOOD)
+        if result.start_encounter:
+            enemy = self.engine.create_encounter()
+            if enemy is not None:
+                self.start_battle(enemy)
+
     def _draw_victory_screen(self) -> None:
         """B65: the ending — shown once, when the final boss falls. The world
         stays open behind it; Continue (or Esc) returns to the map."""
