@@ -13,8 +13,10 @@ SELL_FRACTION = 0.5
 # shop consumables. Each maps to the StoreEntry kinds it buys and the sellable kinds
 # it takes. category=None keeps the old unsplit behaviour (whole inventory).
 STORE_CATEGORIES = {
-    "weapons": {"buy": {"weapon"}, "sell": {"weapon"}},
-    "armor":   {"buy": {"gear"}, "sell": {"gear"}},
+    # B91: every store buys miscellaneous (junk/materials) so a full bag can be
+    # emptied at whichever counter is closest; buy assortments are unchanged.
+    "weapons": {"buy": {"weapon"}, "sell": {"weapon", "miscellaneous"}},
+    "armor":   {"buy": {"gear"}, "sell": {"gear", "miscellaneous"}},
     "general": {"buy": {"consumable"}, "sell": {"miscellaneous"}},
 }
 GEAR_RARITY_VALUE = {

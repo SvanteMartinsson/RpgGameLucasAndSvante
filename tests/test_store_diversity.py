@@ -125,9 +125,21 @@ class StoreCategoryTests(unittest.TestCase):
         engine.player.owned_gear_ids = ("padded_vest",)
         engine.player.inventory.add_consumable("rat_pelt")  # miscellaneous
 
-        self.assertEqual({e.kind for e in engine.sellable_entries("weapons")}, {"weapon"})
-        self.assertEqual({e.kind for e in engine.sellable_entries("armor")}, {"gear"})
+        # B91: every store type buys miscellaneous on top of its own trade.
+        self.assertEqual({e.kind for e in engine.sellable_entries("weapons")}, {"weapon", "miscellaneous"})
+        self.assertEqual({e.kind for e in engine.sellable_entries("armor")}, {"gear", "miscellaneous"})
         self.assertEqual({e.kind for e in engine.sellable_entries("general")}, {"miscellaneous"})
+
+    def test_misc_sells_at_every_store_type_and_buy_stock_is_unchanged(self):
+        engine = GameEngine(rng=random.Random(0))
+        engine.start_new_game("Hero", "fighter")
+        engine.player.inventory.add_consumable("rat_pelt")
+        for category in ("weapons", "armor", "general"):
+            ids = {e.id for e in engine.sellable_entries(category)}
+            self.assertIn("rat_pelt", ids, category)
+        self.assertTrue(all(e.kind == "weapon" for e in engine.store_entries("weapons")))
+        self.assertTrue(all(e.kind == "gear" for e in engine.store_entries("armor")))
+        self.assertTrue(all(e.kind == "consumable" for e in engine.store_entries("general")))
 
 
 if __name__ == "__main__":
