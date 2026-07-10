@@ -103,6 +103,18 @@ def reload_volume() -> None:
             pass
 
 
+def apply_music_volume(master, music) -> None:
+    """Live update from the settings slider (no settings-file read) — the loop
+    follows the drag in real time; the caller persists on mouse release."""
+    global _music_volume
+    _music_volume = _clamp(master) * _clamp(music) * MUSIC_GAIN
+    if _ready:
+        try:
+            pygame.mixer.music.set_volume(_music_volume)
+        except Exception:   # pragma: no cover - music stream without mixer
+            pass
+
+
 def play(name: str) -> None:
     """Fire-and-forget one SFX by name (filename without ``.wav``).
 

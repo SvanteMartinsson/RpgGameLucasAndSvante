@@ -581,6 +581,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._last_tile = self.world.current_tile
         self._last_region = self.zone.wild_region_at(self._last_tile)
         self._walk_sfx_steps = 0   # B69: footstep every 2nd tile, not a machine gun
+        self._music_slider_rect = None   # B69: set each frame the settings overlay draws
+        self._music_dragging = False
         # Sub-pixel movement remainder (float) per axis; the int part moves the rect
         # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
         # on any teleport so no drift accumulates across a reposition.
@@ -750,6 +752,16 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._settings.update(fullscreen=self.fullscreen, log_visible=self.log_visible,
                               minimap=self.show_minimap)
         user_settings.save(self._settings)
+
+    def _set_music_volume_from_x(self, x: int) -> None:
+        """B69: map a click/drag x on the settings slider to 0..100, apply to
+        the live music stream immediately; the caller persists on release."""
+        bar = self._music_slider_rect
+        if bar is None or bar.width <= 0:
+            return
+        volume = round(100 * min(max(x - bar.x, 0), bar.width) / bar.width) / 100.0
+        self._settings["sound_music"] = volume
+        audio.apply_music_volume(self._settings.get("sound_master", 1.0), volume)
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -1241,11 +1253,24 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self._handle_key(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = to_canvas(event.pos, self._transform)
+                # B69: the settings slider grabs the click before the buttons
+                # (its knob overhangs the bar, hence the inflated hit zone).
+                if (self.overlay == "settings" and self._music_slider_rect is not None
+                        and self._music_slider_rect.inflate(16, 16).collidepoint(pos)):
+                    self._music_dragging = True
+                    self._set_music_volume_from_x(pos[0])
+                    continue
                 for button in self.buttons:
                     if button.enabled and button.rect.collidepoint(pos):
                         audio.play("menu_click")
                         button.on_click()
                         break
+            elif event.type == pygame.MOUSEMOTION and self._music_dragging:
+                self._set_music_volume_from_x(to_canvas(event.pos, self._transform)[0])
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if self._music_dragging:      # B69: persist once, on release
+                    self._music_dragging = False
+                    user_settings.save(self._settings)
 
     def _handle_key(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_F11:

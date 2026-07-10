@@ -409,6 +409,8 @@ class OverlaysMixin:
                          f"Combat skip-click: {'On' if skip_on else 'Off'}",
                          (lambda: (self._settings.update(combat_skip=not skip_on),
                                    user_settings.save(self._settings))))
+        y += 50
+        self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
         y += 58
         self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
         y += 26
@@ -419,6 +421,30 @@ class OverlaysMixin:
                      "Esc — menu / back"):
             self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (panel.x + 20, y))
             y += 22
+
+    def _draw_music_slider(self, panel: pygame.Rect, y: int) -> None:
+        """B69: the music-volume slider row — a 0-100 bar the player clicks or
+        drags (pygame_overworld.handle_events owns the mouse). The trough/fill
+        redraws from the live setting, so the knob follows the drag; the rect
+        is re-registered every frame for the hit test."""
+        try:
+            volume = max(0.0, min(1.0, float(self._settings.get("sound_music", 1.0))))
+        except (TypeError, ValueError):
+            volume = 1.0
+        percent = int(round(volume * 100))
+        label = self.font.render(f"Music volume: {percent}", True, TEXT)
+        self.screen.blit(label, (panel.x + 20, y + 8))
+        bar = pygame.Rect(panel.x + 260, y + 10, min(420, panel.width - 320), 20)
+        self._music_slider_rect = bar
+        pygame.draw.rect(self.screen, (30, 34, 46), bar, border_radius=10)
+        fill_w = int(bar.width * volume)
+        if fill_w > 0:
+            pygame.draw.rect(self.screen, ACCENT,
+                             pygame.Rect(bar.x, bar.y, fill_w, bar.height), border_radius=10)
+        pygame.draw.rect(self.screen, PANEL_EDGE, bar, width=1, border_radius=10)
+        knob_x = bar.x + max(0, min(bar.width, fill_w))
+        pygame.draw.circle(self.screen, TEXT, (knob_x, bar.centery), 12)
+        pygame.draw.circle(self.screen, PANEL_EDGE, (knob_x, bar.centery), 12, width=1)
 
     def move_bestiary_selection(self, delta: int) -> None:
         from rpg_game.core import bestiary

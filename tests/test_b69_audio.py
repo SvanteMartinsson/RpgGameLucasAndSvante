@@ -32,6 +32,12 @@ try:
 except Exception:  # pragma: no cover
     HAVE_PYGAME = False
 
+try:
+    from rpg_game.presentation.pygame_overworld import OverworldApp
+    HAVE_OVERWORLD = HAVE_PYGAME
+except Exception:  # pragma: no cover - pytmx missing
+    HAVE_OVERWORLD = False
+
 ALL_SOUNDS = (
     "menu_click", "hit_enemy", "get_hit", "magic_cast", "physical_cast",
     "heal", "health_pot", "mana_pot", "DoT", "level_up", "encounter",
@@ -139,6 +145,15 @@ class AudioEngineTests(unittest.TestCase):
                                        0.25 * audio.MUSIC_GAIN, delta=0.02)
             finally:
                 user_settings.SETTINGS_PATH = real_path
+
+    def test_apply_music_volume_updates_live_and_clamps_junk(self):
+        self.assertTrue(audio.init())
+        audio.apply_music_volume(0.5, 0.5)
+        self.assertAlmostEqual(audio._music_volume, 0.25 * audio.MUSIC_GAIN, places=4)
+        self.assertAlmostEqual(pygame.mixer.music.get_volume(),
+                               0.25 * audio.MUSIC_GAIN, delta=0.02)
+        audio.apply_music_volume(2.0, -1.0)   # out-of-range clamps to 1.0 x 0.0
+        self.assertEqual(audio._music_volume, 0.0)
 
 
 @unittest.skipUnless(HAVE_PYGAME, "pygame/pytmx not installed")
@@ -311,3 +326,52 @@ class BattleSfxWiringTests(unittest.TestCase):
         battle._finish_result(
             combat.CombatTurnResult(outcome="victory", levels_gained=0), False)
         self.assertNotIn("level_up", self.calls)
+
+
+@unittest.skipUnless(HAVE_OVERWORLD, "pygame/pytmx not installed")
+class MusicSliderTests(unittest.TestCase):
+    """B69: the settings-overlay volume slider — geometry-to-volume mapping,
+    live application, and that the settings screen registers the bar."""
+
+    @classmethod
+    def setUpClass(cls):
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        cls.app = OverworldApp()
+
+    @classmethod
+    def tearDownClass(cls):
+        audio._reset()
+        pygame.quit()
+
+    def test_settings_overlay_registers_the_slider_bar(self):
+        prior = self.app.overlay
+        self.app.overlay = "settings"
+        try:
+            self.app.draw()
+            self.assertIsNotNone(self.app._music_slider_rect)
+            self.assertGreater(self.app._music_slider_rect.width, 0)
+        finally:
+            self.app.overlay = prior
+
+    def test_slider_x_maps_to_0_100_clamped_and_applies_live(self):
+        app = self.app
+        audio._reset()
+        audio.init()
+        app._music_slider_rect = pygame.Rect(100, 0, 200, 20)
+        app._set_music_volume_from_x(200)                     # the middle = 50
+        self.assertAlmostEqual(app._settings["sound_music"], 0.5, places=2)
+        master = float(app._settings.get("sound_master", 1.0))
+        self.assertAlmostEqual(audio._music_volume,
+                               master * 0.5 * audio.MUSIC_GAIN, places=3)
+        app._set_music_volume_from_x(-50)                     # clamps left
+        self.assertEqual(app._settings["sound_music"], 0.0)
+        app._set_music_volume_from_x(999)                     # clamps right
+        self.assertEqual(app._settings["sound_music"], 1.0)
+
+    def test_slider_without_a_bar_is_a_noop(self):
+        app = self.app
+        app._music_slider_rect = None
+        before = app._settings.get("sound_music")
+        app._set_music_volume_from_x(500)
+        self.assertEqual(app._settings.get("sound_music"), before)
