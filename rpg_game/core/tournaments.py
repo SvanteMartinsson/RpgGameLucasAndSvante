@@ -99,6 +99,9 @@ def complete_tournament(player: Player, content: GameContent, tournament: Tourna
 def recover_between_matches(player: Player) -> TournamentIntermissionResult:
     player.hp = equipment.effective_stat(player, "max_hp")
     player.mana = equipment.effective_stat(player, "max_mana")
+    # B85: battle-bound statuses (DoTs, debuffs, combat buffs) must not carry
+    # from one opponent into the next; the HP/mana handling above is unchanged.
+    player.active_statuses = []
     return TournamentIntermissionResult(
         "Tournament intermission: recovered to full HP and mana.",
         player_hp=player.hp,

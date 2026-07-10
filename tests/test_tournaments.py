@@ -2,8 +2,9 @@ import unittest
 import os
 import tempfile
 
-from rpg_game.core import view
+from rpg_game.core import combat, view
 from rpg_game.core.data_loader import load_content
+from rpg_game.core.entities import ActiveStatus
 from rpg_game.core.game import GameEngine
 
 
@@ -170,6 +171,21 @@ class TournamentProgressionTests(unittest.TestCase):
         self.assertEqual(engine.player.mana, engine.effective_stat('max_mana'))
         self.assertEqual(result.player_hp, engine.player.max_hp)
         self.assertEqual(result.player_mana, engine.effective_stat('max_mana'))
+
+    def test_between_tournament_matches_clears_battle_statuses(self):
+        # B85: a DoT applied by opponent 1 must not tick during match 2.
+        engine = GameEngine()
+        engine.start_new_game("Hero", "fighter")
+        engine.player.active_statuses.append(
+            ActiveStatus(type="poison", magnitude=5, duration=3, tick_timing="round_end")
+        )
+
+        engine.recover_between_tournament_matches()
+        hp_before = engine.player.hp
+        combat.tick_statuses(engine.player, "round_end")
+
+        self.assertEqual(engine.player.active_statuses, [])
+        self.assertEqual(engine.player.hp, hp_before)
 
     def test_tournament_completion_survives_save_load(self):
         engine = GameEngine()
