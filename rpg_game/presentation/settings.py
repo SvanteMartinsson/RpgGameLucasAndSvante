@@ -25,6 +25,47 @@ DEFAULTS = {
 }
 
 
+# B92: THE options list both settings surfaces (start menu + in-game overlay)
+# render, so they can never diverge again. kind: "toggle" flips on/off,
+# "steps" cycles through the tuple, "slider" is a 0.0-1.0 volume (the in-game
+# overlay drags it, the start menu cycles it in 10% steps). "hotkey" is a
+# display hint for the in-game overlay.
+OPTIONS = (
+    {"key": "fullscreen", "label": "Fullscreen", "kind": "toggle", "hotkey": "F11"},
+    {"key": "log_visible", "label": "Log rows", "kind": "steps", "steps": (5, 8, 10, 12, 14, 18)},
+    {"key": "minimap", "label": "Minimap", "kind": "toggle", "hotkey": "N"},
+    {"key": "combat_fx", "label": "Combat FX", "kind": "toggle"},
+    {"key": "combat_skip", "label": "Combat skip-click", "kind": "toggle"},
+    {"key": "sound_music", "label": "Music volume", "kind": "slider"},
+)
+
+
+def option_label(option: dict, value) -> str:
+    if option["kind"] == "toggle":
+        return f"{option['label']}: {'On' if value else 'Off'}"
+    if option["kind"] == "slider":
+        try:
+            percent = int(round(max(0.0, min(1.0, float(value))) * 100))
+        except (TypeError, ValueError):
+            percent = 100
+        return f"{option['label']}: {percent}"
+    return f"{option['label']}: {value}"
+
+
+def cycle_value(option: dict, value):
+    """The next value a click-to-cycle surface (start menu) moves to."""
+    if option["kind"] == "toggle":
+        return not value
+    if option["kind"] == "steps":
+        bigger = [step for step in option["steps"] if step > value]
+        return bigger[0] if bigger else option["steps"][0]
+    try:
+        percent = int(round(max(0.0, min(1.0, float(value))) * 100))
+    except (TypeError, ValueError):
+        percent = 100
+    return 0.0 if percent >= 100 else min(100, percent + 10) / 100
+
+
 def load(path: str | None = None) -> dict:
     """The saved settings merged over the defaults (defaults on any error).
     The path resolves at CALL time so tests can patch SETTINGS_PATH."""

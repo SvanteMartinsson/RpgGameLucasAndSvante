@@ -2016,16 +2016,16 @@ def settings_menu() -> None:
     font = pygame.font.SysFont("menlo,consolas,monospace", 20)
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
     clock = pygame.time.Clock()
-    log_steps = [5, 8, 10, 12, 14, 18]
+    options_by_key = {option["key"]: option for option in user_settings.OPTIONS}
     while True:
         if screen.get_size() != display.get_size():
             screen = pygame.Surface(display.get_size())
+        # B92: rows render from THE shared definition; every kind (toggle,
+        # steps, slider) cycles its value on click out here.
         rows = [
-            ("fullscreen", f"Fullscreen: {'On' if values['fullscreen'] else 'Off'}"),
-            ("log", f"Log rows: {values['log_visible']}"),
-            ("minimap", f"Minimap: {'On' if values['minimap'] else 'Off'}"),
-            ("back", T.BACK),
-        ]
+            (option["key"], user_settings.option_label(option, values.get(option["key"])))
+            for option in user_settings.OPTIONS
+        ] + [("back", T.BACK)]
         buttons, title_pos, _ = start_menu_layout(display.get_size(), rows)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2041,14 +2041,8 @@ def settings_menu() -> None:
                         continue
                     if button.on_click == "back":
                         return
-                    if button.on_click == "fullscreen":
-                        values["fullscreen"] = not values["fullscreen"]
-                    elif button.on_click == "minimap":
-                        values["minimap"] = not values["minimap"]
-                    elif button.on_click == "log":
-                        current = values["log_visible"]
-                        bigger = [n for n in log_steps if n > current]
-                        values["log_visible"] = bigger[0] if bigger else log_steps[0]
+                    option = options_by_key[button.on_click]
+                    values[option["key"]] = user_settings.cycle_value(option, values.get(option["key"]))
                     user_settings.save(values)
         screen.fill(BG)
         title = font_lg.render("Settings", True, ACCENT)

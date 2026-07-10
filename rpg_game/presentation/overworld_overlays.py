@@ -388,34 +388,27 @@ class OverlaysMixin:
             "Changes apply immediately and persist.", True, TEXT_DIM),
             (panel.x + 20, panel.y + 56))
         y = panel.y + 92
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
-                         f"Fullscreen: {'On' if self.fullscreen else 'Off'}   (F11)",
-                         self.toggle_fullscreen)
-        y += 50
-        self._add_button(pygame.Rect(panel.x + 20, y, 180, 42),
-                         f"Log rows: {self.log_visible} -", (lambda: self.resize_log(-1)))
-        self._add_button(pygame.Rect(panel.x + 210, y, 180, 42),
-                         f"Log rows: {self.log_visible} +", (lambda: self.resize_log(1)))
-        y += 50
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
-                         f"Minimap: {'On' if self.show_minimap else 'Off'}   (N)",
-                         (lambda: (setattr(self, 'show_minimap', not self.show_minimap),
-                                   self._persist_settings())))
-        y += 50
-        fx_on = bool(self._settings.get("combat_fx", True))
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
-                         f"Combat FX: {'On' if fx_on else 'Off'}",
-                         (lambda: (self._settings.update(combat_fx=not fx_on),
-                                   user_settings.save(self._settings))))
-        y += 50
-        skip_on = bool(self._settings.get("combat_skip", False))
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
-                         f"Combat skip-click: {'On' if skip_on else 'Off'}",
-                         (lambda: (self._settings.update(combat_skip=not skip_on),
-                                   user_settings.save(self._settings))))
-        y += 50
-        self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
-        y += 58
+        # B92: rows come from THE shared definition (user_settings.OPTIONS) so
+        # this overlay and the start menu can never diverge; only the live
+        # apply-side effects are surface-specific.
+        for option in user_settings.OPTIONS:
+            key = option["key"]
+            label = user_settings.option_label(option, self._setting_value(key))
+            if option.get("hotkey"):
+                label += f"   ({option['hotkey']})"
+            if option["kind"] == "slider":
+                self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
+                y += 58
+                continue
+            if option["kind"] == "steps":
+                self._add_button(pygame.Rect(panel.x + 20, y, 180, 42),
+                                 f"{label} -", (lambda k=key: self._cycle_setting(k, -1)))
+                self._add_button(pygame.Rect(panel.x + 210, y, 180, 42),
+                                 f"{label} +", (lambda k=key: self._cycle_setting(k, 1)))
+            else:
+                self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                                 label, (lambda k=key: self._cycle_setting(k, 1)))
+            y += 50
         self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
         y += 26
         for line in ("WASD / arrows — move        E / Enter — interact (doors, chests)",
@@ -425,6 +418,31 @@ class OverlaysMixin:
                      "Esc — menu / back"):
             self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (panel.x + 20, y))
             y += 22
+
+    def _setting_value(self, key: str):
+        """Current value for a shared-definition settings row (B92) — live
+        runtime state where one exists, else the persisted value."""
+        if key == "fullscreen":
+            return self.fullscreen
+        if key == "log_visible":
+            return self.log_visible
+        if key == "minimap":
+            return self.show_minimap
+        return self._settings.get(key, user_settings.DEFAULTS.get(key))
+
+    def _cycle_setting(self, key: str, direction: int) -> None:
+        """Apply a click on a shared-definition row with the surface-specific
+        live effect (display toggle, log resize, persisted flag flips)."""
+        if key == "fullscreen":
+            self.toggle_fullscreen()
+        elif key == "log_visible":
+            self.resize_log(direction)
+        elif key == "minimap":
+            self.show_minimap = not self.show_minimap
+            self._persist_settings()
+        else:
+            self._settings[key] = not bool(self._settings.get(key, user_settings.DEFAULTS.get(key)))
+            user_settings.save(self._settings)
 
     def _draw_music_slider(self, panel: pygame.Rect, y: int) -> None:
         """B69: the music-volume slider row — a 0-100 bar the player clicks or
