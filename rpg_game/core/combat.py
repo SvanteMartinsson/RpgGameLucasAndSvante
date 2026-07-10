@@ -987,6 +987,10 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
         magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
     magnitude = round_half_up(magnitude * rank_mult)   # B36 talent rank magnitude
     duration = effect.duration + rank_duration_bonus   # B36: +1 round at rank 3
+    # B86: power-scaled statuses (Counter/Riposte reflects) ignore magnitude and
+    # read status.multiplier at trigger time — rank must scale there instead,
+    # otherwise ranking them up is a no-op below rank 3.
+    multiplier = effect.multiplier * rank_mult if effect.scale == "power" else effect.multiplier
     if isinstance(actor, Player):
         status_mod = actor.applied_status_mods.get(status_type, {})
         magnitude += status_mod.get("magnitude", 0)
@@ -1004,7 +1008,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
                     stat=effect.stat,
                     applied_delta=0,
                     scale=effect.scale,
-                    multiplier=effect.multiplier,
+                    multiplier=multiplier,
                     damage_type=effect.damage_type,
                     tag=tag,
                     trigger=effect.trigger,
@@ -1039,7 +1043,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
             stat=effect.stat,
             applied_delta=applied_delta,
             scale=effect.scale,
-            multiplier=effect.multiplier,
+            multiplier=multiplier,
             damage_type=effect.damage_type,
             tag=tag,
             trigger=effect.trigger,
