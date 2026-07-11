@@ -1332,6 +1332,9 @@ def character_creation(engine: GameEngine) -> tuple[str, str, str]:
         pygame.draw.rect(screen, GOOD, start_rect, width=2, border_radius=8)
         start_label = font.render(T.CREATE_START, True, TEXT)
         screen.blit(start_label, start_label.get_rect(center=start_rect.center))
+        # B106: the confirm key as a badge chip inside the button, not "(Enter)".
+        ui.draw_key_badge(screen, font_sm, T.CREATE_START_KEY,
+                          right=start_rect.right - 10, centery=start_rect.centery)
 
         hover.update(mouse, pygame.time.get_ticks())
         if hover.active is not None:

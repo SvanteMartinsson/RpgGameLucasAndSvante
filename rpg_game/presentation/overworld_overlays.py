@@ -58,9 +58,9 @@ class OverlaysMixin:
         panel = self._overlay_panel(T.SCREEN_TITLES.get(self.overlay, self.overlay.capitalize()))
         renderer = getattr(self, f"_overlay_{self.overlay}")
         renderer(panel)
-        # B40 S2: wide enough for the full "Back (Esc)" label (no "Back..." cut).
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, self.close_overlay)
+        # B106: wide enough for "Back" + the Esc badge chip (no "..." cut).
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, self.close_overlay, badge=T.BACK_KEY)
         self._draw_buttons()
 
     # B40 S4: the header block is 3 lines x 22 px; the column regions start
@@ -333,7 +333,11 @@ class OverlaysMixin:
                     True, ACCENT), (middle.x, y + 6))
                 y += 32
                 continue
-            status = talent_status(eng, node)
+            # B106: compact status markers instead of [LEARNED]/[LOCKED]/
+            # [CAN LEARN] prefixes — glyph + colour carry the same information
+            # in a fraction of the width, so the NAME fits.
+            glyph, role = ui.status_marker(talent_status(eng, node))
+            color = {"good": GOOD, "accent": ACCENT, "dim": TEXT_DIM}.get(role)
             rank = talent_rank_label(eng, node)
             rect = pygame.Rect(middle.x, y, middle.width, 26)
             marker = "> " if selected is not None and node.id == selected.id else "  "
@@ -342,9 +346,9 @@ class OverlaysMixin:
                 cross = f" ↳ requires {eng.content.talents[node.requires].name}"
             else:
                 cross = ""
-            label = f"{marker}{status} {node.name}{rank_suffix}{cross}"
+            label = f"{marker}{glyph} {node.name}{rank_suffix}{cross}"
             self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True,
-                             focus_section="talents")
+                             label_color=color, focus_section="talents")
             y += 32
 
         self._draw_talent_detail(right, selected)
@@ -375,7 +379,8 @@ class OverlaysMixin:
         can_allocate = talent_can_allocate(self.engine, node)
         verb = talent_action_label(self.engine, node)
         learn_rect = pygame.Rect(rect.x + 10, rect.bottom - 42, rect.width - 20, 32)
-        self._add_button(learn_rect, f"{verb} selected (1 point)", self.learn_selected_talent, can_allocate,
+        self._add_button(learn_rect, f"{verb} selected", self.learn_selected_talent, can_allocate,
+                         value="1 point",
                          focus_section="detail")
 
     def _screen_talents(self, panel) -> None:
@@ -392,9 +397,10 @@ class OverlaysMixin:
             rect = pygame.Rect(panel.x + 20, panel.y + 84 + i * 40, panel.width - 40, 34)
             verb = talent_action_label(eng, node)
             rank = talent_rank_label(eng, node)
-            suffix = f" ({rank})" if rank else ""
-            self._add_button(rect, f"{verb}: {node.name}{suffix}",
-                             (lambda nid=node.id: self.learn_talent(nid)), points > 0)
+            # B106: the rank is a right-aligned value, not "(rank 1/3)" in the label.
+            self._add_button(rect, f"{verb}: {node.name}",
+                             (lambda nid=node.id: self.learn_talent(nid)), points > 0,
+                             value=rank)
 
     def _overlay_system(self, panel) -> None:
         self.screen.blit(self.font_sm.render(T.SYSTEM_HINT, True, TEXT_DIM),
@@ -419,30 +425,29 @@ class OverlaysMixin:
         for option in user_settings.OPTIONS:
             key = option["key"]
             label = user_settings.option_label(option, self._setting_value(key))
-            if option.get("hotkey"):
-                label += f"   ({option['hotkey']})"
+            # B106: no "(F11)" suffixes — the Controls table below owns the keys.
             if option["kind"] == "slider":
                 self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
-                y += 58
+                y += 54
                 continue
             if option["kind"] == "steps":
-                self._add_button(pygame.Rect(panel.x + 20, y, 180, 42),
+                self._add_button(pygame.Rect(panel.x + 20, y, 180, 38),
                                  f"{label} -", (lambda k=key: self._cycle_setting(k, -1)))
-                self._add_button(pygame.Rect(panel.x + 210, y, 180, 42),
+                self._add_button(pygame.Rect(panel.x + 210, y, 180, 38),
                                  f"{label} +", (lambda k=key: self._cycle_setting(k, 1)))
             else:
-                self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 42),
+                self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 38),
                                  label, (lambda k=key: self._cycle_setting(k, 1)))
-            y += 50
-        self.screen.blit(self.font_sm.render("Keys", True, ACCENT), (panel.x + 20, y))
+            y += 46
+        self.screen.blit(self.font_sm.render("Controls", True, ACCENT), (panel.x + 20, y))
         y += 26
-        for line in ("WASD / arrows — move        E / Enter — interact (doors, chests)",
-                     "M — world map        N — minimap        B — bestiary",
-                     "C — character        I — inventory        K — skills & talents",
-                     "+ / - — log size        PgUp / PgDn — scroll log        F11 — fullscreen",
-                     "Esc — menu / back"):
-            self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (panel.x + 20, y))
-            y += 22
+        # B106: the Controls table — action dimmed left, key as a badge chip,
+        # two columns (the shared ui helper; the mockup's layout).
+        # Width reserves the bottom-right Back corner; row height keeps the
+        # table inside the panel — text never spills outside its surface.
+        ui.draw_controls_table(self.screen, self.font_sm, T.CONTROLS,
+                               x=panel.x + 20, y=y, width=panel.width - 240,
+                               action_color=TEXT_DIM, row_h=26)
 
     def _setting_value(self, key: str):
         """Current value for a shared-definition settings row (B92) — live
@@ -619,8 +624,8 @@ class OverlaysMixin:
             label = f"{tournament.name} ({tournament.opponent_count} fights) - {reward}{cleared}"
             rect = pygame.Rect(panel.x + 20, panel.y + 70 + i * 44, panel.width - 40, 36)
             self._add_button(rect, label, (lambda tid=tournament.id: self.select_tournament(tid)), not tournament.completed)
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"), badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _draw_tournament_confirm_screen(self) -> None:
@@ -644,8 +649,8 @@ class OverlaysMixin:
                 T.TOURNAMENT_START,
                 lambda: self.start_tournament_series(tournament.id),
             )
-        self._add_button(pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40),
-                         T.BACK, lambda: setattr(self, "mode", "tournaments"))
+        self._add_button(pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40),
+                         T.BACK, lambda: setattr(self, "mode", "tournaments"), badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _draw_tournament_intermission_screen(self) -> None:
@@ -717,9 +722,10 @@ class OverlaysMixin:
         y += 12
         for choice in event.choices:
             affordable = choice.cost_gold <= self.engine.player.gold
-            label = choice.label if not choice.cost_gold else f"{choice.label} ({choice.cost_gold}g)"
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
-                             (lambda c=choice.id: self._resolve_travel_event(c)), affordable)
+            # B106: the cost is a right-aligned value, never "(20g)" in the label.
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), choice.label,
+                             (lambda c=choice.id: self._resolve_travel_event(c)), affordable,
+                             value=f"{choice.cost_gold}g" if choice.cost_gold else "")
             y += 52
         self._draw_buttons()
 

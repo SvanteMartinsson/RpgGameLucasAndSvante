@@ -192,8 +192,9 @@ class OverworldOverlayTest(unittest.TestCase):
         self.app.draw()
         labels = [button.label for button in self.app.buttons]
 
-        self.assertTrue(any("[CAN LEARN]" in label for label in labels))
-        self.assertTrue(any("[LOCKED]" in label for label in labels))
+        # B106: lock states render as compact markers, not bracket prefixes.
+        self.assertTrue(any("+ " in label for label in labels))   # can learn
+        self.assertTrue(any("\u25cb " in label for label in labels))  # locked
 
     def test_skills_panel_regions_do_not_overlap_on_compact_panel(self):
         panel = pygame.Rect(16, 16, 608, 560)
@@ -269,7 +270,7 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertEqual(self.app.mode, "walk")
         self.assertEqual(self.app.overlay, "inventory")
 
-        back = next(button for button in self.app.buttons if button.label == "Back (Esc)")
+        back = next(button for button in self.app.buttons if button.label == "Back")
         back.on_click()
         self.assertEqual(self.app.mode, "townmenu")
 
@@ -283,7 +284,7 @@ class OverworldOverlayTest(unittest.TestCase):
         lines = app.talent_detail_lines(node)
 
         self.assertIn(node.name, lines)
-        self.assertIn("[LEARNED]", lines)  # smite is the pre-learned starter node (B7.1)
+        self.assertIn("Learned", lines)  # smite is the pre-learned starter node (B7.1); B106: plain word
         self.assertIn(f"Effect: {terminal.describe_talent(engine, node)}", lines)
         self.assertIn("Cost: 6 mana", lines)
         self.assertIn("Requires: none", lines)
@@ -298,7 +299,7 @@ class OverworldOverlayTest(unittest.TestCase):
 
         lines = app.talent_detail_lines(node)
 
-        self.assertIn("[LOCKED]", lines)
+        self.assertIn("Locked", lines)   # B106: plain word in the detail panel
         self.assertTrue(any(l.startswith("Requires: ") and l != "Requires: none" for l in lines),
                         f"no prerequisite shown: {lines}")
 
@@ -320,7 +321,7 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertNotEqual(first.id, second.id)
 
         app.draw()
-        smite_button = next(button for button in app.buttons if "[LEARNED] Smite" in button.label)
+        smite_button = next(button for button in app.buttons if "Smite" in button.label and "\u2713" in button.label)
         smite_button.on_click()
 
         self.assertEqual(app.selected_talent_id, "cleric_light_l1_smite")

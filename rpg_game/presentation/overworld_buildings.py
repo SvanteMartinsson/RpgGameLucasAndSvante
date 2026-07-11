@@ -113,9 +113,11 @@ class BuildingMenusMixin:
         func = BUILDING_FUNCTION.get(building_id)
         category = STORE_CATEGORY.get(building_id)
         info = None
+        value = ""
         if func == "rest":
             cost = progression.rest_cost(self.zone.zone_for_tile(self.world.current_tile))
-            label = f"Rest ({cost} gold)" if cost else "Rest (free)"
+            # B106: the cost is a right-aligned value, never "(20 gold)" in the label.
+            label, value = "Rest", (f"{cost}g" if cost else "free")
         elif func == "store":
             label = {"weapons": "Browse weapons", "armor": "Browse armour"}.get(category, "Browse goods")
         elif func == "relocate_respawn":
@@ -127,7 +129,7 @@ class BuildingMenusMixin:
         elif func == "brew":
             label = "Brew potions"
         elif func == "fast_travel":
-            label = "Fast travel (coach)"
+            label = "Fast travel — coach"
         else:
             label = None   # station-only building (mage tower): no store/rest service
         y = panel.y + 80
@@ -136,7 +138,8 @@ class BuildingMenusMixin:
             y += 30
         if func is not None and label is not None:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
-                             (lambda f=func, c=category: self._choose_building_action(f, c)), True)
+                             (lambda f=func, c=category: self._choose_building_action(f, c)), True,
+                             value=value)
             y += 52
         # B37: a station building (blacksmith weapons / mage tower armour) offers an
         # upgrade choice. The blacksmith also has its weapon store above; the mage
@@ -154,8 +157,8 @@ class BuildingMenusMixin:
             y += 52
         # B68/B8 2b: brewing moved home — the apothecary door (BUILDING_FUNCTION)
         # is now the only counter; the general shop's interim button is gone.
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, self._close_building_menu)
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, self._close_building_menu, badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _open_tome_shop(self, building_id: str) -> None:
@@ -202,8 +205,8 @@ class BuildingMenusMixin:
                              restricted=(not already) and (owned or gold < tome.price),
                              value=value, tooltip=tip)
             y += 46
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, self._close_tome_shop)
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, self._close_tome_shop, badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _open_apothecary(self) -> None:
@@ -278,8 +281,8 @@ class BuildingMenusMixin:
                              enabled=True, restricted=gold < cost,
                              value=f"{cost}g", tooltip=tip)
             y += 44
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"), badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _brew(self, recipe_id: str) -> None:
@@ -314,8 +317,8 @@ class BuildingMenusMixin:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), label,
                              (lambda rid=recipe.id: self._brew(rid)), can)
             y += 46
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"), badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _open_upgrade_station(self, building_id: str) -> None:
@@ -372,8 +375,8 @@ class BuildingMenusMixin:
         if self.selected_upgrade_item is not None:
             self._draw_upgrade_variants(right, self.selected_upgrade_item)
 
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, self._close_upgrade_station)
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, self._close_upgrade_station, badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _draw_upgrade_variants(self, rect: pygame.Rect, item_id: str) -> None:
@@ -415,9 +418,11 @@ class BuildingMenusMixin:
             affordable = gold_ok and not short
             btn = pygame.Rect(vx, rect.bottom - 40, col_w, 32)
             # Clickable-but-restricted when unaffordable: the click logs why.
-            self._add_button(btn, "Reforge" if affordable else "Reforge (need more)",
+            # B106: the shortfall is a dimmed value, not "(need more)" in the label.
+            self._add_button(btn, "Reforge",
                              (lambda iid=item_id, vid=variant.id: self.apply_upgrade(iid, vid)),
-                             enabled=True, restricted=not affordable)
+                             enabled=True, restricted=not affordable,
+                             value="" if affordable else "need more")
 
     def _close_upgrade_station(self) -> None:
         self.upgrade_building = None
@@ -427,8 +432,8 @@ class BuildingMenusMixin:
         title = T.STORE_TITLES.get(self.store_category, T.SCREEN_TITLES["store"])
         panel = self._overlay_panel(title)
         self._screen_store(panel)
-        back = pygame.Rect(panel.right - 150, panel.bottom - 54, 130, 40)
-        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"))
+        back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
+        self._add_button(back, T.BACK, lambda: setattr(self, "mode", "walk"), badge=T.BACK_KEY)
         self._draw_buttons()
 
     def _screen_store(self, panel) -> None:

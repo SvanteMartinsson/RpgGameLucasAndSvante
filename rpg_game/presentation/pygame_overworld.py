@@ -1217,9 +1217,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     def talent_detail_lines(self, node) -> list[str]:
         detail = talent_detail(self.engine, node)
+        # B106: plain words in the detail panel — "[LOCKED]" reads as "Locked".
+        status = detail.status.strip("[]").capitalize()
         lines = [
             detail.name,
-            detail.status,
+            status,
             f"Rank: {detail.rank}/{detail.max_rank}",
             f"Effect: {detail.effect}",
         ]
@@ -1804,8 +1806,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         return False
 
     def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,
-                    value="", label_color=None, tooltip=None, focus_section="") -> None:
-        button = Button(rect, label, cb, enabled, restricted,
+                    value="", label_color=None, tooltip=None, focus_section="",
+                    badge="") -> None:
+        button = Button(rect, label, cb, enabled, restricted, hotkey=badge,
                         value=value, label_color=label_color, tooltip=tooltip)
         self.buttons.append(button)
         # B99 S2: every button is keyboard-focusable. Surfaces that want
@@ -1836,7 +1839,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         for b in self.buttons:
             row = ui.MenuRow(label=b.label, value=b.value, enabled=b.enabled,
                              restricted=b.restricted, tooltip=b.tooltip,
-                             label_color=b.label_color)
+                             label_color=b.label_color, badge=b.hotkey)
             ui.draw_menu_row(self.screen, b.rect, row, style,
                              mouse=mouse, hover=self.hover, fit=self._fit_text,
                              focused=b is focused_button)

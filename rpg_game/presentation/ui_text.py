@@ -69,7 +69,25 @@ HINT_TOWN = "Step to a building's door + Enter   C/I/K: panels   Esc: system"
 HINT_WALK = "WASD/arrows to move   C/I/K: panels   Esc: system"
 BUILDING_LOCKED = "This building seems to be locked."
 BACK_TO_MAP = "Esc / Enter: back to map"
-BACK = "Back (Esc)"
+BACK = "Back"
+BACK_KEY = "Esc"   # B106: hotkey renders as a badge chip, never "(Esc)"
+
+# B106: the Controls table (settings) — (action, key) pairs rendered via
+# ui.draw_controls_table; one source so hotkey hints never live in row labels.
+CONTROLS = (
+    ("Move", "WASD / arrows"),
+    ("Interact", "E / Enter"),
+    ("World map", "M"),
+    ("Minimap", "N"),
+    ("Bestiary", "B"),
+    ("Character", "C"),
+    ("Inventory", "I"),
+    ("Skills & talents", "K"),
+    ("Log size", "+ / -"),
+    ("Scroll log", "PgUp / PgDn"),
+    ("Fullscreen", "F11"),
+    ("Menu / back", "Esc"),
+)
 
 # --- B65 zone bosses ---------------------------------------------------------
 
@@ -131,11 +149,12 @@ STORE_TITLES = {
 
 
 def relocate_respawn_label(cost: int, already: bool = False) -> str:
+    # B106: label + right-aligned value — no parenthetical help text.
     if already:
-        return "Respawn point (here)"
+        return "Respawn point", "here"
     if cost <= 0:
-        return "Set respawn here (free)"
-    return f"Move respawn here ({cost} G)"
+        return "Set respawn here", "free"
+    return "Move respawn here", f"{cost}g"
 TOURNAMENT_SERIES_WARNING = (
     "Locked series: fights in a row, no flee or weapon swap mid-match, "
     "full HP/mana and equipment changes between matches, reward only after full victory."
@@ -205,7 +224,7 @@ def fled_from(enemy_name: str) -> str:
 INV_HEADER_CONSUMABLES = "Consumables:"
 INV_HEADER_MISC = "Miscellaneous:"
 INV_HEADER_WEAPONS = "Weapons:"
-INV_NONE = "  (none)"
+INV_NONE = "  none"
 # B40 S2: the old INVENTORY_HINT/EQUIP_HINT header strings are gone — the menu
 # spec bans redundant subheaders (point 5); the hover tooltips explain instead.
 INV_CATEGORY_LABELS = {
@@ -256,11 +275,12 @@ SYSTEM_QUIT = "Quit"
 
 def skills_hint(equipped_count: int) -> str:
     # Short — the hint must fit its 220px skills column (B78 collision fix).
-    return f"Equipped {equipped_count}/4 — click to swap."
+    # B106: short enough for the 220px column — no mid-word "click to..." cut.
+    return f"Equipped {equipped_count}/4"
 
 
 def store_hint(gold: int) -> str:
-    return f"Gold: {gold}    (click to buy / sell one)"
+    return f"Gold: {gold} — click to buy or sell one"
 
 
 def talents_hint(points: int) -> str:
@@ -332,7 +352,8 @@ def gold_gain(amount: int) -> str:
 CREATE_TITLE = "Create your character"
 CREATE_NAME_LABEL = "Name:"
 CREATE_PICK_CLASS = "Pick a class:"
-CREATE_START = "Start  (Enter)"
+CREATE_START = "Start"
+CREATE_START_KEY = "Enter"
 # B40 S5: starter-skill choice + read-only tree preview.
 CREATE_STARTER_LABEL = "Choose a starting talent (click, or Left/Right):"
 CREATE_TREE_LABEL = "Talent tree (hover a talent to read it):"

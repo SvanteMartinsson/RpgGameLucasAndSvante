@@ -325,6 +325,60 @@ class MenuRow:
     tooltip: object = None            # ui.Tooltip shown after a >1 s dwell
     on_click: object = None
     label_color: object = None        # rarity colour for the name; None -> style.text
+    badge: str = ""                   # B106: hotkey chip in its own right column
+
+
+# B106: key-cap chip palette (self-contained, matches the tooltip chrome).
+BADGE_BG = (30, 34, 46)
+BADGE_EDGE = (92, 98, 122)
+BADGE_TEXT = (196, 202, 216)
+BADGE_TEXT_DIM = (120, 126, 140)
+
+# B106: compact status markers replacing the [LEARNED]/[LOCKED]/[CAN LEARN]
+# text prefixes — same information, a glyph + a colour role the screen maps
+# to its palette ("good" = learned, "accent" = can learn, "dim" = locked).
+STATUS_MARKERS = {
+    "[LEARNED]": ("✓", "good"),
+    "[CAN LEARN]": ("+", "accent"),
+    "[LOCKED]": ("○", "dim"),
+}
+
+
+def status_marker(status: str) -> tuple:
+    """(glyph, colour-role) for a bracketed status prefix; the raw text and
+    role 'text' when the status is unknown (nothing ever disappears)."""
+    return STATUS_MARKERS.get(status, (status, "text"))
+
+
+def draw_key_badge(screen, font, text: str, *, right: int, centery: int,
+                   dim: bool = False) -> "pygame.Rect":
+    """B106: render a hotkey as a key-cap chip, right-aligned at ``right``.
+    Returns the chip rect so callers can column-stack leftwards."""
+    label = font.render(text, True, BADGE_TEXT_DIM if dim else BADGE_TEXT)
+    chip = pygame.Rect(0, 0, label.get_width() + 14, label.get_height() + 6)
+    chip.midright = (right, centery)
+    pygame.draw.rect(screen, BADGE_BG, chip, border_radius=5)
+    pygame.draw.rect(screen, BADGE_EDGE, chip, width=1, border_radius=5)
+    screen.blit(label, label.get_rect(center=chip.center))
+    return chip
+
+
+def draw_controls_table(screen, font, rows, *, x: int, y: int, width: int,
+                        action_color, columns: int = 2, row_h: int = 30) -> int:
+    """B106: the Controls table — (action, key) pairs in ``columns`` columns,
+    the action dimmed at the left of its cell and the key as a badge at the
+    right. Returns the y below the table."""
+    col_w = max(1, width // max(1, columns))
+    per_col = (len(rows) + columns - 1) // columns
+    for i, (action, key_text) in enumerate(rows):
+        col, line = divmod(i, per_col)
+        cx = x + col * col_w
+        cy = y + line * row_h
+        label = fit(action, font, col_w - font.size(key_text)[0] - 40)
+        screen.blit(font.render(label, True, action_color), (cx, cy + 4))
+        draw_key_badge(screen, font, key_text,
+                       right=cx + col_w - 16, centery=cy + font.get_linesize() // 2 + 3)
+    return y + per_col * row_h
 
 
 def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
@@ -343,18 +397,29 @@ def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
     pygame.draw.rect(screen, fill, rect, border_radius=style.radius)
     edge_color = style.text if focused else style.edge
     pygame.draw.rect(screen, edge_color, rect, width=1, border_radius=style.radius)
+    right = rect.right - style.pad
+    if row.badge:
+        # B106: the hotkey renders as a key-cap chip in its own right column —
+        # never as "(Esc)" inside the label.
+        badge_rect = draw_key_badge(screen, style.font, row.badge,
+                                    right=right, centery=rect.centery, dim=dim)
+        right = badge_rect.left - style.pad
     value_w = 0
     if row.value:
         vs = style.font.render(row.value, True, style.text_dim if dim else style.value)
-        screen.blit(vs, vs.get_rect(midright=(rect.right - style.pad, rect.centery)))
+        screen.blit(vs, vs.get_rect(midright=(right, rect.centery)))
         value_w = vs.get_width() + style.pad
-    max_label_w = rect.width - 2 * style.pad - value_w
+    max_label_w = right - rect.x - 2 * style.pad - value_w
     label = fit(row.label, max_label_w, style.font) if fit else row.label
     # A rarity colour on the name wins even when dimmed (an unaffordable legendary
     # still reads as legendary); otherwise fall back to the normal/dim text colour.
     label_color = row.label_color or (style.text_dim if dim else style.text)
     ls = style.font.render(label, True, label_color)
     screen.blit(ls, ls.get_rect(midleft=(rect.x + style.pad, rect.centery)))
-    if hover is not None and row.tooltip is not None:
-        hover.add(rect, row.tooltip)
+    tooltip = row.tooltip
+    if tooltip is None and label != row.label:
+        # B106: a truncated label always gets its full text as a tooltip.
+        tooltip = Tooltip(title=row.label)
+    if hover is not None and tooltip is not None:
+        hover.add(rect, tooltip)
     return rect

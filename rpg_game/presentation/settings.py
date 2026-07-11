@@ -34,7 +34,7 @@ OPTIONS = (
     {"key": "fullscreen", "label": "Fullscreen", "kind": "toggle", "hotkey": "F11"},
     {"key": "log_visible", "label": "Log rows", "kind": "steps", "steps": (5, 8, 10, 12, 14, 18)},
     {"key": "minimap", "label": "Minimap", "kind": "toggle", "hotkey": "N"},
-    {"key": "combat_fx", "label": "Combat FX", "kind": "toggle"},
+    {"key": "combat_fx", "label": "Combat animations", "kind": "toggle"},
     {"key": "combat_skip", "label": "Combat skip-click", "kind": "toggle"},
     {"key": "sound_music", "label": "Music volume", "kind": "slider"},
 )
