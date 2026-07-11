@@ -63,6 +63,7 @@ def serialize_status(status: ActiveStatus) -> dict:
         "on_event": status.on_event,
         "base_duration": status.base_duration,
         "weapon_bonus": status.weapon_bonus,
+        "source_action": status.source_action,
     }
 
 
@@ -84,6 +85,7 @@ def deserialize_status(data: dict) -> ActiveStatus:
         on_event=data.get("on_event", ""),
         base_duration=data.get("base_duration", 0),
         weapon_bonus=data.get("weapon_bonus", 0),
+        source_action=data.get("source_action", ""),
     )
 
 

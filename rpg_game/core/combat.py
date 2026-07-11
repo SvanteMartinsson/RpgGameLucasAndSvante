@@ -1057,6 +1057,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
                     on_event=effect.on_event,
                     base_duration=duration,
                     weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
+                    source_action=result.action_name,
                 )
             )
             result.events.append(f"{actor_name(effect_target)} is affected by {status_type} ({result.action_name}).")
@@ -1092,6 +1093,7 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
             on_event=effect.on_event,
             base_duration=duration,
             weapon_bonus=weapon.damage_bonus if weapon_scaled and weapon is not None else 0,
+            source_action=result.action_name,
         )
     )
     tick_type = status_type if status_type in DAMAGE_TYPES else tag
@@ -1240,7 +1242,13 @@ def apply_reflects(bearer: Actor, attacker: Actor, result: ActionResolution, tri
         reflected = apply_damage_mitigation(raw_damage, attacker, status.damage_type)
         attacker.hp = max(0, attacker.hp - reflected)
         result.reflected_damage += reflected
-        result.events.append(f"{actor_name(bearer)} reflected {reflected} damage to {actor_name(attacker)}.")
+        # B96: name the reflect's source skill when the status knows it.
+        if status.source_action:
+            result.events.append(
+                f"{actor_name(bearer)}'s {status.source_action} reflected {reflected} damage to {actor_name(attacker)}."
+            )
+        else:
+            result.events.append(f"{actor_name(bearer)} reflected {reflected} damage to {actor_name(attacker)}.")
 
 
 def is_immune(actor: Actor, tag: str) -> bool:

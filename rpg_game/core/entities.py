@@ -552,3 +552,4 @@ class ActiveStatus:
     on_event: str = ""
     base_duration: int = 0
     weapon_bonus: int = 0
+    source_action: str = ""
