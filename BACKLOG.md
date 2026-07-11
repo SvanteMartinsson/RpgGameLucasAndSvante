@@ -355,6 +355,79 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** sim gren-A vs gren-B per klass, ingen strikt dominans kvar; ändringslista
   med motiveringar i rapporten.
 
+### Playtest-tasks (2026-07-11) — dagbatch 2026-07-11
+
+#### B96 — Reflect-polish: loggrad namnger källan + multi-hit-utredning
+- **Vad:** (a) Reflect-loggraden namnger sin källa: "Hero's Counter reflected 6 damage to
+  Dire Wolf." i st. f. generiska "X reflected N damage to Y." — härlett ur statusens
+  ursprungs-skill, ej hårdkodat. (b) Multi-hit-reflect: ÄNDRA INTE beteendet — sim (N≥200)
+  nuvarande per-delträff vs hypotetiskt en-gång-per-attack, rapportera winrate-skillnaden
+  för matchups där reflects förekommer. HALT: rapport + rekommendation till Lucas.
+- **Not:** Följer B86-utredningens otydligheter (loggrad + multi-hit).
+- **Acceptans:** loggrad med källnamn, test; sim-rapport för multi-hit-frågan.
+
+#### B97 — Wight/skeleton-kitflytt (arten styr kit)
+- **Vad:** Flytta `frostfire_strike` från skeleton_warrior till cursed_wight (kit + ai-regler;
+  wight_curse/grave_wail behålls om plats — mät kitstorleksnormen). skeleton_warrior får en
+  FYSISK ersättare vald bland BEFINTLIGA actions (svärd+sköld-art: sunder-/power-familjen) —
+  ingen ny action authoras. Lucas-godkänt: arten styr kitet.
+- **Acceptans:** sim N≥200 per fiende före/efter, båda inom ±10 pp mot on-level-klasserna
+  (HALT om mer); bestiary-text uppdaterad vid behov; tester.
+
+#### B98 — Sprite-nedskalningskvalitet + tier-map-täckning
+- **Vad:** enemy_sprite använder smoothscale (eller stegvis halvering) när nedskalnings-
+  faktorn överstiger ~2x; nearest behålls för uppskalning (pixel-art förblir skarp). Lägg
+  cursed_wight, skeleton_warrior och övriga omappade fiender i ENEMY_SPRITE_TIER — förslag
+  large för L8+-eliter men välj per sprite-proportion, rapportera valen.
+- **Acceptans:** före/efter-renders (minst cursed_wight) i docs/nightly/; tester.
+
+#### B99 — Tangentbordsnavigering i menyer
+- **Vad:** Fokus-modell som DELAD mekanism i ui.py (B40-menyspecens anda): pil upp/ner
+  flyttar fokus inom sektion, vänster/höger (eller Tab) hoppar mellan sektioner/kolumner,
+  Enter aktiverar, Esc backar som idag. Musen fortsätter fungera parallellt; fokusmarkering
+  återanvänder hover-stilen. Lucas primärfall: slippa musen.
+- **Slices:** (1) inventory + Skills & Talents-skärmen (HALT för Lucas-review efteråt);
+  (2) övriga menyer efter godkänd S1.
+- **Acceptans:** tester på fokusflytt/aktivering; renders till docs/nightly/.
+
+#### B100 — Loot-flik i loggen
+- **Vad:** Tredje tabb "Loot" bredvid All/Combat (B44-strukturen). Varje item-/guldförvärv
+  loggas med källa: "Looted Greatsword from Cave Bear." / "Opened chest: 2x HP Potion." /
+  "Bought Tome: Sun Flare." Käll-metadata följer loot-flödet i core; presentationen färgar
+  per källtyp. Bara framåtriktat (ingen retroaktiv historik).
+- **STEG 0:** mät ALLA vägar där items/guld når spelaren (enemy drop, chest, shop-köp,
+  event, tome-studie, turneringsbelöning, ev. fler).
+- **Acceptans:** test per källväg; renders.
+
+#### B101 — Broarnas kanttiling
+- **Vad:** Bro-däcket får vänsterkant-/mitt-/högerkant-varianter: mitt-tilen genereras ur
+  befintlig tile med räckespixlarna borttagna via deterministisk transform (parametrar
+  dokumenteras); kantvarianter behåller ETT räcke vardera. Variantval efter grannskap
+  (render-tid eller tile-data — den väg som inte rör kartformatet).
+- **Acceptans:** före/efter-renders av bron i skärmdumpens läge till docs/nightly/ för
+  Lucas review (revert billig om utseendet underkänns).
+
+#### B102 — Progression-audit (MÄT-ONLY)
+- **Vad:** Underlag till Lucas designrunda om svårighetskurvan — INGA data-/konstant-
+  ändringar. (a) Spelarkurva per klass L1–L12: HP + förväntad DPS med default- och
+  realistiskt optimerad loadout; dekomponera L3–4-spiken (vapen-tier/talent-ranks/basstats).
+  (b) Fiendekurva per zon: HP, flat damage, SKILL-magnituder vid zonens levelband — mät
+  explicit om skill-effekter skalar med rullad level (nyckelfrågan), efter
+  ENEMY_HP_MULTIPLIER 2.0 + HP_GROWTH 0.20 + DAMAGE_GROWTH 0.12. (c) Möteskvalitet per zon
+  vid avsedd spelarlevel: TTK, DTK, skada tagen per strid som % av spelar-HP; inkludera
+  slutmatrisens kända outliers (tank-skadegolv/timeouts, 100 %-celler, cleric vs cave_bear,
+  mage vs shade). (d) Rapport: matplotlib-PNG:er i docs/nightly/ + 3–5 strukturproblem med
+  FÖRSLAG på målkurvor. Förslag — besluten är Lucas.
+- **Acceptans:** kurvor + problemlista + målkurveförslag; commit endast för sim-/plottverktyg.
+
+#### Meny-textstil  ⭐ designbärande — INGET byggarbete i dagbatch 2026-07-11
+- **Vad:** Designrunda om menyernas textstil: overflow, parenteser, Keys-layout.
+  Mockups kommer från arkitekten; Lucas beslutar innan något byggs.
+
+#### Parguillas-kulissen  ⭐ designbärande — INGET byggarbete i dagbatch 2026-07-11
+- **Vad:** Designval för Parguillas: (A) shrine får en funktion / (B) dörrlös kuliss /
+  (C) shrine får kyrkans respawn-funktion. Lucas väljer väg innan byggarbete.
+
 ### Overworld, kollision & karta
 
 #### B21 — Sub-tile-kollision + fences & gates  ⭐ designbärande  · *nytt, ersätter B19:s vattendel*
@@ -675,7 +748,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Innehåll & värld (kreativ expansion)
 
-#### B27 — Innehålls-variation: nya skills, vapen, stats  · ✅ **KLAR (nattbatch 2026-07-10→11, fffe3e0)** — 9 skills (6 t5-noder + 3 tomes), 7 vapen (commons i butik, rares loot-only per B8-regeln); ekonomikontroll i nattrapporten
+#### B27 — Innehålls-variation: nya skills, vapen, stats  · ✅ **KLAR (nattbatch 2026-07-10→11, fffe3e0)** — 9 skills (6 t5-noder + 3 tomes), 7 vapen (commons i butik, rares loot-only per B8-regeln); ekonomikontroll i nattrapporten · **Tolkning GODKÄND (Lucas 2026-07-11):** rare-vapen är loot-only, butiker toppar på commons/t5
 - **Vad:** Code har **stor frihet** att skapa nytt innehåll för variation — nya skills
   (t.ex. elementala: thunder strike / zap / incineration / holy strike / plague ooze, m.fl.),
   nya vapen, ev. nya stats/skadetyper. Lucas uppmuntrar uppfinningsrikedom.
@@ -1347,7 +1420,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** möt→syns, identifiera→detaljer; persisterar; skärmen följer menyspecen; tester för
   upplåsnings-regler.
 
-#### B67 — Reshändelser (text-val i vildmarken)  · 🟢 **S1 KLAR** (e8dce81: event-motor + 3 cainos-events, 10% av slots; HALT — texter/ton/frekvens till Lucas före S2)
+#### B67 — Reshändelser (text-val i vildmarken)  · 🟢 **S1 KLAR** (e8dce81: event-motor + 3 cainos-events, 10% av slots) · ⏸ **S2 PARKERAD (Lucas-beslut 2026-07-11):** bygg INTE per-zon-tabeller tills vidare
 - **Vad:** Sällsynt (i st. f. en encounter) triggas en text-händelse i loggen/panel med 2–3 val:
   "En övergiven kärra: rota igenom (loot, risk för bakhåll) / gå vidare" · "Ett vägaltare: offra 20
   guld (+buff till nästa strid) / vila blicken (+liten heal)" · "Skadad handelsman: hjälp (guld senare
@@ -1499,7 +1572,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** siffror/blink/skak triggar rätt och stör inte layouten (canvas-skalning intakt);
   kan stängas av (krok för B70); render-review; sviten grön.
 
-#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 KLAR** (78786e3: partikelmotor + mork_skog-eldflugor, fps-tapp 1.2%; render+fps-HALT före S2)
+#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 KLAR** (78786e3: partikelmotor + mork_skog-eldflugor, fps-tapp 1.2%) · ⏸ **S2 VÄNTAR (Lucas-beslut 2026-07-11):** in-game-review av eldflugorna först — bygg INTE zon-presets/toggle innan dess
 - **Vad:** Ett tunt atmosfärslager i overworlden per zon: eldflugor/pollendamm i mork_skog, låg
   dimslöja som driver i cursed_mire, aska/gnistor i grave_heath, varmt dis i cainos — några dussin
   långsamma partiklar + en svag färg-overlay. Upplevelsen: zonerna FÅR sin stämning i rörelse, och
