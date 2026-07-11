@@ -139,6 +139,14 @@ def level_scaled_xp(base_xp: int, player_level: int, enemy_level: int) -> int:
     return max(1, round_half_up(base_xp * multiplier))
 
 
+# Lever e (progression pass 2026-07-12): automatic per-level base-damage growth
+# per class, applied on EVERY level gain regardless of the chosen main stat.
+# Only the tank has one — its damage floor was falling 4-5x behind fighter/
+# hunter by L12; the growth narrows that to <=2x while its identity (bulk, slow
+# kills) stays with the HP main-stat choice. Tunable.
+CLASS_DAMAGE_PER_LEVEL = {"tank": 6}   # L12 optimized-DPS gap vs fighter: 4.4x -> 1.8x
+
+
 def award_xp(player: Player, amount: int) -> int:
     if amount < 0:
         raise ValueError("amount must not be negative")
@@ -152,6 +160,7 @@ def award_xp(player: Player, amount: int) -> int:
         player.xp_required = xp_required_for_level(player.level)
         player.pending_stat_choices += 1
         player.talent_points += 1
+        player.base_damage += CLASS_DAMAGE_PER_LEVEL.get(player.player_class, 0)
         levels_gained += 1
 
     return levels_gained
