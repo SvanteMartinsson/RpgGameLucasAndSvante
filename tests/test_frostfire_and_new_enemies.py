@@ -43,20 +43,32 @@ class NewEnemyDataTests(unittest.TestCase):
             for t, v in exp.items():
                 self.assertAlmostEqual(r(eid, t), v, places=9, msg=f"{eid}/{t}")
 
-    def test_skeleton_warrior_is_a_configured_elite(self):
+    def test_skeleton_warrior_is_a_physical_bruiser(self):
+        # B97 variant B (2026-07-12): the skeleton trades frostfire_strike for
+        # shield_slam (sword+board art = physical bruiser); the wight casts
+        # frostfire now. Mana funds the slam (cost 8, cd 3).
         sw = self.content.enemies["skeleton_warrior"]
-        self.assertEqual(sw.action_ids, ("frostfire_strike", "power", "normal"))
+        self.assertEqual(sw.action_ids, ("shield_slam", "power", "normal"))
+        self.assertGreaterEqual(sw.mana, 16)           # at least two casts
+        self.assertEqual(sw.ai[0]["action"], "shield_slam")
         self.assertTrue(sw.rare_table_access)
         self.assertTrue(sw.unique_table)               # B42: real loot table now assigned
         self.assertEqual(len(sw.ai), 2)
 
+    def test_cursed_wight_carries_the_frostfire_kit(self):
+        # B97 variant B: wight = frostfire_strike + wight_curse + power.
+        cw = self.content.enemies["cursed_wight"]
+        self.assertEqual(cw.action_ids, ("frostfire_strike", "wight_curse", "power"))
+        self.assertEqual(cw.ai[0]["action"], "frostfire_strike")
+
 
 class FrostfireStrikeTests(unittest.TestCase):
+    # B97 variant B: the frostfire kit lives on the cursed_wight now.
     def setUp(self):
         self.engine = GameEngine(rng=random.Random(1))
         self.engine.start_new_game("Hero", "fighter")
         self.player = self.engine.player
-        self.skel = self.engine.content.enemies["skeleton_warrior"].create_enemy()
+        self.skel = self.engine.content.enemies["cursed_wight"].create_enemy()
         self.action = self.engine.content.actions["frostfire_strike"]
 
     def test_deals_fire_and_frost_and_applies_burn_and_armor_sunder(self):
@@ -80,6 +92,13 @@ class FrostfireStrikeTests(unittest.TestCase):
         self.assertEqual(combat.effective_stat(self.player, "armor"), armor_before - 6)  # still down after 1
         combat.tick_statuses(self.player, "round_end")
         self.assertEqual(combat.effective_stat(self.player, "armor"), armor_before)      # restored after 2
+
+    def test_skeleton_ai_casts_shield_slam_with_its_mana(self):
+        skel = self.engine.content.enemies["skeleton_warrior"].create_enemy()
+        result = combat.enemy_take_turn(skel, self.player, self.engine.content.actions,
+                                        random.Random(3))
+        self.assertEqual(result.action_id, "shield_slam")
+        self.assertEqual(skel.mana, skel.max_mana - 8)
 
     def test_ai_uses_frostfire_when_ready_else_power(self):
         actions = self.engine.content.actions

@@ -2090,7 +2090,7 @@
       "undead"
     ],
     "action_ids": [
-      "grave_wail",
+      "frostfire_strike",
       "wight_curse",
       "power"
     ],
@@ -2146,9 +2146,9 @@
     "ai": [
       {
         "condition": {
-          "skill_ready": "grave_wail"
+          "skill_ready": "frostfire_strike"
         },
-        "action": "grave_wail"
+        "action": "frostfire_strike"
       },
       {
         "condition": {
@@ -2181,16 +2181,16 @@
       "undead"
     ],
     "action_ids": [
-      "frostfire_strike",
+      "shield_slam",
       "power",
       "normal"
     ],
     "ai": [
       {
         "condition": {
-          "skill_ready": "frostfire_strike"
+          "skill_ready": "shield_slam"
         },
-        "action": "frostfire_strike"
+        "action": "shield_slam"
       },
       {
         "condition": {
@@ -2242,7 +2242,8 @@
         "weight": 12,
         "rarity_tier": 2
       }
-    ]
+    ],
+    "mana": 24
   },
   {
     "id": "goblin_raider",
