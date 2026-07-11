@@ -70,7 +70,7 @@
     "level_min": 2,
     "level_max": 6,
     "max_hp": 45,
-    "damage": 4,
+    "damage": 7,
     "armor": 1,
     "speed": 6,
     "traits": [
@@ -214,7 +214,7 @@
     "level_min": 3,
     "level_max": 7,
     "max_hp": 40,
-    "damage": 5,
+    "damage": 11,
     "armor": 0,
     "speed": 9,
     "traits": [
@@ -738,7 +738,7 @@
     "level": 6,
     "level_min": 5,
     "level_max": 10,
-    "max_hp": 45,
+    "max_hp": 60,
     "damage": 12,
     "armor": 1,
     "speed": 12,
@@ -1043,8 +1043,8 @@
     "level": 6,
     "level_min": 5,
     "level_max": 10,
-    "max_hp": 28,
-    "damage": 7,
+    "max_hp": 45,
+    "damage": 9,
     "armor": 0,
     "speed": 14,
     "traits": [
