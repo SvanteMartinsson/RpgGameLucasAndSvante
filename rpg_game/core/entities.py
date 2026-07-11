@@ -330,6 +330,10 @@ class Enemy:
     tags: set[str] = field(default_factory=set)
     boss: bool = False   # B65: elite nameplate + boss-only victory handling
     conditional_damage_mods: list[dict[str, object]] = field(default_factory=list)
+    # Lever d (progression pass 2026-07-12): level-scaling factor for the FLAT
+    # magnitudes of this enemy's skill effects (DoT/debuff/regen). Set by
+    # world.scale_enemy_to_level alongside damage; 1.0 = at template level.
+    flat_scale: float = 1.0
 
     @property
     def is_alive(self) -> bool:

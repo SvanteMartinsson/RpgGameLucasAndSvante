@@ -1,0 +1,3862 @@
+{
+ "median": {
+  "cainos": {
+   "3": {
+    "fighter": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.1,
+      "taken_pct": 0.1609433962264151,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.1,
+      "taken_pct": 0.06339622641509433,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.5,
+      "taken_pct": 0.05254716981132076,
+      "enemy_level": 1
+     }
+    },
+    "tank": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.56,
+      "taken_pct": 0.13373493975903614,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.86,
+      "taken_pct": 0.03409638554216868,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.99,
+      "taken_pct": 0.11746987951807229,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.04,
+      "taken_pct": 0.02536144578313253,
+      "enemy_level": 1
+     }
+    },
+    "rogue": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.30511627906976746,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0758139534883721,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.67,
+      "taken_pct": 0.09395348837209302,
+      "enemy_level": 1
+     }
+    },
+    "mage": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.97,
+      "taken_pct": 0.19160493827160494,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.99,
+      "taken_pct": 0.1528395061728395,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.95,
+      "taken_pct": 0.1585185185185185,
+      "enemy_level": 1
+     }
+    },
+    "cleric": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.3333333333333333,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.97,
+      "taken_pct": 0.138125,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0471875,
+      "enemy_level": 1
+     }
+    },
+    "hunter": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.23,
+      "taken_pct": 0.20274725274725275,
+      "enemy_level": 1
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.12,
+      "taken_pct": 0.07461538461538461,
+      "enemy_level": 1
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.15,
+      "taken_pct": 0.02142857142857143,
+      "enemy_level": 1
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.18,
+      "taken_pct": 0.05032967032967033,
+      "enemy_level": 1
+     }
+    }
+   },
+   "1": {
+    "fighter": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.04,
+      "taken_pct": 0.31245283018867925,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.28,
+      "taken_pct": 0.08415094339622642,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.18,
+      "taken_pct": 0.05547169811320755,
+      "enemy_level": 2
+     }
+    },
+    "tank": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.88,
+      "taken_pct": 0.23518072289156625,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.58,
+      "taken_pct": 0.05927710843373494,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.46,
+      "taken_pct": 0.1572289156626506,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 7.16,
+      "taken_pct": 0.030180722891566265,
+      "enemy_level": 2
+     }
+    },
+    "rogue": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.85,
+      "taken_pct": 0.4374418604651163,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.6,
+      "taken_pct": 0.17081395348837208,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.11290697674418605,
+      "enemy_level": 2
+     }
+    },
+    "mage": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.92,
+      "taken_pct": 0.42666666666666664,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.96,
+      "taken_pct": 0.2714814814814815,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.2222222222222222,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.94,
+      "taken_pct": 0.21012345679012345,
+      "enemy_level": 2
+     }
+    },
+    "cleric": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.5625,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.16322916666666668,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0459375,
+      "enemy_level": 2
+     }
+    },
+    "hunter": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.26,
+      "taken_pct": 0.2353846153846154,
+      "enemy_level": 2
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.23,
+      "taken_pct": 0.09615384615384616,
+      "enemy_level": 2
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.14,
+      "taken_pct": 0.025054945054945054,
+      "enemy_level": 2
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.12,
+      "taken_pct": 0.08340659340659341,
+      "enemy_level": 2
+     }
+    }
+   },
+   "0": {
+    "fighter": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.51,
+      "taken_pct": 0.39132075471698113,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.14,
+      "taken_pct": 0.1291509433962264,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.09,
+      "taken_pct": 0.17037735849056604,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.68,
+      "taken_pct": 0.028867924528301888,
+      "enemy_level": 3
+     }
+    },
+    "tank": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.22,
+      "taken_pct": 0.3812048192771084,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.52,
+      "taken_pct": 0.09704819277108434,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.53,
+      "taken_pct": 0.19048192771084338,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.44,
+      "taken_pct": 0.03662650602409639,
+      "enemy_level": 3
+     }
+    },
+    "rogue": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.44,
+      "taken_pct": 0.6441860465116279,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.96,
+      "taken_pct": 0.22046511627906976,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.71,
+      "taken_pct": 0.15209302325581395,
+      "enemy_level": 3
+     }
+    },
+    "mage": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.98,
+      "taken_pct": 0.4888888888888889,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.31925925925925924,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.2222222222222222,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.92,
+      "taken_pct": 0.2722222222222222,
+      "enemy_level": 3
+     }
+    },
+    "cleric": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5,
+      "taken_pct": 0.8333333333333334,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.95,
+      "taken_pct": 0.26395833333333335,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.95,
+      "taken_pct": 0.08979166666666667,
+      "enemy_level": 3
+     }
+    },
+    "hunter": {
+     "cave_bear": {
+      "win": 0.97,
+      "timeouts": 0,
+      "ttk": 3.216494845360825,
+      "taken_pct": 0.46278463804237,
+      "enemy_level": 3
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.34,
+      "taken_pct": 0.12263736263736263,
+      "enemy_level": 3
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.07,
+      "taken_pct": 0.1879120879120879,
+      "enemy_level": 3
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.3,
+      "taken_pct": 0.09032967032967033,
+      "enemy_level": 3
+     }
+    }
+   },
+   "-2": {
+    "fighter": {
+     "cave_bear": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 4.262626262626263,
+      "taken_pct": 0.5676577091671431,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.71,
+      "taken_pct": 0.13811320754716983,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.06,
+      "taken_pct": 0.28094339622641507,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.28,
+      "taken_pct": 0.029433962264150945,
+      "enemy_level": 5
+     }
+    },
+    "tank": {
+     "cave_bear": {
+      "win": 0.8,
+      "timeouts": 0,
+      "ttk": 10.0125,
+      "taken_pct": 0.6993975903614458,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.17,
+      "taken_pct": 0.16825301204819276,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.29,
+      "taken_pct": 0.3667469879518072,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 10.68,
+      "taken_pct": 0.04927710843373494,
+      "enemy_level": 5
+     }
+    },
+    "rogue": {
+     "cave_bear": {
+      "win": 0.25,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.8372093023255814,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.76,
+      "taken_pct": 0.3627906976744186,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.68,
+      "taken_pct": 0.2753488372093023,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.21,
+      "taken_pct": 0.2744186046511628,
+      "enemy_level": 5
+     }
+    },
+    "mage": {
+     "cave_bear": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.8888888888888888,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.94,
+      "taken_pct": 0.5924691358024691,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.3950617283950617,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 7,
+      "taken_pct": 0.41320987654320984,
+      "enemy_level": 5
+     }
+    },
+    "cleric": {
+     "cave_bear": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.96,
+      "taken_pct": 0.39770833333333333,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.99,
+      "taken_pct": 0.2475,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.11229166666666666,
+      "enemy_level": 5
+     }
+    },
+    "hunter": {
+     "cave_bear": {
+      "win": 0.58,
+      "timeouts": 0,
+      "ttk": 3.8793103448275863,
+      "taken_pct": 0.7277377794619173,
+      "enemy_level": 5
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.52,
+      "taken_pct": 0.2554945054945055,
+      "enemy_level": 5
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.19,
+      "taken_pct": 0.2786813186813187,
+      "enemy_level": 5
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.7,
+      "taken_pct": 0.18571428571428572,
+      "enemy_level": 5
+     }
+    }
+   },
+   "-4": {
+    "fighter": {
+     "cave_bear": {
+      "win": 0.64,
+      "timeouts": 0,
+      "ttk": 4.921875,
+      "taken_pct": 0.7889150943396227,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.23,
+      "taken_pct": 0.1869811320754717,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.52,
+      "taken_pct": 0.3241509433962264,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.31,
+      "taken_pct": 0.10971698113207547,
+      "enemy_level": 7
+     }
+    },
+    "tank": {
+     "cave_bear": {
+      "win": 0.25,
+      "timeouts": 0,
+      "ttk": 10.76,
+      "taken_pct": 0.8713253012048192,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 9.88,
+      "taken_pct": 0.2728915662650602,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 7.91919191919192,
+      "taken_pct": 0.5279299014238773,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 13.14,
+      "taken_pct": 0.07921686746987952,
+      "enemy_level": 7
+     }
+    },
+    "rogue": {
+     "cave_bear": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 4.8061224489795915,
+      "taken_pct": 0.49335548172757476,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.45,
+      "taken_pct": 0.3966279069767442,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.8,
+      "taken_pct": 0.4483720930232558,
+      "enemy_level": 7
+     }
+    },
+    "mage": {
+     "cave_bear": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 0.86,
+      "timeouts": 0,
+      "ttk": 6.965116279069767,
+      "taken_pct": 0.7322710307206431,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.98,
+      "taken_pct": 0.5533333333333333,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 9.17,
+      "taken_pct": 0.6454320987654321,
+      "enemy_level": 7
+     }
+    },
+    "cleric": {
+     "cave_bear": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.96,
+      "taken_pct": 0.5615625,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.28125,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.2159375,
+      "enemy_level": 7
+     }
+    },
+    "hunter": {
+     "cave_bear": {
+      "win": 0.03,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.8241758241758241,
+      "enemy_level": 7
+     },
+     "goblin_scrapper": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.41,
+      "taken_pct": 0.38582417582417583,
+      "enemy_level": 7
+     },
+     "plague_acolyte": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.27,
+      "taken_pct": 0.42329670329670327,
+      "enemy_level": 7
+     },
+     "undead": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.15,
+      "taken_pct": 0.3275824175824176,
+      "enemy_level": 7
+     }
+    }
+   }
+  },
+  "mork_skog": {
+   "3": {
+    "fighter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.11,
+      "taken_pct": 0.02973913043478261,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     }
+    },
+    "tank": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.2,
+      "taken_pct": 0.06947368421052631,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.61,
+      "taken_pct": 0.1308421052631579,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.37,
+      "taken_pct": 0.12221052631578948,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.31,
+      "taken_pct": 0.09368421052631579,
+      "enemy_level": 3
+     }
+    },
+    "rogue": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.2534736842105263,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.72,
+      "taken_pct": 0.16842105263157894,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.42,
+      "taken_pct": 0.1768421052631579,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.42,
+      "taken_pct": 0.4147368421052631,
+      "enemy_level": 3
+     }
+    },
+    "mage": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.15555555555555556,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.25555555555555554,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 3
+     }
+    },
+    "cleric": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.19047619047619047,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.14285714285714285,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.17142857142857143,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.3047619047619048,
+      "enemy_level": 3
+     }
+    },
+    "hunter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.14,
+      "taken_pct": 0.0182,
+      "enemy_level": 3
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.87,
+      "taken_pct": 0.0345,
+      "enemy_level": 3
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.15,
+      "taken_pct": 0.0038,
+      "enemy_level": 3
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.06,
+      "taken_pct": 0.0114,
+      "enemy_level": 3
+     }
+    }
+   },
+   "1": {
+    "fighter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.13,
+      "taken_pct": 0.14669565217391303,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.15,
+      "taken_pct": 0.032,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.52,
+      "taken_pct": 0.288,
+      "enemy_level": 5
+     }
+    },
+    "tank": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.22,
+      "taken_pct": 0.1694736842105263,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.67,
+      "taken_pct": 0.24557894736842106,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.96,
+      "taken_pct": 0.17794736842105263,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.01,
+      "taken_pct": 0.25894736842105265,
+      "enemy_level": 5
+     }
+    },
+    "rogue": {
+     "dire_wolf": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 3.292929292929293,
+      "taken_pct": 0.3311004784688995,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 6.262626262626263,
+      "taken_pct": 0.3044125465178097,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.85,
+      "taken_pct": 0.34389473684210525,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 0.56,
+      "timeouts": 0,
+      "ttk": 5.303571428571429,
+      "taken_pct": 0.6270676691729323,
+      "enemy_level": 5
+     }
+    },
+    "mage": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.2,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.82,
+      "taken_pct": 0.32222222222222224,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.26666666666666666,
+      "enemy_level": 5
+     }
+    },
+    "cleric": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.4380952380952381,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.12685714285714286,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.96,
+      "taken_pct": 0.30733333333333335,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.97,
+      "taken_pct": 0.8380952380952381,
+      "enemy_level": 5
+     }
+    },
+    "hunter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.0204,
+      "enemy_level": 5
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.33,
+      "taken_pct": 0.0638,
+      "enemy_level": 5
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.81,
+      "taken_pct": 0.0403,
+      "enemy_level": 5
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.97,
+      "taken_pct": 0.22310000000000002,
+      "enemy_level": 5
+     }
+    }
+   },
+   "0": {
+    "fighter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.62,
+      "taken_pct": 0.1634782608695652,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.57,
+      "taken_pct": 0.12078260869565217,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.15,
+      "taken_pct": 0.37130434782608696,
+      "enemy_level": 6
+     }
+    },
+    "tank": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.32,
+      "taken_pct": 0.19221052631578947,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.6,
+      "taken_pct": 0.3572105263157895,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.19,
+      "taken_pct": 0.2501052631578947,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.65,
+      "taken_pct": 0.3521052631578947,
+      "enemy_level": 6
+     }
+    },
+    "rogue": {
+     "dire_wolf": {
+      "win": 0.96,
+      "timeouts": 0,
+      "ttk": 3.5,
+      "taken_pct": 0.4,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 0.96,
+      "timeouts": 0,
+      "ttk": 6.84375,
+      "taken_pct": 0.43157894736842106,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 0.96,
+      "timeouts": 0,
+      "ttk": 5.5,
+      "taken_pct": 0.4021929824561404,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 0.48,
+      "timeouts": 0,
+      "ttk": 5.75,
+      "taken_pct": 0.6899122807017544,
+      "enemy_level": 6
+     }
+    },
+    "mage": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.95,
+      "taken_pct": 0.4116666666666667,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.34444444444444444,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.9,
+      "taken_pct": 0.5488888888888889,
+      "enemy_level": 6
+     }
+    },
+    "cleric": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.4666666666666667,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.97,
+      "taken_pct": 0.06971428571428571,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.96,
+      "taken_pct": 0.2837142857142857,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 6
+     }
+    },
+    "hunter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.021599999999999998,
+      "enemy_level": 6
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.81,
+      "taken_pct": 0.17049999999999998,
+      "enemy_level": 6
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.07,
+      "taken_pct": 0.0574,
+      "enemy_level": 6
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.14,
+      "taken_pct": 0.285,
+      "enemy_level": 6
+     }
+    }
+   },
+   "-2": {
+    "fighter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.19,
+      "taken_pct": 0.2106086956521739,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.55,
+      "taken_pct": 0.1774782608695652,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.33,
+      "taken_pct": 0.2737391304347826,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.79,
+      "taken_pct": 0.44452173913043475,
+      "enemy_level": 8
+     }
+    },
+    "tank": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.98,
+      "taken_pct": 0.29326315789473684,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 8.418367346938776,
+      "taken_pct": 0.6080558539205155,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.39,
+      "taken_pct": 0.38910526315789473,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 7.27,
+      "taken_pct": 0.6182105263157894,
+      "enemy_level": 8
+     }
+    },
+    "rogue": {
+     "dire_wolf": {
+      "win": 0.92,
+      "timeouts": 0,
+      "ttk": 4.739130434782608,
+      "taken_pct": 0.6167048054919909,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 0.73,
+      "timeouts": 0,
+      "ttk": 7.7534246575342465,
+      "taken_pct": 0.7059841384282625,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 0.76,
+      "timeouts": 0,
+      "ttk": 6.105263157894737,
+      "taken_pct": 0.48518005540166204,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 0.18,
+      "timeouts": 0,
+      "ttk": 6.611111111111111,
+      "taken_pct": 0.9298245614035088,
+      "enemy_level": 8
+     }
+    },
+    "mage": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.4888888888888889,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.82,
+      "taken_pct": 0.7280000000000001,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.98,
+      "taken_pct": 0.4246666666666667,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 0.13,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.6666666666666666,
+      "enemy_level": 8
+     }
+    },
+    "cleric": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.97,
+      "taken_pct": 0.6055238095238096,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.99,
+      "taken_pct": 0.0380952380952381,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.3700952380952381,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 8
+     }
+    },
+    "hunter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.88,
+      "taken_pct": 0.1848,
+      "enemy_level": 8
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.66,
+      "taken_pct": 0.387,
+      "enemy_level": 8
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.25,
+      "taken_pct": 0.0792,
+      "enemy_level": 8
+     },
+     "treant": {
+      "win": 0.96,
+      "timeouts": 0,
+      "ttk": 2.9895833333333335,
+      "taken_pct": 0.5769791666666666,
+      "enemy_level": 8
+     }
+    }
+   },
+   "-4": {
+    "fighter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.72,
+      "taken_pct": 0.3297391304347826,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.89,
+      "taken_pct": 0.3076521739130435,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.91,
+      "taken_pct": 0.23600000000000002,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.95,
+      "timeouts": 0,
+      "ttk": 4.189473684210526,
+      "taken_pct": 0.5719908466819222,
+      "enemy_level": 10
+     }
+    },
+    "tank": {
+     "dire_wolf": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 5.070707070707071,
+      "taken_pct": 0.4803827751196172,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 0.73,
+      "timeouts": 0,
+      "ttk": 9.547945205479452,
+      "taken_pct": 0.7839942321557318,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 7.363636363636363,
+      "taken_pct": 0.554066985645933,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.69,
+      "timeouts": 0,
+      "ttk": 8.289855072463768,
+      "taken_pct": 0.8736842105263158,
+      "enemy_level": 10
+     }
+    },
+    "rogue": {
+     "dire_wolf": {
+      "win": 0.64,
+      "timeouts": 0,
+      "ttk": 5.34375,
+      "taken_pct": 0.6884868421052631,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 0.23,
+      "timeouts": 0,
+      "ttk": 8.521739130434783,
+      "taken_pct": 0.7308924485125858,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 0.57,
+      "timeouts": 0,
+      "ttk": 6.701754385964913,
+      "taken_pct": 0.6297322253000923,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 10
+     }
+    },
+    "mage": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.86,
+      "taken_pct": 0.8262222222222222,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 0.03,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.8666666666666667,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.93,
+      "taken_pct": 0.6612222222222222,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 10
+     }
+    },
+    "cleric": {
+     "dire_wolf": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.34123809523809523,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 0.29,
+      "timeouts": 0,
+      "ttk": 7.827586206896552,
+      "taken_pct": 0.7990147783251231,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 10
+     }
+    },
+    "hunter": {
+     "dire_wolf": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.18,
+      "taken_pct": 0.295,
+      "enemy_level": 10
+     },
+     "goblin_shaman": {
+      "win": 0.94,
+      "timeouts": 0,
+      "ttk": 4.202127659574468,
+      "taken_pct": 0.4148936170212766,
+      "enemy_level": 10
+     },
+     "razortusk_boar": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 3.0303030303030303,
+      "taken_pct": 0.37535353535353533,
+      "enemy_level": 10
+     },
+     "treant": {
+      "win": 0.75,
+      "timeouts": 0,
+      "ttk": 3.3733333333333335,
+      "taken_pct": 0.7832,
+      "enemy_level": 10
+     }
+    }
+   }
+  },
+  "cursed_mire": {
+   "3": {
+    "fighter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.07,
+      "taken_pct": 0.0,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.29,
+      "taken_pct": 0.31084745762711863,
+      "enemy_level": 4
+     }
+    },
+    "tank": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.16,
+      "taken_pct": 0.031133004926108373,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.24,
+      "taken_pct": 0.09320197044334975,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.52,
+      "taken_pct": 0.008029556650246305,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.64,
+      "taken_pct": 0.29586206896551726,
+      "enemy_level": 4
+     }
+    },
+    "rogue": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.49,
+      "taken_pct": 0.2233673469387755,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.26,
+      "taken_pct": 0.3538775510204082,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.07,
+      "taken_pct": 0.16428571428571428,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 4.642857142857143,
+      "taken_pct": 0.37546855476884633,
+      "enemy_level": 4
+     }
+    },
+    "mage": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.95,
+      "taken_pct": 0.2306451612903226,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.99,
+      "taken_pct": 0.36376344086021506,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.15053763440860216,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.3655913978494624,
+      "enemy_level": 4
+     }
+    },
+    "cleric": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.93,
+      "taken_pct": 0.1812962962962963,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.3174074074074074,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.037037037037037035,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.4074074074074074,
+      "enemy_level": 4
+     }
+    },
+    "hunter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.14,
+      "taken_pct": 0.013592233009708738,
+      "enemy_level": 4
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.018640776699029124,
+      "enemy_level": 4
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.15,
+      "taken_pct": 0.0,
+      "enemy_level": 4
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.06,
+      "taken_pct": 0.0,
+      "enemy_level": 4
+     }
+    }
+   },
+   "1": {
+    "fighter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.98,
+      "taken_pct": 0.09372881355932204,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.18,
+      "taken_pct": 0.18347457627118643,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.34,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.32,
+      "taken_pct": 0.4730508474576271,
+      "enemy_level": 6
+     }
+    },
+    "tank": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.42,
+      "taken_pct": 0.05054187192118227,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.18,
+      "taken_pct": 0.1870935960591133,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.93,
+      "taken_pct": 0.055960591133004924,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 5.785714285714286,
+      "taken_pct": 0.5169397808384438,
+      "enemy_level": 6
+     }
+    },
+    "rogue": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.43,
+      "taken_pct": 0.30612244897959184,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 0.91,
+      "timeouts": 0,
+      "ttk": 5.230769230769231,
+      "taken_pct": 0.5830903790087464,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.61,
+      "taken_pct": 0.24806122448979592,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 0.8,
+      "timeouts": 0,
+      "ttk": 6.0625,
+      "taken_pct": 0.5410714285714285,
+      "enemy_level": 6
+     }
+    },
+    "mage": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.99,
+      "taken_pct": 0.3858064516129032,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 0.28,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.8602150537634409,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.89,
+      "taken_pct": 0.3655913978494624,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.98,
+      "taken_pct": 0.6406451612903226,
+      "enemy_level": 6
+     }
+    },
+    "cleric": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.92,
+      "taken_pct": 0.2581481481481481,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.6296296296296297,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.99,
+      "taken_pct": 0.18518518518518517,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.94,
+      "taken_pct": 0.5242592592592593,
+      "enemy_level": 6
+     }
+    },
+    "hunter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.012815533980582524,
+      "enemy_level": 6
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.8,
+      "taken_pct": 0.14757281553398058,
+      "enemy_level": 6
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.12,
+      "taken_pct": 0.01087378640776699,
+      "enemy_level": 6
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.21,
+      "taken_pct": 0.06873786407766991,
+      "enemy_level": 6
+     }
+    }
+   },
+   "0": {
+    "fighter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.03,
+      "taken_pct": 0.10754237288135593,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.01,
+      "taken_pct": 0.24033898305084744,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.81,
+      "taken_pct": 0.004576271186440679,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.63,
+      "taken_pct": 0.5046610169491526,
+      "enemy_level": 7
+     }
+    },
+    "tank": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.48,
+      "taken_pct": 0.06857142857142857,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.97,
+      "taken_pct": 0.25438423645320196,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.9,
+      "taken_pct": 0.07630541871921183,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 6.6020408163265305,
+      "taken_pct": 0.6636171710063336,
+      "enemy_level": 7
+     }
+    },
+    "rogue": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.98,
+      "taken_pct": 0.3833673469387755,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 0.82,
+      "timeouts": 0,
+      "ttk": 5.573170731707317,
+      "taken_pct": 0.632404181184669,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 7.36,
+      "taken_pct": 0.32693877551020406,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 0.63,
+      "timeouts": 0,
+      "ttk": 6.571428571428571,
+      "taken_pct": 0.6213151927437641,
+      "enemy_level": 7
+     }
+    },
+    "mage": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.87,
+      "taken_pct": 0.5409677419354838,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 7.97,
+      "taken_pct": 0.5748387096774193,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.85,
+      "taken_pct": 0.8892473118279569,
+      "enemy_level": 7
+     }
+    },
+    "cleric": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.3055555555555556,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.7746296296296297,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 10.06,
+      "taken_pct": 0.14851851851851852,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.89,
+      "taken_pct": 0.49796296296296294,
+      "enemy_level": 7
+     }
+    },
+    "hunter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.013980582524271845,
+      "enemy_level": 7
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.01,
+      "taken_pct": 0.19611650485436893,
+      "enemy_level": 7
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.22,
+      "taken_pct": 0.013203883495145632,
+      "enemy_level": 7
+     },
+     "witchlight": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 2.1515151515151514,
+      "taken_pct": 0.05982151613219574,
+      "enemy_level": 7
+     }
+    }
+   },
+   "-2": {
+    "fighter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.7,
+      "taken_pct": 0.18127118644067797,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.52,
+      "taken_pct": 0.2861864406779661,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.99,
+      "taken_pct": 0.12635593220338984,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.97,
+      "timeouts": 0,
+      "ttk": 4.154639175257732,
+      "taken_pct": 0.6141883627468111,
+      "enemy_level": 9
+     }
+    },
+    "tank": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.77,
+      "taken_pct": 0.16448275862068967,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.3,
+      "taken_pct": 0.42610837438423643,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.79,
+      "taken_pct": 0.1735960591133005,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.18,
+      "timeouts": 0,
+      "ttk": 5.944444444444445,
+      "taken_pct": 0.7353585112205802,
+      "enemy_level": 9
+     }
+    },
+    "rogue": {
+     "bog_leech": {
+      "win": 0.95,
+      "timeouts": 0,
+      "ttk": 5.6,
+      "taken_pct": 0.5172932330827067,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 0.56,
+      "timeouts": 0,
+      "ttk": 6.303571428571429,
+      "taken_pct": 0.7653061224489796,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 0.95,
+      "timeouts": 0,
+      "ttk": 8.715789473684211,
+      "taken_pct": 0.5616541353383459,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.13,
+      "timeouts": 0,
+      "ttk": 6.846153846153846,
+      "taken_pct": 0.652276295133438,
+      "enemy_level": 9
+     }
+    },
+    "mage": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.98,
+      "taken_pct": 0.8567741935483871,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 10.9,
+      "taken_pct": 0.9032258064516129,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 9
+     }
+    },
+    "cleric": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 8.73,
+      "taken_pct": 0.6518518518518518,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 13.2,
+      "taken_pct": 0.5410185185185186,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 9
+     }
+    },
+    "hunter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.82,
+      "taken_pct": 0.11941747572815534,
+      "enemy_level": 9
+     },
+     "mire_lurker": {
+      "win": 0.97,
+      "timeouts": 0,
+      "ttk": 2.2061855670103094,
+      "taken_pct": 0.2693424081673506,
+      "enemy_level": 9
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.04,
+      "taken_pct": 0.05048543689320388,
+      "enemy_level": 9
+     },
+     "witchlight": {
+      "win": 0.95,
+      "timeouts": 0,
+      "ttk": 2.968421052631579,
+      "taken_pct": 0.4337250894225856,
+      "enemy_level": 9
+     }
+    }
+   },
+   "-4": {
+    "fighter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.22,
+      "taken_pct": 0.22771186440677968,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.72,
+      "taken_pct": 0.5675423728813559,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.15,
+      "taken_pct": 0.2183050847457627,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.83,
+      "timeouts": 0,
+      "ttk": 4.602409638554217,
+      "taken_pct": 0.698488870737186,
+      "enemy_level": 11
+     }
+    },
+    "tank": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.36,
+      "taken_pct": 0.21123152709359605,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 7.224489795918367,
+      "taken_pct": 0.6011862873228109,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 10.67,
+      "taken_pct": 0.2806896551724138,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.02,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.8275862068965517,
+      "enemy_level": 11
+     }
+    },
+    "rogue": {
+     "bog_leech": {
+      "win": 0.86,
+      "timeouts": 0,
+      "ttk": 6.011627906976744,
+      "taken_pct": 0.580920740389179,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 0.17,
+      "timeouts": 0,
+      "ttk": 6.470588235294118,
+      "taken_pct": 0.7617046818727491,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 0.87,
+      "timeouts": 0,
+      "ttk": 9.988505747126437,
+      "taken_pct": 0.7391508327468919,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.03,
+      "timeouts": 0,
+      "ttk": 8,
+      "taken_pct": 0.8571428571428571,
+      "enemy_level": 11
+     }
+    },
+    "mage": {
+     "bog_leech": {
+      "win": 0.02,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.9139784946236559,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     }
+    },
+    "cleric": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 9,
+      "taken_pct": 0.7407407407407407,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 0.42,
+      "timeouts": 0,
+      "ttk": 15.404761904761905,
+      "taken_pct": 0.7815255731922399,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     }
+    },
+    "hunter": {
+     "bog_leech": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.02,
+      "taken_pct": 0.15844660194174756,
+      "enemy_level": 11
+     },
+     "mire_lurker": {
+      "win": 0.91,
+      "timeouts": 0,
+      "ttk": 2.6263736263736264,
+      "taken_pct": 0.4105409153952843,
+      "enemy_level": 11
+     },
+     "tar_beast": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.88,
+      "taken_pct": 0.15805825242718446,
+      "enemy_level": 11
+     },
+     "witchlight": {
+      "win": 0.78,
+      "timeouts": 0,
+      "ttk": 3.3461538461538463,
+      "taken_pct": 0.6314413741598207,
+      "enemy_level": 11
+     }
+    }
+   }
+  },
+  "grave_heath": {
+   "3": {
+    "fighter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.05,
+      "taken_pct": 0.23185483870967744,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     }
+    },
+    "tank": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.46,
+      "taken_pct": 0.2527853881278539,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.53,
+      "taken_pct": 0.2417808219178082,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.27,
+      "taken_pct": 0.15296803652968036,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.91,
+      "taken_pct": 0.40821917808219177,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.5,
+      "taken_pct": 0.06027397260273972,
+      "enemy_level": 6
+     }
+    },
+    "rogue": {
+     "ghoul": {
+      "win": 0.91,
+      "timeouts": 0,
+      "ttk": 4.516483516483516,
+      "taken_pct": 0.591715976331361,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 4.744897959183674,
+      "taken_pct": 0.4076726844583987,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.41,
+      "taken_pct": 0.22634615384615386,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 0.73,
+      "timeouts": 0,
+      "ttk": 6.191780821917808,
+      "taken_pct": 0.5899631190727082,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.53,
+      "taken_pct": 0.11365384615384616,
+      "enemy_level": 6
+     }
+    },
+    "mage": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.87,
+      "taken_pct": 0.47222222222222227,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2,
+      "taken_pct": 0.30303030303030304,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.94,
+      "taken_pct": 0.0,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.95,
+      "taken_pct": 0.048484848484848485,
+      "enemy_level": 6
+     }
+    },
+    "cleric": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.3684210526315789,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.32456140350877194,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.23684210526315788,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.32456140350877194,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.025964912280701753,
+      "enemy_level": 6
+     }
+    },
+    "hunter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.14,
+      "taken_pct": 0.030825688073394496,
+      "enemy_level": 6
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.12,
+      "taken_pct": 0.01651376146788991,
+      "enemy_level": 6
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.14,
+      "taken_pct": 0.006055045871559634,
+      "enemy_level": 6
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.15,
+      "taken_pct": 0.07706422018348624,
+      "enemy_level": 6
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.15,
+      "taken_pct": 0.008256880733944955,
+      "enemy_level": 6
+     }
+    }
+   },
+   "1": {
+    "fighter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.04,
+      "taken_pct": 0.227258064516129,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.17,
+      "taken_pct": 0.1457258064516129,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.03,
+      "taken_pct": 0.028790322580645164,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.11,
+      "taken_pct": 0.3531451612903226,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.11,
+      "taken_pct": 0.006209677419354838,
+      "enemy_level": 8
+     }
+    },
+    "tank": {
+     "ghoul": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 4.787878787878788,
+      "taken_pct": 0.43724920437249204,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 5.363636363636363,
+      "taken_pct": 0.44084682440846823,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 3.8585858585858586,
+      "taken_pct": 0.3325492366588257,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 0.81,
+      "timeouts": 0,
+      "ttk": 8.271604938271604,
+      "taken_pct": 0.7582163594340154,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.14,
+      "taken_pct": 0.08694063926940639,
+      "enemy_level": 8
+     }
+    },
+    "rogue": {
+     "ghoul": {
+      "win": 0.64,
+      "timeouts": 0,
+      "ttk": 5.234375,
+      "taken_pct": 0.6622596153846154,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 0.88,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.5939685314685315,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 0.85,
+      "timeouts": 0,
+      "ttk": 5.105882352941176,
+      "taken_pct": 0.5042986425339366,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 0.07,
+      "timeouts": 0,
+      "ttk": 7.428571428571429,
+      "taken_pct": 0.7980769230769231,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.11,
+      "taken_pct": 0.14201923076923076,
+      "enemy_level": 8
+     }
+    },
+    "mage": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.87,
+      "taken_pct": 0.8407070707070707,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.92,
+      "taken_pct": 0.5309090909090909,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.4444444444444444,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.84,
+      "taken_pct": 0.45818181818181813,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.05515151515151515,
+      "enemy_level": 8
+     }
+    },
+    "cleric": {
+     "ghoul": {
+      "win": 0.1,
+      "timeouts": 0,
+      "ttk": 3.2,
+      "taken_pct": 0.5122807017543859,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.40350877192982454,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 0.74,
+      "timeouts": 0,
+      "ttk": 5.635135135135135,
+      "taken_pct": 0.6145092460881935,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.9,
+      "taken_pct": 0.7024561403508771,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.76,
+      "taken_pct": 0.003157894736842105,
+      "enemy_level": 8
+     }
+    },
+    "hunter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.7,
+      "taken_pct": 0.1798165137614679,
+      "enemy_level": 8
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.86,
+      "taken_pct": 0.1420183486238532,
+      "enemy_level": 8
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.15,
+      "taken_pct": 0.008348623853211008,
+      "enemy_level": 8
+     },
+     "hollow_worg": {
+      "win": 0.95,
+      "timeouts": 0,
+      "ttk": 2.9473684210526314,
+      "taken_pct": 0.42926122646064707,
+      "enemy_level": 8
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.19,
+      "taken_pct": 0.011559633027522937,
+      "enemy_level": 8
+     }
+    }
+   },
+   "0": {
+    "fighter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.43,
+      "taken_pct": 0.3134677419354839,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.87,
+      "taken_pct": 0.2328225806451613,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.37,
+      "taken_pct": 0.10677419354838709,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 4.595959595959596,
+      "taken_pct": 0.47833170413815573,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.1,
+      "taken_pct": 0.005080645161290322,
+      "enemy_level": 9
+     }
+    },
+    "tank": {
+     "ghoul": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 5.05050505050505,
+      "taken_pct": 0.5073566717402334,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 0.91,
+      "timeouts": 0,
+      "ttk": 5.912087912087912,
+      "taken_pct": 0.539916704300266,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 0.97,
+      "timeouts": 0,
+      "ttk": 5.041237113402062,
+      "taken_pct": 0.47041378336393164,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 0.44,
+      "timeouts": 0,
+      "ttk": 8.613636363636363,
+      "taken_pct": 0.8132004981320049,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.46,
+      "taken_pct": 0.09940639269406393,
+      "enemy_level": 9
+     }
+    },
+    "rogue": {
+     "ghoul": {
+      "win": 0.57,
+      "timeouts": 0,
+      "ttk": 5.421052631578948,
+      "taken_pct": 0.7530364372469636,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 0.78,
+      "timeouts": 0,
+      "ttk": 6.410256410256411,
+      "taken_pct": 0.6903353057199211,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 0.75,
+      "timeouts": 0,
+      "ttk": 5.92,
+      "taken_pct": 0.5905128205128205,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.43,
+      "taken_pct": 0.15076923076923077,
+      "enemy_level": 9
+     }
+    },
+    "mage": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.99,
+      "taken_pct": 0.9362626262626264,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.6060606060606061,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.98,
+      "taken_pct": 0.7795959595959596,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.5757575757575758,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.8,
+      "taken_pct": 0.10606060606060605,
+      "enemy_level": 9
+     }
+    },
+    "cleric": {
+     "ghoul": {
+      "win": 0.06,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.47368421052631576,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.7,
+      "taken_pct": 0.7403508771929824,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 0.67,
+      "timeouts": 0,
+      "ttk": 5.791044776119403,
+      "taken_pct": 0.7141921969101859,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.7456140350877193,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.76,
+      "taken_pct": 0.003157894736842105,
+      "enemy_level": 9
+     }
+    },
+    "hunter": {
+     "ghoul": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 1.898989898989899,
+      "taken_pct": 0.24742841256602727,
+      "enemy_level": 9
+     },
+     "shade": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 2.080808080808081,
+      "taken_pct": 0.19831340932258365,
+      "enemy_level": 9
+     },
+     "skeleton_warrior": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 1.8484848484848484,
+      "taken_pct": 0.045130201093503845,
+      "enemy_level": 9
+     },
+     "hollow_worg": {
+      "win": 0.86,
+      "timeouts": 0,
+      "ttk": 3.244186046511628,
+      "taken_pct": 0.5758480904629827,
+      "enemy_level": 9
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.87,
+      "taken_pct": 0.014128440366972478,
+      "enemy_level": 9
+     }
+    }
+   },
+   "-2": {
+    "fighter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.16,
+      "taken_pct": 0.4906451612903226,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.54,
+      "taken_pct": 0.21798387096774194,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.58,
+      "taken_pct": 0.2904838709677419,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.73,
+      "timeouts": 0,
+      "ttk": 5.36986301369863,
+      "taken_pct": 0.7348652231551038,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.34,
+      "taken_pct": 0.015483870967741935,
+      "enemy_level": 11
+     }
+    },
+    "tank": {
+     "ghoul": {
+      "win": 0.91,
+      "timeouts": 0,
+      "ttk": 5.8901098901098905,
+      "taken_pct": 0.7261779316573836,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 0.77,
+      "timeouts": 0,
+      "ttk": 7.181818181818182,
+      "taken_pct": 0.7214611872146118,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 0.81,
+      "timeouts": 0,
+      "ttk": 6.506172839506172,
+      "taken_pct": 0.650825863915666,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.03,
+      "timeouts": 0,
+      "ttk": 8.666666666666666,
+      "taken_pct": 0.9954337899543378,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.12,
+      "taken_pct": 0.13442922374429223,
+      "enemy_level": 11
+     }
+    },
+    "rogue": {
+     "ghoul": {
+      "win": 0.12,
+      "timeouts": 0,
+      "ttk": 5.833333333333333,
+      "taken_pct": 0.6634615384615384,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 0.37,
+      "timeouts": 0,
+      "ttk": 6.8108108108108105,
+      "taken_pct": 0.6975051975051975,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 0.32,
+      "timeouts": 0,
+      "ttk": 7.0625,
+      "taken_pct": 0.4894831730769231,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.91,
+      "taken_pct": 0.19384615384615386,
+      "enemy_level": 11
+     }
+    },
+    "mage": {
+     "ghoul": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.8888888888888888,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 0.09,
+      "timeouts": 0,
+      "ttk": 5.888888888888889,
+      "taken_pct": 0.7676767676767676,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.01,
+      "timeouts": 0,
+      "ttk": 3,
+      "taken_pct": 0.6666666666666666,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.99,
+      "taken_pct": 0.13333333333333333,
+      "enemy_level": 11
+     }
+    },
+    "cleric": {
+     "ghoul": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.85,
+      "taken_pct": 0.8587719298245614,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 0.08,
+      "timeouts": 0,
+      "ttk": 6.75,
+      "taken_pct": 0.7149122807017544,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.91,
+      "taken_pct": 0.0014035087719298245,
+      "enemy_level": 11
+     }
+    },
+    "hunter": {
+     "ghoul": {
+      "win": 0.98,
+      "timeouts": 0,
+      "ttk": 2.163265306122449,
+      "taken_pct": 0.3735255570117956,
+      "enemy_level": 11
+     },
+     "shade": {
+      "win": 0.96,
+      "timeouts": 0,
+      "ttk": 2.1979166666666665,
+      "taken_pct": 0.24178134556574926,
+      "enemy_level": 11
+     },
+     "skeleton_warrior": {
+      "win": 0.97,
+      "timeouts": 0,
+      "ttk": 2.1649484536082473,
+      "taken_pct": 0.08389293483401117,
+      "enemy_level": 11
+     },
+     "hollow_worg": {
+      "win": 0.27,
+      "timeouts": 0,
+      "ttk": 3.7777777777777777,
+      "taken_pct": 0.8389398572884811,
+      "enemy_level": 11
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 1.91,
+      "taken_pct": 0.01688073394495413,
+      "enemy_level": 11
+     }
+    }
+   },
+   "-4": {
+    "fighter": {
+     "ghoul": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 3.54,
+      "taken_pct": 0.5195161290322581,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4,
+      "taken_pct": 0.24153225806451614,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.99,
+      "timeouts": 0,
+      "ttk": 4.08080808080808,
+      "taken_pct": 0.3003421309872923,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.25,
+      "timeouts": 0,
+      "ttk": 5.96,
+      "taken_pct": 0.8864516129032258,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.93,
+      "taken_pct": 0.03774193548387097,
+      "enemy_level": 13
+     }
+    },
+    "tank": {
+     "ghoul": {
+      "win": 0.55,
+      "timeouts": 0,
+      "ttk": 5.781818181818182,
+      "taken_pct": 0.8184308841843088,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 0.27,
+      "timeouts": 0,
+      "ttk": 7.333333333333333,
+      "taken_pct": 0.837138508371385,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.2,
+      "timeouts": 0,
+      "ttk": 7.95,
+      "taken_pct": 0.8203196347031964,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 5.61,
+      "taken_pct": 0.16150684931506848,
+      "enemy_level": 13
+     }
+    },
+    "rogue": {
+     "ghoul": {
+      "win": 0.06,
+      "timeouts": 0,
+      "ttk": 6.166666666666667,
+      "taken_pct": 0.7692307692307693,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 0.13,
+      "timeouts": 0,
+      "ttk": 7.230769230769231,
+      "taken_pct": 0.8505917159763313,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.11,
+      "timeouts": 0,
+      "ttk": 8,
+      "taken_pct": 0.7465034965034965,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6.37,
+      "taken_pct": 0.23711538461538462,
+      "enemy_level": 13
+     }
+    },
+    "mage": {
+     "ghoul": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.03,
+      "timeouts": 0,
+      "ttk": 7,
+      "taken_pct": 0.8686868686868687,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 4.7,
+      "taken_pct": 0.20909090909090908,
+      "enemy_level": 13
+     }
+    },
+    "cleric": {
+     "ghoul": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.01,
+      "timeouts": 0,
+      "ttk": 9,
+      "taken_pct": 0.9210526315789473,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 6,
+      "taken_pct": 0.024298245614035086,
+      "enemy_level": 13
+     }
+    },
+    "hunter": {
+     "ghoul": {
+      "win": 0.87,
+      "timeouts": 0,
+      "ttk": 2.4367816091954024,
+      "taken_pct": 0.5140778234735843,
+      "enemy_level": 13
+     },
+     "shade": {
+      "win": 0.89,
+      "timeouts": 0,
+      "ttk": 2.808988764044944,
+      "taken_pct": 0.41490567982682197,
+      "enemy_level": 13
+     },
+     "skeleton_warrior": {
+      "win": 0.79,
+      "timeouts": 0,
+      "ttk": 2.8860759493670884,
+      "taken_pct": 0.5018000232261062,
+      "enemy_level": 13
+     },
+     "hollow_worg": {
+      "win": 0.0,
+      "timeouts": 0,
+      "ttk": NaN,
+      "taken_pct": NaN,
+      "enemy_level": 13
+     },
+     "undead_priest": {
+      "win": 1.0,
+      "timeouts": 0,
+      "ttk": 2.14,
+      "taken_pct": 0.023119266055045874,
+      "enemy_level": 13
+     }
+    }
+   }
+  }
+ }
+}

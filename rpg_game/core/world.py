@@ -102,6 +102,10 @@ def scale_enemy_to_level(enemy: Enemy, base_level: int, target_level: int) -> No
     enemy.max_hp = max(1, round_half_up(enemy.max_hp * (1 + HP_GROWTH_PER_LEVEL * delta)))
     enemy.hp = enemy.max_hp
     enemy.damage = max(1, round_half_up(enemy.damage * (1 + DAMAGE_GROWTH_PER_LEVEL * delta)))
+    # Lever d: the kit's FLAT effect magnitudes (DoT/debuff/regen) follow the
+    # same growth as damage, so a high-rolled caster's kit keeps its bite
+    # (B94's tick band holds across the level band instead of eroding).
+    enemy.flat_scale = max(0.25, 1 + DAMAGE_GROWTH_PER_LEVEL * delta)
 
 
 def create_encounter(player: Player, content: GameContent, rng: random.Random,

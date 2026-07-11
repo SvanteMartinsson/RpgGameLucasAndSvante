@@ -1025,6 +1025,11 @@ def _effect_apply_status(actor, target, effect_target, effect, result, *, weapon
     magnitude = effect.magnitude
     if effect.scale == "spell":   # wisdom-scaled player DoT (e.g. plague_bolt) instead of flat
         magnitude = round_half_up(spell_source_value(actor, weapon) * effect.multiplier)
+    elif not isinstance(actor, Player) and (status_type in DAMAGE_TYPES
+                                            or status_type in {"debuff", "regen"}):
+        # Lever d: an enemy's FLAT DoT/debuff/regen magnitudes scale with its
+        # rolled level (world.scale_enemy_to_level), like its damage does.
+        magnitude = round_half_up(magnitude * getattr(actor, "flat_scale", 1.0))
     magnitude = round_half_up(magnitude * rank_mult)   # B36 talent rank magnitude
     duration = effect.duration + rank_duration_bonus   # B36: +1 round at rank 3
     # B86: power-scaled statuses (Counter/Riposte reflects) ignore magnitude and
