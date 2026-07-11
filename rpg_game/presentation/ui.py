@@ -183,6 +183,17 @@ class FocusList:
         self.index = index
 
 
+@dataclass
+class FocusSlider:
+    """B99 S2: a focusable slider row (music volume). Registered into the
+    FocusList like a button; when focused, left/right call ``adjust(±1)``
+    instead of jumping sections. ``rect`` lets the screen draw the focus ring.
+    Enter is a no-op (``enabled``/``on_click`` absent by design)."""
+
+    rect: object
+    adjust: object   # callable (direction: int) -> None
+
+
 def wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
     """B57: THE text wrap — greedy word-wrap to max_width px, character-breaking
     an over-long word. The single implementation behind chatlog.wrap_lines and

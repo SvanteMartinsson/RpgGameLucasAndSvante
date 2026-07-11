@@ -483,6 +483,11 @@ class OverlaysMixin:
         self.screen.blit(label, (panel.x + 20, y + 8))
         bar = pygame.Rect(panel.x + 260, y + 10, min(420, panel.width - 320), 20)
         self._music_slider_rect = bar
+        # B99 S2: the slider row is keyboard-focusable; left/right adjust ±5.
+        slider = ui.FocusSlider(rect=bar, adjust=self.adjust_music_volume)
+        self.focus.add("main", slider)
+        if self.focus.focused() is slider:
+            pygame.draw.rect(self.screen, ACCENT, bar.inflate(8, 8), width=2, border_radius=12)
         pygame.draw.rect(self.screen, (30, 34, 46), bar, border_radius=10)
         fill_w = int(bar.width * volume)
         if fill_w > 0:

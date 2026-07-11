@@ -163,6 +163,14 @@ WATER_BLOCK_THRESHOLD = 0.6
 # B55: the RULE lives in core/encounters.py (engine logic, simulable); the shell
 # builds the tile geometry (EncounterMap) once and asks per step. Aliased here
 # so there is ONE source of truth for the numbers.
+# B99 S2: menu modes where keyboard focus drives the buttons ("walk" and the
+# bestiary overlay excluded — walking has no buttons, the bestiary keeps B66).
+FOCUS_MODES = frozenset({
+    "building", "store", "tome_shop", "apothecary", "fast_travel",
+    "upgrade_station", "tournaments", "tournament_confirm",
+    "tournament_intermission", "death", "victory", "travel_event",
+})
+
 ENCOUNTER_SAFE_RADIUS = encounters.SAFE_RADIUS
 ENCOUNTER_RAMP_TILES = encounters.RAMP_TILES
 ENCOUNTER_PATH_FACTOR = encounters.PATH_FACTOR
@@ -597,6 +605,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         # B104: post-battle grace — 1s of accumulated movement time before the
         # shared encounter/event slot can fire again. Rule lives in core.
         self.encounter_cooldown = encounters.EncounterCooldown()
+        self._focus_surface = ("", "walk")   # B99 S2: reset focus on surface change
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
         self._last_region = self.zone.wild_region_at(self._last_tile)
@@ -786,6 +795,18 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         volume = round(100 * min(max(x - bar.x, 0), bar.width) / bar.width) / 100.0
         self._settings["sound_music"] = volume
         audio.apply_music_volume(self._settings.get("sound_master", 1.0), volume)
+
+    def adjust_music_volume(self, direction: int) -> None:
+        """B99 S2: keyboard slider adjustment — ±5 points per left/right press,
+        applied live and persisted (there is no 'release' on a keyboard)."""
+        try:
+            current = float(self._settings.get("sound_music", 1.0))
+        except (TypeError, ValueError):
+            current = 1.0
+        volume = min(1.0, max(0.0, round(current * 100 + 5 * direction) / 100.0))
+        self._settings["sound_music"] = volume
+        audio.apply_music_volume(self._settings.get("sound_master", 1.0), volume)
+        user_settings.save(self._settings)
 
     def toggle_fullscreen(self) -> None:
         self.fullscreen = not self.fullscreen
@@ -1335,7 +1356,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             if event.key in (pygame.K_UP, pygame.K_LEFT):
                 self.move_bestiary_selection(-1)
                 return
-        if self.overlay in ("inventory", "skills_talents"):   # B99 S1 focus nav
+        # B99 S2: keyboard focus on every menu surface. The bestiary keeps its
+        # own arrow model (B66, handled above); the world map has no buttons so
+        # the keys are a no-op there.
+        if (self.overlay and self.overlay != "bestiary") or self.mode in FOCUS_MODES:
             if self._handle_focus_key(event):
                 return
         if event.key == pygame.K_ESCAPE:
@@ -1467,6 +1491,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._tick_player_anim()   # B83: one animation tick per rendered frame
         self.hover.begin()   # menus re-register their hoverable rects each frame
         self.focus.begin()   # B99: focusable buttons re-register each frame too
+        # B99 S2: a new surface starts focused at its first row (mode-based
+        # screens have no single entry point, so the reset is detected here).
+        if (self.overlay, self.mode) != self._focus_surface:
+            self._focus_surface = (self.overlay, self.mode)
+            self.focus.reset()
         # Fluid overworld: the canvas tracks the live (logical) display size, so
         # the world fills the window instead of sitting as a centered island. The
         # camera (camera_offset) then shows more map; present() is the identity
@@ -1748,9 +1777,18 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self.focus.move(-1)
             return True
         if event.key == pygame.K_RIGHT:
+            # B99 S2: a focused slider row consumes left/right as adjustment.
+            focused = self.focus.focused()
+            if isinstance(focused, ui.FocusSlider):
+                focused.adjust(1)
+                return True
             self.focus.move_section(1)
             return True
         if event.key == pygame.K_LEFT:
+            focused = self.focus.focused()
+            if isinstance(focused, ui.FocusSlider):
+                focused.adjust(-1)
+                return True
             self.focus.move_section(-1)
             return True
         if event.key == pygame.K_TAB:
@@ -1758,7 +1796,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             return True
         if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             button = self.focus.focused()
-            if button is not None and button.enabled and callable(button.on_click):
+            if (button is not None and getattr(button, "enabled", False)
+                    and callable(getattr(button, "on_click", None))):
                 audio.play("menu_click")
                 button.on_click()
             return True
@@ -1769,8 +1808,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         button = Button(rect, label, cb, enabled, restricted,
                         value=value, label_color=label_color, tooltip=tooltip)
         self.buttons.append(button)
-        if focus_section:   # B99: opt this button into keyboard focus
-            self.focus.add(focus_section, button)
+        # B99 S2: every button is keyboard-focusable. Surfaces that want
+        # multiple sections (inventory/skills) pass explicit section names;
+        # everything else lands in one section in draw order.
+        self.focus.add(focus_section or "main", button)
 
     # B40 S4: the B37 'Upgradable' overlay chip is retired — it collided with
     # the rows' right-aligned value slot. The flag now lives as a tooltip line
@@ -2063,11 +2104,13 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
     clock = pygame.time.Clock()
 
+    focus_idx = 0   # B99 S2: keyboard focus over the start-menu rows
     while True:
         if screen.get_size() != display.get_size():
             screen = pygame.Surface(display.get_size())  # follow resize / fullscreen
         options = start_menu_slot_options()
         buttons, title_pos, msg_pos = start_menu_layout(display.get_size(), options)
+        focus_idx = max(0, min(focus_idx, len(buttons) - 1))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2082,6 +2125,14 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return "quit"
+                if event.key in (pygame.K_DOWN, pygame.K_TAB):
+                    focus_idx = min(focus_idx + 1, len(buttons) - 1)
+                    continue
+                if event.key == pygame.K_UP:
+                    focus_idx = max(focus_idx - 1, 0)
+                    continue
+                if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and buttons:
+                    return buttons[focus_idx].on_click
                 key = event.unicode.lower() if event.unicode else ""
                 for choice, label in options:
                     if key and key == label[0].lower():
@@ -2095,10 +2146,12 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             screen.blit(msg, msg.get_rect(center=msg_pos))
 
         mouse = to_canvas(pygame.mouse.get_pos(), offset)
-        for button in buttons:
-            color = BTN_HOVER if button.rect.collidepoint(mouse) else BTN
+        for i, button in enumerate(buttons):
+            focused = i == focus_idx
+            color = BTN_HOVER if (button.rect.collidepoint(mouse) or focused) else BTN
             pygame.draw.rect(screen, color, button.rect, border_radius=8)
-            pygame.draw.rect(screen, BTN_EDGE, button.rect, width=1, border_radius=8)
+            pygame.draw.rect(screen, ACCENT if focused else BTN_EDGE, button.rect,
+                             width=2 if focused else 1, border_radius=8)
             label = font.render(button.label, True, TEXT)
             screen.blit(label, label.get_rect(center=button.rect.center))
 
@@ -2118,6 +2171,26 @@ def settings_menu() -> None:
     font_lg = pygame.font.SysFont("menlo,consolas,monospace", 34, bold=True)
     clock = pygame.time.Clock()
     options_by_key = {option["key"]: option for option in user_settings.OPTIONS}
+
+    def _activate(key: str, direction: int = 1) -> bool:
+        """Cycle/adjust a row; True means 'leave the screen' (back)."""
+        if key == "back":
+            return True
+        option = options_by_key[key]
+        if option["kind"] == "slider" and direction < 0:
+            # B99 S2: left on the slider steps down 5 points (click/enter cycle
+            # only steps up); shares the persisted value with the in-game rows.
+            try:
+                current = float(values.get(option["key"], 1.0))
+            except (TypeError, ValueError):
+                current = 1.0
+            values[option["key"]] = max(0.0, round(current * 100 - 5) / 100.0)
+        else:
+            values[option["key"]] = user_settings.cycle_value(option, values.get(option["key"]))
+        user_settings.save(values)
+        return False
+
+    focus_idx = 0   # B99 S2: keyboard focus over the settings rows
     while True:
         if screen.get_size() != display.get_size():
             screen = pygame.Surface(display.get_size())
@@ -2128,31 +2201,43 @@ def settings_menu() -> None:
             for option in user_settings.OPTIONS
         ] + [("back", T.BACK)]
         buttons, title_pos, _ = start_menu_layout(display.get_size(), rows)
+        focus_idx = max(0, min(focus_idx, len(buttons) - 1))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.VIDEORESIZE:
                 display = set_display_mode((event.w, event.h))
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+                if event.key in (pygame.K_DOWN, pygame.K_TAB):
+                    focus_idx = min(focus_idx + 1, len(buttons) - 1)
+                elif event.key == pygame.K_UP:
+                    focus_idx = max(focus_idx - 1, 0)
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and buttons:
+                    if _activate(buttons[focus_idx].on_click):
+                        return
+                elif event.key in (pygame.K_LEFT, pygame.K_RIGHT) and buttons:
+                    key = buttons[focus_idx].on_click
+                    if key != "back" and options_by_key[key]["kind"] == "slider":
+                        _activate(key, 1 if event.key == pygame.K_RIGHT else -1)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
                 for button in buttons:
                     if not button.rect.collidepoint(click):
                         continue
-                    if button.on_click == "back":
+                    if _activate(button.on_click):
                         return
-                    option = options_by_key[button.on_click]
-                    values[option["key"]] = user_settings.cycle_value(option, values.get(option["key"]))
-                    user_settings.save(values)
         screen.fill(BG)
         title = font_lg.render("Settings", True, ACCENT)
         screen.blit(title, title.get_rect(center=title_pos))
         mouse = to_canvas(pygame.mouse.get_pos(), offset)
-        for button in buttons:
-            color = BTN_HOVER if button.rect.collidepoint(mouse) else BTN
+        for i, button in enumerate(buttons):
+            focused = i == focus_idx
+            color = BTN_HOVER if (button.rect.collidepoint(mouse) or focused) else BTN
             pygame.draw.rect(screen, color, button.rect, border_radius=8)
-            pygame.draw.rect(screen, BTN_EDGE, button.rect, width=1, border_radius=8)
+            pygame.draw.rect(screen, ACCENT if focused else BTN_EDGE, button.rect,
+                             width=2 if focused else 1, border_radius=8)
             label = font.render(button.label, True, TEXT)
             screen.blit(label, label.get_rect(center=button.rect.center))
         offset = present(display, screen, BG)
