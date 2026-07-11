@@ -74,3 +74,35 @@ def simulate_journey(emap: EncounterMap, route, base_rate: float,
                      rng: random.Random) -> int:
     """Walk a route with seeded rolls and count the encounters that would fire."""
     return sum(1 for tile in route if should_encounter(emap, tile, base_rate, rng))
+
+
+# --- B104: post-battle encounter cooldown -------------------------------------
+
+ENCOUNTER_COOLDOWN_SECONDS = 1.0
+
+
+class EncounterCooldown:
+    """B104: after a battle ends, one second of ACCUMULATED MOVEMENT time must
+    pass before the encounter slot can fire again — and the slot is shared, so
+    the gate covers B67 travel events too. Standing still does not count down:
+    the clock is movement time, not wall time. While active the shell skips the
+    roll entirely (no rng draw), so the first roll after the cooldown is simply
+    the next draw of the seeded stream — identical to a step without cooldown.
+    """
+
+    def __init__(self, duration: float = ENCOUNTER_COOLDOWN_SECONDS) -> None:
+        self.duration = float(duration)
+        self._remaining = 0.0
+
+    def start(self) -> None:
+        self._remaining = self.duration
+
+    def tick_movement(self, dt: float) -> None:
+        """Count down by `dt` seconds of movement. Call only on frames where
+        the player actually moved."""
+        if self._remaining > 0.0 and dt > 0.0:
+            self._remaining = max(0.0, self._remaining - dt)
+
+    @property
+    def active(self) -> bool:
+        return self._remaining > 0.0

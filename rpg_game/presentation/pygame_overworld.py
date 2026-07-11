@@ -593,6 +593,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.display = None
         self._apply_display_mode()
         self.clock = pygame.time.Clock()
+        # B104: post-battle grace — 1s of accumulated movement time before the
+        # shared encounter/event slot can fire again. Rule lives in core.
+        self.encounter_cooldown = encounters.EncounterCooldown()
         self.encounter_rate = self.zone.encounter_rate_per_step
         self._last_tile = self.world.current_tile
         self._last_region = self.zone.wild_region_at(self._last_tile)
@@ -802,6 +805,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         """
         if self.world.town_place_id() is not None:
             return None      # in town: no rng draw (stream-identical to pre-B55)
+        if self.encounter_cooldown.active:
+            return None      # B104: post-battle grace — no rng draw consumed
         tile = self.world.current_tile
         if self.engine.rng.random() < self.encounter_rate_at(tile):
             # B67: a fired slot RARELY becomes a travel event instead of a fight
@@ -865,6 +870,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.resolve_battle_outcome(outcome, enemy)
 
     def resolve_battle_outcome(self, outcome: str, enemy) -> None:
+        self.encounter_cooldown.start()   # B104: 1s of movement before the next roll
         if outcome == "defeat":
             # Engine already respawned the player; move the sprite to match.
             respawn_place = self.engine.player.current_place_id
@@ -1409,6 +1415,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
         if dx or dy:
             self._player_moving = True
+            # B104: only frames with actual movement count down the cooldown.
+            self.encounter_cooldown.tick_movement(self.clock.get_time() / 1000.0)
             self._player_facing = player_facing(dx, dy, self._player_facing)
             # B87: normalize so diagonal speed equals cardinal speed (was sqrt(2) faster).
             speed = PLAYER_SPEED / math.sqrt(2) if dx and dy else PLAYER_SPEED
