@@ -50,7 +50,56 @@ STATUS_LABELS = {
     "fire": "burning", "poison": "poison", "skip_turn": "stun",
     "mitigation": "damage block", "burn": "burning", "toxin": "poison",
     "freeze": "freeze (skip a turn)", "chill": "chill", "snare": "snare",
+    # B103: immunity tags — the guard test found "immunity to flee_force".
+    "debuff": "debuffs", "flee_force": "forced flee",
 }
+# B103: adjective forms for "vs <state> targets" condition phrases.
+CONDITION_STATUS_LABELS = {
+    "fire": "burning", "burn": "burning", "poison": "poisoned",
+    "toxin": "poisoned", "freeze": "frozen", "chill": "chilled",
+    "snare": "snared", "skip_turn": "stunned",
+}
+
+# B103: every effect type that appears in the data MUST be listed here AND have
+# a branch in describe_effect. The guard test walks actions.json/talents.json
+# and fails when future content introduces a type without a renderer — a raw
+# identifier must never reach a menu again.
+RENDERED_EFFECT_TYPES = {
+    "damage", "instant_damage", "heal", "instant_heal", "drain",
+    "apply_status", "stat_bonus", "conditional_damage_mod",
+    "applied_status_mod", "elemental_attack_mod", "immunity",
+}
+
+
+def _describe_conditional(conditional: dict) -> str:
+    """B103: computed, human text for a conditional damage modifier, built from
+    the data's own fields — 'Fire damage +20% vs burning targets'."""
+    multiplier = float(conditional.get("multiplier", 1.0))
+    pct = round((multiplier - 1.0) * 100)
+    damage_type = str(conditional.get("damage_type", ""))
+    scope = f"{damage_type.capitalize()} damage" if damage_type else "Damage"
+    predicate = conditional.get("predicate")
+    subject = str(conditional.get("subject", "target"))
+    if predicate == "has_status":
+        raw = conditional.get("status_types", conditional.get("status_type"))
+        names = [raw] if isinstance(raw, str) else list(raw or [])
+        adjectives = " or ".join(CONDITION_STATUS_LABELS.get(n, n) for n in names)
+        condition = f"vs {adjectives} targets"
+    elif predicate in {"hp_pct_lte", "hp_pct_gte"}:
+        side = "below" if predicate == "hp_pct_lte" else "above"
+        threshold = round_half_up(float(conditional.get("threshold", 0)))
+        if subject == "self":
+            condition = f"when you are {side} {threshold}% HP"
+        else:
+            condition = f"vs targets {side} {threshold}% HP"
+    elif predicate == "damage_type_is_weakness":
+        condition = "when hitting a weakness"
+    elif predicate == "has_tag":
+        condition = f"vs {conditional.get('tag', '')} targets"
+    else:
+        condition = "under a condition"   # unreachable for known data (guard test)
+    sign = "+" if pct >= 0 else ""
+    return f"{scope} {sign}{pct}% {condition}"
 
 
 def stat_label(stat: str, magnitude: int) -> str:
@@ -75,7 +124,16 @@ def describe_effect(effect) -> str:
         where = "self" if effect.target == "self" else "enemy"
         rounds = f"for {effect.duration} rounds" if effect.duration != 1 else "for 1 round"
         if status in {"buff", "debuff"}:
-            return f"{stat_label(effect.stat, effect.magnitude)} {rounds} ({where})"
+            text = f"{stat_label(effect.stat, effect.magnitude)} {rounds} ({where})"
+            # B103: on-event buffs say their trigger and stacking instead of
+            # reading like an always-on buff (Fighter Rage).
+            if effect.on_event == "on_damaged":
+                text = f"when hit: {text}"
+            elif effect.on_event:
+                text = f"on {effect.on_event.replace('_', ' ').removeprefix('on ')}: {text}"
+            if effect.max_stacks > 1:
+                text += f", stacks up to {effect.max_stacks}"
+            return text
         if status == "reflect":
             amount = f"{effect.multiplier}x Power" if effect.scale == "power" else str(effect.magnitude)
             return f"reflect {amount} {effect.damage_type} damage {rounds} ({where})"
@@ -92,12 +150,24 @@ def describe_effect(effect) -> str:
     if kind == "stat_bonus":
         return stat_label(effect.stat, effect.magnitude)
     if kind == "conditional_damage_mod":
-        return "bonus damage under a condition"
+        return _describe_conditional(effect.conditional)
     if kind == "applied_status_mod":
-        return f"your {STATUS_LABELS.get(effect.modifies_status_type, effect.modifies_status_type)} effects grow stronger"
+        # B103: computed from the data's fields — "your poison effects tick
+        # +2 damage and last +1 round", not "grow stronger".
+        name = STATUS_LABELS.get(effect.modifies_status_type, effect.modifies_status_type)
+        parts = []
+        if effect.mod_magnitude:
+            parts.append(f"tick +{effect.mod_magnitude} damage")
+        if effect.mod_duration:
+            parts.append(f"last +{effect.mod_duration} round{'s' if effect.mod_duration != 1 else ''}")
+        return f"your {name} effects " + " and ".join(parts or ["are unchanged"])
+    if kind == "elemental_attack_mod":
+        # B103: Flametongue/Rimeblade — "+4 fire damage on attacks".
+        return f"+{effect.magnitude} {effect.damage_type} damage on attacks"
     if kind == "immunity":
         return f"immunity to {STATUS_LABELS.get(effect.tag, effect.tag)}"
-    return kind
+    return kind.replace("_", " ")   # backstop only — the guard test keeps every
+                                    # data-present type out of this branch
 
 
 def skill_cost_text(action) -> str:
@@ -241,6 +311,13 @@ def _scaled_effect(effect, mult: float, duration_bonus: int):
             changes["duration"] = effect.duration + duration_bonus
     elif effect.magnitude and effect.type in {"instant_heal", "heal", "stat_bonus", "elemental_attack_mod"}:
         changes["magnitude"] = round_half_up(effect.magnitude * mult)
+    elif effect.type == "conditional_damage_mod" and "multiplier" in effect.conditional:
+        # Mirror talents._recompute_passives: the delta above 1.0 scales.
+        base = float(effect.conditional["multiplier"])
+        changes["conditional"] = {**effect.conditional,
+                                  "multiplier": 1.0 + (base - 1.0) * mult}
+    elif effect.type == "applied_status_mod" and effect.mod_magnitude:
+        changes["mod_magnitude"] = round_half_up(effect.mod_magnitude * mult)
     return replace(effect, **changes) if changes else effect
 
 
