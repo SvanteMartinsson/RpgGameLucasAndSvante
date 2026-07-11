@@ -644,6 +644,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._map_composite = None
         self._map_composite_count = -1
         self.buttons: list[Button] = []
+        # B99 S1: keyboard focus over the inventory + skills screens' buttons.
+        self.focus = ui.FocusList()
         # B16 + B29: the chatbox is the ONLY on-screen text. Combat lines flow in via
         # the shared deque passed to BattleApp; world events flow in through set_toast
         # -> push_log. Deep scrollback (LOG_HISTORY_MAX), a player-resizable visible
@@ -935,6 +937,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self.overlay_return_mode = "" if self.mode == "walk" else self.mode
         self.overlay = name
         self.mode = "walk"
+        self.focus.reset()   # B99: keyboard focus starts at the first row
 
     def close_overlay(self) -> None:
         self.overlay = ""
@@ -1314,15 +1317,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             if event.key in (pygame.K_UP, pygame.K_LEFT):
                 self.move_bestiary_selection(-1)
                 return
-        if self.overlay == "skills_talents":
-            if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
-                self.move_talent_selection(1)
-                return
-            if event.key in (pygame.K_UP, pygame.K_LEFT):
-                self.move_talent_selection(-1)
-                return
-            if event.key == pygame.K_RETURN:
-                self.learn_selected_talent()
+        if self.overlay in ("inventory", "skills_talents"):   # B99 S1 focus nav
+            if self._handle_focus_key(event):
                 return
         if event.key == pygame.K_ESCAPE:
             if self.overlay:
@@ -1450,6 +1446,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.buttons = []
         self._tick_player_anim()   # B83: one animation tick per rendered frame
         self.hover.begin()   # menus re-register their hoverable rects each frame
+        self.focus.begin()   # B99: focusable buttons re-register each frame too
         # Fluid overworld: the canvas tracks the live (logical) display size, so
         # the world fills the window instead of sitting as a centered island. The
         # camera (camera_offset) then shows more map; present() is the identity
@@ -1717,10 +1714,41 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.screen.blit(self.font_lg.render(title, True, ACCENT), (panel.x + 20, panel.y + 16))
         return panel
 
+    def _handle_focus_key(self, event: pygame.event.Event) -> bool:
+        """B99 S1: keyboard focus in the inventory + skills screens. Up/down move
+        within the section, left/right (or Tab) jump between sections, Enter
+        activates the focused button (same path as a click). Returns True when
+        the key was consumed; anything else (e.g. Esc) falls through."""
+        if event.key == pygame.K_DOWN:
+            self.focus.move(1)
+            return True
+        if event.key == pygame.K_UP:
+            self.focus.move(-1)
+            return True
+        if event.key == pygame.K_RIGHT:
+            self.focus.move_section(1)
+            return True
+        if event.key == pygame.K_LEFT:
+            self.focus.move_section(-1)
+            return True
+        if event.key == pygame.K_TAB:
+            self.focus.move_section(-1 if event.mod & pygame.KMOD_SHIFT else 1)
+            return True
+        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            button = self.focus.focused()
+            if button is not None and button.enabled and callable(button.on_click):
+                audio.play("menu_click")
+                button.on_click()
+            return True
+        return False
+
     def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,
-                    value="", label_color=None, tooltip=None) -> None:
-        self.buttons.append(Button(rect, label, cb, enabled, restricted,
-                                   value=value, label_color=label_color, tooltip=tooltip))
+                    value="", label_color=None, tooltip=None, focus_section="") -> None:
+        button = Button(rect, label, cb, enabled, restricted,
+                        value=value, label_color=label_color, tooltip=tooltip)
+        self.buttons.append(button)
+        if focus_section:   # B99: opt this button into keyboard focus
+            self.focus.add(focus_section, button)
 
     # B40 S4: the B37 'Upgradable' overlay chip is retired — it collided with
     # the rows' right-aligned value slot. The flag now lives as a tooltip line
@@ -1741,12 +1769,14 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         # with the hover tracker here — the >1 s dwell popup draws in draw().
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         style = self._row_style()
+        focused_button = self.focus.focused()   # B99: reuses the hover look
         for b in self.buttons:
             row = ui.MenuRow(label=b.label, value=b.value, enabled=b.enabled,
                              restricted=b.restricted, tooltip=b.tooltip,
                              label_color=b.label_color)
             ui.draw_menu_row(self.screen, b.rect, row, style,
-                             mouse=mouse, hover=self.hover, fit=self._fit_text)
+                             mouse=mouse, hover=self.hover, fit=self._fit_text,
+                             focused=b is focused_button)
 
 
 

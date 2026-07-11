@@ -115,6 +115,74 @@ class HoverTracker:
             self.active = payload                # dwell satisfied -> show it
 
 
+# --- keyboard focus (B99) ----------------------------------------------------
+@dataclass
+class FocusList:
+    """Keyboard focus over per-frame-registered button sections (B99 S1).
+
+    Mirrors HoverTracker's lifecycle: each frame the screen calls ``begin()``
+    and re-registers its focusable payloads (usually Buttons) with
+    ``add(section, payload)`` in draw order. The (section, index) position
+    persists across frames and is clamped on read, so a shrinking list never
+    strands the focus. Arrow up/down move within the section, left/right (or
+    Tab) jump between sections, and ``focused()`` returns the payload the
+    screen should activate on Enter. Nothing registered -> ``focused()`` is
+    None and the screen's keys behave as before, so wiring this in is a no-op
+    until a menu opts in with ``add()``.
+    """
+
+    section: int = 0
+    index: int = 0
+    _sections: list = field(default_factory=list)   # [(name, [payload, ...])]
+
+    def begin(self) -> None:
+        self._sections = []
+
+    def add(self, section: str, payload) -> None:
+        for name, items in self._sections:
+            if name == section:
+                items.append(payload)
+                return
+        self._sections.append((section, [payload]))
+
+    def reset(self) -> None:
+        """Back to the first row of the first section (call on menu open)."""
+        self.section = 0
+        self.index = 0
+
+    def _position(self):
+        """Current (section, index) clamped to what is registered, or None."""
+        if not self._sections:
+            return None
+        section = max(0, min(self.section, len(self._sections) - 1))
+        items = self._sections[section][1]
+        return section, max(0, min(self.index, len(items) - 1))
+
+    def focused(self):
+        position = self._position()
+        if position is None:
+            return None
+        section, index = position
+        return self._sections[section][1][index]
+
+    def move(self, delta: int) -> None:
+        position = self._position()
+        if position is None:
+            return
+        section, index = position
+        items = self._sections[section][1]
+        self.section = section
+        self.index = max(0, min(index + delta, len(items) - 1))
+
+    def move_section(self, delta: int) -> None:
+        position = self._position()
+        if position is None:
+            return
+        section, index = position
+        self.section = max(0, min(section + delta, len(self._sections) - 1))
+        self.index = index
+
+
 def wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
     """B57: THE text wrap — greedy word-wrap to max_width px, character-breaking
     an over-long word. The single implementation behind chatlog.wrap_lines and
@@ -249,18 +317,21 @@ class MenuRow:
 
 
 def draw_menu_row(screen, rect, row: "MenuRow", style: "RowStyle",
-                  *, mouse=None, hover=None, fit=None) -> "pygame.Rect":
+                  *, mouse=None, hover=None, fit=None, focused=False) -> "pygame.Rect":
     """Render one menu row into ``rect``: a rounded fill (hover/dim aware), the
     label at the left (fitted to the free width via ``fit(text, max_w, font)`` if
     given), and the optional right-aligned ``row.value``. A disabled/restricted
     row is dimmed. If ``hover`` (a HoverTracker) and ``row.tooltip`` are provided,
     the rect is registered so a >1 s dwell pops the tooltip. ``mouse`` (canvas
-    space) drives the hover fill. Returns the rect (for click wiring)."""
+    space) drives the hover fill. ``focused`` (B99 keyboard focus) reuses the
+    hover fill and brightens the edge so it stays visible on dimmed rows.
+    Returns the rect (for click wiring)."""
     dim = (not row.enabled) or row.restricted
-    hot = (mouse is not None) and (not dim) and rect.collidepoint(mouse)
+    hot = focused or ((mouse is not None) and (not dim) and rect.collidepoint(mouse))
     fill = style.disabled if dim else (style.hover if hot else style.bg)
     pygame.draw.rect(screen, fill, rect, border_radius=style.radius)
-    pygame.draw.rect(screen, style.edge, rect, width=1, border_radius=style.radius)
+    edge_color = style.text if focused else style.edge
+    pygame.draw.rect(screen, edge_color, rect, width=1, border_radius=style.radius)
     value_w = 0
     if row.value:
         vs = style.font.render(row.value, True, style.text_dim if dim else style.value)

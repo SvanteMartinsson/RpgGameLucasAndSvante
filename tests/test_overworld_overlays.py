@@ -308,8 +308,13 @@ class OverworldOverlayTest(unittest.TestCase):
         app = OverworldApp(engine=engine)
         app.overlay = "skills_talents"
 
+        # B99: arrows drive the shared focus model — jump to the talents
+        # section, step down one row and activate it with Enter.
         first = app.selected_talent_node()
+        app.draw()   # registers this frame's focus sections
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT))
         app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+        app._handle_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0))
         second = app.selected_talent_node()
 
         self.assertNotEqual(first.id, second.id)

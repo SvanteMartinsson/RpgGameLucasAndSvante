@@ -243,7 +243,8 @@ class OverlaysMixin:
             marker = "> " if key == self.inventory_category else "  "
             self._add_button(rect, f"{marker}{label}",
                              (lambda k=key: self.open_inventory_category(k)), True,
-                             restricted=not counts.get(key, 0))
+                             restricted=not counts.get(key, 0),
+                             focus_section="categories")
 
         rows = self.inventory_category_items(self.inventory_category)
         if not rows:
@@ -257,7 +258,8 @@ class OverlaysMixin:
             # Inert rows (miscellaneous) stay dimmed and unclickable but keep
             # their tooltip, so junk still explains itself on hover.
             self._add_button(rect, name, on_click, enabled and on_click is not None,
-                             value=value, label_color=color, tooltip=tip)
+                             value=value, label_color=color, tooltip=tip,
+                             focus_section="items")
         if len(rows) > max_rows:
             self.screen.blit(self.font_sm.render(f"v {len(rows) - max_rows} more v", True, TEXT_DIM),
                              (items_rect.x + 8, items_rect.bottom - 18))
@@ -306,7 +308,7 @@ class OverlaysMixin:
             # B89: hovering a skill row explains what the skill does.
             tip = ui.Tooltip(title=skill.name, lines=skill_effect_lines(skill))
             self._add_button(rect, label, (lambda sid=skill.id, eq=is_eq: self.toggle_skill(sid, eq)), enabled,
-                             tooltip=tip)
+                             tooltip=tip, focus_section="skills")
 
         self.screen.blit(self.font_sm.render(
             self._fit_text(T.talents_hint(eng.player.talent_points), middle.width, self.font_sm),
@@ -321,7 +323,8 @@ class OverlaysMixin:
             marker = "> " if selected is not None and node.id == selected.id else "  "
             rank_suffix = f" {rank}" if rank else ""
             label = f"{marker}{status} {node.name}{rank_suffix} ({node.branch} t{node.order})"
-            self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True)
+            self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True,
+                             focus_section="talents")
 
         self._draw_talent_detail(right, selected)
 
@@ -351,7 +354,8 @@ class OverlaysMixin:
         can_allocate = talent_can_allocate(self.engine, node)
         verb = talent_action_label(self.engine, node)
         learn_rect = pygame.Rect(rect.x + 10, rect.bottom - 42, rect.width - 20, 32)
-        self._add_button(learn_rect, f"{verb} selected (1 point)", self.learn_selected_talent, can_allocate)
+        self._add_button(learn_rect, f"{verb} selected (1 point)", self.learn_selected_talent, can_allocate,
+                         focus_section="detail")
 
     def _screen_talents(self, panel) -> None:
         eng = self.engine
