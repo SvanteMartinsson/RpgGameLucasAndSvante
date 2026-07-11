@@ -148,6 +148,15 @@ GATE_COLOR = (150, 90, 70)
 # render so the planks run across the walking direction (Lucas's fix).
 BRIDGE_TILESETS = {"water_bridge", "bridge_halfdeck"}
 
+# B101: the rotated halfdeck tile carries ONE dark stringer (rail) on its left
+# edge — columns 0..3 of the 32px tile. On a multi-column crossing that painted
+# a seam line between every column. Variants are derived at render time from
+# the deck's neighbourhood (no map-format change): the left edge column keeps
+# the rail, mid columns get the rail replaced by plank continuation (column x
+# copies column x + RAIL_W), and the right edge column is the tile flipped
+# horizontally so its single rail lands on the outer edge.
+DECK_RAIL_W = 4   # stringer width in pixels, measured on bridge_halfdeck idx 0
+
 # B63: world chests. Closed/open sprites live at fixed rects in the Cainos props
 # sheet (same layout in every generated theme recolour). Chest tiles are SOLID;
 # stand next to one and press E/Enter to open it.
@@ -815,15 +824,49 @@ class MapRenderMixin:
         tmx.images.append(blend)
         return len(tmx.images) - 1
 
-    def _bridge_deck_image(self, gid, image):
+    def _bridge_deck_image(self, gid, image, variant: str = "left"):
         """B52: rotate seam bridge-deck tiles 90° so their planks run across the
-        walking direction. Cached per gid; non-bridge tiles pass through."""
-        cached = self._bridge_img_cache.get(gid, False)
+        walking direction. B101: `variant` picks the edge-aware deck look (see
+        DECK_RAIL_W). Cached per (gid, variant); non-bridge tiles pass through."""
+        cached = self._bridge_img_cache.get((gid, variant), False)
         if cached is False:
             ts = self.world.tmx.get_tileset_from_gid(gid)
-            cached = pygame.transform.rotate(image, 90) if (ts and ts.name in BRIDGE_TILESETS) else None
-            self._bridge_img_cache[gid] = cached
+            if ts and ts.name in BRIDGE_TILESETS:
+                cached = self._deck_variant(pygame.transform.rotate(image, 90), variant)
+            else:
+                cached = None
+            self._bridge_img_cache[(gid, variant)] = cached
         return cached or image
+
+    @staticmethod
+    def _deck_variant(rotated, variant: str):
+        """B101 deck variants, derived deterministically from the rotated tile:
+        'left'/'solo' keep it unchanged (rail on the outer left), 'right' flips
+        it horizontally (rail on the outer right), 'mid' erases the rail by
+        copying plank column x + DECK_RAIL_W over each rail column x."""
+        if variant == "right":
+            return pygame.transform.flip(rotated, True, False)
+        if variant != "mid":
+            return rotated
+        img = rotated.copy()
+        height = rotated.get_height()
+        for x in range(DECK_RAIL_W):
+            img.blit(rotated.subsurface((x + DECK_RAIL_W, 0, 1, height)), (x, 0))
+        return img
+
+    @staticmethod
+    def _deck_variant_key(row, x, gid) -> str:
+        """Which deck variant a bridge cell needs, from its same-row neighbours
+        (same gid = same crossing): edge columns keep one rail, mid columns none."""
+        left = x > 0 and row[x - 1] == gid
+        right = x + 1 < len(row) and row[x + 1] == gid
+        if left and right:
+            return "mid"
+        if left:
+            return "right"
+        if right:
+            return "left"
+        return "solo"
 
     def _draw_map(self) -> None:
         screen_w, screen_h = self.screen.get_size()
@@ -872,7 +915,8 @@ class MapRenderMixin:
                     if image is None:  # tile without graphic -> placeholder block, never crash
                         pygame.draw.rect(world, PANEL_EDGE, pygame.Rect(dest, (tw, th)))
                     else:
-                        world.blit(self._bridge_deck_image(gid, image), dest)
+                        world.blit(self._bridge_deck_image(
+                            gid, image, self._deck_variant_key(row, x, gid)), dest)
         self._draw_chests(world, ox, oy, left, right, top, bottom)   # B63
         self._draw_lairs(world, ox, oy, left, right, top, bottom)   # B65
         labels = []  # (text, world_x, world_y) -> drawn unscaled after the zoom
