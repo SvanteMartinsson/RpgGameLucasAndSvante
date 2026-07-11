@@ -72,6 +72,22 @@
     "category": "ranged"
   },
   {
+    "id": "warsteel_blade",
+    "name": "Warsteel Blade",
+    "damage_bonus": 16,
+    "price": 440,
+    "damage_type": "physical",
+    "category": "melee"
+  },
+  {
+    "id": "knight_greatsword",
+    "name": "Knight's Greatsword",
+    "damage_bonus": 23,
+    "price": 720,
+    "damage_type": "physical",
+    "category": "melee"
+  },
+  {
     "id": "steel_greatsword",
     "name": "Steel Greatsword",
     "damage_bonus": 18,

@@ -43,6 +43,9 @@ class WeaponGatingTests(unittest.TestCase):
             "yew_warbow": "ranged",
             "adept_wand": "magic",
             "sanctified_recurve": "ranged",   # B65: hunter's holy counter (loot-only)
+            # Progression pass 2026-07-12 (lever f): melee shop ladder t4/t5
+            "warsteel_blade": "melee",
+            "knight_greatsword": "melee",
             # B27 content batch
             "oak_charm": "magic",
             "adderfang_bow": "ranged",
