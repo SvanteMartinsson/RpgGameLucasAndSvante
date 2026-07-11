@@ -58,6 +58,24 @@ def rarity_color(rarity: str) -> tuple[int, int, int]:
 
 CHANNEL_WORLD = "world"
 CHANNEL_COMBAT = "combat"
+CHANNEL_LOOT = "loot"     # B100: every item/gold acquisition, with its source
+
+# B100: per-source line colour for the Loot tab — the source type tints the
+# line so "where it came from" reads at a glance. Item names keep their rarity
+# colour on top of this via Segments.
+LOOT_SOURCE_COLORS = {
+    "drop": (200, 190, 150),        # felled enemies
+    "chest": (220, 180, 90),        # world chests (amber, like gold)
+    "shop": (150, 190, 230),        # bought / sold
+    "event": (190, 170, 220),       # travel events
+    "tournament": (235, 180, 90),   # series rewards
+    "brew": (140, 200, 160),        # apothecary
+    "study": (170, 140, 225),       # tome studies (skill acquisitions)
+}
+
+
+def loot_source_color(source: str) -> tuple[int, int, int]:
+    return LOOT_SOURCE_COLORS.get(source, LOOT_SOURCE_COLORS["drop"])
 
 
 class ChannelText(str):

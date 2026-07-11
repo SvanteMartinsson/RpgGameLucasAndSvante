@@ -716,11 +716,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if log:
             self.push_log(message, color)
 
-    def push_log(self, message: str, color=TEXT) -> None:
+    def push_log(self, message: str, color=TEXT, channel: str = chatlog.CHANNEL_WORLD) -> None:
         """Append a line to the shared chatbox log (deduping immediate repeats).
         Stays pinned to the newest line unless the player scrolled up to read
         history."""
-        if chatlog.push(self.event_log, message, color) and self.log_scroll:
+        if chatlog.push(self.event_log, message, color, channel=channel) and self.log_scroll:
             self.log_scroll = min(self.log_scroll + 1, self._log_scroll_max())
 
     def _log_scroll_max(self) -> int:
@@ -1025,7 +1025,13 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             sound = audio.potion_sound(self.engine.content.items.get(item_id))
             if sound:
                 audio.play(sound)   # B69: tomes and misc stay silent
-        self.set_toast(result.message, GOOD if result.success else BAD)
+        item = self.engine.content.items.get(item_id)
+        if result.success and item is not None and item.kind == "tome":
+            # B100: studying a tome acquires a skill — it lands on the Loot tab.
+            self.push_log(result.message, chatlog.loot_source_color("study"),
+                          channel=chatlog.CHANNEL_LOOT)
+        else:
+            self.set_toast(result.message, GOOD if result.success else BAD)
 
     # -- inventory overview (everything owned) ------------------------------
 
@@ -1250,7 +1256,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         run.next_index += 1
         if run.next_index >= len(run.tournament.opponent_ids):
             reward = self.engine.complete_tournament(run.tournament)
-            self.set_toast(reward.message, GOOD if reward.success else BAD)
+            if reward.success:   # B100: the series payout lands on the Loot tab
+                self.push_log(reward.message, chatlog.loot_source_color("tournament"),
+                              channel=chatlog.CHANNEL_LOOT)
+            else:
+                self.set_toast(reward.message, BAD)
             self._clear_tournament_run()
             return
 
@@ -1560,12 +1570,14 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 return True
             audio.play("open_chest")
             self.push_log(result.message, TEXT)
-            # B44: gold and the rarity-coloured item name share ONE row.
-            parts = [(f"+{result.gold} gold", chatlog.GOLD)]
+            # B44/B100: gold and the rarity-coloured item name share ONE row,
+            # tagged with the chest source on the Loot tab.
+            source_color = chatlog.loot_source_color("chest")
+            parts = [("Opened chest: ", source_color), (f"+{result.gold} gold", chatlog.GOLD)]
             if result.drop is not None:
-                parts.append(("   Loot: ", TEXT))
+                parts.append(("   ", TEXT))
                 parts.append((result.drop.name, chatlog.rarity_color(result.drop.rarity)))
-            chatlog.push_rich(self.event_log, parts)
+            chatlog.push_rich(self.event_log, parts, channel=chatlog.CHANNEL_LOOT)
             return True
         return False
 
@@ -1869,8 +1881,12 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         return chatlog.visual_lines(self.event_log, width, self.font_sm)
 
     def _log_channel(self) -> str | None:
-        """B16.1: the active tab's channel filter (None = the ALL tab)."""
-        return None if self.log_tab == "all" else chatlog.CHANNEL_COMBAT
+        """B16.1/B100: the active tab's channel filter (None = the ALL tab)."""
+        if self.log_tab == "combat":
+            return chatlog.CHANNEL_COMBAT
+        if self.log_tab == "loot":
+            return chatlog.CHANNEL_LOOT
+        return None
 
     def _set_log_tab(self, tab: str) -> None:
         self.log_tab = tab
@@ -1894,7 +1910,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         strip.fill((10, 12, 18, 200))
         self.screen.blit(strip, (rect.x, rect.y))
         chip_x = rect.x
-        for tab_id, tab_label in (("all", "All"), ("combat", "Combat")):
+        for tab_id, tab_label in (("all", "All"), ("combat", "Combat"), ("loot", "Loot")):
             width = self.font_sm.size(tab_label)[0] + 16
             chip = pygame.Rect(chip_x, rect.y, width, chip_h)
             active = self.log_tab == tab_id

@@ -178,10 +178,12 @@ class OverworldTabTests(unittest.TestCase):
         self.app.buttons = []
         self.app.hover.begin()
         self.app._draw_log()
-        self.assertGreaterEqual(len(self.app.buttons), 2)   # All + Combat chips
-        self.app.buttons[-1].on_click()                     # the Combat chip
+        self.assertGreaterEqual(len(self.app.buttons), 3)   # All + Combat + Loot chips (B100)
+        self.app.buttons[-2].on_click()                     # the Combat chip
         self.assertEqual(self.app.log_tab, "combat")
         self.assertEqual(self.app.log_scroll, 0)
+        self.app.buttons[-1].on_click()                     # the Loot chip
+        self.assertEqual(self.app.log_tab, "loot")
 
     def test_switching_tab_resets_scroll(self):
         self.app.log_scroll = 7

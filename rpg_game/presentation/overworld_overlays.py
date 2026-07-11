@@ -16,6 +16,7 @@ import pygame
 
 from rpg_game.core import saveslots
 from rpg_game.core.view import build_snapshot
+from rpg_game.presentation import chatlog
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import ui
 from rpg_game.presentation import ui_text as T
@@ -704,7 +705,11 @@ class OverlaysMixin:
         self.mode = "walk"
         result = core_events.resolve_choice(self.engine.player, event, choice_id, self.engine.rng)
         if result.text:
-            self.push_log(result.text, WARN if result.start_encounter else GOOD)
+            if result.gold_delta > 0:   # B100: an event payout lands on the Loot tab
+                self.push_log(result.text, chatlog.loot_source_color("event"),
+                              channel=chatlog.CHANNEL_LOOT)
+            else:
+                self.push_log(result.text, WARN if result.start_encounter else GOOD)
         if result.start_encounter:
             enemy = self.engine.create_encounter()
             if enemy is not None:

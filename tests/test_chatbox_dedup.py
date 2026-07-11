@@ -67,13 +67,14 @@ class ChatboxDedupTest(unittest.TestCase):
         battle.flush_sequence()   # B75
         texts = [chatlog.plain(t) for t, _c in log]
 
-        # B44: the loot row is a Segments line — only the item NAME carries the
-        # rarity colour, the "Loot: " prefix stays plain text.
-        loot = [t for t, _c in log if chatlog.plain(t).startswith("Loot:")]
+        # B44/B100: the loot row is a Segments line naming its source — only the
+        # item NAME carries the rarity colour, and the row rides the loot channel.
+        loot = [t for t, _c in log if chatlog.plain(t).startswith("Looted ")]
         self.assertEqual(len(loot), 1, texts)                       # exactly one Loot line
         segments = loot[0]
         self.assertIsInstance(segments, chatlog.Segments)
-        self.assertNotIn("[", segments.text)                        # no "[common]" text
+        self.assertEqual(segments.text, "Looted Healing Potion from Giant Rat.")
+        self.assertEqual(chatlog.channel_of(segments), chatlog.CHANNEL_LOOT)
         name_segment = dict(segments)["Healing Potion"]
         self.assertEqual(name_segment, chatlog.rarity_color("common"))
         self.assertFalse([t for t in texts if "dropped:" in t], texts)  # verbose line gone
@@ -85,10 +86,13 @@ class ChatboxDedupTest(unittest.TestCase):
         texts = [chatlog.plain(t) for t, _c in log]
 
         self.assertEqual(texts.count("Victory!"), 1, texts)
-        # B44: XP and gold share ONE row (each part its own colour), still no dups.
-        reward_rows = [t for t in texts if "+5 XP" in t]
-        self.assertEqual(len(reward_rows), 1, texts)
-        self.assertIn("+7 gold", reward_rows[0])
+        # B100: XP stays a combat line; the gold gain gets its own loot-channel
+        # row naming its source. Still no dups.
+        self.assertEqual(len([t for t in texts if "+5 XP" in t]), 1, texts)
+        gold_rows = [t for t, _c in log if "+7 gold" in chatlog.plain(t)]
+        self.assertEqual(len(gold_rows), 1, texts)
+        self.assertEqual(chatlog.plain(gold_rows[0]), "+7 gold from Giant Rat.")
+        self.assertEqual(chatlog.channel_of(gold_rows[0]), chatlog.CHANNEL_LOOT)
         # Core narration is suppressed in the log (still returned by the engine).
         self.assertNotIn(f"{enemy.name} was defeated.", texts)
         self.assertNotIn("Gained 5 XP and 7 gold.", texts)

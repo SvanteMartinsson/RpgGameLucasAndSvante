@@ -129,7 +129,8 @@ class ChestUITests(unittest.TestCase):
         self.assertIn("chest_cainos_1", self.app.engine.player.opened_chest_ids)
         texts = [chatlog.plain(text) for text, _ in self.app.event_log]
         self.assertTrue(any("open the chest" in t for t in texts))
-        self.assertTrue(any(t.startswith("+") and "gold" in t for t in texts))
+        # B100: the acquisition row names its source and carries the gold.
+        self.assertTrue(any(t.startswith("Opened chest: ") and "gold" in t for t in texts))
 
     def test_e_far_from_any_chest_does_nothing(self):
         self.app.world.set_tile(45, 45)

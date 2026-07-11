@@ -306,12 +306,14 @@ class BattleApp:
 
     # -- logging ------------------------------------------------------------
 
-    def push_log(self, text: str, color: tuple[int, int, int] = TEXT) -> None:
+    def push_log(self, text: str, color: tuple[int, int, int] = TEXT,
+                 channel: str = chatlog.CHANNEL_COMBAT) -> None:
         # B16.1: every battle line is channel-tagged so the overworld log can filter.
-        chatlog.push(self.event_log, text, color, channel=chatlog.CHANNEL_COMBAT)
+        chatlog.push(self.event_log, text, color, channel=channel)
 
-    def push_rich(self, parts, color: tuple[int, int, int] = TEXT) -> None:
-        chatlog.push_rich(self.event_log, parts, color, channel=chatlog.CHANNEL_COMBAT)
+    def push_rich(self, parts, color: tuple[int, int, int] = TEXT,
+                  channel: str = chatlog.CHANNEL_COMBAT) -> None:
+        chatlog.push_rich(self.event_log, parts, color, channel=channel)
 
     def _push_combat_event(self, event: str) -> None:
         """B44: colourize core narration by its canonical shape — the damage
@@ -474,9 +476,15 @@ class BattleApp:
                 self.push_log(line, ACCENT)
         if result.loot_drop is not None:
             # B44: only the item NAME carries the rarity colour, not the whole row.
+            # B100: the acquisition line names its source and lands on the Loot tab.
             drop = result.loot_drop
             name = getattr(drop, "item_name", None) or getattr(drop, "name", "loot")
-            self.push_rich([("Loot: ", TEXT), (name, chatlog.rarity_color(drop.rarity))])
+            source_color = chatlog.loot_source_color("drop")
+            enemy_name = self.enemy.name if self.enemy is not None else "the enemy"
+            self.push_rich([("Looted ", source_color),
+                            (name, chatlog.rarity_color(drop.rarity)),
+                            (f" from {enemy_name}.", source_color)],
+                           channel=chatlog.CHANNEL_LOOT)
         if result.outcome in ("victory", "defeat") and self._combat_fx:
             self._freeze = 3   # the final blow lands with a short hit-pause
 
@@ -497,16 +505,15 @@ class BattleApp:
             if result.levels_gained > 0:
                 audio.play("level_up")   # B69: the ding rides the round finale
             self.push_log(T.VICTORY_LOG, chatlog.HEAL)
-            # B44: XP and gold share ONE row, each part in its own colour.
-            reward_parts = []
+            # B44: XP stays a combat line; B100: the gold gain is an acquisition
+            # with its source, so it gets its own line on the Loot tab.
             if result.xp_gained:
-                reward_parts.append((T.xp_gain(result.xp_gained), chatlog.XP))
+                self.push_log(T.xp_gain(result.xp_gained), chatlog.XP)
             if result.gold_gained:
-                if reward_parts:
-                    reward_parts.append(("   ", TEXT))
-                reward_parts.append((T.gold_gain(result.gold_gained), chatlog.GOLD))
-            if reward_parts:
-                self.push_rich(reward_parts)
+                enemy_name = self.enemy.name if self.enemy is not None else "the enemy"
+                self.push_rich([(T.gold_gain(result.gold_gained), chatlog.GOLD),
+                                (f" from {enemy_name}.", chatlog.loot_source_color("drop"))],
+                               channel=chatlog.CHANNEL_LOOT)
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning

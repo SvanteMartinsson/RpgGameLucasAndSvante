@@ -169,7 +169,11 @@ class BuildingMenusMixin:
 
     def _buy_tome(self, item_id: str) -> None:
         result = self.engine.buy_tome(self.tome_building, item_id)
-        self.push_log(result.message, GOOD if result.success else BAD)
+        if result.success:   # B100: tome purchases land on the Loot tab
+            self.push_log(result.message, chatlog.loot_source_color("shop"),
+                          channel=chatlog.CHANNEL_LOOT)
+        else:
+            self.push_log(result.message, BAD)
 
     def _draw_tome_shop(self) -> None:
         """B38: a mage-tower shop listing skill tomes. Buying puts a tome in the
@@ -282,7 +286,11 @@ class BuildingMenusMixin:
         result = self.engine.brew(recipe_id)
         if result.success:
             audio.play("brewing")
-        self.push_log(result.message, GOOD if result.success else BAD)
+            # B100: a brewed potion is an acquisition — it lands on the Loot tab.
+            self.push_log(result.message, chatlog.loot_source_color("brew"),
+                          channel=chatlog.CHANNEL_LOOT)
+        else:
+            self.push_log(result.message, BAD)
 
     def _draw_apothecary(self) -> None:
         """B68: the brewing screen — one row per recipe showing output, the
@@ -520,16 +528,22 @@ class BuildingMenusMixin:
 
     def buy(self, item_id: str) -> None:
         result = self.engine.buy_item(item_id)
-        self.set_toast(result.message, GOOD if result.success else BAD)
+        if result.success:   # B100: purchases land on the Loot tab
+            self.push_log(result.message, chatlog.loot_source_color("shop"),
+                          channel=chatlog.CHANNEL_LOOT)
+        else:
+            self.set_toast(result.message, BAD)
 
     def sell(self, item_id: str) -> None:
         result = self.engine.sell_item(item_id)
         if result.success:
             audio.play("sell")
-        # A successful sale reads in the item's rarity colour (unified with drops);
-        # a failure stays in the failure colour.
-        color = chatlog.rarity_color(self._item_rarity(item_id)) if result.success else BAD
-        self.set_toast(result.message, color)
+            # A successful sale reads in the item's rarity colour (unified with
+            # drops); B100: the gold gain lands on the Loot tab.
+            self.push_log(result.message, chatlog.rarity_color(self._item_rarity(item_id)),
+                          channel=chatlog.CHANNEL_LOOT)
+        else:
+            self.set_toast(result.message, BAD)
 
     def _item_rarity(self, item_id: str) -> str:
         if item_id in self.engine.content.weapons:
