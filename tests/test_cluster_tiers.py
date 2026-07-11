@@ -48,16 +48,41 @@ class ResolveTemplateTests(unittest.TestCase):
         self.assertEqual(sizes["capital"], 6)
 
     def test_cosmetic_buildings_get_no_entrance(self):
-        # a town's cosmetic prop (shrine) renders but has no door -> not in entrances.
+        # a town's cosmetic prop (warehouse) renders but has no door -> not in entrances.
         anchor = (50, 50)
-        tmpl = tc.resolve_template("town", shop_category="weapons", prop="shrine")
-        self.assertIn("shrine", [b[0] for b in tmpl])           # it IS placed/rendered
-        self.assertNotIn("shrine", tc.cluster_entrances(anchor, tmpl))  # but has no door
+        tmpl = tc.resolve_template("town", shop_category="weapons", prop="warehouse")
+        self.assertIn("warehouse", [b[0] for b in tmpl])        # it IS placed/rendered
+        self.assertNotIn("warehouse", tc.cluster_entrances(anchor, tmpl))  # but has no door
         # and so no cobble spur reaches it
         net = tc.cobble_network(anchor, template=tmpl)
-        shrine = next(b for b in tc.cluster_buildings(anchor, tmpl) if b[0] == "shrine")
-        door = tc.entrance_tile(anchor, shrine[1] - anchor[0], shrine[2] - anchor[1], shrine[3], shrine[4], shrine[5])
+        ware = next(b for b in tc.cluster_buildings(anchor, tmpl) if b[0] == "warehouse")
+        door = tc.entrance_tile(anchor, ware[1] - anchor[0], ware[2] - anchor[1], ware[3], ware[4], ware[5])
         self.assertNotIn(door, net)
+
+    def test_shrine_is_functional_with_a_door_and_cobble(self):
+        # Church C (2026-07-11): the shrine left COSMETIC_BUILDINGS — it gets a
+        # real entrance and a cobble spur, exactly like the mage tower did.
+        anchor = (50, 50)
+        for tier, kwargs in (("village", {}), ("town", {"shop_category": "weapons"})):
+            tmpl = tc.resolve_template(tier, prop="shrine", **kwargs)
+            self.assertIn("shrine", [b[0] for b in tmpl], tier)
+            ents = tc.cluster_entrances(anchor, tmpl)
+            self.assertIn("shrine", ents, tier)                 # it HAS a door now
+            net = tc.cobble_network(anchor, template=tmpl)
+            self.assertIn(ents["shrine"], net, tier)            # the spur reaches it
+        # the village template places the shrine facing front -> door due south.
+        tmpl = tc.resolve_template("village", prop="shrine")
+        shrine = next(b for b in tmpl if b[0] == "shrine")
+        _bid, dx, dy, fw, fh, facing, _flip = shrine
+        self.assertEqual(facing, "front")
+        self.assertEqual(tc.cluster_entrances(anchor, tmpl)["shrine"],
+                         (anchor[0] + dx + fw // 2, anchor[1] + dy + fh))
+
+    def test_shrine_door_maps_the_respawn_service(self):
+        from rpg_game.presentation.overworld_buildings import (
+            BUILDING_FUNCTION, BUILDING_TITLES)
+        self.assertEqual(BUILDING_FUNCTION["shrine"], "relocate_respawn")
+        self.assertEqual(BUILDING_TITLES["shrine"], "Shrine")
 
     def test_footprints_disjoint_and_entrances_clear_all_combos(self):
         anchor = (60, 60)

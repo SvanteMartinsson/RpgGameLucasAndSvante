@@ -34,6 +34,8 @@ BUILDING_FUNCTION = {
     "blacksmith": "store",
     "barracks": "store",
     "church": "relocate_respawn",
+    # Church C (2026-07-11): a shrine is the small towns' church — same service.
+    "shrine": "relocate_respawn",
     "town_hall": "tournaments",
     # B8 2b: the service props got their doors — brewing moved home from the
     # general shop's counter, and stables run the coach network (fast travel).
@@ -60,6 +62,7 @@ BUILDING_TITLES = {
     "blacksmith": "Blacksmith",
     "barracks": "Barracks",
     "church": "Church",
+    "shrine": "Shrine",
     "town_hall": "Town Hall",
     "tower": "Mage Tower",
     "apothecary": "Apothecary",
