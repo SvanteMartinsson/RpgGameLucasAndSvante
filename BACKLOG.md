@@ -362,6 +362,10 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   sim-utredning (per-delträff vs en-gång-per-attack) motiverade ingen regeländring:
   per-delträff är det etablerade, testlåsta beteendet och gör reflect till en meningsfull
   motvikt mot multi-hit-kit. Detaljmatrisen finns i dagbatchrapporten (extern).
+- **B96b-siffror (för spårbarhet):** med realistisk mana var winrate-skillnaden mellan
+  per-delträff och en-gång-per-attack **0,0 pp**; först vid TVINGAD reflect/multi-hit-
+  överlapp syntes skillnad: fighter 21 → 100 % (+79 pp), rogue +8,5 pp. Beslut:
+  **BEHÅLL per-delträff.**
 - **Vad:** (a) Reflect-loggraden namnger sin källa: "Hero's Counter reflected 6 damage to
   Dire Wolf." i st. f. generiska "X reflected N damage to Y." — härlett ur statusens
   ursprungs-skill, ej hårdkodat. (b) Multi-hit-reflect: ÄNDRA INTE beteendet — sim (N≥200)
@@ -430,9 +434,12 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   statusprefix [LEARNED]/[LOCKED]/[CAN LEARN] → kompakta markörer (punkt/bock + dimm).
 - **Acceptans:** före/efter-renders av varje berörd skärm i docs/nightly/ — visuell accept.
 
-#### Parguillas-kulissen  ⭐ designbärande — INGET byggarbete i dagbatch 2026-07-11
+#### Parguillas-kulissen  ⭐ designbärande · ✅ **BESLUT C (Lucas, kväll 2026-07-11) — byggs i nattbatch 2026-07-11→12**
 - **Vad:** Designval för Parguillas: (A) shrine får en funktion / (B) dörrlös kuliss /
   (C) shrine får kyrkans respawn-funktion. Lucas väljer väg innan byggarbete.
+- **Beslut: alternativ C.** Shrine tas ur COSMETIC_BUILDINGS, får respawn-relocation-
+  funktionen (BUILDING_FUNCTION shrine→relocate_respawn), titel "Shrine", dörr/cobble via
+  befintligt template-maskineri.
 
 ### Playtest-tasks (2026-07-11 kväll) — kvällsbatch 2026-07-11
 
@@ -460,7 +467,38 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   samma logik. Träddatan rörs INTE.
 - **Acceptans:** renders före/efter (mage = värsta fallet) i docs/nightly/; tester.
 
+#### B107 — Battle feel (Battle Screen Mock = spec) · 🟢 **S1 GO (nattbatch 2026-07-11→12)**
+- **Vad:** Battle-scenens presentation lyfts enligt Lucas godkända design-export
+  ("Battle Screen Mock"): (a) hjälte-idle-sprite (hero_idle_right_native.png, 4 frames
+  20×29, loop A-B-C-B 0,9 s) ersätter placeholder-boxen; (b) attack-koreografi för
+  spelarens skadeactions i tre viktklasser (quick/normal/power) med dash, FX-ark över
+  fienden (fx_quick/fx_normal/fx_power.png), fiende-skak + brightness-flash, viktklassade
+  stigande skadesiffror, dödsfade; (c) allt bakom "Combat animations"-togglen, skip-klick
+  snabbspolar; mockens hotkey-brackets som B106-badges.
+- **Scope:** ENDAST presentation i pygame_battle — noll rng-draws ur motorströmmen.
+  Fiendens attacker och skill-specifika FX = S2.
+- **Slices:** (1) hero idle + spelar-attack-koreografi (render-HALT: GIF:er till
+  docs/nightly/); (2) fiende-koreografi + skill-specifika FX.
+- **Acceptans:** headless GIF-renders quick/normal/power + dödsfade; determinismtest;
+  mappningstabell actions→viktklass i rapporten.
+
 ### Progressionsrundan (efter B102-audit — Lucas beslutar målkurvor först)
+
+#### Progression: delta-modellen  ⭐ designbärande · **LÅST (Lucas, kväll 2026-07-11)**
+- **Gameloop-målbild:** trygghetspunkt → utflykt → hem starkare → längre utflykt.
+- **Svårighet = DELTA-KURVA:** svårigheten definieras av (spelarlevel − fiendelevel),
+  inte av zonkonstanter. Zonernas roll är GEOGRAFISK: geografin ger zongradienten
+  (levelband stiger med avstånd från trygghetspunkter), deltat ger balansen.
+- **Målgates (MEDIAN-loadout, N≥200):** Δ0 neutral matchup 70–90 % winrate / TTK 3–6
+  rundor / kostnad 20–35 % HP · Δ0 dålig matchup golv 25–30 % · Δ+3 ≥95 % men TTK ≥2 ·
+  Δ−2 = 35–60 % · Δ−4 ≤15 % · OPTIMIZED ≤ +15 pp över median, DEFAULT ≥ −15 pp under ·
+  Cainos-undantag (nybörjarzon): Δ0 85–100 %, TTK ≥2 · inga timeout-celler.
+- **Tank:** får basdamage-tillväxt per level (egen skadeväg); mål L12-DPS-gap mot
+  fighter/hunter ≤2× (från 4–5×). Tanken förblir seg — blir inte fighter.
+- **Dödsstraffet RÖRS INTE** i denna runda.
+- **Loadout-policys i sim:** DEFAULT (startkit) / MEDIAN (halva guldet spenderat,
+  girig-men-icke-optimal talentspend, inga tomes) / OPTIMIZED (B102-policyn) — gates
+  uttrycks mot MEDIAN.
 
 #### B97 — Wight/skeleton-kitflytt (Variant B LÅST, exekveras FÖRST i rundan)
 - **Beslut (Lucas, kväll 2026-07-11): Variant B** — cursed_wight får frostfire_strike +
@@ -1615,7 +1653,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** siffror/blink/skak triggar rätt och stör inte layouten (canvas-skalning intakt);
   kan stängas av (krok för B70); render-review; sviten grön.
 
-#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 KLAR** (78786e3: partikelmotor + mork_skog-eldflugor, fps-tapp 1.2%) · ⏸ **S2 VÄNTAR (Lucas-beslut 2026-07-11):** in-game-review av eldflugorna först — bygg INTE zon-presets/toggle innan dess
+#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 GODKÄND (Lucas, kväll 2026-07-11) → S2 GO** (byggs i nattbatch 2026-07-11→12: preset-tabell + settings-toggle; övriga zoners presets authoras som FÖRSLAG i utkastfil + renders, Lucas väljer på morgonen)
 - **Vad:** Ett tunt atmosfärslager i overworlden per zon: eldflugor/pollendamm i mork_skog, låg
   dimslöja som driver i cursed_mire, aska/gnistor i grave_heath, varmt dis i cainos — några dussin
   långsamma partiklar + en svag färg-overlay. Upplevelsen: zonerna FÅR sin stämning i rörelse, och
