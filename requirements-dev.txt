@@ -1,0 +1,7 @@
+# Dev-/verktygsberoenden — behövs INTE för att spela.
+#
+# Runtime-beroenden (pygame, pytmx) ligger i requirements.txt. Det här är
+# rena verktygsberoenden: rpg_game/tools/progression_audit.py plottar
+# PNG-kurvor med matplotlib (STEG 0 kväll 2026-07-11 hittade inga fler
+# icke-stdlib dev-beroenden i tools/ eller tests/).
+matplotlib>=3.8,<4

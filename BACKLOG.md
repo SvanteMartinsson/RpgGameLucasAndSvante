@@ -357,7 +357,11 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 
 ### Playtest-tasks (2026-07-11) — dagbatch 2026-07-11
 
-#### B96 — Reflect-polish: loggrad namnger källan + multi-hit-utredning
+#### B96 — Reflect-polish: loggrad namnger källan + multi-hit-utredning  · ✅ **KLAR** ((a) 56b08b7; (b) beslut kväll 2026-07-11)
+- **Beslut B96b (Lucas, kväll 2026-07-11): BEHÅLL per-delträff-reflect.** Dagbatchens
+  sim-utredning (per-delträff vs en-gång-per-attack) motiverade ingen regeländring:
+  per-delträff är det etablerade, testlåsta beteendet och gör reflect till en meningsfull
+  motvikt mot multi-hit-kit. Detaljmatrisen finns i dagbatchrapporten (extern).
 - **Vad:** (a) Reflect-loggraden namnger sin källa: "Hero's Counter reflected 6 damage to
   Dire Wolf." i st. f. generiska "X reflected N damage to Y." — härlett ur statusens
   ursprungs-skill, ej hårdkodat. (b) Multi-hit-reflect: ÄNDRA INTE beteendet — sim (N≥200)
@@ -366,22 +370,20 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Not:** Följer B86-utredningens otydligheter (loggrad + multi-hit).
 - **Acceptans:** loggrad med källnamn, test; sim-rapport för multi-hit-frågan.
 
-#### B97 — Wight/skeleton-kitflytt (arten styr kit)
-- **Vad:** Flytta `frostfire_strike` från skeleton_warrior till cursed_wight (kit + ai-regler;
-  wight_curse/grave_wail behålls om plats — mät kitstorleksnormen). skeleton_warrior får en
-  FYSISK ersättare vald bland BEFINTLIGA actions (svärd+sköld-art: sunder-/power-familjen) —
-  ingen ny action authoras. Lucas-godkänt: arten styr kitet.
-- **Acceptans:** sim N≥200 per fiende före/efter, båda inom ±10 pp mot on-level-klasserna
-  (HALT om mer); bestiary-text uppdaterad vid behov; tester.
+#### B97 — Wight/skeleton-kitflytt  · ⏸ **FLYTTAD till progressionsrundan** (beslut kväll 2026-07-11)
+- **Beslut (Lucas, kväll 2026-07-11): Variant B LÅST** — cursed_wight får frostfire +
+  wight_curse + power enligt 3-kit-normen; skeleton_warrior får `shield_slam` som fysisk
+  bruiser. Men exekveras FÖRST i progressionsrundan, gated mot dess NYA målkurvor —
+  ingenting byggs innan målkurvorna är beslutade. Se posten under "Progressionsrundan".
 
-#### B98 — Sprite-nedskalningskvalitet + tier-map-täckning
+#### B98 — Sprite-nedskalningskvalitet + tier-map-täckning  · ✅ **KLAR** (5d66b90)
 - **Vad:** enemy_sprite använder smoothscale (eller stegvis halvering) när nedskalnings-
   faktorn överstiger ~2x; nearest behålls för uppskalning (pixel-art förblir skarp). Lägg
   cursed_wight, skeleton_warrior och övriga omappade fiender i ENEMY_SPRITE_TIER — förslag
   large för L8+-eliter men välj per sprite-proportion, rapportera valen.
 - **Acceptans:** före/efter-renders (minst cursed_wight) i docs/nightly/; tester.
 
-#### B99 — Tangentbordsnavigering i menyer
+#### B99 — Tangentbordsnavigering i menyer  · 🟢 **S1 KLAR** (4730a2f) · **S2 GO** (Lucas, kväll 2026-07-11 — körs i kvällsbatchen)
 - **Vad:** Fokus-modell som DELAD mekanism i ui.py (B40-menyspecens anda): pil upp/ner
   flyttar fokus inom sektion, vänster/höger (eller Tab) hoppar mellan sektioner/kolumner,
   Enter aktiverar, Esc backar som idag. Musen fortsätter fungera parallellt; fokusmarkering
@@ -390,7 +392,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (2) övriga menyer efter godkänd S1.
 - **Acceptans:** tester på fokusflytt/aktivering; renders till docs/nightly/.
 
-#### B100 — Loot-flik i loggen
+#### B100 — Loot-flik i loggen  · ✅ **KLAR** (2cecf62)
 - **Vad:** Tredje tabb "Loot" bredvid All/Combat (B44-strukturen). Varje item-/guldförvärv
   loggas med källa: "Looted Greatsword from Cave Bear." / "Opened chest: 2x HP Potion." /
   "Bought Tome: Sun Flare." Käll-metadata följer loot-flödet i core; presentationen färgar
@@ -399,7 +401,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   event, tome-studie, turneringsbelöning, ev. fler).
 - **Acceptans:** test per källväg; renders.
 
-#### B101 — Broarnas kanttiling
+#### B101 — Broarnas kanttiling  · ✅ **KLAR + GODKÄND av Lucas** (c34467c; kväll 2026-07-11 — behålls)
 - **Vad:** Bro-däcket får vänsterkant-/mitt-/högerkant-varianter: mitt-tilen genereras ur
   befintlig tile med räckespixlarna borttagna via deterministisk transform (parametrar
   dokumenteras); kantvarianter behåller ETT räcke vardera. Variantval efter grannskap
@@ -407,7 +409,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** före/efter-renders av bron i skärmdumpens läge till docs/nightly/ för
   Lucas review (revert billig om utseendet underkänns).
 
-#### B102 — Progression-audit (MÄT-ONLY)
+#### B102 — Progression-audit (MÄT-ONLY)  · ✅ **KLAR** (1eef733; rapport docs/nightly/b102_report.md — designrunda hos Lucas)
 - **Vad:** Underlag till Lucas designrunda om svårighetskurvan — INGA data-/konstant-
   ändringar. (a) Spelarkurva per klass L1–L12: HP + förväntad DPS med default- och
   realistiskt optimerad loadout; dekomponera L3–4-spiken (vapen-tier/talent-ranks/basstats).
@@ -420,13 +422,54 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   FÖRSLAG på målkurvor. Förslag — besluten är Lucas.
 - **Acceptans:** kurvor + problemlista + målkurveförslag; commit endast för sim-/plottverktyg.
 
-#### Meny-textstil  ⭐ designbärande — INGET byggarbete i dagbatch 2026-07-11
-- **Vad:** Designrunda om menyernas textstil: overflow, parenteser, Keys-layout.
-  Mockups kommer från arkitekten; Lucas beslutar innan något byggs.
+#### B106 — Meny-textstil  ⭐ · 🟢 **AKTIV** (mockup GODKÄND av Lucas kväll 2026-07-11 — körs i kvällsbatchen)
+- **Vad:** Textstilregler som DELADE hjälpare i ui.py, applicerade på alla menyer:
+  inga parentes-hjälptexter (hotkeys som badge-brickor i egen kolumn, kostnader
+  högerställda), Settings "Combat FX" → "Combat animations" + Controls-tabell i två
+  kolumner, trunkering + tooltip vid platsbrist (text får aldrig rinna utanför sin yta),
+  statusprefix [LEARNED]/[LOCKED]/[CAN LEARN] → kompakta markörer (punkt/bock + dimm).
+- **Acceptans:** före/efter-renders av varje berörd skärm i docs/nightly/ — visuell accept.
 
 #### Parguillas-kulissen  ⭐ designbärande — INGET byggarbete i dagbatch 2026-07-11
 - **Vad:** Designval för Parguillas: (A) shrine får en funktion / (B) dörrlös kuliss /
   (C) shrine får kyrkans respawn-funktion. Lucas väljer väg innan byggarbete.
+
+### Playtest-tasks (2026-07-11 kväll) — kvällsbatch 2026-07-11
+
+#### B103 — Passiv-/effekttext-rendering (beräknad, mänsklig text för ALLA effekt-typer)
+- **Vad:** Playtest-fynd: "bonus damage under a condition" (Combustion) och råa
+  identifierare som "elemental_attack_mod" (Flametongue/Rimeblade) når skärmen. Varje
+  effekt-typ i actions-/talents-datan får en renderare som producerar BERÄKNAD mänsklig
+  text ur datans fält — Combustion: "Fire damage +20% vs burning targets" (rank-skalat),
+  Flametongue: "+4 fire damage on attacks" per rank. Rank-raderna (B90) delar renderaren.
+- **Acceptans:** guard-test som failar när en effekt-typ i datan saknar renderare (luckan
+  kan aldrig återuppstå); renders av tidigare trasiga tooltips i docs/nightly/.
+
+#### B104 — Encounter-cooldown efter strid (rörelsetid, inte väggklocka)
+- **Vad:** Efter avslutad strid krävs 1 sekund ACKUMULERAD RÖRELSETID (stillastående
+  räknar inte ner) innan nytt encounter kan trigga. Läggs i core (testbar), inte i skalet.
+  Gäller även events (B67 delar encounter-slotten).
+- **Acceptans:** seedat test — steg under cooldown ger aldrig encounter; första rollen
+  efter cooldown beter sig som idag.
+
+#### B105 — Talanglistans gruppering per gren (ENDAST presentation)
+- **Vad:** Skills & Talents-listan grupperas per gren med grenrubrik (Pyromancer /
+  Cryomancer / …), noder i order-följd. Tvär-passiver som är egna en-nods-grenar
+  (flametongue/rimeblade-mönstret) visas UNDER sin krävda grens sektion med markering
+  ("↳ requires Frostbolt") — inte som egna kolumner/sektioner. Char creation-trädet får
+  samma logik. Träddatan rörs INTE.
+- **Acceptans:** renders före/efter (mage = värsta fallet) i docs/nightly/; tester.
+
+### Progressionsrundan (efter B102-audit — Lucas beslutar målkurvor först)
+
+#### B97 — Wight/skeleton-kitflytt (Variant B LÅST, exekveras FÖRST i rundan)
+- **Beslut (Lucas, kväll 2026-07-11): Variant B** — cursed_wight får frostfire_strike +
+  wight_curse + power enligt 3-kit-normen; skeleton_warrior får `shield_slam` som FYSISK
+  bruiser (svärd+sköld-art). Ingen ny action authoras.
+- **Gating:** byggs som FÖRSTA punkt i progressionsrundan, sim-verifierad mot rundans NYA
+  målkurvor (inte dagens ±10 pp-band). Ingenting byggs innan målkurvorna är beslutade.
+- **Acceptans:** sim N≥200 per fiende före/efter mot de nya målkurvorna; bestiary-text
+  uppdaterad vid behov; tester.
 
 ### Overworld, kollision & karta
 
