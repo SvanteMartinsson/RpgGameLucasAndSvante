@@ -27,7 +27,8 @@ class SharedOptionsTests(unittest.TestCase):
     def test_options_cover_all_user_facing_settings(self):
         keys = [option["key"] for option in user_settings.OPTIONS]
         self.assertEqual(keys, ["fullscreen", "log_visible", "minimap",
-                                "combat_fx", "combat_skip", "sound_music"])
+                                "combat_fx", "combat_skip", "ambience",
+                                "sound_music"])
         for option in user_settings.OPTIONS:
             self.assertIn(option["key"], user_settings.DEFAULTS)
 

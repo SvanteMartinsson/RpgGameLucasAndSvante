@@ -19,6 +19,7 @@ DEFAULTS = {
     "minimap": True,       # B11 minimap on by default
     "combat_fx": True,     # B72 floaters/blink/shake
     "combat_skip": False,  # B75 skip-click through round playback (Lucas: default off)
+    "ambience": True,      # B73 S2 zone particle layer
     "sound_master": 1.0,   # B69 master volume 0.0..1.0 (SFX play at master × sfx)
     "sound_sfx": 1.0,      # B69 SFX bus volume 0.0..1.0
     "sound_music": 1.0,    # B69 music bus volume 0.0..1.0 (loop at master × music)
@@ -36,6 +37,7 @@ OPTIONS = (
     {"key": "minimap", "label": "Minimap", "kind": "toggle", "hotkey": "N"},
     {"key": "combat_fx", "label": "Combat animations", "kind": "toggle"},
     {"key": "combat_skip", "label": "Combat skip-click", "kind": "toggle"},
+    {"key": "ambience", "label": "Ambience", "kind": "toggle"},
     {"key": "sound_music", "label": "Music volume", "kind": "slider"},
 )
 
