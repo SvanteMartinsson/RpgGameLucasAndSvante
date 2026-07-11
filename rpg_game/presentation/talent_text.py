@@ -220,15 +220,52 @@ def node_preview_lines(content, node) -> list:
     return lines
 
 
+def branch_label(branch: str) -> str:
+    return branch.replace("_", " ").title()
+
+
+def cross_passive_parent_branch(content, node) -> str:
+    """B105: a single-node branch whose prerequisite lives in ANOTHER branch of
+    the same class (the flametongue/rimeblade pattern) is a cross-passive; it
+    displays under its required branch's section, never as its own column.
+    Returns that parent branch, or '' for ordinary nodes."""
+    if not node.requires:
+        return ""
+    siblings = [n for n in content.talents.values()
+                if n.class_id == node.class_id and n.branch == node.branch]
+    if len(siblings) != 1:
+        return ""
+    required = content.talents.get(node.requires)
+    if required is None or required.branch == node.branch:
+        return ""
+    return required.branch
+
+
+def grouped_class_talents(content, class_id: str) -> list:
+    """B105: the class tree as (branch, nodes) sections — main branches in
+    stable id order with nodes in order-sequence, cross-passives appended under
+    their required branch. Presentation only; the tree data is untouched.
+    A node with node.branch != the section branch is a cross-passive row."""
+    main: dict = {}
+    cross: list = []
+    nodes = sorted((n for n in content.talents.values() if n.class_id == class_id),
+                   key=lambda n: (n.order, n.id))
+    for node in nodes:
+        parent = cross_passive_parent_branch(content, node)
+        if parent:
+            cross.append((parent, node))
+        else:
+            main.setdefault(node.branch, []).append(node)
+    for parent, node in cross:
+        main.setdefault(parent, []).append(node)
+    return sorted(main.items())
+
+
 def class_tree_columns(content, class_id: str) -> list:
     """The class's full tree as (branch, nodes-in-order) columns for the
-    read-only creation preview."""
-    columns: dict = {}
-    for node in content.talents.values():
-        if node.class_id == class_id:
-            columns.setdefault(node.branch, []).append(node)
-    return [(branch, sorted(nodes, key=lambda n: (n.order, n.id)))
-            for branch, nodes in columns.items()]
+    read-only creation preview. B105: cross-passives sit inside their parent
+    branch's column instead of getting a column of their own."""
+    return grouped_class_talents(content, class_id)
 
 
 def describe_talent(engine: GameEngine, node) -> str:

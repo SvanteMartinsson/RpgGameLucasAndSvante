@@ -23,6 +23,8 @@ from rpg_game.presentation import ui_text as T
 from rpg_game.presentation.overworld_render import (
     ACCENT, BAD, GOOD, PANEL_EDGE, TEXT, TEXT_DIM, WARN)
 from rpg_game.presentation.talent_text import (
+    branch_label,
+    grouped_class_talents,
     skill_effect_lines,
     talent_action_label,
     talent_can_allocate,
@@ -314,18 +316,36 @@ class OverlaysMixin:
         self.screen.blit(self.font_sm.render(
             self._fit_text(T.talents_hint(eng.player.talent_points), middle.width, self.font_sm),
             True, WARN), (middle.x, middle.y))
-        class_nodes = self.class_talent_nodes()
         selected = self.selected_talent_node()
-        max_nodes = max(1, (middle.height - 32) // 32)
-        for i, node in enumerate(class_nodes[:max_nodes]):
+        # B105: sections per branch with a header row; cross-passives render
+        # under their parent branch with a "requires" marker. The grouping is
+        # the shared talent_text rule — tree data untouched.
+        rows: list = []
+        for branch, nodes in grouped_class_talents(eng.content, eng.player.player_class):
+            rows.append(("header", branch, None))
+            rows.extend(("node", branch, node) for node in nodes)
+        max_rows = max(1, (middle.height - 32) // 32)
+        y = middle.y + 30
+        for kind, branch, node in rows[:max_rows]:
+            if kind == "header":
+                self.screen.blit(self.font_sm.render(
+                    self._fit_text(branch_label(branch), middle.width, self.font_sm),
+                    True, ACCENT), (middle.x, y + 6))
+                y += 32
+                continue
             status = talent_status(eng, node)
             rank = talent_rank_label(eng, node)
-            rect = pygame.Rect(middle.x, middle.y + 30 + i * 32, middle.width, 26)
+            rect = pygame.Rect(middle.x, y, middle.width, 26)
             marker = "> " if selected is not None and node.id == selected.id else "  "
             rank_suffix = f" {rank}" if rank else ""
-            label = f"{marker}{status} {node.name}{rank_suffix} ({node.branch} t{node.order})"
+            if node.branch != branch and node.requires in eng.content.talents:
+                cross = f" ↳ requires {eng.content.talents[node.requires].name}"
+            else:
+                cross = ""
+            label = f"{marker}{status} {node.name}{rank_suffix}{cross}"
             self._add_button(rect, label, (lambda nid=node.id: self.select_talent(nid)), True,
                              focus_section="talents")
+            y += 32
 
         self._draw_talent_detail(right, selected)
 

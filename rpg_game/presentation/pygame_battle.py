@@ -1316,8 +1316,11 @@ def character_creation(engine: GameEngine) -> tuple[str, str, str]:
             ny = py + 20
             for node in nodes:
                 node_rect = pygame.Rect(bx, ny, col_w - 12, 16)
+                # B105: a cross-passive sits inside its parent branch's column,
+                # marked instead of numbered (its order is another branch's).
+                text = f"↳ {node.name}" if node.branch != branch else f"{node.order}. {node.name}"
                 screen.blit(font_sm.render(
-                    ui.fit(f"{node.order}. {node.name}", font_sm, col_w - 12), True, TEXT), (bx, ny))
+                    ui.fit(text, font_sm, col_w - 12), True, TEXT), (bx, ny))
                 hover.add(node_rect, ui.Tooltip(
                     title=node.name,
                     lines=talent_text.node_preview_lines(engine.content, node)))

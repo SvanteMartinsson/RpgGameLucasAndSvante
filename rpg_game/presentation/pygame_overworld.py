@@ -54,6 +54,7 @@ from rpg_game.presentation.playtest_logger import PlaytestLogger
 # in-world view sizes itself to the map via OverworldApp.view_size instead.)
 from rpg_game.presentation.pygame_battle import HEIGHT, WIDTH, BattleApp, character_creation
 from rpg_game.presentation.talent_text import (
+    grouped_class_talents as talent_text_grouped,
     talent_action_label,
     talent_can_allocate,
     talent_detail,
@@ -1166,10 +1167,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.selected_talent_id = node_id
 
     def class_talent_nodes(self):
-        return sorted(
-            (node for node in self.engine.content.talents.values() if node.class_id == self.engine.player.player_class),
-            key=lambda node: (node.branch, node.order),
-        )
+        # B105: flat selection order follows the grouped display (branch
+        # sections with cross-passives attached under their parent branch).
+        return [node for _, nodes in
+                talent_text_grouped(self.engine.content, self.engine.player.player_class)
+                for node in nodes]
 
     def selected_talent_node(self):
         nodes = self.class_talent_nodes()
