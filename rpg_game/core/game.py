@@ -308,10 +308,12 @@ class GameEngine:
         self.enter_place(destination_place_id)
         return FastTravelResult(True, f"The coach carries you to {place.name} ({cost} gold).", cost)
 
-    def create_encounter(self, pool=None) -> Enemy | None:
+    def create_encounter(self, pool=None, band=None) -> Enemy | None:
         """B48: `pool` (weighted (enemy_id, weight) list) spawns from the tile's
-        drawn areas; without it the classic place pool applies (terminal/sims)."""
-        enemy = world.create_encounter(self.player, self.content, self.rng, pool=pool)
+        drawn areas; without it the classic place pool applies (terminal/sims).
+        `band` is the tile's spawn-AREA level band (spawns.band_at) — it outranks
+        the region/template bands when set."""
+        enemy = world.create_encounter(self.player, self.content, self.rng, pool=pool, band=band)
         if enemy is not None:
             bestiary.mark_seen(self.player, enemy.id)   # B66: it is in the codex now
             self._begin_encounter()

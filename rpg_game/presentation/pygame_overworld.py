@@ -846,7 +846,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             pool = spawns.pool_at(self.engine.content.spawn_areas,
                                   self.engine.content.spawn_fallbacks,
                                   tile, self.zone.wild_region_at(tile))
-            return self.engine.create_encounter(pool=pool)
+            band = spawns.band_at(self.engine.content.spawn_areas, tile)
+            return self.engine.create_encounter(pool=pool, band=band)
         return None
 
     def _build_path_tiles(self) -> set:

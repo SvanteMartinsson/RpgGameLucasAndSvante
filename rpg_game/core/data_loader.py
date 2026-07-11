@@ -295,6 +295,8 @@ def load_content() -> GameContent:
             rect=tuple(row["rect"]),
             enemies=tuple((e["id"], int(e["weight"])) for e in row["enemies"]),
             color=tuple(row.get("color", (200, 200, 200))),
+            level_min=int(row.get("level_min", 0)),
+            level_max=int(row.get("level_max", 0)),
         )
         for row in core_zone.get("spawn_areas", ())
     )

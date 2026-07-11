@@ -67,14 +67,18 @@ def enter_place(player: Player, content: GameContent, place_id: str) -> str:
     return f"Entered {new_place.name}."
 
 
-def roll_enemy_level(template: EnemyTemplate, rng: random.Random, region: "Place | None" = None) -> int:
+def roll_enemy_level(template: EnemyTemplate, rng: random.Random, region: "Place | None" = None,
+                     band: tuple[int, int] | None = None) -> int:
     """Roll a wild spawn level uniformly within a range.
 
-    A region's level band (set on the place) overrides the enemy type's band, so
-    a shared enemy rolls higher in the west without changing the core. Falls back
-    to the type band, then the fixed base level (so arena templates never vary).
+    Precedence: an explicit `band` (a spawn AREA's level_min/level_max, see
+    spawns.band_at) outranks the region's band (set on the place), which
+    outranks the enemy type's band. Falls back to the fixed base level (so
+    arena templates never vary). Always exactly one rng draw.
     """
-    if region is not None and (region.level_min or region.level_max):
+    if band is not None:
+        low, high = band
+    elif region is not None and (region.level_min or region.level_max):
         low = region.level_min or region.level_max
         high = region.level_max or region.level_min
     else:
@@ -99,15 +103,16 @@ def scale_enemy_to_level(enemy: Enemy, base_level: int, target_level: int) -> No
 
 
 def create_encounter(player: Player, content: GameContent, rng: random.Random,
-                     pool=None) -> Enemy | None:
+                     pool=None, band: tuple[int, int] | None = None) -> Enemy | None:
     """Generate a wild encounter: roll a level in the enemy's range and scale
     its stats to it. Tournament opponents do NOT use this path (see
     GameEngine.create_tournament_opponent), so their fixed levels never roll.
 
     B48: with `pool` (a weighted (enemy_id, weight) sequence from
     spawns.pool_at) the enemy comes from the tile's drawn areas; the region's
-    level band still applies. Tile-less callers (terminal, sims) omit it and
-    keep the classic place-pool + rare-slot path unchanged."""
+    level band still applies unless `band` (the tile's spawn-AREA band from
+    spawns.band_at) overrides it. Tile-less callers (terminal, sims) omit both
+    and keep the classic place-pool + rare-slot path unchanged."""
     place = get_current_place(player, content)
     if pool:
         from rpg_game.core import spawns
@@ -121,5 +126,5 @@ def create_encounter(player: Player, content: GameContent, rng: random.Random,
             enemy_id = rng.choice(place.encounters)
     template = content.enemies[enemy_id]
     enemy = template.create_enemy()
-    scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng, region=place))
+    scale_enemy_to_level(enemy, template.level, roll_enemy_level(template, rng, region=place, band=band))
     return enemy
