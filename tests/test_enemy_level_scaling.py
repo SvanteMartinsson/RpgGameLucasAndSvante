@@ -61,7 +61,9 @@ class EnemyLevelScalingTest(unittest.TestCase):
                 if enemy.level == 1:
                     self.assertEqual((enemy.max_hp, enemy.damage), (20, 6))
                 if enemy.level == 5:
-                    self.assertEqual((enemy.max_hp, enemy.damage), (36, 9))
+                    self.assertEqual((enemy.max_hp, enemy.damage),
+                                     (round_half_up(20 * (1 + world.HP_GROWTH_PER_LEVEL * 4)),
+                                      round_half_up(6 * (1 + world.DAMAGE_GROWTH_PER_LEVEL * 4))))
         # the range actually varied
         rat_levels = {lvl for eid, lvl in seen_levels if eid == "giant_rat"}
         self.assertGreater(len(rat_levels), 1)

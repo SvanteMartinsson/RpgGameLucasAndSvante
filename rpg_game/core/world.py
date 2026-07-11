@@ -7,9 +7,11 @@ from rpg_game.core.progression import round_half_up
 
 # Per-level stat growth for wild spawns, applied relative to the template's base
 # level. Tunable. A level-5 giant rat (base 1) becomes a real threat, not just
-# more XP.
+# more XP. Progression pass 2026-07-12: damage growth 0.12 -> 0.08 — the delta
+# curve gets its threat from raised BASE kits (flatter level scaling), so an
+# on-level fight bites without a +4-level one exploding.
 HP_GROWTH_PER_LEVEL = 0.20
-DAMAGE_GROWTH_PER_LEVEL = 0.12
+DAMAGE_GROWTH_PER_LEVEL = 0.08
 
 
 def get_current_place(player: Player, content: GameContent) -> Place:
