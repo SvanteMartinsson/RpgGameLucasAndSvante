@@ -158,23 +158,30 @@ def award_xp(player: Player, amount: int) -> int:
 
 
 # B35 + Wisdom slice: a level-up grants EVERY stat its baseline; the chosen MAIN
-# stat takes the bigger main value instead. Universal + flat — no level scaling, no
-# per-class difference. Choices: hp / wisdom / damage / crit (no speed, no mana —
-# mana is derived from wisdom). Wisdom has no baseline; its main value is +2 (Wisdom
-# Slice B, sim-tuned): it both scales spell damage with level toward TTK parity and
-# makes the wisdom level-up choice competitive with damage +4.
-LEVEL_STAT_BASELINE = {"hp": 2, "damage": 1, "crit": 1}
+# stat takes the bigger main value instead. Universal + flat — no level scaling.
+# Choices: hp / wisdom / damage / crit (no speed, no mana — mana is derived from
+# wisdom). Wisdom has no baseline; its main value is +2 (Wisdom Slice B, sim-
+# tuned): it both scales spell damage with level toward TTK parity and makes the
+# wisdom level-up choice competitive with damage +4.
+# Progression pass 2026-07-12 (lever c): the HP baseline rose 2 -> 3 so squishier
+# classes can pay the delta curve's per-fight HP cost; the tank keeps the old +2
+# (its bulk identity lives in maining HP, and it was explicitly left untouched).
+LEVEL_STAT_BASELINE = {"hp": 3, "damage": 1, "crit": 1}
+CLASS_HP_BASELINE = {"tank": 2}
 LEVEL_STAT_MAIN = {"hp": 8, "damage": 4, "crit": 4, "wisdom": 2}
 _STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit", "wis": "wisdom"}
 
 
-def level_up_gains(main_stat: str) -> dict[str, int]:
+def level_up_gains(main_stat: str, class_id: str = "") -> dict[str, int]:
     """The per-stat increase for a level-up where `main_stat` was chosen: every
-    stat gets its baseline (wisdom has none), the main stat gets the main value."""
+    stat gets its baseline (wisdom has none), the main stat gets the main value.
+    `class_id` picks the per-class HP baseline (tank keeps +2)."""
     main = _STAT_ALIASES.get(main_stat.strip().lower(), main_stat.strip().lower())
     if main not in LEVEL_STAT_MAIN:
         raise ValueError("stat must be one of: hp, wisdom, damage, crit")
-    return {stat: (LEVEL_STAT_MAIN[stat] if stat == main else LEVEL_STAT_BASELINE.get(stat, 0))
+    baseline = dict(LEVEL_STAT_BASELINE)
+    baseline["hp"] = CLASS_HP_BASELINE.get(class_id, baseline["hp"])
+    return {stat: (LEVEL_STAT_MAIN[stat] if stat == main else baseline.get(stat, 0))
             for stat in LEVEL_STAT_MAIN}
 
 
@@ -182,7 +189,7 @@ def apply_stat_choice(player: Player, stat: str) -> str:
     if player.pending_stat_choices <= 0:
         raise ValueError("player has no pending stat choices")
 
-    gains = level_up_gains(stat)
+    gains = level_up_gains(stat, class_id=player.player_class)
     main = _STAT_ALIASES.get(stat.strip().lower(), stat.strip().lower())
     player.max_hp += gains["hp"]
     player.base_damage += gains["damage"]
