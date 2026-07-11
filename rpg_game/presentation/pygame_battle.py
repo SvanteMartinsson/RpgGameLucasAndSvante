@@ -104,6 +104,26 @@ ENEMY_SPRITE_TIER = {
     "thornling": "small",
     "broodmother_spider": "large",
     "strangling_vine": "large",
+    # B98: previously unmapped enemies (fell back to medium). Chosen per sprite
+    # proportion + stature; L8+ elites go large. plague_acolyte has no sprite
+    # file yet (box fallback) so it stays unmapped.
+    "wild_dog": "small",
+    "giant_spider": "small",
+    "bog_leech": "small",
+    "goblin_scrapper": "small",
+    "wild_stag": "medium",
+    "goblin_raider": "medium",
+    "goblin_shaman": "medium",
+    "razortusk_boar": "medium",
+    "mire_lurker": "medium",
+    "grave_hound": "medium",
+    "ghoul": "medium",
+    "rotting_fiend": "medium",
+    "witchlight": "medium",
+    "shade": "medium",
+    "bog_hag": "large",
+    "cursed_wight": "large",
+    "skeleton_warrior": "large",
     # B65 zone bosses (placeholder sprites copied from kin until art lands)
     "boss_rotfang": "large",
     "boss_briar_queen": "large",
@@ -121,10 +141,24 @@ def enemy_sprite_height(enemy_id: str) -> int:
     return TIER_HEIGHT.get(ENEMY_SPRITE_TIER.get(enemy_id, _DEFAULT_SPRITE_TIER), TIER_HEIGHT[_DEFAULT_SPRITE_TIER])
 
 
+# B98: heavy downscales (raw sprites are 500-1450px tall vs 150-250 targets)
+# alias badly under nearest-neighbor; smoothscale fixes that. Upscales and mild
+# downscales keep nearest so pixel-art edges stay crisp.
+SMOOTH_DOWNSCALE_THRESHOLD = 2.0
+
+
+def sprite_scale_mode(raw_height: int, target_height: int) -> str:
+    """'smooth' when shrinking by more than SMOOTH_DOWNSCALE_THRESHOLD, else
+    'nearest' (upscales and mild downscales)."""
+    if target_height > 0 and raw_height / target_height > SMOOTH_DOWNSCALE_THRESHOLD:
+        return "smooth"
+    return "nearest"
+
+
 def enemy_sprite(enemy_id: str):
     """Scaled battle sprite for an enemy id, or None if there's no sprite file
-    (the caller draws the box fallback). Cached; nearest-neighbor scaled so pixel
-    edges stay crisp."""
+    (the caller draws the box fallback). Cached; smoothscaled on heavy downscale,
+    nearest-neighbor otherwise so pixel edges stay crisp."""
     if enemy_id in _sprite_cache:
         return _sprite_cache[enemy_id]
     path = os.path.join(SPRITE_DIR, f"{enemy_id}.png")
@@ -133,7 +167,10 @@ def enemy_sprite(enemy_id: str):
         raw = pygame.image.load(path).convert_alpha()
         target_h = enemy_sprite_height(enemy_id)
         width = max(1, round(raw.get_width() * target_h / raw.get_height()))
-        surface = pygame.transform.scale(raw, (width, target_h))  # nearest-neighbor
+        if sprite_scale_mode(raw.get_height(), target_h) == "smooth":
+            surface = pygame.transform.smoothscale(raw, (width, target_h))
+        else:
+            surface = pygame.transform.scale(raw, (width, target_h))  # nearest-neighbor
     _sprite_cache[enemy_id] = surface
     return surface
 
