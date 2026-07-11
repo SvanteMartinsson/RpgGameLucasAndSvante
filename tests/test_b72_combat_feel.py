@@ -50,11 +50,19 @@ class CombatFeelTests(unittest.TestCase):
         return BattleApp(engine=engine, enemy=enemy, standalone=False,
                          event_log=collections.deque())
 
-    def test_damage_components_become_floaters_and_blink_the_target(self):
+    def test_damage_components_become_floaters_at_impact(self):
+        # B107 S1: a PLAYER damage action routes through the choreography —
+        # the weighted numbers spawn at the impact frame, not at cast.
         battle = self._battle()
         battle._spawn_combat_fx(_result(components=((12, "fire"), (4, "frost"))))
+        self.assertIsNotNone(battle._choreo)
+        self.assertEqual(len(battle._choreo_pending), 2)
+        self.assertEqual(battle._floaters, [])
+        for _ in range(battle._choreo.total):
+            battle._tick_choreo()
+            if not battle._choreo:
+                break
         self.assertEqual(len(battle._floaters), 2)
-        self.assertEqual(battle._blink_enemy, 2)     # player hit the enemy
         self.assertEqual(battle._blink_hero, 0)
 
     def test_enemy_attack_blinks_the_hero(self):

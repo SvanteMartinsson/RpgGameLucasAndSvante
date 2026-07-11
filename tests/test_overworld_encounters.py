@@ -49,6 +49,9 @@ class OverworldEncounterTest(unittest.TestCase):
     def test_encounter_in_wilderness_when_rolled(self):
         self._into_wild()
         self.app.encounter_rate = 1.0
+        # Seeded: with seed 0 the B67 event-slot roll (2nd draw 0.758 >= 0.1)
+        # never replaces the fight — unseeded this flaked ~10% of suite runs.
+        self.app.engine.rng = random.Random(0)
         enemy = self.app.maybe_encounter()
         self.assertIsNotNone(enemy)
 

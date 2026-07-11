@@ -30,6 +30,7 @@ from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation.playtest_logger import PlaytestLogger
 from rpg_game.presentation import audio
+from rpg_game.presentation import battle_choreo
 from rpg_game.presentation import settings as user_settings
 from rpg_game.presentation import talent_text
 from rpg_game.presentation import ui
@@ -175,6 +176,62 @@ def enemy_sprite(enemy_id: str):
     return surface
 
 
+# --- B107 S1: hero idle sheet + attack fx sheets -----------------------------
+# hero_idle_right_native.png: 4 frames à 20x29, loop A-B-C-B over 0.9 s in
+# steps(4). Scaled x7 (29 -> 203 px) so the sprite fills the old placeholder
+# box band on the same groundline.
+HERO_FRAME_SIZE = (20, 29)
+HERO_SCALE = 7
+HERO_IDLE_SEQ = (0, 1, 2, 1)
+HERO_IDLE_PERIOD = battle_choreo.frames(900)
+_hero_frames: "list[pygame.Surface] | None | str" = "unloaded"
+_fx_frames_cache: dict[str, "list[pygame.Surface] | None"] = {}
+
+
+def hero_idle_frames():
+    """The 4 scaled hero idle frames, or None when the sheet is missing (the
+    caller falls back to the S0 placeholder box)."""
+    global _hero_frames
+    if _hero_frames == "unloaded":
+        path = os.path.join(SPRITE_DIR, "hero_idle_right_native.png")
+        if not os.path.exists(path):
+            _hero_frames = None
+        else:
+            sheet = pygame.image.load(path).convert_alpha()
+            fw, fh = HERO_FRAME_SIZE
+            _hero_frames = [
+                pygame.transform.scale(sheet.subsurface((i * fw, 0, fw, fh)),
+                                       (fw * HERO_SCALE, fh * HERO_SCALE))
+                for i in range(sheet.get_width() // fw)
+            ]
+    return _hero_frames
+
+
+def hero_idle_index(tick: int) -> int:
+    """A-B-C-B in 4 discrete steps over the 0.9 s period."""
+    step = (tick % HERO_IDLE_PERIOD) * len(HERO_IDLE_SEQ) // HERO_IDLE_PERIOD
+    return HERO_IDLE_SEQ[step]
+
+
+def attack_fx_frames(weight: str):
+    """The 4 scaled fx frames for a weight class (fx_<weight>.png: 4 native
+    32 px frames scaled x8), or None when the sheet is missing."""
+    if weight not in _fx_frames_cache:
+        path = os.path.join(SPRITE_DIR, f"fx_{weight}.png")
+        if not os.path.exists(path):
+            _fx_frames_cache[weight] = None
+        else:
+            sheet = pygame.image.load(path).convert_alpha()
+            native = sheet.get_height()
+            scale = battle_choreo.FX_SCALE
+            _fx_frames_cache[weight] = [
+                pygame.transform.scale(sheet.subsurface((i * native, 0, native, native)),
+                                       (native * scale, native * scale))
+                for i in range(sheet.get_width() // native)
+            ]
+    return _fx_frames_cache[weight]
+
+
 @dataclass
 class BattleApp:
     engine: GameEngine
@@ -224,11 +281,18 @@ class BattleApp:
         self._seq_timer = 0
         self._seq_finale = None
         self._flushing = False          # B69: a skipped round plays no per-step SFX
-        self._floaters: list = []       # [x, y, age, max_age, surface]
+        self._floaters: list = []       # [x, y, age, max_age, surface, rise]
         self._blink_enemy = 0           # frames of white flash left
         self._blink_hero = 0
         self._shake = 0                 # frames of screen shake left
         self._freeze = 0                # hit-pause frames (floaters hold still)
+        # B107 S1: player attack choreography (mock spec) — pure presentation.
+        self._choreo = None             # live battle_choreo.Choreography
+        self._choreo_fx = None          # the weight's fx frames
+        self._choreo_pending: list = []  # floater surfaces spawning at impact
+        self._anim_tick = 0             # hero idle clock
+        self._death_fade = -1           # frames into the death fade (-1 = off)
+        self._dying_sprite = None       # the killed enemy's fading ghost
         # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
         # infra only), so it stays a no-op until an apply-slice calls hover.add().
         self.hover = ui.HoverTracker()
@@ -290,6 +354,8 @@ class BattleApp:
                 return
 
     def next_encounter(self) -> None:
+        self._death_fade = -1          # B107: clear the previous kill's ghost
+        self._dying_sprite = None
         self.enemy = self.engine.create_encounter()
         if self.enemy is None:
             self.set_mode("game_over")
@@ -446,6 +512,8 @@ class BattleApp:
         """Per-frame playback clock (called from the run loop)."""
         if not self._sequence:
             return
+        if self._choreo is not None:
+            return   # B107: the playback waits for the swing to land
         self._seq_timer -= 1
         if self._seq_timer <= 0:
             self._advance_step()
@@ -457,9 +525,11 @@ class BattleApp:
         outcome sounds (level-up/death) still land in the finale."""
         self._flushing = True
         try:
+            self._finish_choreo()   # B107: fast-forward the live swing first
             while self._sequence:
                 self._advance_step()
             self._run_finale()
+            self._finish_choreo()   # steps queued during the flush end-state too
         finally:
             self._flushing = False
 
@@ -487,6 +557,12 @@ class BattleApp:
                            channel=chatlog.CHANNEL_LOOT)
         if result.outcome in ("victory", "defeat") and self._combat_fx:
             self._freeze = 3   # the final blow lands with a short hit-pause
+        if result.outcome == "victory" and self._combat_fx and self.enemy is not None:
+            # B107: keep a ghost of the killed enemy for the death fade
+            self._dying_sprite = enemy_sprite(self.enemy.id)
+            self._death_fade = 0 if self._dying_sprite is not None else -1
+            if self._flushing and self._death_fade == 0:
+                self._death_fade = battle_choreo.DEATH_FADE   # skip: end state
 
         self.set_mode("combat")
 
@@ -621,6 +697,7 @@ class BattleApp:
 
     def draw(self) -> None:
         self.screen.fill(BG)
+        self._tick_choreo()             # B107: one choreography frame per render
         snapshot = build_snapshot(self.engine)
         self._draw_stage()
         self._draw_combat_fx()          # B72: floaters over the stage
@@ -668,7 +745,7 @@ class BattleApp:
         surface = font.render(text, True, color)
         x, y = self._fx_anchor(over_enemy)
         jitter = (len(self._floaters) % 3 - 1) * 16   # deterministic spread
-        self._floaters.append([x + jitter, y, 0, 45, surface])
+        self._floaters.append([x + jitter, y, 0, 45, surface, 1.2])
 
     def _spawn_combat_fx(self, result) -> None:
         """Turn a whole CombatTurnResult into stage feedback at once (tests /
@@ -683,11 +760,19 @@ class BattleApp:
     def _spawn_resolution_fx(self, resolution) -> None:
         """One actor's stage feedback: a floater per damage component (colour by
         type, crits big), heal floaters, a white blink on whoever was hit and
-        shake on crits. Behind the combat_fx setting."""
+        shake on crits. Behind the combat_fx setting. B107 S1: a PLAYER damage
+        action routes through the mock's attack choreography instead — the
+        weighted number spawns at impact; enemy actions keep this path (S2)."""
         if not self._combat_fx:
             return
         player_name = self.engine.player.name
         actor_is_player = resolution.actor_name == player_name
+        if actor_is_player:
+            action = self.engine.content.actions.get(resolution.action_id)
+            weight = battle_choreo.action_weight(resolution, action)
+            if weight is not None:
+                self._start_choreography(weight, resolution)
+                return
         hits_enemy = actor_is_player   # self-target heals handled separately
         crit = resolution.critical_hits > 0
         for component in resolution.damage_components:
@@ -704,6 +789,63 @@ class BattleApp:
         if resolution.total_healing:
             self._spawn_floater(f"+{resolution.total_healing}", (120, 205, 140),
                                 over_enemy=not actor_is_player)
+
+    # -- B107 S1: attack choreography ------------------------------------------
+
+    def _start_choreography(self, weight: str, resolution) -> None:
+        """Queue the mock timeline for one player damage action. The weighted
+        damage numbers spawn at IMPACT, not at cast. While flushing (skip-
+        click) the end state applies immediately — no animation frames."""
+        spec = battle_choreo.WEIGHTS[weight]
+        crit = resolution.critical_hits > 0
+        font = pygame.font.SysFont("menlo,consolas,monospace", spec["num_size"], bold=True)
+        for component in resolution.damage_components:
+            text = f"-{component.amount}" + ("!" if crit else "")
+            self._choreo_pending.append(font.render(text, True, spec["num_color"]))
+        if resolution.total_healing:
+            self._choreo_pending.append(
+                self.font.render(f"+{resolution.total_healing}", True, (120, 205, 140)))
+        if crit:
+            self._shake = 6            # B72: crits still shake the screen
+        if self._flushing:
+            self._deliver_impact()     # skip-click: end state, no animation
+            return
+        self._choreo = battle_choreo.Choreography(weight)
+        self._choreo_fx = attack_fx_frames(weight)
+
+    def _deliver_impact(self) -> None:
+        """The impact frame: the pending weighted numbers start rising (60 px
+        over 800 ms per the mock)."""
+        x, y = self._fx_anchor(over_enemy=True)
+        fade = battle_choreo.NUMBER_FADE
+        for i, surface in enumerate(self._choreo_pending):
+            jitter = (i % 3 - 1) * 16
+            self._floaters.append([x + jitter, y, 0, fade, surface,
+                                   battle_choreo.NUMBER_RISE_PX / fade])
+        self._choreo_pending = []
+
+    def _tick_choreo(self) -> None:
+        """Advance the live choreography one frame (called from draw)."""
+        self._anim_tick += 1
+        if self._choreo is None:
+            return
+        self._choreo.update()
+        if self._choreo.impact_now:
+            self._deliver_impact()
+        if self._choreo.done:
+            self._choreo = None
+            self._choreo_fx = None
+
+    def _finish_choreo(self) -> None:
+        """Skip-click/flush: jump the live choreography to its end state."""
+        if self._choreo is not None:
+            self._choreo.finish()
+            if self._choreo.impact_now:
+                self._deliver_impact()
+            self._choreo = None
+            self._choreo_fx = None
+        if self._death_fade >= 0:
+            self._death_fade = battle_choreo.DEATH_FADE
 
     # -- B69: combat SFX (rides the same playback steps as the floaters) ------
 
@@ -739,10 +881,10 @@ class BattleApp:
             self._freeze -= 1
         else:
             for floater in self._floaters:
-                floater[1] -= 1.2          # rise
+                floater[1] -= floater[5]   # rise (B107: mock pace per weight)
                 floater[2] += 1            # age
             self._floaters = [f for f in self._floaters if f[2] < f[3]]
-        for x, y, age, max_age, surface in self._floaters:
+        for x, y, age, max_age, surface, _rise in self._floaters:
             faded = surface.copy()
             faded.set_alpha(max(0, 255 - int(255 * age / max_age)))
             self.screen.blit(faded, (int(x), int(y)))
@@ -780,6 +922,7 @@ class BattleApp:
         pygame.draw.line(self.screen, PANEL_EDGE, (STAGE.x + 8, GROUND_Y + 2), (STAGE.right - 8, GROUND_Y + 2), 2)
         enemy = self.enemy
         if enemy is None:
+            self._draw_death_fade()   # B107: the killed enemy's fading ghost
             self._draw_hero_sprite()
             self._text("—", (STAGE.x + 14, STAGE.y + 8), self.font_lg, TEXT_DIM)
             return
@@ -822,23 +965,72 @@ class BattleApp:
         sprite = enemy_sprite(enemy.id)
         if sprite is not None:
             rect = self._enemy_sprite_rect(*sprite.get_size())
+            # B107: post-impact shake + brightness flash (2.2 -> 1.6 -> normal)
+            choreo = self._choreo
+            if choreo is not None and choreo.impact_done:
+                rect = rect.move(*choreo.shake_offset())
+                brightness = choreo.flash_brightness()
+                if brightness > 1.01:
+                    lit = sprite.copy()
+                    boost = min(255, int(90 * (brightness - 1.0)))
+                    lit.fill((boost, boost, boost), special_flags=pygame.BLEND_RGB_ADD)
+                    sprite = lit
             self.screen.blit(sprite, rect)
             if self._blink_enemy > 0:            # B72: white hit-flash
                 self._blink_enemy -= 1
                 self._blit_blink(sprite, rect)
+            self._draw_attack_fx(rect)
         else:
             # No sprite file (hollow_worg, arena duelists) -> placeholder block at
             # the enemy's tier size, same baseline. No crash.
             height = enemy_sprite_height(enemy.id)
             rect = self._enemy_sprite_rect(int(height * 0.7), height)
+            if self._choreo is not None and self._choreo.impact_done:
+                rect = rect.move(*self._choreo.shake_offset())
             pygame.draw.rect(self.screen, PANEL, rect, border_radius=6)
             pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
+            self._draw_attack_fx(rect)
+
+    def _draw_attack_fx(self, enemy_rect: pygame.Rect) -> None:
+        """B107: the weight class's fx sheet frame, centered over the enemy."""
+        if self._choreo is None or self._choreo_fx is None:
+            return
+        index = self._choreo.fx_frame()
+        if index is None:
+            return
+        frame = self._choreo_fx[min(index, len(self._choreo_fx) - 1)]
+        self.screen.blit(frame, frame.get_rect(center=enemy_rect.center))
+
+    def _draw_death_fade(self) -> None:
+        """B107: the killed enemy fades to grayscale at 25 % opacity over
+        600 ms, then holds the end state until the stage clears."""
+        if self._death_fade < 0 or self._dying_sprite is None:
+            return
+        total = battle_choreo.DEATH_FADE
+        progress = min(1.0, self._death_fade / total)
+        if self._death_fade < total:
+            self._death_fade += 1
+        ghost = pygame.transform.grayscale(self._dying_sprite)
+        alpha = round(255 - (255 - 255 * battle_choreo.DEATH_ALPHA) * progress)
+        ghost.set_alpha(alpha)
+        self.screen.blit(ghost, self._enemy_sprite_rect(*ghost.get_size()))
 
     def _draw_hero_sprite(self) -> None:
-        # No side-view hero sprite authored yet -> placeholder block on the left,
-        # same groundline. Drops in when hero art arrives.
+        # B107 S1: the animated hero idle (A-B-C-B, 0.9 s) on the groundline;
+        # the attack choreography offsets it horizontally. Falls back to the
+        # old placeholder box if the sheet is missing.
+        offset = self._choreo.hero_offset() if self._choreo is not None else 0
+        frames_list = hero_idle_frames()
+        if frames_list:
+            sprite = frames_list[hero_idle_index(self._anim_tick)]
+            rect = self._hero_sprite_rect(*sprite.get_size()).move(offset, 0)
+            self.screen.blit(sprite, rect)
+            if self._blink_hero > 0:             # B72 flash on the sprite
+                self._blink_hero -= 1
+                self._blit_blink(sprite, rect)
+            return
         height = TIER_HEIGHT["medium"]
-        rect = self._hero_sprite_rect(int(height * 0.5), height)
+        rect = self._hero_sprite_rect(int(height * 0.5), height).move(offset, 0)
         box = HERO_BOX if self._blink_hero <= 0 else (245, 245, 245)   # B72 flash
         if self._blink_hero > 0:
             self._blink_hero -= 1
@@ -927,7 +1119,9 @@ class BattleApp:
         if self.allow_flee:
             specs.append((*T.ACTION_FLEE, self.issue_flee, True))
         for rect, (label, hotkey, cb, enabled) in zip(self._action_rects(len(specs)), specs):
-            self.buttons.append(Button(rect, f"[{hotkey}] {label}", cb,
+            # B107/B106: the mock's [a]-bracket becomes a key badge chip drawn
+            # by _draw_buttons — the label carries only the action name.
+            self.buttons.append(Button(rect, label, cb,
                                        enabled and not self._locked, hotkey=hotkey))
 
     def _build_submenu(self, snapshot):
@@ -958,9 +1152,15 @@ class BattleApp:
             pygame.draw.rect(self.screen, color, b.rect, border_radius=5)
             pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=5)
             label_color = TEXT if b.enabled else TEXT_DIM
-            fitted = ui.fit(b.label, self.font_sm, b.rect.width - 12)  # compact buttons
+            text_x = b.rect.x + 8
+            if b.hotkey:   # B107/B106: the hotkey as a key-cap badge, not "[a]"
+                chip = ui.draw_key_badge(self.screen, self.font_sm, b.hotkey,
+                                         right=b.rect.x + 30, centery=b.rect.centery,
+                                         dim=not b.enabled)
+                text_x = chip.right + 8
+            fitted = ui.fit(b.label, self.font_sm, b.rect.right - text_x - 4)
             label = self.font_sm.render(fitted, True, label_color)
-            self.screen.blit(label, label.get_rect(midleft=(b.rect.x + 8, b.rect.centery)))
+            self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery)))
 
     def _draw_banner(self):
         surf = self.font_lg.render(self.banner, True, self.banner_color)
