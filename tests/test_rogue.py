@@ -121,6 +121,23 @@ class RogueClassTests(unittest.TestCase):
         self.assertEqual(hit.reflected_damage, 0)
         self.assertEqual(enemy.hp, 50)
 
+    def test_riposte_grants_thirty_evasion_for_six_rounds(self):
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Rogue", "rogue")
+        enemy = make_enemy()
+        combat.resolve_action(
+            engine.player, enemy, engine.content.actions["riposte"], engine.rng,
+            weapon=engine.content.weapons["dagger"],
+        )
+        self.assertEqual(engine.player.evasion_chance, 30)
+        statuses = engine.player.active_statuses
+        evade = next(status for status in statuses if status.stat == "evasion_chance")
+        reflect = next(status for status in statuses if status.type == "reflect")
+        self.assertEqual((evade.duration, reflect.duration), (6, 6))
+        for _ in range(6):
+            combat.tick_statuses(engine.player, "round_end")
+        self.assertEqual(engine.player.evasion_chance, 0)
+
     def test_rupture_bleed_ticks_14_for_3_rounds(self):
         # B94: bleed raised 7 -> 14/tick so the total tracks a same-cost nuke.
         engine = GameEngine(rng=random.Random(1))

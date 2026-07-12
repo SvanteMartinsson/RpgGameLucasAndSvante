@@ -183,7 +183,26 @@ def skill_effect_lines(action) -> list:
     """B89: what a skill DOES, as tooltip lines — effects, cost, weapon gate.
     Shared by the tome shop, the inventory tome tooltip and the skill rows so
     the wording never diverges."""
-    lines = [describe_effect(effect) for effect in action.effects]
+    effects = list(action.effects)
+    evasion = next((effect for effect in effects
+                    if effect.type == "apply_status"
+                    and effect.status_type == "buff"
+                    and effect.stat == "evasion_chance"), None)
+    evade_reflect = next((effect for effect in effects
+                          if effect.type == "apply_status"
+                          and effect.status_type == "reflect"
+                          and effect.trigger == "on_evade"), None)
+    lines = []
+    if (evasion is not None and evade_reflect is not None
+            and evasion.duration == evade_reflect.duration):
+        amount = (f"{evade_reflect.multiplier:g}x Power"
+                  if evade_reflect.scale == "power" else str(evade_reflect.magnitude))
+        lines.append(
+            f"Evade +{evasion.magnitude}% for {evasion.duration} rounds; "
+            f"reflect {amount} {evade_reflect.damage_type} damage when you evade."
+        )
+        effects = [effect for effect in effects if effect not in (evasion, evade_reflect)]
+    lines.extend(describe_effect(effect) for effect in effects)
     lines.append(skill_cost_text(action))
     if action.requires_weapon_category:
         lines.append(f"Requires a {action.requires_weapon_category} weapon")

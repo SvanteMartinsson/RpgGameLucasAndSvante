@@ -362,10 +362,19 @@
     "effects": [
       {
         "type": "apply_status",
+        "status_type": "buff",
+        "stat": "evasion_chance",
+        "magnitude": 30,
+        "duration": 6,
+        "tick_timing": "round_end",
+        "target": "self"
+      },
+      {
+        "type": "apply_status",
         "status_type": "reflect",
         "scale": "power",
         "multiplier": 1.0,
-        "duration": 4,
+        "duration": 6,
         "tick_timing": "round_end",
         "target": "self",
         "damage_type": "physical",

@@ -12,6 +12,7 @@ from rpg_game.core.data_loader import load_content
 from rpg_game.presentation.talent_text import (
     RENDERED_EFFECT_TYPES,
     describe_effect,
+    skill_effect_lines,
     talent_rank_lines,
 )
 
@@ -90,6 +91,13 @@ class EffectTextComputedTest(unittest.TestCase):
         node = self._talent("Rage")
         self.assertEqual(describe_effect(node.effects[0]),
                          "when hit: +3 damage for 3 rounds (self), stacks up to 5")
+
+    def test_riposte_couples_evasion_and_reflect_in_one_clear_line(self):
+        lines = skill_effect_lines(self.content.actions["riposte"])
+        self.assertEqual(
+            lines[0],
+            "Evade +30% for 6 rounds; reflect 1x Power physical damage when you evade.",
+        )
 
 
 if __name__ == "__main__":
