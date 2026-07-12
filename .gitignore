@@ -16,3 +16,9 @@ playtest_logs/
 /Pixel Crawler - Free Pack/
 saves/
 settings.json
+# B122a: stray unused enemy-sprite duplicates. Measured (batch 2026-07-13):
+# enemy_sprite()/bestiary load generated/<id>.png (root) and enemy_idle_frames()
+# loads generated/enemies/animated/<name>_idle_sheet.png — NOTHING reads
+# generated/enemies/<id>.png. These 36 were byte-identical copies of the root
+# sprites. `*` never crosses `/`, so the tracked animated/ sheets are untouched.
+rpg_game/assets/sprites/generated/enemies/*.png
