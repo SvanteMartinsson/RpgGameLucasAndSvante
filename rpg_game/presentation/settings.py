@@ -23,6 +23,7 @@ DEFAULTS = {
     "sound_master": 1.0,   # B69 master volume 0.0..1.0 (SFX play at master × sfx)
     "sound_sfx": 1.0,      # B69 SFX bus volume 0.0..1.0
     "sound_music": 1.0,    # B69 music bus volume 0.0..1.0 (loop at master × music)
+    "last_class": "",      # B119 class the load-lock is anchored to ("" = none yet)
 }
 
 
@@ -90,3 +91,19 @@ def save(values: dict, path: str | None = None) -> None:
             json.dump(values, settings_file, indent=2)
     except OSError:
         pass   # a prefs write must never crash the game
+
+
+# --- B119: class-locked save loading ---------------------------------------
+def profile_class(path: str | None = None) -> str:
+    """The class the player is currently locked to for loading ("" until the
+    first game starts). Resolves the path at CALL time so tests can patch
+    SETTINGS_PATH, like load()."""
+    return str(load(path).get("last_class", "") or "")
+
+
+def set_profile_class(class_id: str, path: str | None = None) -> None:
+    """Anchor the load-lock to class_id when a game is started or loaded. Keeps
+    every other pref intact (load-merge, then persist)."""
+    values = load(path)
+    values["last_class"] = class_id
+    save(values, path)

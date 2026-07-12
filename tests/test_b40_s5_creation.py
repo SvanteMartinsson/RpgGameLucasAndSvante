@@ -10,7 +10,9 @@ from content alone, and engine_from_start_choice feeds the pick through
 """
 
 import os
+import tempfile
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -20,6 +22,7 @@ try:
     from rpg_game.core import talents
     from rpg_game.core.game import GameEngine
     from rpg_game.presentation import talent_text
+    from rpg_game.presentation import settings as user_settings
     from rpg_game.presentation.pygame_battle import _class_stat_rows
     from rpg_game.presentation.pygame_overworld import engine_from_start_choice
 
@@ -39,6 +42,16 @@ class StarterChoiceTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pygame.quit()
+
+    def setUp(self):
+        # B119: engine_from_start_choice("new") now writes the profile class to
+        # settings.json — keep it off the user's real prefs file.
+        self._settings_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._settings_dir.cleanup)
+        p = patch.object(user_settings, "SETTINGS_PATH",
+                         os.path.join(self._settings_dir.name, "settings.json"))
+        p.start()
+        self.addCleanup(p.stop)
 
     def test_every_class_offers_two_tier1_actives_including_the_default(self):
         for class_id, cls in self.engine.content.classes.items():

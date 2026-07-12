@@ -2041,23 +2041,32 @@ def _first_free_slot() -> str:
 
 
 
-def start_menu_slot_options() -> list[tuple[str, str]]:
-    """B71: the live menu — New game + one Load row per existing slot/autosave.
-    (The legacy start_menu_options stays for explicit-path callers/tests.)"""
+def start_menu_slot_options() -> list[tuple[str, str, bool]]:
+    """B71/B119: the live menu — New game + one Load row per existing slot/autosave.
+    Each row is (choice, label, enabled). B119 locks loading to the profile class:
+    a save whose class differs from the persisted `last_class` comes back disabled
+    (greyed + unclickable) with a "(locked)" hint. An empty profile (before the
+    first game) leaves every row loadable. (The legacy start_menu_options stays
+    for explicit-path callers/tests.)"""
     saveslots.migrate_legacy(SAVE_PATH)          # old root savegame.json -> slot 1
-    options = [("new", T.START_NEW_GAME)]
+    profile = user_settings.profile_class()
+    options: list[tuple[str, str, bool]] = [("new", T.START_NEW_GAME, True)]
     for i, summary in enumerate(saveslots.all_summaries()):
         if summary is None:
             continue
-        options.append((f"load:{summary.path}",
-                        f"Slot {i + 1} — {summary.name} · {summary.player_class} · "
-                        f"Lv {summary.level} · {summary.playtime_label()}"))
+        locked = bool(profile) and summary.player_class != profile
+        label = (f"Slot {i + 1} — {summary.name} · {summary.player_class} · "
+                 f"Lv {summary.level} · {summary.playtime_label()}")
+        options.append((f"load:{summary.path}", label + ("  (locked)" if locked else ""),
+                        not locked))
     auto = saveslots.slot_summary(saveslots.AUTOSAVE_PATH)
     if auto is not None:
-        options.append((f"load:{auto.path}",
-                        f"Autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"))
-    options.append(("settings", "Settings"))     # B70
-    options.append(("quit", T.START_QUIT))
+        locked = bool(profile) and auto.player_class != profile
+        label = f"Autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"
+        options.append((f"load:{auto.path}", label + ("  (locked)" if locked else ""),
+                        not locked))
+    options.append(("settings", "Settings", True))     # B70
+    options.append(("quit", T.START_QUIT, True))
     return options
 
 
@@ -2082,14 +2091,19 @@ def engine_from_start_choice(
         name, class_id, *starter = creation_fn(engine)
         engine.start_new_game(name, class_id,
                               starter_talent_id=starter[0] if starter else "")
+        # B119: a new game re-anchors the load-lock to the chosen class.
+        user_settings.set_profile_class(engine.player.player_class)
         return engine
     if choice == "load":
+        _guard_load_class(save_path)             # B119
         result = engine.load(save_path)
         if not result.success:
             raise ValueError(result.message)
+        user_settings.set_profile_class(engine.player.player_class)
         return engine
     if choice.startswith("load:"):               # B71: a specific slot/autosave
         path = choice.split(":", 1)[1]
+        _guard_load_class(path)                   # B119
         result = engine.load(path)
         if not result.success:
             raise ValueError(result.message)
@@ -2097,10 +2111,24 @@ def engine_from_start_choice(
         # a slot load keeps saving to ITS slot.
         if path in saveslots.SLOT_PATHS:
             engine._save_slot_path = path
+        user_settings.set_profile_class(engine.player.player_class)
         return engine
     if choice == "quit":
         return None
     raise ValueError(f"unknown start menu choice: {choice}")
+
+
+def _guard_load_class(path: str) -> None:
+    """B119: refuse to load a save whose class differs from the locked profile.
+    The menu already hides mismatched rows; this is the engine-level guard so the
+    rule holds no matter how the choice is reached. An empty profile allows any
+    load and then anchors to the loaded class."""
+    profile = user_settings.profile_class()
+    summary = saveslots.slot_summary(path)
+    if profile and summary is not None and summary.player_class != profile:
+        raise ValueError(
+            f"That save is a {summary.player_class}; you are locked to {profile}. "
+            f"Start a new {summary.player_class} game to switch.")
 
 
 def start_menu_layout(size: tuple[int, int], options) -> tuple[list[Button], tuple[int, int], tuple[int, int]]:
@@ -2113,13 +2141,16 @@ def start_menu_layout(size: tuple[int, int], options) -> tuple[list[Button], tup
     w, h = size
     button_w, button_h, gap = 320, 48, 60
     start_y = h // 2 - (len(options) * gap) // 2
+    # Rows are (choice, label) or (choice, label, enabled) — B119 load rows carry
+    # the enabled flag so locked-class slots render disabled.
     buttons = [
         Button(
             pygame.Rect(w // 2 - button_w // 2, start_y + index * gap, button_w, button_h),
-            label,
-            choice,
+            row[1],
+            row[0],
+            enabled=row[2] if len(row) > 2 else True,
         )
-        for index, (choice, label) in enumerate(options)
+        for index, row in enumerate(options)
     ]
     title_pos = (w // 2, max(48, start_y - 90))   # title sits above the stack
     msg_pos = (w // 2, max(80, start_y - 48))      # error line just under the title
@@ -2146,6 +2177,11 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
         options = start_menu_slot_options()
         buttons, title_pos, msg_pos = start_menu_layout(display.get_size(), options)
         focus_idx = max(0, min(focus_idx, len(buttons) - 1))
+        # B119: keyboard focus never rests on a locked (disabled) load row.
+        if buttons and not buttons[focus_idx].enabled:
+            enabled = [k for k, b in enumerate(buttons) if b.enabled]
+            if enabled:
+                focus_idx = min(enabled, key=lambda k: abs(k - focus_idx))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2155,22 +2191,31 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = to_canvas(event.pos, offset)
                 for button in buttons:
-                    if button.rect.collidepoint(click):
+                    if button.enabled and button.rect.collidepoint(click):
                         return button.on_click
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return "quit"
                 if event.key in (pygame.K_DOWN, pygame.K_TAB):
-                    focus_idx = min(focus_idx + 1, len(buttons) - 1)
+                    nxt = next((k for k in range(focus_idx + 1, len(buttons))
+                                if buttons[k].enabled), None)
+                    if nxt is not None:
+                        focus_idx = nxt
                     continue
                 if event.key == pygame.K_UP:
-                    focus_idx = max(focus_idx - 1, 0)
+                    prv = next((k for k in range(focus_idx - 1, -1, -1)
+                                if buttons[k].enabled), None)
+                    if prv is not None:
+                        focus_idx = prv
                     continue
-                if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and buttons:
+                if (event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                        and buttons and buttons[focus_idx].enabled):
                     return buttons[focus_idx].on_click
                 key = event.unicode.lower() if event.unicode else ""
-                for choice, label in options:
-                    if key and key == label[0].lower():
+                for row in options:
+                    choice, label = row[0], row[1]
+                    enabled = row[2] if len(row) > 2 else True
+                    if enabled and key and key == label[0].lower():
                         return choice
 
         screen.fill(BG)
@@ -2182,6 +2227,12 @@ def start_menu(save_path: str = SAVE_PATH, message: str = "") -> str:
 
         mouse = to_canvas(pygame.mouse.get_pos(), offset)
         for i, button in enumerate(buttons):
+            if not button.enabled:               # B119 locked-class load row
+                pygame.draw.rect(screen, BTN_DISABLED, button.rect, border_radius=8)
+                pygame.draw.rect(screen, BTN_EDGE, button.rect, width=1, border_radius=8)
+                label = font.render(button.label, True, TEXT_DIM)
+                screen.blit(label, label.get_rect(center=button.rect.center))
+                continue
             focused = i == focus_idx
             color = BTN_HOVER if (button.rect.collidepoint(mouse) or focused) else BTN
             pygame.draw.rect(screen, color, button.rect, border_radius=8)

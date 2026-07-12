@@ -40,6 +40,17 @@ class OverworldStartTest(unittest.TestCase):
     def tearDownClass(cls):
         pygame.quit()
 
+    def setUp(self):
+        # B119: engine_from_start_choice now reads/writes the profile class in
+        # settings.json. Redirect it to a throwaway file so these tests neither
+        # read the user's real prefs nor leak a `last_class` between tests.
+        self._settings_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._settings_dir.cleanup)
+        settings_path = os.path.join(self._settings_dir.name, "settings.json")
+        patcher = patch.object(pygame_overworld.user_settings, "SETTINGS_PATH", settings_path)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_overworld_uses_the_provided_created_character(self):
         engine = GameEngine()
         engine.start_new_game("Svante", "tank")
