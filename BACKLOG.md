@@ -484,6 +484,15 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   docs/nightly/); (2) fiende-koreografi + skill-specifika FX.
 - **Acceptans:** headless GIF-renders quick/normal/power + dödsfade; determinismtest;
   mappningstabell actions→viktklass i rapporten.
+- **S2-asset-status (2026-07-12 kväll):** 32 animerade fiende-idle-sheets committade i
+  `assets/sprites/generated/enemies/animated/*_idle_sheet.png` (b72bf66). De är bara
+  assets — S2 måste slice:a varje sheet i frames (frame-layout ospecificerad, kräver
+  Lucas-input) och köra dem som fiende-idle i pygame_battle.
+- **⛔ BEROENDE — sprite-mappflytt ej pushad:** kvällsbatchens enhet 1 (peka om `SPRITE_DIR`
+  till `generated/enemies/`) HALTades: de spårade fiende-sprites ligger fortfarande i
+  `generated/*.png`; `enemies/*.png` är bara otrackade lokala dubbletter. **Lucas måste
+  committa+pusha omorganisationen först**, sedan kan SPRITE_DIR pekas om + ~10 tester
+  uppdateras.
 
 ### Progressionsrundan (efter B102-audit — Lucas beslutar målkurvor först)
 
@@ -526,6 +535,30 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Konsekvens NU:** motiverar "känsla över perfektion" i klassidentitetspasset —
   cross-class kommer riva upp den finjusterade balansen ändå, så residualer i delta-
   matrisen dokumenteras hellre än jagas till noll fails. Egen designrunda innan bygge.
+
+#### B109 — Fiende-basskade-passet (Δ0-gapet)  · ⛔ **HALT (2026-07-12 kväll): premissen håller inte — Δ0 kan inte stängas fiende-sido**
+- **Mål (från kvällsbatchen):** höj fiende-basskada roster-brett så on-level-striden (Δ0)
+  landar i arketyp-korridoren (70–90 % vinst) i stället för ~100 %.
+- **STEG 0-mätning (`rpg_game/tools/roster_delta0.py`, committad):** vid Δ0 är den per-klass
+  MEDIANA vinsten fastlåst hög av de TÅLIGA klasserna (tank 219 HP, fighter, cleric-heal
+  vinner on-level nästan oavsett fiende-skada), medan golvet ALLTID är **mage** (låg sim-
+  single-target-DPS + glass-cannon-HP; mage 0 % finns REDAN vid nuvarande baser, t.ex.
+  mire_lurker). Cost-mätningen visar dessutom att 2/3 av rostern REDAN kostar 20–75 % HP
+  vid Δ0 — bara ~10 äkta steamrolls kostar <20 %.
+- **Tre sim-varianter (N=150–200) bevisar taket:** (a) aggressiv höjning → Δ−4 stängs men
+  **cainos glider ur mild-korridoren** (HALT-villkor) + frail-klasser kraschar; (b) mild
+  höjning → cainos bevaras men Δ−2 regrerar (19→23 fails) och Δ0-medianen rör sig inte;
+  (c) riktat pass på bara steamrolls → 94/172, **fortfarande sämre än v2 (92/172)**. Varje
+  knapp byter en gate mot en annan; ingen bas-skadeändring förbättrar totalen.
+- **Slutsats:** Δ0-medianen (70–90 %) är ouppnåelig via fiende-skada så länge rostern
+  spänner tank(219 HP)↔mage(85 HP, låg DPS). Δ0-stängning är **klass-sido-arbete**, inte
+  ett fiende-pass. Inget data committades (ingen gissning som regrerar gaten).
+- **Rekommendation till Lucas (välj väg):** (1) lyft mage (sim- ELLER spel-DPS/överlevnad)
+  så den slutar vara <25 %-golvet — då tål rostern en skadehöjning utan att auto-förlora
+  mage; ELLER (2) byt Δ0-gaten från delad median-vinst till **per-arketyp** vinst + gate på
+  KOSTNAD (tåliga klasser SKA vinna on-level — deras identitet — men betala tid/HP); ELLER
+  (3) acceptera att cross-class ändå river upp det och lämna Δ0 som dokumenterad residual.
+  När vägen är vald kan fiende-baser trimmas mot den nya gaten med samma verktyg.
 
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
