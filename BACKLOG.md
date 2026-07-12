@@ -572,6 +572,51 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   regenerera baslinjen och frys om efter en avsiktlig balansändring. Mätning:
   `rpg_game/tools/roster_delta0.py`. Låst av `tests/test_delta_residuals.py`.
 
+#### B110 — Förankra ambienspartiklar i världsrymd  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Eldflugor och övriga zonpartiklar spawnas kring spelaren i världskoordinater, ritas med
+  kamera-offset och viewport-cullas. De ska stanna i världen när kameran går förbi dem.
+
+#### B111 — Halvera hjältespriten i strid  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Sänk stridshjältens skala från 7 till 3–4 efter renderkontroll; native 29 px × 3 = 87 px.
+  Groundline ska vara oförändrad och hjälten fortsatt läsbar mot fiendens tiers.
+
+#### B112 — Visa faktisk mana i dimmade skillknappar  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Mana-blockeraren visar alltid hela `Mana N/M` med faktiska värden och får aldrig trunkeras.
+
+#### B113 — Scrollbara overflow-menyer  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Delad scrollhjälpare i `ui.py`; hjul och piltangenter, fokus hålls synligt samt indikatorn
+  `v N more v`. Först settings och mage-tower-tomes; andra overflow-menyer inventeras.
+
+#### B114 — Musfritt skill-val i strid  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Första skillen fokuseras när menyn öppnas. Pilar flyttar fokus, Enter använder vald skill
+  och Esc backar. Blockerade skills kan fokuseras och bekräftelse visar blockerarskälet.
+
+#### B115 — Turneringsstrid skriver till stridsloggen  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Turneringsmatchernas combat-events ska gå genom samma loggkanal som vanlig strid.
+
+#### B116 — Mjukare XP-tröskel nivå 3→4  · 🟢 **AKTIV (playtest 2026-07-13)**
+- Lås tidiga trappan till 10→30→cirka 70 XP. Den exponentiella svansen från nivå 4 rörs inte;
+  före/efter mäts som encounters till nivå 4 och kurvans monotoni testas.
+
+#### B117 — Riposte: evasion-buff + reflect  · 🟢 **AKTIV (playtest 2026-07-13)**
+- **Beslut Lucas:** Riposte ger +30 procentenheter evade i 6 rundor och reflekterar skada
+  vid evade under samma tid. Texten ska uttrycka båda delarna tydligt; rogue-sim gates ändringen.
+
+#### B118 — Död respawnar direkt utan meny  · 🟢 **AKTIV (playtest 2026-07-13)**
+- **Beslut Lucas:** dödsstraffet behålls, men load/respawn-menyn tas bort. Spelaren vaknar direkt
+  vid sin persistenta respawn-stad; en kort `You fell / You wake at …`-notis får visas.
+
+#### B119 — Save-laddning kräver matchande klass  · 🟢 **AKTIV (playtest 2026-07-13)**
+- **Beslut Lucas:** save-laddning klasslåses. STEG 0 avgör om annan-klass-slots enkelt kan
+  döljas/dimmas i befintligt flöde; ingripande modelländring HALT:as för uttryckligt regelval.
+
+#### B120 — Klasspecifika offensiva tomes  · 🟢 **AKTIV (playtest 2026-07-13)**
+- **Beslut Lucas:** klass- och vapengatade tomes byggs. Första mallen är rogue-tomen
+  `Power Slash` (~200 g, melee), sim-gatad ihop med B116 och B117.
+
+#### Character screen — egen designrunda  · ⭐ **BESLUTAD (playtest 2026-07-13)**
+- En character screen ingår inte i denna fixbatch utan tas i en separat designrunda.
+
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
   `BUILDING_FUNCTION`-poster (brew/fast_travel) — de saknar fysiska dörr-tiles i
