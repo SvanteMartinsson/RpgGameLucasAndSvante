@@ -261,7 +261,9 @@
           "id": "wild_stag",
           "weight": 60
         }
-      ]
+      ],
+      "level_min": 2,
+      "level_max": 4
     },
     {
       "id": "cainos_stag_south",
@@ -281,7 +283,9 @@
           "id": "wild_stag",
           "weight": 60
         }
-      ]
+      ],
+      "level_min": 3,
+      "level_max": 5
     },
     {
       "id": "cainos_undead_north",
@@ -301,7 +305,9 @@
           "id": "undead",
           "weight": 60
         }
-      ]
+      ],
+      "level_min": 3,
+      "level_max": 5
     },
     {
       "id": "cainos_undead_east",
@@ -321,7 +327,9 @@
           "id": "undead",
           "weight": 60
         }
-      ]
+      ],
+      "level_min": 2,
+      "level_max": 4
     },
     {
       "id": "cainos_generalists",
@@ -353,7 +361,9 @@
           "id": "goblin_scrapper",
           "weight": 25
         }
-      ]
+      ],
+      "level_min": 1,
+      "level_max": 3
     },
     {
       "id": "skog_beast_north",
@@ -381,7 +391,9 @@
           "id": "cave_bear",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 5,
+      "level_max": 7
     },
     {
       "id": "skog_goblin_west",
@@ -405,7 +417,9 @@
           "id": "cave_bear",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 4,
+      "level_max": 6
     },
     {
       "id": "skog_plant_south",
@@ -433,7 +447,9 @@
           "id": "strangling_vine",
           "weight": 8
         }
-      ]
+      ],
+      "level_min": 6,
+      "level_max": 8
     },
     {
       "id": "skog_deep_east",
@@ -461,7 +477,9 @@
           "id": "strangling_vine",
           "weight": 8
         }
-      ]
+      ],
+      "level_min": 7,
+      "level_max": 9
     },
     {
       "id": "mire_leech_all",
@@ -481,7 +499,9 @@
           "id": "bog_leech",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     },
     {
       "id": "mire_crab_coast_north",
@@ -501,7 +521,9 @@
           "id": "mutated_mudcrab",
           "weight": 45
         }
-      ]
+      ],
+      "level_min": 5,
+      "level_max": 7
     },
     {
       "id": "mire_crab_coast_east",
@@ -521,7 +543,9 @@
           "id": "mutated_mudcrab",
           "weight": 45
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     },
     {
       "id": "mire_spirits",
@@ -545,7 +569,9 @@
           "id": "witchlight",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 5,
+      "level_max": 7
     },
     {
       "id": "mire_tar_east",
@@ -569,7 +595,9 @@
           "id": "mire_lurker",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 5,
+      "level_max": 7
     },
     {
       "id": "mire_hag_bog",
@@ -589,7 +617,9 @@
           "id": "bog_hag",
           "weight": 8
         }
-      ]
+      ],
+      "level_min": 6,
+      "level_max": 8
     },
     {
       "id": "heath_entry_northwest",
@@ -617,7 +647,9 @@
           "id": "rotting_fiend",
           "weight": 25
         }
-      ]
+      ],
+      "level_min": 6,
+      "level_max": 8
     },
     {
       "id": "heath_ghoul_west",
@@ -641,7 +673,9 @@
           "id": "grave_hound",
           "weight": 35
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     },
     {
       "id": "heath_ghoul_south",
@@ -665,7 +699,9 @@
           "id": "grave_hound",
           "weight": 35
         }
-      ]
+      ],
+      "level_min": 10,
+      "level_max": 12
     },
     {
       "id": "heath_worg_column",
@@ -689,7 +725,9 @@
           "id": "hollow_worg",
           "weight": 6
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     },
     {
       "id": "heath_elite_east",
@@ -717,7 +755,9 @@
           "id": "cursed_wight",
           "weight": 12
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     },
     {
       "id": "heath_northeast_pocket",
@@ -741,7 +781,9 @@
           "id": "rotting_fiend",
           "weight": 30
         }
-      ]
+      ],
+      "level_min": 10,
+      "level_max": 12
     },
     {
       "id": "heath_palegate",
@@ -765,7 +807,9 @@
           "id": "hollow_worg",
           "weight": 6
         }
-      ]
+      ],
+      "level_min": 8,
+      "level_max": 10
     }
   ],
   "spawn_fallbacks": {

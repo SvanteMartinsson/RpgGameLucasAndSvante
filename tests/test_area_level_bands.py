@@ -105,10 +105,13 @@ class BandAtTests(unittest.TestCase):
         self.assertEqual(spawns.band_at((_area(level_min=5),), (0, 0)), (5, 5))
         self.assertEqual(spawns.band_at((_area(level_max=7),), (0, 0)), (7, 7))
 
-    def test_loader_reads_optional_band_fields(self):
-        self.assertTrue(CONTENT.spawn_areas)      # areas exist...
-        for area in CONTENT.spawn_areas:          # ...and none sets a band yet
-            self.assertEqual((area.level_min, area.level_max), (0, 0), area.id)
+    def test_loader_reads_the_authored_bands(self):
+        # geo GO 2026-07-12: every area now carries a loaded int band
+        self.assertTrue(CONTENT.spawn_areas)
+        for area in CONTENT.spawn_areas:
+            self.assertIsInstance(area.level_min, int)
+            self.assertIsInstance(area.level_max, int)
+            self.assertTrue(area.level_min and area.level_max, area.id)
 
 
 if __name__ == "__main__":
