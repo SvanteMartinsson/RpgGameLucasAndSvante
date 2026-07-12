@@ -1355,6 +1355,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "worn_boots",
+        "weight": 8,
+        "rarity_tier": 1
       }
     ],
     "unique_table": []
@@ -1395,6 +1400,11 @@
         "item_id": "hp_potion",
         "weight": 30,
         "rarity_tier": 1
+      },
+      {
+        "item_id": "tin_amulet",
+        "weight": 8,
+        "rarity_tier": 1
       }
     ],
     "unique_table": []
@@ -1434,6 +1444,11 @@
       {
         "item_id": "hp_potion",
         "weight": 30,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "threadbare_gloves",
+        "weight": 8,
         "rarity_tier": 1
       }
     ],
@@ -1491,6 +1506,11 @@
       {
         "item_id": "iron_scrap",
         "weight": 18,
+        "rarity_tier": 1
+      },
+      {
+        "item_id": "patched_trousers",
+        "weight": 8,
         "rarity_tier": 1
       }
     ],
