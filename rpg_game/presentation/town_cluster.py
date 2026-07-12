@@ -36,11 +36,12 @@ Pure data + tile math (no pygame) so collision/cobble/anchor rules are unit-test
 #   "@townhall"  -> town_hall, but DROPPED when the town has no tournament
 #   "@flex"      -> town_hall (if tournament) else @trade (village w/ shop) else @prop
 # Cosmetic buildings render but get NO entrance, door-menu or cobble spur.
-# 'tower' is FUNCTIONAL (the mage-tower armour-upgrade station, B37) — it gets a
-# door/cobble/menu like the trade buildings, so it is NOT listed here. Nor is
-# 'shrine' (church C, kväll 2026-07-11): it carries the respawn-relocation
-# service in the towns that have one, so it gets a real door.
-COSMETIC_BUILDINGS = {"warehouse", "apothecary", "stable", "gatehouse"}
+# FUNCTIONAL props are NOT listed here — they get a door/cobble/menu like the
+# trade buildings: 'tower' (mage-tower armour-upgrade station, B37), 'shrine'
+# (church C respawn-relocation, 36e20bc), and — B108 (2026-07-12) — 'apothecary'
+# (brewing) and 'stable' (fast-travel coach). B8 2b wired their BUILDING_FUNCTION
+# but left them cosmetic, so their menus were unreachable by walking to a door.
+COSMETIC_BUILDINGS = {"warehouse", "gatehouse"}
 TRADE_BY_CATEGORY = {"weapons": "blacksmith", "armor": "barracks", "general": "shop"}
 CITY_DEFAULT_PROP = "warehouse"
 SMALL_DEFAULT_PROP = "shrine"
