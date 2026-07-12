@@ -536,7 +536,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   cross-class kommer riva upp den finjusterade balansen ändå, så residualer i delta-
   matrisen dokumenteras hellre än jagas till noll fails. Egen designrunda innan bygge.
 
-#### B109 — Fiende-basskade-passet (Δ0-gapet)  · ⛔ **HALT (2026-07-12 kväll): premissen håller inte — Δ0 kan inte stängas fiende-sido**
+#### B109 — Fiende-basskade-passet (Δ0-gapet)  · ⛔ **HALT (2026-07-12 kväll)** · ⭐ **RESIDUAL ACCEPTERAD (2026-07-12 natt): strukturell, maskin-taggad, omvärderas vid cross-class/mage-lyft**
 - **Mål (från kvällsbatchen):** höj fiende-basskada roster-brett så on-level-striden (Δ0)
   landar i arketyp-korridoren (70–90 % vinst) i stället för ~100 %.
 - **STEG 0-mätning (`rpg_game/tools/roster_delta0.py`, committad):** vid Δ0 är den per-klass
@@ -559,6 +559,18 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   KOSTNAD (tåliga klasser SKA vinna on-level — deras identitet — men betala tid/HP); ELLER
   (3) acceptera att cross-class ändå river upp det och lämna Δ0 som dokumenterad residual.
   När vägen är vald kan fiende-baser trimmas mot den nya gaten med samma verktyg.
+- **⭐ BESLUT (Lucas, 2026-07-12 natt): väg (3) — acceptera Δ0 som strukturell residual.**
+  Δ0-medianvinst-gaten lämnas som den är; vi vet varför den failar (tåliga klasser
+  dominerar medianen + förexisterande mage-golv, kostnaden redan hög 20–75 % HP), och
+  cross-class river ändå upp balansen. Ingen `enemies.json`- eller konstant-ändring.
+  De kända Δ0-cellerna + de närbesläktade Δ−2-cellerna (samma basstat-tak) — samt de
+  övriga progressionspass-residualerna (Δ+3 fast-kills, Δ−4-tak, default-kit-gap) — är nu
+  **maskin-taggade** i `rpg_game/tools/delta_curve.py` (`KNOWN_RESIDUAL_CHECKS`, fryst hela
+  baslinjen 92/172, identisk vid N=120 och N=200). Sim-rapporten skriver
+  "X kända residualer + Y NYA fails" så en **framtida regression syns som en ny fail** i
+  stället för att drunkna i de 92. Omvärderas när mage lyfts eller cross-class landar;
+  regenerera baslinjen och frys om efter en avsiktlig balansändring. Mätning:
+  `rpg_game/tools/roster_delta0.py`. Låst av `tests/test_delta_residuals.py`.
 
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots

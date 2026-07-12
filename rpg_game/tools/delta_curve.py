@@ -296,6 +296,160 @@ def gate_summary(cells: dict) -> list[str]:
     return lines
 
 
+# --- known residuals (frozen 2026-07-12, post class-identity pass) -----------
+# Lucas's decision: the Δ0 on-level gate and its closely-related Δ−2 cells are a
+# STRUCTURAL residual, not a bug. At Δ0 the per-class median is pinned high by
+# the durable classes (tank/fighter/cleric win on-level almost regardless) while
+# the frail worst-case (mage / bad matchup) sinks below the 25% floor; at Δ−2 the
+# +2 enemy levels ride HP_GROWTH_PER_LEVEL=0.38 into a base-stat HP ceiling no
+# player weapon closes. Measured per enemy by rpg_game/tools/roster_delta0.py.
+# The remaining bands (Δ+3 dominant fast-kills, Δ−4 off-level ceiling, the
+# default-kit spread) are the progression-pass residuals — documented, accepted;
+# cross-class will churn the balance anyway.
+#
+# The WHOLE current baseline is frozen by exact check name (identical at N=120
+# and N=200, captured 2026-07-12) so a NEW regression surfaces as a new fail
+# instead of drowning in these 92. A per-gate-type rule would be too coarse — it
+# would hide a genuinely new Δ0/Δ−2 fail among the accepted ones. Regenerate with
+# tools/delta_curve after an intentional balance change, then re-freeze here.
+KNOWN_RESIDUAL_CHECKS: frozenset = frozenset({
+    "DEFAULT ≥ median−15pp cleric",
+    "DEFAULT ≥ median−15pp fighter",
+    "DEFAULT ≥ median−15pp hunter",
+    "DEFAULT ≥ median−15pp mage",
+    "Δ+3 cainos/cleric",
+    "Δ+3 cainos/fighter",
+    "Δ+3 cainos/hunter",
+    "Δ+3 cainos/mage",
+    "Δ+3 cursed_mire/fighter",
+    "Δ+3 cursed_mire/hunter",
+    "Δ+3 cursed_mire/mage",
+    "Δ+3 grave_heath/fighter",
+    "Δ+3 grave_heath/hunter",
+    "Δ+3 grave_heath/mage",
+    "Δ+3 mork_skog/cleric",
+    "Δ+3 mork_skog/fighter",
+    "Δ+3 mork_skog/hunter",
+    "Δ+3 mork_skog/mage",
+    "Δ0 TTK cursed_mire/hunter",
+    "Δ0 TTK cursed_mire/mage",
+    "Δ0 TTK grave_heath/hunter",
+    "Δ0 TTK mork_skog/cleric",
+    "Δ0 TTK mork_skog/hunter",
+    "Δ0 TTK mork_skog/mage",
+    "Δ0 cost cursed_mire/cleric",
+    "Δ0 cost cursed_mire/hunter",
+    "Δ0 cost cursed_mire/mage",
+    "Δ0 cost cursed_mire/rogue",
+    "Δ0 cost grave_heath/cleric",
+    "Δ0 cost grave_heath/hunter",
+    "Δ0 cost grave_heath/mage",
+    "Δ0 cost grave_heath/rogue",
+    "Δ0 cost grave_heath/tank",
+    "Δ0 cost mork_skog/cleric",
+    "Δ0 cost mork_skog/mage",
+    "Δ0 cost mork_skog/rogue",
+    "Δ0 cost mork_skog/tank",
+    "Δ0 floor cursed_mire/mage",
+    "Δ0 floor grave_heath/hunter",
+    "Δ0 floor grave_heath/mage",
+    "Δ0 floor grave_heath/rogue",
+    "Δ0 floor mork_skog/cleric",
+    "Δ0 neutral cursed_mire/cleric",
+    "Δ0 neutral cursed_mire/fighter",
+    "Δ0 neutral cursed_mire/hunter",
+    "Δ0 neutral cursed_mire/mage",
+    "Δ0 neutral cursed_mire/rogue",
+    "Δ0 neutral cursed_mire/tank",
+    "Δ0 neutral grave_heath/cleric",
+    "Δ0 neutral grave_heath/fighter",
+    "Δ0 neutral grave_heath/hunter",
+    "Δ0 neutral grave_heath/mage",
+    "Δ0 neutral grave_heath/rogue",
+    "Δ0 neutral grave_heath/tank",
+    "Δ0 neutral mork_skog/cleric",
+    "Δ0 neutral mork_skog/fighter",
+    "Δ0 neutral mork_skog/hunter",
+    "Δ0 neutral mork_skog/mage",
+    "Δ0 neutral mork_skog/rogue",
+    "Δ0 neutral mork_skog/tank",
+    "Δ−2 cainos/cleric",
+    "Δ−2 cainos/fighter",
+    "Δ−2 cainos/hunter",
+    "Δ−2 cainos/rogue",
+    "Δ−2 cainos/tank",
+    "Δ−2 cursed_mire/cleric",
+    "Δ−2 cursed_mire/fighter",
+    "Δ−2 cursed_mire/hunter",
+    "Δ−2 cursed_mire/mage",
+    "Δ−2 cursed_mire/tank",
+    "Δ−2 grave_heath/cleric",
+    "Δ−2 grave_heath/fighter",
+    "Δ−2 grave_heath/hunter",
+    "Δ−2 grave_heath/mage",
+    "Δ−2 grave_heath/rogue",
+    "Δ−2 grave_heath/tank",
+    "Δ−2 mork_skog/fighter",
+    "Δ−2 mork_skog/hunter",
+    "Δ−2 mork_skog/tank",
+    "Δ−4 cainos/cleric",
+    "Δ−4 cainos/fighter",
+    "Δ−4 cainos/hunter",
+    "Δ−4 cainos/rogue",
+    "Δ−4 cainos/tank",
+    "Δ−4 cursed_mire/fighter",
+    "Δ−4 cursed_mire/hunter",
+    "Δ−4 cursed_mire/tank",
+    "Δ−4 grave_heath/fighter",
+    "Δ−4 grave_heath/tank",
+    "Δ−4 mork_skog/fighter",
+    "Δ−4 mork_skog/hunter",
+    "Δ−4 mork_skog/tank",
+})
+
+
+def residual_reason(check: str) -> str:
+    """The structural cause tag for an accepted residual check name."""
+    if check.startswith("Δ0 floor"):
+        return "mage/bad-matchup floor: the frail worst-case sinks below 25% on-level"
+    if check.startswith("Δ0"):
+        return ("durable-median: tank/fighter/cleric pin the on-level median "
+                "(cost/TTK ride the same base-stat tank)")
+    if check.startswith("Δ−2"):
+        return ("delta2 base-stat ceiling: +2 enemy levels ride HP_GROWTH 0.38 "
+                "past what a player weapon closes")
+    if check.startswith("Δ+3"):
+        return "plus3 dominant fast-kill: a +3 player kills below the TTK>=2 floor"
+    if check.startswith("Δ−4"):
+        return "delta4 off-level ceiling: a -4 player wins above the archetype ceiling"
+    if check.startswith("DEFAULT"):
+        return "default-kit gap: the no-talent/start-weapon floor trails the median by >15pp"
+    return "prep-2026-07-12 residual"
+
+
+def _gate_name(line: str) -> str:
+    """'FAIL  Δ0 neutral mork_skog/tank: ...' -> 'Δ0 neutral mork_skog/tank'."""
+    body = line.split(None, 1)[1] if " " in line else line   # drop PASS/FAIL
+    return body.split(":", 1)[0].strip()
+
+
+def classify_gates(gates: list) -> tuple:
+    """Split gate FAIL lines into (known_residuals, new_fails). A known residual
+    is a FAIL whose check name is in the frozen KNOWN_RESIDUAL_CHECKS baseline;
+    every other FAIL is a NEW regression that must stay visible. known_residuals
+    is a list of (name, reason)."""
+    known, new = [], []
+    for line in gates:
+        if not line.startswith("FAIL"):
+            continue
+        name = _gate_name(line)
+        if name in KNOWN_RESIDUAL_CHECKS:
+            known.append((name, residual_reason(name)))
+        else:
+            new.append(name)
+    return known, new
+
+
 # --- output ------------------------------------------------------------------
 
 def write_outputs(cells: dict, out_dir: str, tag: str, trials: int) -> None:
@@ -327,8 +481,21 @@ def write_outputs(cells: dict, out_dir: str, tag: str, trials: int) -> None:
     if gates:
         lines.append("\n## Gates (MEDIAN)")
         lines.extend(f"- {g}" for g in gates)
-        fails = sum(1 for g in gates if g.startswith("FAIL"))
-        lines.append(f"\n**{fails} FAIL / {len(gates)} checks**")
+        known, new = classify_gates(gates)
+        lines.append(f"\n**{len(known)} known residuals + {len(new)} NEW fails "
+                     f"/ {len(gates)} checks**")
+        if new:
+            lines.append("\n### ⚠ NEW fails — regressions, investigate")
+            lines.extend(f"- {n}" for n in new)
+        else:
+            lines.append("\n_No new fails: every FAIL is a frozen known residual._")
+        if known:
+            by_reason: dict = {}
+            for name, reason in known:
+                by_reason.setdefault(reason, []).append(name)
+            lines.append("\n### Known residuals (accepted, structural)")
+            for reason, names in sorted(by_reason.items()):
+                lines.append(f"- **{reason}** ({len(names)}): " + ", ".join(sorted(names)))
     with open(os.path.join(out_dir, f"delta_{tag}.md"), "w") as fh:
         fh.write("\n".join(lines))
 
@@ -379,8 +546,15 @@ def main():
         plot_matrix(cells, args.out, args.tag)
     except ImportError:
         pass
-    for line in gate_summary(cells):
+    gates = gate_summary(cells)
+    for line in gates:
         print(line)
+    if gates:
+        known, new = classify_gates(gates)
+        print(f"\n{len(known)} known residuals + {len(new)} NEW fails "
+              f"/ {len(gates)} checks")
+        for name in new:
+            print(f"  NEW: {name}")
 
 
 if __name__ == "__main__":
