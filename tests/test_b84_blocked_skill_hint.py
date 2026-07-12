@@ -63,7 +63,20 @@ class BlockedSkillHintTest(unittest.TestCase):
         opts = self._skill_opts(battle)
         _label, _skill_id, enabled, sub = opts["holy_strike"]
         self.assertFalse(enabled)
-        self.assertEqual(sub, "mana 2/7")
+        self.assertEqual(sub, "Mana 2/7")
+
+    def test_mana_hint_is_its_own_untruncated_button_line(self):
+        engine, battle = self._fighter_with_holy_strike()
+        engine.player.mana = 2
+        battle.open_submenu("skill")
+        battle.draw()
+        button = next(b for b in battle.buttons if b.label == "Holy Strike")
+        self.assertEqual(button.sublabel, "Mana 2/7")
+        from rpg_game.presentation import ui
+        self.assertEqual(
+            ui.fit(button.sublabel, battle.font_sm, button.rect.width - 12),
+            button.sublabel,
+        )
 
     def test_cooldown_hint_shows_rounds_remaining(self):
         engine, battle = self._fighter_with_holy_strike()

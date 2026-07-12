@@ -1204,9 +1204,10 @@ class BattleApp:
             self._text(T.NOTHING_AVAILABLE, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, TEXT_DIM)
         rects = self._action_rects(len(options) + 1)
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
-            # Inline the sub-detail so each option fits one compact line.
-            text = f"{label} ({sub})" if sub else label
-            self.buttons.append(Button(rect, text, (lambda a=action_id: self.issue_turn(a)), enabled))
+            # B112: the detail owns a second line. Inlining it after a long
+            # skill name made the important mana reason end as "(m...)".
+            self.buttons.append(Button(rect, label, (lambda a=action_id: self.issue_turn(a)),
+                                       enabled, sublabel=sub))
         self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, hotkey="\x1b"))
 
     def _build_stat_buttons(self):
@@ -1232,9 +1233,19 @@ class BattleApp:
                                          right=b.rect.x + 30, centery=b.rect.centery,
                                          dim=not b.enabled)
                 text_x = chip.right + 8
-            fitted = ui.fit(b.label, self.font_sm, b.rect.right - text_x - 4)
+            max_width = b.rect.right - text_x - 4
+            fitted = ui.fit(b.label, self.font_sm, max_width)
             label = self.font_sm.render(fitted, True, label_color)
-            self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery)))
+            if b.sublabel:
+                # Two independent lines keep compact submenu metadata legible.
+                # Mana N/M always fits this width and is never truncated behind
+                # the skill name (B112).
+                sub_text = ui.fit(b.sublabel, self.font_sm, max_width)
+                sub = self.font_sm.render(sub_text, True, TEXT_DIM)
+                self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery - 7)))
+                self.screen.blit(sub, sub.get_rect(midleft=(text_x, b.rect.centery + 7)))
+            else:
+                self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery)))
 
     def _draw_banner(self):
         surf = self.font_lg.render(self.banner, True, self.banner_color)
@@ -1282,7 +1293,7 @@ class BattleApp:
         # core blocked_reason sentences overflow the compact buttons.
         player = self.engine.player
         if player.mana < skill.mana_cost:
-            return f"mana {player.mana}/{skill.mana_cost}"
+            return f"Mana {player.mana}/{skill.mana_cost}"
         remaining = player.cooldowns.get(skill.id, 0)
         if remaining > 0:
             return f"cooldown {remaining}"
