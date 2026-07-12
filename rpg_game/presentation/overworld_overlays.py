@@ -271,7 +271,9 @@ class OverlaysMixin:
             on_click = (lambda sid=slot.id: self.unequip_gear_from_slot(sid))
         else:
             on_click = (lambda: None)          # empty slot: equip happens from inventory
-        self._add_button(srect, "", on_click, enabled=True, tooltip=tip,
+        # The slot id rides as the (unrendered) label so a custom button stays
+        # identifiable — the _draw_buttons custom branch never paints it.
+        self._add_button(srect, slot.id, on_click, enabled=True, tooltip=tip,
                          focus_section="slots", custom=True)
 
     def _character_inventory_rows(self, snap):
