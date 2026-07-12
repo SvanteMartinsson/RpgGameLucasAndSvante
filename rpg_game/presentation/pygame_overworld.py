@@ -1271,6 +1271,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             allow_swap=False,
             playtest_logger=self.playtest_logger,
             location_id=location_id,
+            event_log=self.event_log,  # B115: same combat channel as wild battles
         ).run()
         self._apply_display_mode()
         self._log_display("after_tournament_battle")

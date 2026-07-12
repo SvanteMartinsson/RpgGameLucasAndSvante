@@ -5,6 +5,7 @@ Skips when pygame/pytmx are not installed.
 
 import os
 import unittest
+from unittest import mock
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -112,6 +113,16 @@ class PygameTournamentTest(unittest.TestCase):
 
         self.assertFalse(any("Flee" in label for label in labels))
         self.assertFalse(any("Swap" in label for label in labels))
+
+    def test_tournament_battle_reuses_overworld_battle_log(self):
+        enemy = self.app.engine.content.enemies["arena_ralla_quickstep"].create_enemy()
+        with mock.patch("rpg_game.presentation.pygame_overworld.BattleApp") as battle_cls:
+            battle_cls.return_value.run.return_value = "victory"
+            self.assertEqual(self.app.run_tournament_battle(enemy), "victory")
+        kwargs = battle_cls.call_args.kwargs
+        self.assertIs(kwargs["event_log"], self.app.event_log)
+        self.assertFalse(kwargs["allow_flee"])
+        self.assertFalse(kwargs["allow_swap"])
 
 
 if __name__ == "__main__":
