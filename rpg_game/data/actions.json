@@ -363,8 +363,8 @@
         "type": "apply_status",
         "status_type": "buff",
         "stat": "evasion_chance",
-        "magnitude": 40,
-        "duration": 2,
+        "magnitude": 30,
+        "duration": 6,
         "tick_timing": "round_end",
         "target": "self"
       }
@@ -378,15 +378,6 @@
     "mana_cost": 6,
     "requires_weapon_category": "melee",
     "effects": [
-      {
-        "type": "apply_status",
-        "status_type": "buff",
-        "stat": "evasion_chance",
-        "magnitude": 30,
-        "duration": 6,
-        "tick_timing": "round_end",
-        "target": "self"
-      },
       {
         "type": "apply_status",
         "status_type": "reflect",

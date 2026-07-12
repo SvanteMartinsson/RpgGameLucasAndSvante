@@ -121,7 +121,10 @@ class RogueClassTests(unittest.TestCase):
         self.assertEqual(hit.reflected_damage, 0)
         self.assertEqual(enemy.hp, 50)
 
-    def test_riposte_grants_thirty_evasion_for_six_rounds(self):
+    def test_riposte_grants_no_evasion_only_a_six_round_reflect(self):
+        # B123: Riposte is a PURE reflect — it must not grant any evasion of its
+        # own (that buff moved onto the Evasion skill). It uses whatever evasion
+        # the player already has (from Evasion / stats).
         engine = GameEngine(rng=random.Random(1))
         engine.start_new_game("Rogue", "rogue")
         enemy = make_enemy()
@@ -129,11 +132,23 @@ class RogueClassTests(unittest.TestCase):
             engine.player, enemy, engine.content.actions["riposte"], engine.rng,
             weapon=engine.content.weapons["dagger"],
         )
-        self.assertEqual(engine.player.evasion_chance, 30)
+        self.assertEqual(engine.player.evasion_chance, 0)   # no evasion buff
         statuses = engine.player.active_statuses
-        evade = next(status for status in statuses if status.stat == "evasion_chance")
+        self.assertFalse(any(s.stat == "evasion_chance" for s in statuses))
         reflect = next(status for status in statuses if status.type == "reflect")
-        self.assertEqual((evade.duration, reflect.duration), (6, 6))
+        self.assertEqual(reflect.duration, 6)
+
+    def test_evasion_grants_thirty_evasion_for_six_rounds(self):
+        # B123: the evasion buff now lives on the Evasion skill (+30% / 6 rounds).
+        engine = GameEngine(rng=random.Random(1))
+        engine.start_new_game("Rogue", "rogue")
+        enemy = make_enemy()
+        combat.resolve_action(
+            engine.player, enemy, engine.content.actions["evasion"], engine.rng,
+        )
+        self.assertEqual(engine.player.evasion_chance, 30)
+        evade = next(s for s in engine.player.active_statuses if s.stat == "evasion_chance")
+        self.assertEqual(evade.duration, 6)
         for _ in range(6):
             combat.tick_statuses(engine.player, "round_end")
         self.assertEqual(engine.player.evasion_chance, 0)

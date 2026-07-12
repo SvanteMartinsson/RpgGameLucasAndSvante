@@ -92,12 +92,20 @@ class EffectTextComputedTest(unittest.TestCase):
         self.assertEqual(describe_effect(node.effects[0]),
                          "when hit: +3 damage for 3 rounds (self), stacks up to 5")
 
-    def test_riposte_couples_evasion_and_reflect_in_one_clear_line(self):
+    def test_riposte_reads_as_a_pure_on_evade_reflect(self):
+        # B123: Riposte no longer grants evasion — it is a pure on_evade reflect,
+        # and its line says so ("when you evade"), with no evasion line.
         lines = skill_effect_lines(self.content.actions["riposte"])
         self.assertEqual(
             lines[0],
-            "Evade +30% for 6 rounds; reflect 1x Power physical damage when you evade.",
+            "reflect 1.0x Power physical damage when you evade for 6 rounds (self)",
         )
+        self.assertFalse(any("evasion" in line for line in lines), lines)
+
+    def test_evasion_reads_as_a_thirty_percent_buff_for_six_rounds(self):
+        # B123: the evasion buff moved onto the Evasion skill.
+        lines = skill_effect_lines(self.content.actions["evasion"])
+        self.assertEqual(lines[0], "+30% evasion for 6 rounds (self)")
 
 
 if __name__ == "__main__":
