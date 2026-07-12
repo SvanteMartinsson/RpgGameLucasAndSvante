@@ -82,6 +82,9 @@ Källa: full battle-logg + Lucas findings. Fångade nedan som B21–B24 + uppdat
   (t.ex. brantare ramp eller ramp mot avstånd-till-VÄG, inte bara stad).
 
 #### B48 — Per-zon/per-område enemy-spawn-authoring  ⭐ designbärande (stor)  · ✅ **KLAR** (Lucas-GO 2026-07-06)
+- **Geo-levelband GODKÄNDA rakt av (Lucas 2026-07-12):** first-pass-banden ur nattens
+  BFS-gångavståndsförslag (docs/nightly/geo_proposal.md + geo_*.png) sätts i
+  `spawn_areas`-datan (level_min/level_max), precedens AREA>region>mall (5cc6504).
 - **KLAR:** union-modellen byggd — `core/spawns.py` (`SpawnArea`, `pool_at`: union av
   alla träffande områden, vikter summeras per fiende; tom → `spawn_fallbacks[region]`;
   `weighted_pick` = ett rng-drag). **22 Lucas-ritade områden** + 4 fallbacks authorade i
@@ -467,7 +470,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   samma logik. Träddatan rörs INTE.
 - **Acceptans:** renders före/efter (mage = värsta fallet) i docs/nightly/; tester.
 
-#### B107 — Battle feel (Battle Screen Mock = spec) · 🟢 **S1 GO (nattbatch 2026-07-11→12)**
+#### B107 — Battle feel (Battle Screen Mock = spec) · ✅ **S1 KLAR + GODKÄND** (98dde1c, Lucas GO 2026-07-12) · S2 väntar
 - **Vad:** Battle-scenens presentation lyfts enligt Lucas godkända design-export
   ("Battle Screen Mock"): (a) hjälte-idle-sprite (hero_idle_right_native.png, 4 frames
   20×29, loop A-B-C-B 0,9 s) ersätter placeholder-boxen; (b) attack-koreografi för
@@ -499,6 +502,38 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Loadout-policys i sim:** DEFAULT (startkit) / MEDIAN (halva guldet spenderat,
   girig-men-icke-optimal talentspend, inga tomes) / OPTIMIZED (B102-policyn) — gates
   uttrycks mot MEDIAN.
+
+#### Klassidentitetsmodellen  ⭐ designbärande · **LÅST (Lucas, 2026-07-12)**
+- **Arketyper:** fighter/hunter = **glass cannon** (hög skada, LÅG HP & armor);
+  rogue = **utility + skada** (skadan BOOSTAS); tank/cleric = **defensiva** av olika
+  natur (rörs INTE defensivt). Inom glass cannon-trion differentieras skörheten:
+  någon får lite mer HP men mindre armor, vice versa — ingen får bådadera.
+- **Skada:** fighter/hunter trimmas NÅGOT (mål: spridning ~2×, inte paritet); rogue
+  UPP något; cleric DPS-lyfts INTE (defensiv identitet, korridoren absorberar).
+- **Arketyp-korridorer ersätter gemensam TTK-gate:** glass cannon TTK 3–5, rogue 4–6,
+  tank/cleric 5–8. Kostnadskorridor 20–35 % HP vid Δ0 för alla; defensiva får ligga
+  10–25 % (deras kostnad är tid/mana).
+- **HP_GROWTH_PER_LEVEL** får flyttas 0.20 → inom **0.28–0.38** (den saknade
+  Δ-lutningshävstången från nattens HALT).
+- **Känsla > perfektion:** cross-class (se nedan) river ändå upp balansen framöver —
+  residual-fails dokumenteras hellre än jagas.
+- **Slutgates v2 (arketyp-korridorer, MEDIAN, N≥200):** Δ0 neutral 70–90 % · Δ0 dålig
+  matchup ≥25 % · Δ+3 ≥95 % TTK ≥2 · Δ−2 35–60 % · Δ−4 ≤15 % (glass cannons FÅR ≤10 —
+  skörhet är designen) · kostnadskorridorer per arketyp · inga timeouts.
+
+#### Cross-class / secondary class  ⭐ designbärande · **FRAMTIDA (parkerad, egen designrunda)**
+- **Vad:** En andraklass ovanpå primärklassen (talang-/skill-blandning över klassgränsen).
+- **Konsekvens NU:** motiverar "känsla över perfektion" i klassidentitetspasset —
+  cross-class kommer riva upp den finjusterade balansen ändå, så residualer i delta-
+  matrisen dokumenteras hellre än jagas till noll fails. Egen designrunda innan bygge.
+
+#### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
+- **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
+  `BUILDING_FUNCTION`-poster (brew/fast_travel) — de saknar fysiska dörr-tiles i
+  `door_index` och nås bara via `do_action`. Ser ut som en B8 2b-rest.
+- **Vad:** samma prejudikat som shrine/church C (36e20bc): ut ur `COSMETIC_BUILDINGS`,
+  fysiska dörr-tiles via template-maskineriet, menyerna nås via dörr som allt annat.
+- **Acceptans:** render av en stad med båda dörrarna; tester.
 
 #### B97 — Wight/skeleton-kitflytt (Variant B LÅST, exekveras FÖRST i rundan)
 - **Beslut (Lucas, kväll 2026-07-11): Variant B** — cursed_wight får frostfire_strike +
@@ -1653,7 +1688,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Acceptans:** siffror/blink/skak triggar rätt och stör inte layouten (canvas-skalning intakt);
   kan stängas av (krok för B70); render-review; sviten grön.
 
-#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · 🟢 **S1 GODKÄND (Lucas, kväll 2026-07-11) → S2 GO** (byggs i nattbatch 2026-07-11→12: preset-tabell + settings-toggle; övriga zoners presets authoras som FÖRSLAG i utkastfil + renders, Lucas väljer på morgonen)
+#### B73 — Zon-ambiens: partiklar + ljus-overlay per zon  · ✅ **S2 KLAR + ALLA PRESETS GODKÄNDA** (Lucas GO 2026-07-12: cainos/cursed_mire/grave_heath inkopplade ur utkastfilen; mork_skog sedan nattbatch) — preset-tabell + "Ambience"-toggle klara
 - **Vad:** Ett tunt atmosfärslager i overworlden per zon: eldflugor/pollendamm i mork_skog, låg
   dimslöja som driver i cursed_mire, aska/gnistor i grave_heath, varmt dis i cainos — några dussin
   långsamma partiklar + en svag färg-overlay. Upplevelsen: zonerna FÅR sin stämning i rörelse, och
