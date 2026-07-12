@@ -278,6 +278,12 @@ class GameEngine:
     def recover_between_tournament_matches(self) -> tournaments.TournamentIntermissionResult:
         return tournaments.recover_between_matches(self.player)
 
+    def clear_battle_statuses(self) -> None:
+        """B125: drop the player's battle-bound statuses (reverting their stat
+        deltas). Called at the start of every tournament match so nothing leaks
+        in from a prior match (or a pre-tournament fight)."""
+        combat.clear_battle_statuses(self.player)
+
     def available_destinations(self):
         return world.available_destinations(self.player, self.content)
 

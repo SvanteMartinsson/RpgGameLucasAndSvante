@@ -1292,6 +1292,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         run = self.tournament_run
         if run is None:
             return
+        # B125: every match starts clean — clears buffs/debuffs/DoT/reflect (and
+        # reverts their stat deltas) so nothing leaks from the previous match or
+        # a pre-tournament fight. The between-match intermission also clears, but
+        # this covers match 1 too.
+        self.engine.clear_battle_statuses()
         enemy = self.engine.create_tournament_opponent(run.tournament, run.next_index)
         outcome = self.run_tournament_battle(enemy)
         if outcome != "victory":

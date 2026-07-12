@@ -187,6 +187,31 @@ class TournamentProgressionTests(unittest.TestCase):
         self.assertEqual(engine.player.active_statuses, [])
         self.assertEqual(engine.player.hp, hp_before)
 
+    def test_between_matches_reverts_buff_stat_deltas_not_just_the_status(self):
+        # B125: a buff cast in match 1 (e.g. rogue Evasion, +30 evasion_chance)
+        # must not leak its STAT into match 2 — the old code emptied the status
+        # list but left evasion_chance elevated, compounding every match.
+        engine = GameEngine()
+        engine.start_new_game("Rogue", "rogue")
+        enemy = engine.content.enemies["giant_rat"].create_enemy()
+        combat.resolve_action(engine.player, enemy, engine.content.actions["evasion"], engine.rng)
+        self.assertEqual(engine.player.evasion_chance, 30)   # buff applied in match 1
+
+        engine.recover_between_tournament_matches()
+
+        self.assertEqual(engine.player.active_statuses, [])
+        self.assertEqual(engine.player.evasion_chance, 0)    # reverted, no leak into match 2
+
+    def test_clear_battle_statuses_engine_hook_reverts_deltas(self):
+        # B125: the per-match-start hook the shell calls before every match.
+        engine = GameEngine()
+        engine.start_new_game("Rogue", "rogue")
+        enemy = engine.content.enemies["giant_rat"].create_enemy()
+        combat.resolve_action(engine.player, enemy, engine.content.actions["evasion"], engine.rng)
+        engine.clear_battle_statuses()
+        self.assertEqual(engine.player.active_statuses, [])
+        self.assertEqual(engine.player.evasion_chance, 0)
+
     def test_tournament_completion_survives_save_load(self):
         engine = GameEngine()
         engine.start_new_game("Hero", "fighter")

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rpg_game.core import equipment
+from rpg_game.core import combat, equipment
 from rpg_game.core.entities import GameContent, Player, Tournament
 
 
@@ -99,9 +99,11 @@ def complete_tournament(player: Player, content: GameContent, tournament: Tourna
 def recover_between_matches(player: Player) -> TournamentIntermissionResult:
     player.hp = equipment.effective_stat(player, "max_hp")
     player.mana = equipment.effective_stat(player, "max_mana")
-    # B85: battle-bound statuses (DoTs, debuffs, combat buffs) must not carry
-    # from one opponent into the next; the HP/mana handling above is unchanged.
-    player.active_statuses = []
+    # B85/B125: battle-bound statuses (DoTs, debuffs, combat buffs) must not carry
+    # from one opponent into the next. B125 fix: clear via combat so buff STAT
+    # deltas (e.g. evasion_chance) are reverted, not just the status objects
+    # dropped — emptying the list alone leaked the deltas. HP/mana unchanged.
+    combat.clear_battle_statuses(player)
     return TournamentIntermissionResult(
         "Tournament intermission: recovered to full HP and mana.",
         player_hp=player.hp,

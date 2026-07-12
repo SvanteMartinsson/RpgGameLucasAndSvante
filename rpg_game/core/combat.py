@@ -1279,6 +1279,17 @@ def tick_statuses(actor: Actor, timing: Literal["round_start", "round_end"]) -> 
     return events
 
 
+def clear_battle_statuses(actor: Actor) -> None:
+    """B125: drop every battle-bound status AND revert its applied stat delta —
+    the same reversion the expiry path in tick_statuses does. Emptying
+    active_statuses alone (the old B85 code) left buff deltas like evasion_chance
+    applied, so they leaked into the next tournament match and compounded."""
+    for status in actor.active_statuses:
+        if status.applied_delta:
+            set_stat(actor, status.stat, get_stat(actor, status.stat) - status.applied_delta)
+    actor.active_statuses = []
+
+
 def apply_status_tick(actor: Actor, status: ActiveStatus) -> list[str]:
     if status.type in DAMAGE_TYPES or status.tag in DAMAGE_TYPES:
         damage_type = status.type if status.type in DAMAGE_TYPES else status.tag
