@@ -120,26 +120,19 @@ class SaveSlotUITests(unittest.TestCase):
         self.app.sync_location()
         self.assertTrue(os.path.exists(saveslots.AUTOSAVE_PATH))
 
-    def test_victory_autosaves_and_defeat_opens_the_death_screen(self):
+    def test_victory_autosaves_and_defeat_returns_directly_to_town(self):
         enemy = self.app.engine.content.enemies["giant_rat"].create_enemy()
         self.app.resolve_battle_outcome("victory", enemy)
         self.assertTrue(os.path.exists(saveslots.AUTOSAVE_PATH))
         self.app.resolve_battle_outcome("defeat", enemy)
-        self.assertEqual(self.app.mode, "death")
-
-    def test_death_screen_offers_rise_and_the_autosave(self):
-        self.app.autosave("battle")
-        self.app.mode = "death"
-        self.app.buttons = []
-        self.app.hover.begin()
-        self.app._draw_death_screen()
-        labels = [b.label for b in self.app.buttons]
-        self.assertTrue(any(l.startswith("Rise at") for l in labels))
-        self.assertTrue(any(l.startswith("Load autosave") for l in labels))
+        self.assertEqual(self.app.mode, "walk")
+        self.assertEqual(self.app.world.current_tile,
+                         self.app.town_tile_by_place[self.app.engine.player.current_place_id])
+        self.assertIn("You fell. You wake at", self.app.event_log[-1][0])
 
     def test_load_save_resyncs_and_returns_to_walk(self):
         self.app.save_game()
-        self.app.mode = "death"
+        self.app.mode = "store"
         self.app._load_save(self.app.save_path)
         self.assertEqual(self.app.mode, "walk")
 

@@ -208,7 +208,7 @@ def weapon_preview(weapon) -> str:
 
 
 def defeat_respawn(place_name: str) -> str:
-    return f"Defeated — respawned at {place_name}."
+    return f"You fell. You wake at {place_name}."
 
 
 def victory_over(enemy_name: str) -> str:

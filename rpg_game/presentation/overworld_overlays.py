@@ -14,7 +14,6 @@ import os
 
 import pygame
 
-from rpg_game.core import saveslots
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import settings as user_settings
@@ -692,34 +691,6 @@ class OverlaysMixin:
                 T.TOURNAMENT_EQUIP,
                 lambda: self.toggle_overlay("character"),
             )
-        self._draw_buttons()
-
-    def _draw_death_screen(self) -> None:
-        """B71: "You fell." — rise at the respawn (penalty already applied by the
-        core) or load the autosave / a manual slot instead."""
-        panel = self._overlay_panel("You fell.")
-        place = self.engine.current_place().name
-        self.screen.blit(self.font_sm.render(
-            f"You wake at {place}, lighter of purse.", True, TEXT_DIM),
-            (panel.x + 20, panel.y + 60))
-        y = panel.y + 96
-        self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44),
-                         f"Rise at {place}", (lambda: setattr(self, "mode", "walk")), True)
-        y += 52
-        auto = saveslots.slot_summary(saveslots.AUTOSAVE_PATH)
-        if auto is not None:
-            label = f"Load autosave — {auto.name} · Lv {auto.level} · {auto.playtime_label()}"
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
-                             (lambda: self._load_save(saveslots.AUTOSAVE_PATH)), True)
-            y += 52
-        for i, summary in enumerate(saveslots.all_summaries()):
-            if summary is None:
-                continue
-            label = (f"Load slot {i + 1} — {summary.name} · {summary.player_class} · "
-                     f"Lv {summary.level} · {summary.playtime_label()}")
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), label,
-                             (lambda p=summary.path: self._load_save(p)), True)
-            y += 52
         self._draw_buttons()
 
     def _draw_travel_event(self) -> None:

@@ -103,9 +103,8 @@ class FocusAllMenusTest(unittest.TestCase):
 
     # -- mode-based screens --------------------------------------------------
 
-    def test_death_screen(self):
-        self.app.mode = "death"
-        self._assert_focus_moves_and_activates("death")
+    def test_death_is_not_a_focus_menu_after_direct_respawn(self):
+        self.assertNotIn("death", FOCUS_MODES)
 
     def test_victory_screen(self):
         enemy = self.app.engine.create_encounter()
@@ -131,7 +130,7 @@ class FocusAllMenusTest(unittest.TestCase):
     def test_all_menu_modes_are_focus_dispatched(self):
         for mode in ("building", "store", "tome_shop", "apothecary", "fast_travel",
                      "upgrade_station", "tournaments", "tournament_confirm",
-                     "tournament_intermission", "death", "victory", "travel_event"):
+                     "tournament_intermission", "victory", "travel_event"):
             self.assertIn(mode, FOCUS_MODES)
 
     # -- surface change resets ------------------------------------------------
@@ -145,7 +144,7 @@ class FocusAllMenusTest(unittest.TestCase):
         moved = (self.app.focus.section, self.app.focus.index)
         self.assertNotEqual(moved, (0, 0))
         self.app.overlay = ""          # a mode-based screen opens without
-        self.app.mode = "death"        # open_overlay -> draw() detects it
+        self.app.mode = "victory"      # open_overlay -> draw() detects it
         self.app.draw()
         self.assertEqual((self.app.focus.section, self.app.focus.index), (0, 0))
 

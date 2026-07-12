@@ -168,7 +168,7 @@ WATER_BLOCK_THRESHOLD = 0.6
 FOCUS_MODES = frozenset({
     "building", "store", "tome_shop", "apothecary", "fast_travel",
     "upgrade_station", "tournaments", "tournament_confirm",
-    "tournament_intermission", "death", "victory", "travel_event",
+    "tournament_intermission", "victory", "travel_event",
 })
 
 ENCOUNTER_SAFE_RADIUS = encounters.SAFE_RADIUS
@@ -905,7 +905,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self._move_accum_x = self._move_accum_y = 0.0  # teleport -> no carried drift
             self.sync_location()
             self.set_toast(T.defeat_respawn(self.engine.current_place().name), BAD)
-            self.mode = "death"                       # B71: a dignified death screen
+            self.mode = "walk"                        # B118: no load/respawn menu
         else:
             # Victory or flee: stay where we are; location is still the wilds. The
             # battle shell already logged the outcome into the shared event_log, so
@@ -1387,8 +1387,6 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 self.mode = "walk"
             elif self.mode == "travel_event":
                 pass   # B67: an event demands a choice — Esc does not skip it
-            elif self.mode == "death":
-                self.mode = "walk"
             elif self.mode == "victory":
                 self.mode = "walk"
             elif self.mode in {"tournaments", "tournament_confirm"}:
@@ -1543,8 +1541,6 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self._draw_apothecary()
         elif self.mode == "fast_travel":
             self._draw_fast_travel()   # B8 2b: the stable coach board
-        elif self.mode == "death":
-            self._draw_death_screen()
         elif self.mode == "victory":
             self._draw_victory_screen()   # B65: the ending
         elif self.mode == "tournaments":

@@ -72,8 +72,6 @@ class TextStyleTest(unittest.TestCase):
             self._assert_no_help_parens(overlay)
 
     def test_no_help_parens_on_menu_modes(self):
-        self.app.mode = "death"
-        self._assert_no_help_parens("death")
         events = list(self.app.engine.content.travel_events)
         if events:
             self.app.mode = "travel_event"
