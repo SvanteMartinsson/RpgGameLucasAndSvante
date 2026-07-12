@@ -612,6 +612,7 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._walk_sfx_steps = 0   # B69: footstep every 2nd tile, not a machine gun
         self._music_slider_rect = None   # B69: set each frame the settings overlay draws
         self._music_dragging = False
+        self._menu_scrolls = {"settings": ui.ScrollArea(), "tomes": ui.ScrollArea()}
         # Sub-pixel movement remainder (float) per axis; the int part moves the rect
         # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
         # on any teleport so no drift accumulates across a reposition.
@@ -1324,6 +1325,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             elif event.type == pygame.MOUSEWHEEL:
                 if self.overlay == "bestiary":
                     self.move_bestiary_selection(-event.y)   # B79: wheel browses the codex
+                elif self.overlay == "settings":
+                    self._menu_scrolls["settings"].scroll(-event.y * 46)
+                elif self.mode == "tome_shop":
+                    self._menu_scrolls["tomes"].scroll(-event.y * 46)
                 elif self._log_interactive():   # scroll only in walk; read-only under menus
                     self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
@@ -1786,9 +1791,19 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         activates the focused button (same path as a click). Returns True when
         the key was consumed; anything else (e.g. Esc) falls through."""
         if event.key == pygame.K_DOWN:
+            scroll = self._active_overflow_scroll()
+            if scroll is not None and self.focus._position() is not None:
+                section, index = self.focus._position()
+                if index == len(self.focus._sections[section][1]) - 1 and scroll.scroll(46):
+                    return True
             self.focus.move(1)
             return True
         if event.key == pygame.K_UP:
+            scroll = self._active_overflow_scroll()
+            if scroll is not None and self.focus._position() is not None:
+                _section, index = self.focus._position()
+                if index == 0 and scroll.scroll(-46):
+                    return True
             self.focus.move(-1)
             return True
         if event.key == pygame.K_RIGHT:
@@ -1817,6 +1832,13 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 button.on_click()
             return True
         return False
+
+    def _active_overflow_scroll(self):
+        if self.overlay == "settings":
+            return self._menu_scrolls["settings"]
+        if self.mode == "tome_shop":
+            return self._menu_scrolls["tomes"]
+        return None
 
     def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,
                     value="", label_color=None, tooltip=None, focus_section="",

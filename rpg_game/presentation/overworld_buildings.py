@@ -168,6 +168,7 @@ class BuildingMenusMixin:
         self.building_menu = None
         self.tome_building = building_id
         self.mode = "tome_shop"
+        self._menu_scrolls["tomes"].offset = 0
 
     def _close_tome_shop(self) -> None:
         self.tome_building = None
@@ -194,20 +195,29 @@ class BuildingMenusMixin:
             f"Gold: {gold}    ·    study a bought tome from your inventory (I) to learn it",
             True, TEXT_DIM), (panel.x + 20, y))
         y += 30
+        viewport = pygame.Rect(panel.x + 12, y - 4, panel.width - 24,
+                               panel.bottom - 66 - (y - 4))
+        tomes = self.engine.tomes_for_sale(self.tome_building)
+        row_h = 46
+        scroll = self._menu_scrolls["tomes"]
+        scroll.configure(len(tomes) * row_h, viewport.height)
+        y = scroll.y(y)
         # B40 S3: tome rows follow the menu spec — name + price visible, the
         # taught skill/level gate on hover; known tomes are disabled, owned or
         # unaffordable ones restricted (dimmed, click explains).
-        for tome in self.engine.tomes_for_sale(self.tome_building):
+        for tome in tomes:
             already = tome.teaches in known
             owned = self.engine.player.inventory.count(tome.id) > 0
             value = "known" if already else ("owned" if owned else f"{tome.price}g")
             _color, tip = self.store_row_extras(tome.id)
-            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 40), tome.name,
-                             (lambda t=tome.id: self._buy_tome(t)),
-                             enabled=not already,
-                             restricted=(not already) and (owned or gold < tome.price),
-                             value=value, tooltip=tip)
+            rect = pygame.Rect(panel.x + 20, y, panel.width - 40, 40)
+            if viewport.contains(rect):
+                self._add_button(rect, tome.name, (lambda t=tome.id: self._buy_tome(t)),
+                                 enabled=not already,
+                                 restricted=(not already) and (owned or gold < tome.price),
+                                 value=value, tooltip=tip)
             y += 46
+        ui.draw_scroll_indicators(self.screen, self.font_sm, viewport, scroll, row_h, TEXT_DIM)
         back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
         self._add_button(back, T.BACK, self._close_tome_shop, badge=T.BACK_KEY)
         self._draw_buttons()
@@ -559,4 +569,3 @@ class BuildingMenusMixin:
         if item_id in self.engine.content.gear_items:
             return self.engine.content.gear_items[item_id].rarity
         return "common"
-

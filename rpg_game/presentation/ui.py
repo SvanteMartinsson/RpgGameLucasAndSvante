@@ -194,6 +194,61 @@ class FocusSlider:
     adjust: object   # callable (direction: int) -> None
 
 
+@dataclass
+class ScrollArea:
+    """Shared pixel scroll state for an overflowing menu viewport (B113).
+
+    Screens own their content and buttons; this helper owns clamping,
+    coordinate translation and the familiar ``N more`` indicator counts.
+    """
+
+    offset: int = 0
+    content_height: int = 0
+    viewport_height: int = 0
+
+    @property
+    def maximum(self) -> int:
+        return max(0, self.content_height - self.viewport_height)
+
+    def configure(self, content_height: int, viewport_height: int) -> None:
+        self.content_height = max(0, content_height)
+        self.viewport_height = max(0, viewport_height)
+        self.offset = max(0, min(self.offset, self.maximum))
+
+    def scroll(self, pixels: int) -> bool:
+        before = self.offset
+        self.offset = max(0, min(self.offset + pixels, self.maximum))
+        return self.offset != before
+
+    def y(self, content_y: int) -> int:
+        return content_y - self.offset
+
+    def hidden_rows(self, row_height: int) -> tuple[int, int]:
+        row_height = max(1, row_height)
+        above = (self.offset + row_height - 1) // row_height
+        below_px = max(0, self.maximum - self.offset)
+        below = (below_px + row_height - 1) // row_height
+        return above, below
+
+
+def draw_scroll_indicators(
+    surface: "pygame.Surface",
+    font: "pygame.font.Font",
+    viewport: "pygame.Rect",
+    scroll: ScrollArea,
+    row_height: int,
+    color: tuple,
+) -> None:
+    """Draw the chat/store-style ``N more`` affordance at viewport edges."""
+    above, below = scroll.hidden_rows(row_height)
+    if above:
+        text = font.render(f"^ {above} more ^", True, color)
+        surface.blit(text, text.get_rect(midtop=(viewport.centerx, viewport.top + 2)))
+    if below:
+        text = font.render(f"v {below} more v", True, color)
+        surface.blit(text, text.get_rect(midbottom=(viewport.centerx, viewport.bottom - 2)))
+
+
 def wrap(text: str, font: "pygame.font.Font", max_width: int) -> list:
     """B57: THE text wrap — greedy word-wrap to max_width px, character-breaking
     an over-long word. The single implementation behind chatlog.wrap_lines and

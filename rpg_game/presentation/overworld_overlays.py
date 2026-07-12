@@ -418,7 +418,17 @@ class OverlaysMixin:
         self.screen.blit(self.font_sm.render(
             "Changes apply immediately and persist.", True, TEXT_DIM),
             (panel.x + 20, panel.y + 56))
-        y = panel.y + 92
+        viewport = pygame.Rect(panel.x + 12, panel.y + 88,
+                               panel.width - 24, panel.height - 154)
+        row_h = 46
+        controls_rows = (len(T.CONTROLS) + 1) // 2
+        content_height = len(user_settings.OPTIONS) * row_h + 26 + controls_rows * 26
+        scroll = self._menu_scrolls["settings"]
+        scroll.configure(content_height, viewport.height)
+        y = scroll.y(viewport.y)
+        self._music_slider_rect = None
+        old_clip = self.screen.get_clip()
+        self.screen.set_clip(viewport)
         # B92: rows come from THE shared definition (user_settings.OPTIONS) so
         # this overlay and the start menu can never diverge; only the live
         # apply-side effects are surface-specific.
@@ -427,17 +437,20 @@ class OverlaysMixin:
             label = user_settings.option_label(option, self._setting_value(key))
             # B106: no "(F11)" suffixes — the Controls table below owns the keys.
             if option["kind"] == "slider":
-                self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
+                if viewport.contains(pygame.Rect(panel.x + 20, y, panel.width - 40, 38)):
+                    self._draw_music_slider(panel, y)   # B69: 0-100, click or drag, live
                 y += 54
                 continue
             if option["kind"] == "steps":
-                self._add_button(pygame.Rect(panel.x + 20, y, 180, 38),
-                                 f"{label} -", (lambda k=key: self._cycle_setting(k, -1)))
-                self._add_button(pygame.Rect(panel.x + 210, y, 180, 38),
-                                 f"{label} +", (lambda k=key: self._cycle_setting(k, 1)))
+                left = pygame.Rect(panel.x + 20, y, 180, 38)
+                right = pygame.Rect(panel.x + 210, y, 180, 38)
+                if viewport.contains(left) and viewport.contains(right):
+                    self._add_button(left, f"{label} -", (lambda k=key: self._cycle_setting(k, -1)))
+                    self._add_button(right, f"{label} +", (lambda k=key: self._cycle_setting(k, 1)))
             else:
-                self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 38),
-                                 label, (lambda k=key: self._cycle_setting(k, 1)))
+                rect = pygame.Rect(panel.x + 20, y, panel.width - 40, 38)
+                if viewport.contains(rect):
+                    self._add_button(rect, label, (lambda k=key: self._cycle_setting(k, 1)))
             y += 46
         self.screen.blit(self.font_sm.render("Controls", True, ACCENT), (panel.x + 20, y))
         y += 26
@@ -448,6 +461,8 @@ class OverlaysMixin:
         ui.draw_controls_table(self.screen, self.font_sm, T.CONTROLS,
                                x=panel.x + 20, y=y, width=panel.width - 240,
                                action_color=TEXT_DIM, row_h=26)
+        self.screen.set_clip(old_clip)
+        ui.draw_scroll_indicators(self.screen, self.font_sm, viewport, scroll, row_h, TEXT_DIM)
 
     def _setting_value(self, key: str):
         """Current value for a shared-definition settings row (B92) — live
@@ -761,4 +776,3 @@ class OverlaysMixin:
         self._add_button(pygame.Rect(panel.x + 20, y + 10, panel.width - 40, 44),
                          T.VICTORY_CONTINUE, (lambda: setattr(self, "mode", "walk")), True)
         self._draw_buttons()
-
