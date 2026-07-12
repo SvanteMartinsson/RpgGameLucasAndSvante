@@ -32,14 +32,17 @@ class EncounterCooldownRuleTest(unittest.TestCase):
         cd = encounters.EncounterCooldown()
         self.assertFalse(cd.active)
 
-    def test_start_activates_for_one_second_of_movement(self):
+    def test_start_activates_for_the_cooldown_duration(self):
+        # B124: tracks ENCOUNTER_COOLDOWN_SECONDS (2.0) rather than hardcoding 1s.
+        # Single subtractions keep this exact (frame-by-frame float drift is an
+        # integration detail, not the rule under test).
+        duration = encounters.ENCOUNTER_COOLDOWN_SECONDS
         cd = encounters.EncounterCooldown()
         cd.start()
         self.assertTrue(cd.active)
-        for _ in range(59):                 # 59 frames à ~16.67ms < 1s
-            cd.tick_movement(1.0 / 60.0)
+        cd.tick_movement(duration - 0.1)    # just short of the full duration
         self.assertTrue(cd.active)
-        cd.tick_movement(1.0 / 60.0)        # frame 60 crosses 1.0s
+        cd.tick_movement(0.2)               # movement that crosses it (clamps to 0)
         self.assertFalse(cd.active)
 
     def test_standing_still_never_counts_down(self):
@@ -55,7 +58,7 @@ class EncounterCooldownRuleTest(unittest.TestCase):
         cd = encounters.EncounterCooldown()
         cd.start()
         cd.tick_movement(0.9)
-        cd.start()                          # a new battle re-arms the full 1s
+        cd.start()                          # a new battle re-arms the full cooldown
         cd.tick_movement(0.5)
         self.assertTrue(cd.active)
 
@@ -91,8 +94,9 @@ class OverworldCooldownWiringTest(unittest.TestCase):
         baseline = random.Random(99)
         self.app.encounter_cooldown.start()
         self.assertIsNone(self.app.maybe_encounter())
-        # 1 full second of accumulated movement releases the gate.
-        for _ in range(60):
+        # A full cooldown of accumulated movement releases the gate (B124: 2s);
+        # the +2 frames absorb per-frame float drift over the longer window.
+        for _ in range(round(encounters.ENCOUNTER_COOLDOWN_SECONDS * 60) + 2):
             self.app.encounter_cooldown.tick_movement(1.0 / 60.0)
         self.assertFalse(self.app.encounter_cooldown.active)
         enemy = self.app.maybe_encounter()  # rate 1.0 -> fires like any step
