@@ -54,7 +54,14 @@ def _choose_skill(engine: GameEngine, enemy=None, smart: bool = False):
     is cast first, then a self-status (buff/reflect/regen) the player does not
     already carry — both score 0 on the burst scale, so builds that took those
     branches would otherwise never cast their signature skills. The default
-    policy is unchanged (default loadouts have no such skills)."""
+    policy is unchanged (default loadouts have no such skills).
+
+    Class-identity pass (2026-07-12): a self-buff is cast AT MOST ONCE per fight.
+    Without this a short-duration defensive buff (e.g. rogue `evasion`, dur 2)
+    was re-cast every other turn on expiry, burning ~half the rogue's turns and
+    making its DPS regress after L5 — a sim-policy artefact, not a game rule.
+    `engine._sim_cast_buffs` tracks the self-buffs already opened this fight; it
+    is reset per fight by the fight harness."""
     player = engine.player
     if smart and enemy is not None:
         for skill in engine.equipped_skills():
@@ -62,11 +69,18 @@ def _choose_skill(engine: GameEngine, enemy=None, smart: bool = False):
                 continue
             if _is_enemy_dot(skill) and not combat.action_reapplies_active_dot(skill, enemy):
                 return skill
+        cast_buffs = getattr(engine, "_sim_cast_buffs", None)
+        if cast_buffs is None:
+            cast_buffs = set()
+            engine._sim_cast_buffs = cast_buffs
         for skill in engine.equipped_skills():
             if skill.mana_cost > player.mana or not _is_self_status(skill):
                 continue
+            if skill.id in cast_buffs:          # a smart player opens with it once,
+                continue                        # not re-casts it every expiry
             applied_types = {e.status_type for e in skill.effects if e.type == "apply_status"}
             if not any(status.type in applied_types for status in player.active_statuses):
+                cast_buffs.add(skill.id)
                 return skill
     best, best_score = None, 0.0
     for skill in engine.equipped_skills():
