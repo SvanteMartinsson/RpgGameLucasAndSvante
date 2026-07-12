@@ -1197,6 +1197,18 @@ class BattleApp:
             rects.append(pygame.Rect(x, y, col_w, row_h))
         return rects
 
+    def _skill_grid_rects(self, count):
+        """B128: equal SQUARE cells in a single row across the ACTIONS band — the
+        equipped skills plus the Esc/Back cell. The side is bounded by both the
+        row height and the per-column width so every cell is the same square."""
+        gap = 8
+        side = max(1, min(ACTIONS.height - 2 * gap,
+                          (ACTIONS.width - (count + 1) * gap) // max(1, count)))
+        total = count * side + (count - 1) * gap
+        x0 = ACTIONS.x + max(gap, (ACTIONS.width - total) // 2)
+        y0 = ACTIONS.y + (ACTIONS.height - side) // 2
+        return [pygame.Rect(x0 + i * (side + gap), y0, side, side) for i in range(count)]
+
     def _build_action_buttons(self, snapshot):
         if self.mode != "combat" or self.enemy is None:
             if self.mode == "victory_idle":
@@ -1226,16 +1238,21 @@ class BattleApp:
         options = self._submenu_options(snapshot)
         if not options:
             self._text(T.NOTHING_AVAILABLE, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, TEXT_DIM)
-        rects = self._action_rects(len(options) + 1)
+        # B128: skills render as a square grid (with the Esc/Back cell as the last
+        # square); item/swap keep the wide rows their long names need.
+        skill_grid = self.submenu_kind == "skill"
+        rects = (self._skill_grid_rects(len(options) + 1) if skill_grid
+                 else self._action_rects(len(options) + 1))
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
             # B112: the detail owns a second line. Inlining it after a long
             # skill name made the important mana reason end as "(m...)".
             button = Button(rect, label, (lambda a=action_id: self.issue_turn(a)),
-                            enabled, sublabel=sub)
+                            enabled, sublabel=sub, custom=skill_grid)
             self.buttons.append(button)
-            if self.submenu_kind == "skill":
+            if skill_grid:
                 self.focus.add("skills", button)  # disabled skills are focusable too
-        self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, hotkey="\x1b"))
+        self.buttons.append(Button(rects[len(options)], "Back", lambda: self.set_mode("combat"),
+                                   True, hotkey="\x1b", custom=skill_grid))
 
     def _build_stat_buttons(self):
         specs = T.STAT_CHOICES
@@ -1258,6 +1275,9 @@ class BattleApp:
             pygame.draw.rect(self.screen, color, b.rect, border_radius=5)
             pygame.draw.rect(self.screen, ACCENT if focused else BTN_EDGE, b.rect,
                              width=2 if focused else 1, border_radius=5)
+            if b.custom:                       # B128: a square skill / Esc cell
+                self._draw_skill_cell(b)
+                continue
             label_color = TEXT if b.enabled else TEXT_DIM
             text_x = b.rect.x + 8
             if b.hotkey:   # B107/B106: the hotkey as a key-cap badge, not "[a]"
@@ -1279,6 +1299,29 @@ class BattleApp:
             else:
                 self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery)))
 
+    def _draw_skill_cell(self, b):
+        """B128: paint one square skill cell — the name wrapped/centered with a
+        compact cost line beneath — or the Esc/Back cell (a key-cap + 'Back').
+        The box + focus ring were already drawn by _draw_buttons."""
+        label_color = TEXT if b.enabled else TEXT_DIM
+        inner = b.rect.width - 8
+        if b.hotkey:                       # the Esc / Back cell
+            badge_w = self.font_sm.size("Esc")[0] + 14
+            ui.draw_key_badge(self.screen, self.font_sm, "Esc",
+                              right=b.rect.centerx + badge_w // 2, centery=b.rect.centery - 6)
+            back = self.font_sm.render("Back", True, label_color)
+            self.screen.blit(back, back.get_rect(center=(b.rect.centerx, b.rect.centery + 15)))
+            return
+        lines = ui.wrap(b.label, self.font_sm, inner)[:2]
+        line_h = self.font_sm.get_linesize()
+        top = b.rect.y + max(6, (b.rect.height - 18 - line_h * len(lines)) // 2)
+        for i, line in enumerate(lines):
+            surf = self.font_sm.render(ui.fit(line, self.font_sm, inner), True, label_color)
+            self.screen.blit(surf, surf.get_rect(midtop=(b.rect.centerx, top + i * line_h)))
+        if b.sublabel:                     # B112: the mana/cd (or blocked) hint
+            sub = self.font_sm.render(ui.fit(b.sublabel, self.font_sm, inner), True, TEXT_DIM)
+            self.screen.blit(sub, sub.get_rect(midbottom=(b.rect.centerx, b.rect.bottom - 5)))
+
     def _draw_banner(self):
         surf = self.font_lg.render(self.banner, True, self.banner_color)
         rect = surf.get_rect(center=(WIDTH // 2, LOG_PANEL.centery))
@@ -1296,8 +1339,14 @@ class BattleApp:
             opts = []
             for skill in snapshot.skills:
                 enabled = not skill.blocked_reason
-                cost = f"mana {skill.mana_cost}" if skill.mana_cost else "free"
-                sub = self._blocked_hint(skill) if skill.blocked_reason else f"{cost}, cd {skill.cooldown_rounds}"
+                if skill.blocked_reason:
+                    sub = self._blocked_hint(skill)   # B84/B112: readable dim reason
+                else:
+                    # B128: compact cost that fits a square cell ("7 MP", "Free",
+                    # "+cd2"); the blocked hint above keeps its full form.
+                    sub = f"{skill.mana_cost} MP" if skill.mana_cost else "Free"
+                    if skill.cooldown_rounds:
+                        sub += f" cd{skill.cooldown_rounds}"
                 opts.append((skill.name, skill.id, enabled, sub))
             return opts
         if self.submenu_kind == "item":
