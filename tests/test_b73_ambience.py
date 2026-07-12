@@ -43,27 +43,30 @@ class AmbienceLayerTests(unittest.TestCase):
         for p in layer.particles:
             self.assertTrue(0 <= p.x < 320)
 
-    def test_s2_preset_table_wires_only_mork_skog(self):
-        # S2: the zone->preset table carries the S1 fireflies unchanged; the
-        # proposal presets stay in the draft file until Lucas approves them.
-        from rpg_game.presentation import ambience_drafts
-        self.assertEqual(set(ambience.PRESETS), {"mork_skog"})
-        preset = ambience.PRESETS["mork_skog"]
-        self.assertEqual(preset["kind"], "firefly")
-        self.assertEqual(preset["count"], ambience.FIREFLY_COUNT)
-        for zone in ambience_drafts.DRAFT_PRESETS:
-            self.assertNotIn(zone, ambience.PRESETS, zone)
+    def test_s2_all_four_zone_presets_wired(self):
+        # Lucas GO 2026-07-12: all four zones wired — mork_skog fireflies + the
+        # three approved drafts (cainos/cursed_mire/grave_heath).
+        self.assertEqual(set(ambience.PRESETS),
+                         {"mork_skog", "cainos", "cursed_mire", "grave_heath"})
+        skog = ambience.PRESETS["mork_skog"]
+        self.assertEqual(skog["kind"], "firefly")
+        self.assertEqual(skog["count"], ambience.FIREFLY_COUNT)
 
-    def test_s2_draft_presets_render_particles(self):
-        from rpg_game.presentation import ambience_drafts
-        for zone, preset in ambience_drafts.DRAFT_PRESETS.items():
+    def test_s2_wired_presets_render_particles(self):
+        for zone, preset in ambience.PRESETS.items():
             layer = ambience.ParticleLayer((320, 200), seed=2, preset=preset)
             surface = pygame.Surface((320, 200), pygame.SRCALPHA)
             for _ in range(30):
                 layer.update()
             layer.draw(surface)
-            # low threshold: mist/pollen drafts are deliberately faint (alpha < 127)
+            # low threshold: mist/pollen are deliberately faint (alpha < 127)
             self.assertGreater(pygame.mask.from_surface(surface, 8).count(), 0, zone)
+
+    def test_drafts_stay_in_sync_with_wired_presets(self):
+        # The historical draft dict re-derives from PRESETS so it can't drift.
+        from rpg_game.presentation import ambience_drafts
+        for zone, preset in ambience_drafts.DRAFT_PRESETS.items():
+            self.assertEqual(preset, ambience.PRESETS[zone], zone)
 
     def test_s2_settings_toggle_gates_the_layer(self):
         from rpg_game.presentation import settings as user_settings
@@ -81,25 +84,35 @@ class AmbienceLayerTests(unittest.TestCase):
         app._draw_ambience()
         self.assertIsNotNone(app._ambience)   # on: the skog preset appears
 
-    def test_app_only_draws_ambience_in_mork_skog(self):
+    def test_app_swaps_the_preset_per_zone_theme(self):
+        # Lucas GO 2026-07-12: every zone now has a preset; the layer is rebuilt
+        # when the theme changes so cainos drift and mork_skog fireflies never
+        # bleed into each other.
         app = OverworldApp()
         app.screen = pygame.Surface((640, 400))
-        # a cainos tile: no layer instantiated
-        cainos = next(t for t in [(10, 40), (12, 40), (20, 40)]
-                      if app.zone.theme_for_tile(t) != "mork_skog")
+
+        def _tile_for(theme):
+            for y in (20, 40, 60):
+                for x in range(0, app.world.tmx.width, 4):
+                    if app.zone.theme_for_tile((x, y)) == theme:
+                        return (x, y)
+            return None
+
+        cainos = _tile_for("cainos")
+        skog = _tile_for("mork_skog")
+        self.assertIsNotNone(cainos)
+        self.assertIsNotNone(skog)
+
         app.world.set_tile(*cainos)
         app._draw_ambience()
-        self.assertIsNone(app._ambience)
-        # a mork_skog tile: the layer appears
-        skog = None
-        for x in range(0, app.world.tmx.width, 4):
-            if app.zone.theme_for_tile((x, 20)) == "mork_skog":
-                skog = (x, 20)
-                break
-        self.assertIsNotNone(skog)
+        self.assertIsNotNone(app._ambience)               # cainos has a preset now
+        self.assertEqual(app._ambience_theme, "cainos")
+        self.assertEqual(app._ambience.preset["kind"], "drift")
+
         app.world.set_tile(*skog)
         app._draw_ambience()
-        self.assertIsNotNone(app._ambience)
+        self.assertEqual(app._ambience_theme, "mork_skog")  # rebuilt for the new zone
+        self.assertEqual(app._ambience.preset["kind"], "firefly")
 
 
 if __name__ == "__main__":

@@ -20,11 +20,32 @@ import pygame
 FIREFLY_COUNT = 28
 FIREFLY_COLOR = (215, 235, 120)
 
-# Zone theme -> preset. S2 wires ONLY mork_skog (behaviour-preserving move of
-# the S1 fireflies into the table). Other zones stay empty until Lucas picks
-# from the drafts (ambience_drafts.DRAFT_PRESETS).
+# Zone theme -> preset. All four zones wired (Lucas GO 2026-07-12): mork_skog
+# fireflies since S1; cainos/cursed_mire/grave_heath moved here from the drafts
+# (ambience_drafts) behaviour-preserving vs their approved GIF renders.
 PRESETS: dict[str, dict] = {
     "mork_skog": {"kind": "firefly", "count": FIREFLY_COUNT, "color": FIREFLY_COLOR},
+    # Warm pollen/seeds drifting in a slight crosswind — bright, friendly zone.
+    "cainos": {
+        "kind": "drift", "count": 22,
+        "colors": ((235, 225, 170), (210, 220, 150)),
+        "size": (1, 2), "vx": (0.08, 0.3), "vy": (0.02, 0.12),
+        "sway": (4, 10), "alpha": 80,
+    },
+    # Low drifting haze — large soft blobs creeping horizontally.
+    "cursed_mire": {
+        "kind": "mist", "count": 10,
+        "colors": ((150, 170, 150), (130, 150, 140)),
+        "size": (28, 48), "vx": (0.04, 0.14), "vy": (-0.01, 0.01),
+        "sway": (2, 6), "alpha": 26,
+    },
+    # Ash/dust motes falling slowly with sway; the odd ember.
+    "grave_heath": {
+        "kind": "fall", "count": 26,
+        "colors": ((150, 145, 140), (120, 115, 110), (200, 120, 60)),
+        "size": (1, 2), "vx": (-0.06, 0.06), "vy": (0.15, 0.4),
+        "sway": (2, 7), "alpha": 100,
+    },
 }
 
 
