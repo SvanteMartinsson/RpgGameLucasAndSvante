@@ -358,6 +358,7 @@ class BattleApp:
         # Shared hover timer -> tooltip. No menu registers zones yet (Slice 1 is
         # infra only), so it stays a no-op until an apply-slice calls hover.add().
         self.hover = ui.HoverTracker()
+        self.focus = ui.FocusList()   # B114: keyboard skill selection
         pygame.init()
         audio.init()          # B69: graceful — silent mode when no device
         audio.ensure_music()  # carries through from the overworld, starts standalone
@@ -698,6 +699,8 @@ class BattleApp:
     def open_submenu(self, kind: str) -> None:
         self.submenu_kind = kind
         self.mode = "submenu"
+        if kind == "skill":
+            self.focus.reset()       # slot 1 is selected every time skills open
 
     # -- input --------------------------------------------------------------
 
@@ -741,6 +744,26 @@ class BattleApp:
             elif self.mode in {"game_over"}:
                 self.running = False
             return
+        if self.mode == "submenu" and self.submenu_kind == "skill":
+            if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
+                self.focus.move(1)
+                return
+            if event.key in (pygame.K_UP, pygame.K_LEFT):
+                self.focus.move(-1)
+                return
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                button = self.focus.focused()
+                if button is None:
+                    return
+                audio.play("menu_click")
+                if button.enabled:
+                    button.on_click()
+                else:
+                    # A blocked row remains selectable; confirming explains it
+                    # with B112's compact, fully visible reason.
+                    reason = button.sublabel or "Skill unavailable"
+                    self.push_log(f"{button.label}: {reason}", WARN)
+                return
         if self.mode == "victory_idle" and event.key in (pygame.K_RETURN, pygame.K_SPACE):
             self.next_encounter()
             return
@@ -769,6 +792,7 @@ class BattleApp:
         self._draw_hud_vitals(snapshot)
         self.buttons = []
         self.hover.begin()   # menus re-register their hoverable rects each frame
+        self.focus.begin()
         if self.mode == "submenu":
             self._build_submenu(snapshot)
         elif self.mode == "stat_choice":
@@ -1206,8 +1230,11 @@ class BattleApp:
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
             # B112: the detail owns a second line. Inlining it after a long
             # skill name made the important mana reason end as "(m...)".
-            self.buttons.append(Button(rect, label, (lambda a=action_id: self.issue_turn(a)),
-                                       enabled, sublabel=sub))
+            button = Button(rect, label, (lambda a=action_id: self.issue_turn(a)),
+                            enabled, sublabel=sub)
+            self.buttons.append(button)
+            if self.submenu_kind == "skill":
+                self.focus.add("skills", button)  # disabled skills are focusable too
         self.buttons.append(Button(rects[len(options)], "[Esc] Back", lambda: self.set_mode("combat"), True, hotkey="\x1b"))
 
     def _build_stat_buttons(self):
@@ -1217,15 +1244,20 @@ class BattleApp:
 
     def _draw_buttons(self):
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
+        focused_button = self.focus.focused()
         for b in self.buttons:
-            if not b.enabled:
+            focused = b is focused_button
+            if focused:
+                color = BTN_HOVER
+            elif not b.enabled:
                 color = BTN_DISABLED
             elif b.rect.collidepoint(mouse):
                 color = BTN_HOVER
             else:
                 color = BTN
             pygame.draw.rect(self.screen, color, b.rect, border_radius=5)
-            pygame.draw.rect(self.screen, BTN_EDGE, b.rect, width=1, border_radius=5)
+            pygame.draw.rect(self.screen, ACCENT if focused else BTN_EDGE, b.rect,
+                             width=2 if focused else 1, border_radius=5)
             label_color = TEXT if b.enabled else TEXT_DIM
             text_x = b.rect.x + 8
             if b.hotkey:   # B107/B106: the hotkey as a key-cap badge, not "[a]"
