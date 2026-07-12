@@ -151,6 +151,17 @@
     "tier": 1
   },
   {
+    "id": "tome_power_slash",
+    "name": "Tome: Power Slash",
+    "kind": "tome",
+    "teaches": "power_slash",
+    "level_req": 1,
+    "class_req": "rogue",
+    "weapon_category_req": "melee",
+    "price": 200,
+    "tier": 1
+  },
+  {
     "id": "tome_frost_shard",
     "name": "Tome: Frost Shard",
     "kind": "tome",

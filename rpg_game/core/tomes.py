@@ -25,11 +25,29 @@ def all_tomes(content: GameContent) -> list[ConsumableItem]:
     return [item for item in content.items.values() if is_tome(item)]
 
 
-def tomes_for_sale(building_id: str, content: GameContent) -> list[ConsumableItem]:
-    """Tomes offered by a mage-tower building (empty for any other building)."""
+def _meets_authoring_gates(player: Player, content: GameContent, tome: ConsumableItem) -> bool:
+    """B120 template gates: optional class + currently equipped weapon category."""
+    if tome.class_req and player.player_class != tome.class_req:
+        return False
+    if tome.weapon_category_req:
+        weapon = content.weapons.get(player.equipped_weapon_id)
+        if weapon is None or weapon.category != tome.weapon_category_req:
+            return False
+    return True
+
+
+def tomes_for_sale(
+    building_id: str,
+    content: GameContent,
+    player: Player | None = None,
+) -> list[ConsumableItem]:
+    """Tomes offered by a mage tower, filtered by authored class/weapon gates."""
     if building_id not in TOWER_BUILDING_IDS:
         return []
-    return sorted(all_tomes(content), key=lambda t: (t.level_req, t.name))
+    offered = all_tomes(content)
+    if player is not None:
+        offered = [tome for tome in offered if _meets_authoring_gates(player, content, tome)]
+    return sorted(offered, key=lambda t: (t.level_req, t.name))
 
 
 def learn_blocker(player: Player, content: GameContent, tome: ConsumableItem) -> str | None:
@@ -38,6 +56,12 @@ def learn_blocker(player: Player, content: GameContent, tome: ConsumableItem) ->
         return "That is not a skill tome."
     if tome.teaches not in content.actions:
         return "This tome teaches nothing."
+    if tome.class_req and player.player_class != tome.class_req:
+        return f"Requires {tome.class_req.title()}."
+    if tome.weapon_category_req:
+        weapon = content.weapons.get(player.equipped_weapon_id)
+        if weapon is None or weapon.category != tome.weapon_category_req:
+            return f"Requires a {tome.weapon_category_req} weapon."
     if player.level < tome.level_req:
         return f"Requires level {tome.level_req}."
     if tome.teaches in talents.unlocked_skill_ids(player, content):

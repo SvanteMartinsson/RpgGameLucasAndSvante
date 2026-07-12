@@ -408,6 +408,22 @@ bonus). Ärver mest — crit (Rogue), armor_pen (Fighter), conditional, dot.
 
 ---
 
+## Mall: klasspecifika tomes
+
+En klass-tome authoras som två dataposter utan specialkod per klass:
+
+- `actions.json`: en vanlig skill med `requires_weapon_category` när själva
+  handlingen kräver en vapentyp.
+- `items.json`: `kind: "tome"`, `teaches`, `class_req` och
+  `weapon_category_req` samt normal `level_req`/`price`/`tier`.
+
+Mage tower visar bara posten när spelarens klass och nu utrustade vapenkategori
+matchar. Samma gates kontrolleras igen vid studier, så ett redan köpt item kan
+inte kringgå regeln. Första mallinstansen är rogue + melee: `tome_power_slash`.
+Tomma gate-fält bevarar de generiska tomesens gamla beteende.
+
+---
+
 ## Main/secondary (påminnelse)
 
 Combo-modellen från `COMBAT_DESIGN.md`: main-klass ger fulla basstats + hela

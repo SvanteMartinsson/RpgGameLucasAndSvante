@@ -91,6 +91,8 @@ class WeaponGatingTests(unittest.TestCase):
             "glacial_spike": "magic",
             "pestilent_burst": "magic",
             "serrated_bolt": "ranged",
+            # B120 class-gated offensive tome
+            "power_slash": "melee",
         }
         actual = {
             action_id: action.requires_weapon_category

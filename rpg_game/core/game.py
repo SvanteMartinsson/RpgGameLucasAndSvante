@@ -746,7 +746,7 @@ class GameEngine:
     # --- B38: skill tomes, sold at mage-tower buildings ---------------------
     def tomes_for_sale(self, building_id: str) -> list:
         """Tomes a mage-tower building offers (empty for other buildings)."""
-        return tomes.tomes_for_sale(building_id, self.content)
+        return tomes.tomes_for_sale(building_id, self.content, self.player)
 
     def buy_tome(self, building_id: str, item_id: str) -> store.PurchaseResult:
         """Buy a tome at a mage tower: deduct gold, add it to the inventory.

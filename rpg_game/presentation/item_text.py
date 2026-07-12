@@ -78,6 +78,10 @@ def consumable_tooltip(item, content, *, price_line: str = "") -> ui.Tooltip:
             lines.extend(skill_effect_lines(action))
         if item.level_req > 1:
             lines.append(f"Needs Lv {item.level_req}")
+        if item.class_req:
+            lines.append(f"Class: {item.class_req.title()}")
+        if item.weapon_category_req:
+            lines.append(f"Requires a {item.weapon_category_req} weapon")
     if item.heal_amount:
         lines.append(f"Restores {item.heal_amount} HP")
     if item.mana_amount:

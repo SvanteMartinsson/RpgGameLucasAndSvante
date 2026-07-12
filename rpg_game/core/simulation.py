@@ -170,6 +170,7 @@ def simulate_fight(
     main_stat: str | None = None,
     weapon_id: str | None = None,
     talent_plan: tuple[str, ...] = (),
+    learned_skill_ids: tuple[str, ...] = (),
     equip_skill_ids: tuple[str, ...] = (),
 ) -> FightSimulation:
     """Run one fight and return a compact result. Defaults reproduce the old
@@ -189,6 +190,9 @@ def simulate_fight(
     for node_id in talent_plan:
         engine.player.talent_points += 1
         engine.allocate_talent(node_id)
+    for skill_id in learned_skill_ids:
+        if skill_id not in engine.player.learned_skill_ids:
+            engine.player.learned_skill_ids = (*engine.player.learned_skill_ids, skill_id)
     for skill_id in equip_skill_ids:
         if skill_id not in engine.player.equipped_skill_ids:
             engine.equip_skill(skill_id)
@@ -234,6 +238,7 @@ def simulate_matchup(
     main_stat: str | None = None,
     weapon_id: str | None = None,
     talent_plan: tuple[str, ...] = (),
+    learned_skill_ids: tuple[str, ...] = (),
     equip_skill_ids: tuple[str, ...] = (),
 ) -> MatchupSimulation:
     """Run many seeded fights for one class/enemy matchup."""
@@ -241,6 +246,7 @@ def simulate_matchup(
         simulate_fight(class_id, enemy_id, seed=seed + index, max_turns=max_turns,
                        use_skills=use_skills, level=level, main_stat=main_stat,
                        weapon_id=weapon_id, talent_plan=talent_plan,
+                       learned_skill_ids=learned_skill_ids,
                        equip_skill_ids=equip_skill_ids)
         for index in range(trials)
     ]

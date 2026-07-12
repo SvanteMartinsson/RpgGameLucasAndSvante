@@ -16,7 +16,7 @@ from rpg_game.core.game import GameEngine
 
 B27_POOL = {"zap", "thunder_strike", "incineration", "holy_strike",
             "frost_shard", "earthen_smash", "plague_ooze", "immolate",
-            "stone_ward", "venom_lash", "sun_flare"}   # B27 batch: +3 tomes
+            "stone_ward", "venom_lash", "sun_flare", "power_slash"}
 
 
 def _mage(level=8, gold=2000, seed=0):

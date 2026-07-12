@@ -186,6 +186,9 @@ class ConsumableItem:
     # B38: skill tomes (kind == "tome") teach an action on use, gated by level_req.
     teaches: str = ""
     level_req: int = 1
+    # B120 class-tome authoring gates. Empty keeps legacy/generic tomes global.
+    class_req: str = ""
+    weapon_category_req: str = ""
 
 
 @dataclass(frozen=True)

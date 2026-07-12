@@ -215,6 +215,8 @@ def load_content() -> GameContent:
             cures=tuple(row.get("cures", ())),
             teaches=row.get("teaches", ""),
             level_req=row.get("level_req", 1),
+            class_req=row.get("class_req", ""),
+            weapon_category_req=row.get("weapon_category_req", ""),
         )
         for row in _read_json("items.json")
     }
@@ -545,6 +547,8 @@ def _validate_content_refs(classes, weapons, gear_items, items, actions, talents
     for item in items.values():
         if item.kind == "tome" and item.teaches not in actions:
             raise ValueError(f"tome {item.id} teaches unknown action {item.teaches}")
+        if item.class_req and item.class_req not in classes:
+            raise ValueError(f"tome {item.id} requires unknown class {item.class_req}")
 
     for recipe in upgrade_recipes.values():
         if recipe.item_id not in weapons and recipe.item_id not in gear_items:

@@ -26,6 +26,24 @@
     ]
   },
   {
+    "id": "power_slash",
+    "name": "Power Slash",
+    "kind": "skill",
+    "hit_chance": 1.0,
+    "mana_cost": 4,
+    "cooldown_rounds": 1,
+    "requires_weapon_category": "melee",
+    "effects": [
+      {
+        "type": "instant_damage",
+        "scale": "power",
+        "multiplier": 1.4,
+        "damage_type": "physical",
+        "target": "enemy"
+      }
+    ]
+  },
+  {
     "id": "normal",
     "name": "Normal attack",
     "kind": "base_attack",
