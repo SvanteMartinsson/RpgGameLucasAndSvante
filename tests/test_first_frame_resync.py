@@ -35,6 +35,21 @@ def _expected_transform(display_size, canvas_size):
     return (max(0, (dw - fw) // 2), max(0, (dh - fh) // 2), scale)
 
 
+def _isolate_settings(testcase):
+    """B122c: keep prefs writes (toggle_fullscreen persists) off the real
+    settings.json by pointing SETTINGS_PATH at a throwaway temp file."""
+    import tempfile
+    from unittest import mock
+
+    from rpg_game.presentation import settings as user_settings
+    handle = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    handle.close()
+    testcase.addCleanup(lambda: os.path.exists(handle.name) and os.unlink(handle.name))
+    patcher = mock.patch.object(user_settings, "SETTINGS_PATH", handle.name)
+    patcher.start()
+    testcase.addCleanup(patcher.stop)
+
+
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
 class FirstFrameResyncTest(unittest.TestCase):
     @classmethod
@@ -45,6 +60,9 @@ class FirstFrameResyncTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pygame.quit()
+
+    def setUp(self):
+        _isolate_settings(self)
 
     def test_overworld_first_frame_matches_the_real_surface(self):
         app = OverworldApp()

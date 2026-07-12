@@ -31,6 +31,20 @@ except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
 
+def _isolate_settings(testcase):
+    """B122c: keep prefs writes (toggle_fullscreen persists) off the real
+    settings.json by pointing SETTINGS_PATH at a throwaway temp file."""
+    import tempfile
+
+    from rpg_game.presentation import settings as user_settings
+    handle = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    handle.close()
+    testcase.addCleanup(lambda: os.path.exists(handle.name) and os.unlink(handle.name))
+    patcher = mock.patch.object(user_settings, "SETTINGS_PATH", handle.name)
+    patcher.start()
+    testcase.addCleanup(patcher.stop)
+
+
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
 class DisplayModeTest(unittest.TestCase):
     @classmethod
@@ -41,6 +55,9 @@ class DisplayModeTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pygame.quit()
+
+    def setUp(self):
+        _isolate_settings(self)
 
     def _spy_apply(self, fullscreen):
         app = OverworldApp()

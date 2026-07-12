@@ -18,6 +18,22 @@ except Exception:  # pragma: no cover - import guard
     DEPS_OK = False
 
 
+def _isolate_settings(testcase):
+    """B122c: point user_settings.SETTINGS_PATH at a throwaway temp file so a
+    test's prefs writes (resize_log persists log_visible, toggle_fullscreen, ...)
+    never touch the developer's real settings.json. Auto-reverted after the test."""
+    import tempfile
+    from unittest import mock
+
+    from rpg_game.presentation import settings as user_settings
+    handle = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    handle.close()
+    testcase.addCleanup(lambda: os.path.exists(handle.name) and os.unlink(handle.name))
+    patcher = mock.patch.object(user_settings, "SETTINGS_PATH", handle.name)
+    patcher.start()
+    testcase.addCleanup(patcher.stop)
+
+
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")
 class OverworldTownsTest(unittest.TestCase):
     @classmethod
@@ -30,6 +46,7 @@ class OverworldTownsTest(unittest.TestCase):
         pygame.quit()
 
     def setUp(self):
+        _isolate_settings(self)   # B122c: keep prefs writes off the real settings.json
         self.app = OverworldApp()
         self.zone = self.app.zone
 
