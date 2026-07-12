@@ -590,7 +590,7 @@
       {
         "type": "stat_bonus",
         "stat": "crit_chance",
-        "magnitude": 20,
+        "magnitude": 6,
         "target": "self"
       }
     ]

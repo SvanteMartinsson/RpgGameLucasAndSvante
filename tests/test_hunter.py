@@ -21,7 +21,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(hunter_hit.total_damage, 28)
+        self.assertEqual(hunter_hit.total_damage, 21)   # 17 base * 1.25 mark (4b retune)
 
         target.hp = target.max_hp
         outside_attacker = make_enemy(hp=100, damage=1)
@@ -40,7 +40,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(normal.total_damage, 22)
+        self.assertEqual(normal.total_damage, 17)       # aimed_shot 1.3 (4b retune)
 
     def test_piercing_shot_ignores_8_armor(self):
         engine = GameEngine(rng=SequenceRng([0.0, 0.99]))
@@ -55,8 +55,8 @@ class HunterClassTests(unittest.TestCase):
             weapon=engine.content.weapons["bow"],
         )
 
-        self.assertEqual(result.total_damage, 20)
-        self.assertEqual(target.hp, 80)
+        self.assertEqual(result.total_damage, 16)   # piercing_shot 1.15 (4b retune)
+        self.assertEqual(target.hp, 84)
 
     def test_exploit_weakness_adds_30_percent_only_when_damage_type_is_weakness(self):
         engine = GameEngine(rng=SequenceRng([0.0]))
@@ -74,7 +74,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(normal_result.total_damage, 22)
+        self.assertEqual(normal_result.total_damage, 17)
 
         weak = make_enemy(hp=100, resistances={"physical": 2.0})
         boosted = combat.resolve_action(
@@ -84,7 +84,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(boosted.total_damage, 58)
+        self.assertEqual(boosted.total_damage, 44)
 
     def test_beast_slayer_adds_25_percent_only_against_beast_tag(self):
         engine = GameEngine(rng=SequenceRng([0.0]))
@@ -103,7 +103,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(humanoid_result.total_damage, 26)   # B95: beast_slayer's +2 power floor
+        self.assertEqual(humanoid_result.total_damage, 20)   # beast_slayer +2 power floor (4b retune)
 
         beast = make_enemy(hp=100, tags={"beast"})
         beast_result = combat.resolve_action(
@@ -113,7 +113,7 @@ class HunterClassTests(unittest.TestCase):
             SequenceRng([0.0, 0.99]),
             weapon=engine.content.weapons["bow"],
         )
-        self.assertEqual(beast_result.total_damage, 33)      # 1.25x on top of the floor
+        self.assertEqual(beast_result.total_damage, 25)      # 1.25x on top of the floor (4b retune)
 
     def test_snare_reduces_speed_and_accuracy_for_2_rounds_then_restores(self):
         engine = GameEngine(rng=SequenceRng([0.0]))

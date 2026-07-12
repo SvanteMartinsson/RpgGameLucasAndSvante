@@ -20,15 +20,15 @@ class RogueClassTests(unittest.TestCase):
         engine.player.crit_chance = 100
         crit = combat.resolve_action(engine.player, target, backstab, random.Random(1), weapon=weapon)
 
-        # Crit is now an additive range-extension, not a fixed x2: 13 * (1.6 + rolled bonus).
-        self.assertEqual(crit.total_damage, 31)
+        # Crit is an additive range-extension, not a fixed x2: 13 * (1.8 + rolled bonus) (4b retune).
+        self.assertEqual(crit.total_damage, 34)
         self.assertEqual(crit.critical_hits, 1)
 
         target = make_enemy(hp=100)
         engine.player.crit_chance = 0
         no_crit = combat.resolve_action(engine.player, target, backstab, random.Random(1), weapon=weapon)
 
-        self.assertEqual(no_crit.total_damage, 21)
+        self.assertEqual(no_crit.total_damage, 23)
         self.assertEqual(no_crit.critical_hits, 0)
 
     def test_execute_conditional_applies_only_at_30_percent_or_lower(self):
@@ -47,7 +47,7 @@ class RogueClassTests(unittest.TestCase):
             weapon=engine.content.weapons["dagger"],
         )
 
-        self.assertEqual(normal.total_damage, 18)
+        self.assertEqual(normal.total_damage, 20)   # execute 1.55 (4b retune)
 
         wounded = make_enemy(hp=100)
         wounded.hp = 30
@@ -59,7 +59,7 @@ class RogueClassTests(unittest.TestCase):
             weapon=engine.content.weapons["dagger"],
         )
 
-        self.assertEqual(boosted.total_damage, 45)
+        self.assertEqual(boosted.total_damage, 50)
 
     def test_lethality_and_deadly_precision_modify_crit_chance_and_expire(self):
         engine = GameEngine(rng=random.Random(1))

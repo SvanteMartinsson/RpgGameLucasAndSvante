@@ -142,7 +142,8 @@ class CritRangeTests(unittest.TestCase):
         engine.start_new_game("Rogue", "rogue")  # base_damage 13
         engine.player.crit_chance = 100
         dagger = engine.content.weapons["dagger"]
-        backstab = engine.content.actions["backstab"].effects[0]  # fixed 1.6x skill
+        backstab = engine.content.actions["backstab"].effects[0]  # fixed-multiplier skill
+        mult = backstab.multiplier
 
         # Skill consumes no multiplier roll: [crit-check, crit-bonus 0.0 -> +0.25].
         _components, total, crit = combat.compute_damage_components(
@@ -150,7 +151,7 @@ class CritRangeTests(unittest.TestCase):
             result=combat.ActionResolution("", "", "", ""), weapon_scaled=True,
         )
         self.assertTrue(crit)
-        self.assertEqual(total, round_half_up(13 * (1.6 + 0.25)))  # 24
+        self.assertEqual(total, round_half_up(13 * (mult + 0.25)))
 
     def test_no_crit_leaves_multiplier_unchanged(self):
         engine = GameEngine()
@@ -163,7 +164,7 @@ class CritRangeTests(unittest.TestCase):
             engine.player, _dummy(), dagger, backstab, rng=SeqRng([0.99]), weapon_scaled=True,
         )
         self.assertFalse(crit)
-        self.assertEqual(total, round_half_up(13 * 1.6))  # 21
+        self.assertEqual(total, round_half_up(13 * backstab.multiplier))
 
 
 if __name__ == "__main__":

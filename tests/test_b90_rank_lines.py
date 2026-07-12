@@ -22,12 +22,14 @@ class RankLinesTests(unittest.TestCase):
 
     def test_active_drain_skill_lines_are_computed(self):
         node = self._node_for_action("frenzy")
+        mult = next(e.multiplier for e in self.content.actions["frenzy"].effects
+                    if e.type in ("instant_damage", "drain"))
         lines = talent_rank_lines(self.content, node, current_rank=1)
         self.assertEqual(len(lines), 3)
-        self.assertIn("1.5x", lines[0])
+        self.assertIn(f"{mult}x", lines[0])
         self.assertIn("<- current", lines[0])
-        self.assertIn("1.88x", lines[1])   # 1.5 * 1.25
-        self.assertIn("2.25x", lines[2])   # 1.5 * 1.5
+        self.assertIn(f"{round(mult * 1.25, 2)}x", lines[1])
+        self.assertIn(f"{round(mult * 1.5, 2)}x", lines[2])
         self.assertNotIn("magnitude", " ".join(lines))
 
     def test_active_dot_scales_ticks_and_duration(self):
