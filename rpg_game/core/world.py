@@ -6,11 +6,15 @@ from rpg_game.core.entities import Connection, Enemy, EnemyTemplate, GameContent
 from rpg_game.core.progression import round_half_up
 
 # Per-level stat growth for wild spawns, applied relative to the template's base
-# level. Tunable. A level-5 giant rat (base 1) becomes a real threat, not just
-# more XP. Progression pass 2026-07-12: damage growth 0.12 -> 0.08 — the delta
-# curve gets its threat from raised BASE kits (flatter level scaling), so an
-# on-level fight bites without a +4-level one exploding.
-HP_GROWTH_PER_LEVEL = 0.20
+# level. Tunable.
+# Progression pass 2026-07-11: damage growth 0.12 -> 0.08 — the delta curve gets
+# its threat from raised BASE kits (flatter damage scaling), so an on-level fight
+# bites without a +4-level one exploding.
+# Class-identity pass 2026-07-12 (lever d): HP growth 0.20 -> 0.38 (top of the
+# 0.28-0.38 band) — this is the delta-SLOPE lever. Fatter high-roll HP makes a
+# Δ−2/Δ−4 enemy a real wall (win rates fall into the 35–60% / ≤15% corridors)
+# without touching the on-level (Δ0) fight, which the base kits already set.
+HP_GROWTH_PER_LEVEL = 0.38
 DAMAGE_GROWTH_PER_LEVEL = 0.08
 
 

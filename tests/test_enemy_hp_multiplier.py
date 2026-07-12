@@ -76,7 +76,9 @@ class EnemyHpMultiplierTest(unittest.TestCase):
             rat = _template(self.engine, "giant_rat").create_enemy()
             self.assertEqual((rat.max_hp, rat.hp), (20, 20))
             world.scale_enemy_to_level(rat, 1, 5)
-            self.assertEqual(rat.max_hp, 36)  # pre-multiplier scaled value
+            # pre-multiplier scaled value, derived from the growth constant so
+            # HP_GROWTH tuning (class-identity lever d) doesn't hard-code it
+            self.assertEqual(rat.max_hp, round_half_up(20 * (1 + world.HP_GROWTH_PER_LEVEL * 4)))
 
 
 if __name__ == "__main__":
