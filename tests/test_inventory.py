@@ -14,7 +14,8 @@ class InventoryTests(unittest.TestCase):
         result = engine.use_consumable("hp_potion")
 
         self.assertTrue(result.success)
-        self.assertEqual(engine.player.hp, 90)
+        # heals +50, capped at max HP (class-identity pass lowered fighter's base)
+        self.assertEqual(engine.player.hp, min(90, engine.effective_stat("max_hp")))
         self.assertEqual(engine.player.inventory.count("hp_potion"), 1)
 
 

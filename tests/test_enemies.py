@@ -144,10 +144,12 @@ class BruiserArchetypeTests(unittest.TestCase):
         engine = _engine()
         bear = engine.content.enemies["cave_bear"].create_enemy()
 
+        full = engine.effective_stat("max_hp")
         result = engine.run_combat_turn(bear, "attack")
 
         # Player (speed 11) acts first, then the bear mauls for 20 (hit_chance 1.0).
-        self.assertEqual(engine.player.hp, 80)
+        # Measured from full so a base-HP change doesn't hard-code a stale value.
+        self.assertEqual(engine.player.hp, full - 20)
         self.assertEqual(result.outcome, "ongoing")
 
 

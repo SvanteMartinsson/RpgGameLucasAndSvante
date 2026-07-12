@@ -172,11 +172,13 @@ def award_xp(player: Player, amount: int) -> int:
 # wisdom). Wisdom has no baseline; its main value is +2 (Wisdom Slice B, sim-
 # tuned): it both scales spell damage with level toward TTK parity and makes the
 # wisdom level-up choice competitive with damage +4.
-# Progression pass 2026-07-12 (lever c): the HP baseline rose 2 -> 3 so squishier
-# classes can pay the delta curve's per-fight HP cost; the tank keeps the old +2
-# (its bulk identity lives in maining HP, and it was explicitly left untouched).
-LEVEL_STAT_BASELINE = {"hp": 3, "damage": 1, "crit": 1}
-CLASS_HP_BASELINE = {"tank": 2}
+# Class-identity pass 2026-07-12 (lever a): per-level HP baseline is now
+# archetype-differentiated. Glass cannons (fighter/hunter/rogue/mage) get +2 —
+# they stay frail as they level, which is the whole point of the archetype. The
+# tank keeps +2 (its bulk lives in maining HP). Only the cleric, whose defensive
+# identity is sustained survival, keeps the night's +3.
+LEVEL_STAT_BASELINE = {"hp": 2, "damage": 1, "crit": 1}
+CLASS_HP_BASELINE = {"cleric": 3}
 LEVEL_STAT_MAIN = {"hp": 8, "damage": 4, "crit": 4, "wisdom": 2}
 _STAT_ALIASES = {"health": "hp", "dmg": "damage", "crit_chance": "crit", "wis": "wisdom"}
 

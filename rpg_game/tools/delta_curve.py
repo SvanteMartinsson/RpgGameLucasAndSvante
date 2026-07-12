@@ -207,11 +207,26 @@ def run_matrix(content, trials: int, policies=None, zones=None) -> dict:
     return out
 
 
-# --- gates -------------------------------------------------------------------
+# --- gates (v2 archetype corridors, Lucas 2026-07-12) ------------------------
+# Archetypes replace the single shared TTK gate. Glass cannons kill fast and
+# die fast; the rogue is a sturdier utility+damage dealer; the defensive pair
+# (tank/cleric) grind — their cost is time/mana, so their HP-cost floor is
+# lower. Mage is treated as a frail caster (glass-cannon corridor).
+ARCHETYPE = {
+    "fighter": "glass", "hunter": "glass", "mage": "glass",
+    "rogue": "rogue", "tank": "defensive", "cleric": "defensive",
+}
+# archetype -> (ttk_lo, ttk_hi, cost_lo, cost_hi, delta_minus4_ceiling)
+CORRIDORS = {
+    "glass": (3, 5, 0.20, 0.35, 0.10),      # glass cannons may bottom out ≤10% at Δ−4
+    "rogue": (4, 6, 0.20, 0.35, 0.15),
+    "defensive": (5, 8, 0.10, 0.25, 0.15),
+}
+
 
 def gate_summary(cells: dict) -> list[str]:
-    """Evaluate Lucas's locked gates against the MEDIAN matrix. Returns a list
-    of human-readable PASS/FAIL lines (empty if median missing)."""
+    """Evaluate the v2 archetype-corridor gates against the MEDIAN matrix.
+    Returns human-readable PASS/FAIL lines (empty if median missing)."""
     if "median" not in cells:
         return []
     lines = []
@@ -222,8 +237,8 @@ def gate_summary(cells: dict) -> list[str]:
     for zone, by_delta in cells["median"].items():
         cainos = zone == "cainos"
         lo, hi = (0.85, 1.0) if cainos else (0.70, 0.90)
-        # Δ0: per class, the median enemy is 'neutral', the worst is the bad matchup.
         for class_id in CLASSES:
+            ttk_lo, ttk_hi, cost_lo, cost_hi, d4_ceiling = CORRIDORS[ARCHETYPE[class_id]]
             row = by_delta[0][class_id]
             wins = sorted(c["win"] for c in row.values())
             med = statistics.median(wins)
@@ -235,27 +250,31 @@ def gate_summary(cells: dict) -> list[str]:
                        f"worst matchup {worst*100:.0f}% (floor 25%)")
             ttks = [c["ttk"] for c in row.values() if c["ttk"] == c["ttk"]]
             med_ttk = statistics.median(ttks) if ttks else float("nan")
-            ttk_ok = med_ttk >= 2 if cainos else 3 <= med_ttk <= 6
+            ttk_ok = med_ttk >= 2 if cainos else ttk_lo <= med_ttk <= ttk_hi
             _check(f"Δ0 TTK {zone}/{class_id}", ttk_ok,
-                   f"median TTK {med_ttk:.1f} (target {'≥2' if cainos else '3–6'})")
+                   f"median TTK {med_ttk:.1f} (corridor {ttk_lo}–{ttk_hi})")
             if not cainos:
                 pcts = [c["taken_pct"] for c in row.values() if c["taken_pct"] == c["taken_pct"]]
                 med_pct = statistics.median(pcts) if pcts else float("nan")
-                _check(f"Δ0 cost {zone}/{class_id}", 0.20 <= med_pct <= 0.35,
-                       f"median cost {med_pct*100:.0f}% HP (target 20–35%)")
-        # Δ+3 / Δ−2 / Δ−4 bands on the per-class median enemy.
-        for delta, name, check in (
-                (3, "Δ+3 win≥95%+TTK≥2",
-                 lambda w, t: w >= 0.95 and t >= 2),
-                (-2, "Δ−2 win 35–60%", lambda w, t: 0.35 <= w <= 0.60),
-                (-4, "Δ−4 win ≤15%", lambda w, t: w <= 0.15)):
-            for class_id in CLASSES:
+                _check(f"Δ0 cost {zone}/{class_id}", cost_lo <= med_pct <= cost_hi,
+                       f"median cost {med_pct*100:.0f}% HP (corridor {cost_lo*100:.0f}–{cost_hi*100:.0f}%)")
+        # Δ+3 (dominant), Δ−2 (contested), Δ−4 (archetype-floored) on the median enemy.
+        for class_id in CLASSES:
+            _, _, _, _, d4_ceiling = CORRIDORS[ARCHETYPE[class_id]]
+            def _med(delta):
                 row = by_delta[delta][class_id]
                 med = statistics.median(sorted(c["win"] for c in row.values()))
                 ttks = [c["ttk"] for c in row.values() if c["ttk"] == c["ttk"]]
-                med_ttk = statistics.median(ttks) if ttks else 99.0
-                _check(f"{name} {zone}/{class_id}", check(med, med_ttk),
-                       f"median win {med*100:.0f}%, TTK {med_ttk:.1f}")
+                return med, (statistics.median(ttks) if ttks else 99.0)
+            w3, t3 = _med(3)
+            _check(f"Δ+3 {zone}/{class_id}", w3 >= 0.95 and t3 >= 2,
+                   f"win {w3*100:.0f}%, TTK {t3:.1f}")
+            w2, _ = _med(-2)
+            _check(f"Δ−2 {zone}/{class_id}", 0.35 <= w2 <= 0.60,
+                   f"win {w2*100:.0f}% (target 35–60%)")
+            w4, _ = _med(-4)
+            _check(f"Δ−4 {zone}/{class_id}", w4 <= d4_ceiling,
+                   f"win {w4*100:.0f}% (ceiling {d4_ceiling*100:.0f}%)")
         # no timeout cells anywhere in this zone
         n_timeout = sum(c["timeouts"] for grid in by_delta.values()
                         for row in grid.values() for c in row.values())

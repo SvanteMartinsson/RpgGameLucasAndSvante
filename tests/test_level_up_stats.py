@@ -31,12 +31,13 @@ class LevelUpStatTests(unittest.TestCase):
         # (HP, Wisdom, Damage, Crit) deltas. Mana is gone (derived from wisdom);
         # wisdom has no baseline, so non-wisdom picks raise it by 0. The wisdom
         # main step is sim-tuned (Slice B) -> read it from the table, not a literal.
-        # Progression pass 2026-07-12: non-tank HP baseline is +3.
+        # Class-identity pass 2026-07-12: fighter is a glass cannon -> HP
+        # baseline +2 (only the cleric keeps +3).
         wis = progression.LEVEL_STAT_MAIN["wisdom"]
         self.assertEqual(self._apply("hp"), (8, 0, 1, 1))
-        self.assertEqual(self._apply("wisdom"), (3, wis, 1, 1))
-        self.assertEqual(self._apply("damage"), (3, 0, 4, 1))
-        self.assertEqual(self._apply("crit"), (3, 0, 1, 4))
+        self.assertEqual(self._apply("wisdom"), (2, wis, 1, 1))
+        self.assertEqual(self._apply("damage"), (2, 0, 4, 1))
+        self.assertEqual(self._apply("crit"), (2, 0, 1, 4))
 
     def test_choosing_wisdom_raises_derived_max_mana(self):
         before = self.engine.effective_stat("max_mana")
@@ -45,10 +46,10 @@ class LevelUpStatTests(unittest.TestCase):
         gained = progression.LEVEL_STAT_MAIN["wisdom"] * entities.MANA_PER_WISDOM
         self.assertEqual(self.engine.effective_stat("max_mana"), before + gained)
 
-    def test_no_level_scaling_and_only_the_tank_hp_exception(self):
+    def test_no_level_scaling_and_only_the_cleric_hp_exception(self):
         # The bundle is identical at any level; the ONLY per-class difference is
-        # the tank's HP baseline staying at +2 (lever c, 2026-07-12) — every
-        # other class gets +3.
+        # the cleric's HP baseline staying at +3 (class-identity pass 2026-07-12,
+        # its defensive sustain identity) — every other class is the frail +2.
         for class_id in ("fighter", "mage", "rogue", "tank", "cleric", "hunter"):
             eng = GameEngine(); eng.start_new_game("H", class_id)
             eng.player.level = 6
@@ -57,7 +58,7 @@ class LevelUpStatTests(unittest.TestCase):
             eng.apply_stat_choice("damage")
             delta = (eng.player.max_hp - base[0], eng.player.wisdom - base[1],
                      eng.player.base_damage - base[2], eng.player.crit_chance - base[3])
-            hp_baseline = 2 if class_id == "tank" else 3
+            hp_baseline = 3 if class_id == "cleric" else 2
             self.assertEqual(delta, (hp_baseline, 0, 4, 1), class_id)
 
     def test_speed_is_not_a_choice(self):

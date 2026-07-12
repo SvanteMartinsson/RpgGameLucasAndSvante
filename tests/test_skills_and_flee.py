@@ -78,10 +78,13 @@ class FleeTests(unittest.TestCase):
         engine.start_new_game("Hero", "fighter")
         rat = engine.content.enemies["giant_rat"].create_enemy()
 
+        full = engine.effective_stat("max_hp")
         result = engine.attempt_flee(rat)
 
         self.assertEqual(result.outcome, "ongoing")
-        self.assertEqual(engine.player.hp, 92)  # took the free hit (rolled enemy attack)
+        # took the free hit (rolled enemy attack); HP measured from full so the
+        # class-identity base-HP change doesn't hard-code a stale 100 baseline
+        self.assertEqual(engine.player.hp, full - 8)
         self.assertTrue(any("failed to flee" in event for event in result.events))
 
     def test_flee_chance_drops_against_higher_level_enemy(self):

@@ -73,7 +73,8 @@ class FighterClassTests(unittest.TestCase):
         target = make_enemy(hp=100)
 
         # SequenceRng: [hit, multiplier-roll (0.0 -> floor 1.0x), crit-check].
-        engine.player.hp = 51   # B95: threshold is 50% now
+        # Thresholds are relative to max HP (class-identity pass changed base HP).
+        engine.player.hp = engine.player.max_hp          # full: above the 50% line
         normal = combat.resolve_action(
             engine.player,
             target,
@@ -84,7 +85,7 @@ class FighterClassTests(unittest.TestCase):
         self.assertEqual(normal.total_damage, 15)
 
         target = make_enemy(hp=100)
-        engine.player.hp = 50
+        engine.player.hp = engine.player.max_hp // 2      # at/below 50%: bloodlust
         boosted = combat.resolve_action(
             engine.player,
             target,

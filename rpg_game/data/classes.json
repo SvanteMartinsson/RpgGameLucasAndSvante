@@ -2,7 +2,7 @@
   {
     "id": "fighter",
     "name": "Fighter",
-    "max_hp": 100,
+    "max_hp": 86,
     "base_damage": 15,
     "armor": 0,
     "wisdom": 4,
@@ -72,9 +72,9 @@
   {
     "id": "hunter",
     "name": "Hunter",
-    "max_hp": 85,
+    "max_hp": 74,
     "base_damage": 13,
-    "armor": 1,
+    "armor": 3,
     "wisdom": 5,
     "speed": 13,
     "crit_chance": 8,
