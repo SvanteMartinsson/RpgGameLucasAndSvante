@@ -249,6 +249,7 @@ def _mana_per_wisdom() -> int:
 
 STAT_HELP = {
     "max_hp": "Hit points. You fall at 0 — rest, potions and level-ups restore them.",
+    "max_mana": "Your mana pool, derived from Wisdom. Skills and spells spend it.",
     "wisdom": "Each point of Wisdom grants {mana} max mana.",
     "damage": ("Your attacks and weapon-gated skills scale with this Power "
                "plus your equipped weapon's damage bonus."),

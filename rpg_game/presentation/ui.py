@@ -46,6 +46,10 @@ class Button:
     value: str = ""
     label_color: object = None
     tooltip: object = None
+    # B121: a clickable/focusable button whose visuals the SCREEN already drew
+    # (e.g. the character screen's icon slots). _draw_buttons skips the default
+    # menu-row chrome for these and only paints the focus ring + registers hover.
+    custom: bool = False
 
 
 # --- hover / tooltip -------------------------------------------------------

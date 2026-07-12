@@ -142,17 +142,18 @@ class OverworldOverlayTest(unittest.TestCase):
         self.assertNotIn("ring_1", self.app.engine.player.equipped_gear)
         self.assertIn("requires level", self.app.event_log[-1][0].lower())
 
-    def test_character_panel_draws_slots_and_stat_breakdown(self):
+    def test_character_panel_draws_slots_and_inventory(self):
+        # B121: the character screen draws ten anatomical equip slots (custom
+        # icon buttons) plus the full inventory listing owned items by name.
         self.app.engine.player.owned_gear_ids = ("padded_vest",)
         self.app.overlay = "character"
-        self.app.selected_equipment_slot = "chest"
 
         self.app.draw()
-        labels = [button.label for button in self.app.buttons]
 
-        # B40 S4: an empty slot reads "Chest: —" (no bracket placeholder).
-        self.assertTrue(any("Chest: —" in label for label in labels))
-        self.assertTrue(any("Padded Vest" in label for label in labels))
+        slot_buttons = [b for b in self.app.buttons if b.custom]
+        self.assertEqual(len(slot_buttons), 10)             # one per equipment slot
+        labels = [button.label for button in self.app.buttons]
+        self.assertTrue(any("Padded Vest" in label for label in labels))  # inventory row
 
     def test_panel_hotkeys_do_not_open_in_battle(self):
         engine = GameEngine()

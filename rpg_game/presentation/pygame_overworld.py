@@ -612,7 +612,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._walk_sfx_steps = 0   # B69: footstep every 2nd tile, not a machine gun
         self._music_slider_rect = None   # B69: set each frame the settings overlay draws
         self._music_dragging = False
-        self._menu_scrolls = {"settings": ui.ScrollArea(), "tomes": ui.ScrollArea()}
+        self._menu_scrolls = {"settings": ui.ScrollArea(), "tomes": ui.ScrollArea(),
+                              "character_inv": ui.ScrollArea()}  # B121
         # Sub-pixel movement remainder (float) per axis; the int part moves the rect
         # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
         # on any teleport so no drift accumulates across a reposition.
@@ -1050,6 +1051,16 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if result.success:
             self.playtest_logger.unequip(result.slot_id, result.gear_id)
 
+    def equip_gear_from_inventory(self, gear_id: str) -> None:
+        """B121: equip a gear item straight from the inventory zone. The engine
+        auto-resolves the first open slot of the item's type (slot_id="")."""
+        result = self.engine.equip_gear(gear_id)
+        self.set_toast(result.message, GOOD if result.success else BAD)
+        if result.success:
+            gear = self.engine.content.gear_items.get(result.gear_id)
+            self.playtest_logger.equip(result.slot_id, result.gear_id,
+                                       stats=gear.stat_modifiers if gear else None)
+
     def use_inventory_item(self, item_id: str) -> None:
         result = self.engine.use_consumable(item_id)
         if result.success:
@@ -1330,6 +1341,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                     self._menu_scrolls["settings"].scroll(-event.y * 46)
                 elif self.mode == "tome_shop":
                     self._menu_scrolls["tomes"].scroll(-event.y * 46)
+                elif self.overlay == "character":   # B121: scroll the inventory zone
+                    self._menu_scrolls["character_inv"].scroll(-event.y * 46)
                 elif self._log_interactive():   # scroll only in walk; read-only under menus
                     self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
@@ -1835,13 +1848,20 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             return self._menu_scrolls["settings"]
         if self.mode == "tome_shop":
             return self._menu_scrolls["tomes"]
+        if self.overlay == "character":
+            # B121: only the inventory zone scrolls — the slots section is fixed,
+            # so edge up/down there must move focus, not scroll the list.
+            pos = self.focus._position()
+            if pos is not None and self.focus._sections[pos[0]][0] == "inventory":
+                return self._menu_scrolls["character_inv"]
         return None
 
     def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,
                     value="", label_color=None, tooltip=None, focus_section="",
-                    badge="") -> None:
+                    badge="", custom=False) -> None:
         button = Button(rect, label, cb, enabled, restricted, hotkey=badge,
-                        value=value, label_color=label_color, tooltip=tooltip)
+                        value=value, label_color=label_color, tooltip=tooltip,
+                        custom=custom)
         self.buttons.append(button)
         # B99 S2: every button is keyboard-focusable. Surfaces that want
         # multiple sections (inventory/skills) pass explicit section names;
@@ -1869,6 +1889,14 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         style = self._row_style()
         focused_button = self.focus.focused()   # B99: reuses the hover look
         for b in self.buttons:
+            if b.custom:
+                # B121: the screen already drew this button (an icon slot). Only
+                # paint the keyboard focus ring and keep its hover tooltip live.
+                if b is focused_button:
+                    pygame.draw.rect(self.screen, TEXT, b.rect, width=2, border_radius=8)
+                if b.tooltip is not None:
+                    self.hover.add(b.rect, b.tooltip)
+                continue
             row = ui.MenuRow(label=b.label, value=b.value, enabled=b.enabled,
                              restricted=b.restricted, tooltip=b.tooltip,
                              label_color=b.label_color, badge=b.hotkey)

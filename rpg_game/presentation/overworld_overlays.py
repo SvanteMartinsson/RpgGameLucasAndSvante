@@ -50,6 +50,46 @@ def _tournament_reward_text_by_data(engine: GameEngine, tournament) -> str:
     return ", ".join(bits) if bits else T.TOURNAMENT_REWARD_NONE
 
 
+# --- B121: character-screen figure + anatomical equip slots ------------------
+# Lucas-locked look (batch 2026-07-13): the hero is a hooded, faceless wanderer —
+# a FULLY dark cloak (no lining) with two glowing CYAN eyes. This is a placeholder
+# silhouette drawn from primitives; the real hood-open illustration drops in later
+# (the hero-idle pattern), so all of it is deliberately simple and swappable.
+CHAR_EYE = (72, 226, 236)            # cyan eyes — the only accent on the figure
+CHAR_CLOAK = (16, 18, 26)            # cloak body: near-black, reads as a void
+CHAR_CLOAK_HI = (34, 38, 54)         # faint rim so the silhouette reads on PANEL
+CHAR_FACE_VOID = (6, 7, 11)          # the darker hollow inside the hood
+CHAR_SLOT_FILLED_EDGE = WARN         # gold border on an occupied slot
+CHAR_SLOT_EMPTY_EDGE = (72, 78, 98)  # dim border on an empty slot
+CHAR_SLOT_BG = (26, 30, 42)
+CHAR_SLOT_PX = 46                    # slot icon-box size (square)
+
+# Anatomical slot anchors as (x, y) FRACTIONS of the figure box (0..1). Kept in one
+# table so Lucas can fine-tune placement without touching draw code (batch:
+# "slot-placeringen JUSTERBAR i konstant/data-tabell"). Screen-left is the figure's
+# right hand: head over the hood, amulet at the neck, chest/legs on the torso, feet
+# at the hem, weapon in one hand, the other hand + three rings clustered by it.
+CHARACTER_SLOT_ANATOMY: dict[str, tuple[float, float]] = {
+    "head":   (0.50, 0.05),
+    "amulet": (0.50, 0.25),
+    "chest":  (0.50, 0.41),
+    "legs":   (0.50, 0.61),
+    "feet":   (0.50, 0.93),
+    "weapon": (0.12, 0.52),
+    "hands":  (0.88, 0.50),
+    "ring_1": (0.87, 0.68),
+    "ring_2": (0.95, 0.82),
+    "ring_3": (0.79, 0.82),
+}
+
+# Short glyph shown in an EMPTY slot (the equipped item's name shows when filled).
+CHARACTER_SLOT_ABBR = {
+    "weapon": "Wpn", "head": "Head", "chest": "Chest", "hands": "Hnds",
+    "legs": "Legs", "feet": "Feet", "amulet": "Amul",
+    "ring_1": "R1", "ring_2": "R2", "ring_3": "R3",
+}
+
+
 class OverlaysMixin:
     """Fullscreen overlays + modal screens for OverworldApp."""
 
@@ -68,21 +108,20 @@ class OverlaysMixin:
     _CHAR_HEADER_H = 3 * 22
 
     def _character_regions(self, panel: pygame.Rect) -> tuple[pygame.Rect, pygame.Rect, pygame.Rect]:
+        """B121: three fluid zones — stats (left), the figure + anatomical slots
+        (centre), the full scrollable inventory (right). All start below the
+        3-line header so their -22 px section labels never collide with it."""
         content = self._content_rect(panel)
         gap = 16
         top = content.y + self._CHAR_HEADER_H + 26
-        if content.width >= 820:
-            stats = pygame.Rect(content.x, top, 230, content.bottom - top)
-            # 280 wide: "> Weapon: Worn Shortsword" must fit un-cut (~10 px/char).
-            slots = pygame.Rect(stats.right + gap, stats.y, 280, stats.height)
-            items = pygame.Rect(slots.right + gap, stats.y, content.right - slots.right - gap, stats.height)
-            return stats, slots, items
-        top_h = min(310, max(240, content.height - 130))
-        stats_w = (content.width - gap) // 2
-        stats = pygame.Rect(content.x, top, stats_w, content.y + top_h - top)
-        slots = pygame.Rect(stats.right + gap, stats.y, content.right - stats.right - gap, stats.height)
-        items = pygame.Rect(content.x, content.y + top_h + gap, content.width, content.bottom - content.y - top_h - gap)
-        return stats, slots, items
+        height = content.bottom - top
+        stats_w = max(168, min(240, int(content.width * 0.25)))
+        inv_w = max(176, min(280, int(content.width * 0.30)))
+        figure_w = max(150, content.width - stats_w - inv_w - 2 * gap)
+        stats = pygame.Rect(content.x, top, stats_w, height)
+        figure = pygame.Rect(stats.right + gap, top, figure_w, height)
+        items = pygame.Rect(figure.right + gap, top, content.right - (figure.right + gap), height)
+        return stats, figure, items
 
     def _delta_text(self, candidate: dict, equipped: dict) -> str:
         """Compare-vs-equipped: ' (+3 dmg, -1 armor)' for the net change if this
@@ -101,13 +140,13 @@ class OverlaysMixin:
         return "same" if delta == "=" else delta
 
     def _overlay_character(self, panel) -> None:
-        """B40 S4: the menu spec applied. A 3-line header (no Gold/Stats
-        collision), a stat grid whose rows explain themselves on hover (no
-        parenthetical derived values — the weapon bonus moved off the Damage
-        row into its tooltip), slot rows with the owned count as a value
-        instead of '(N)', and option rows as uniform menu rows: bare name in
-        rarity colour, the equip-decision figure (delta / needs Lv / equipped)
-        as the value, full stats on hover."""
+        """B121: the character screen (see CHARACTER_SCREEN.md). A 3-line header,
+        then three fluid zones: the stats summary (left, total + gear delta), the
+        hooded figure with the ten equip slots placed anatomically (centre), and
+        the full inventory (right, scrollable, rarity-coloured). Equip/unequip
+        happens by clicking a slot or an inventory item; the snapshot is rebuilt
+        each frame so the stat delta updates live. No game rules here — the split
+        stats come straight off the B121a snapshot."""
         snap = build_snapshot(self.engine)
         p = snap.player
         content = self._content_rect(panel)
@@ -120,107 +159,164 @@ class OverlaysMixin:
             self.screen.blit(self.font.render(self._fit_text(line, content.width, self.font), True, TEXT),
                              (content.x, content.y + i * 22))
 
-        stats_rect, slots_rect, items_rect = self._character_regions(panel)
-        self.screen.blit(self.font_sm.render("Stats  base -> +gear -> total", True, TEXT_DIM),
-                         (stats_rect.x, stats_rect.y - 22))
-        stat_rows = [
-            ("max_hp", "HP", self.engine.player.max_hp),
-            # Mana is derived from Wisdom (shown in the header); the stats grid shows
-            # Wisdom itself (base -> +gear -> total).
-            ("wisdom", "Wisdom", self.engine.player.wisdom),
-            ("damage", "Damage", self.engine.player.base_damage),
-            ("armor", "Armor", self.engine.player.armor),
-            ("speed", "Speed", self.engine.player.speed),
-            ("crit_chance", "Crit", self.engine.player.crit_chance),
-        ]
-        weapon_name = next((w.name for w in snap.weapons if w.equipped), "")
-        for i, (stat, label, base) in enumerate(stat_rows):
-            gear_bonus = self.engine.gear_modifier_total(stat)
-            total = self.engine.effective_stat(stat)
-            row_rect = pygame.Rect(stats_rect.x, stats_rect.y + i * 22, stats_rect.width, 20)
-            self.screen.blit(
-                self.font_sm.render(self._fit_text(f"{label}: {base} -> {gear_bonus:+} -> {total}", stats_rect.width, self.font_sm), True, TEXT),
-                row_rect.topleft,
-            )
-            # Hover explanation (spec point 2): plain text rows register straight
-            # on the tracker — they are informational, not clickable.
-            lines = []
-            if stat == "damage" and p.weapon_damage_bonus:
-                lines.append(f"Weapon bonus: +{p.weapon_damage_bonus} ({weapon_name})")
-            self.hover.add(row_rect, ui.Tooltip(title=label, lines=lines, body=T.stat_help(stat)))
+        stats_rect, figure_rect, items_rect = self._character_regions(panel)
+        self._draw_character_stats(stats_rect, snap)
+        self._draw_character_figure_slots(figure_rect, snap)
+        self._draw_character_inventory(items_rect, snap)
 
-        slots = snap.equipment_slots
-        if self.selected_equipment_slot not in {slot.id for slot in slots}:
-            self.selected_equipment_slot = "weapon"
-        self.screen.blit(self.font_sm.render("Slots", True, TEXT_DIM), (slots_rect.x, slots_rect.y - 22))
-        max_slots = max(1, min(len(slots), slots_rect.height // 28))
-        counts = self.inventory_counts()  # one source, shared with the inventory view
-        for i, slot in enumerate(slots[:max_slots]):
-            rect = pygame.Rect(slots_rect.x, slots_rect.y + i * 28, slots_rect.width, 24)
-            selected = slot.id == self.selected_equipment_slot
-            label = f"{'> ' if selected else '  '}{slot.name}: {slot.equipped_item_name or '—'}"
-            owned = self.slot_owned_count(slot, counts)
-            # The worn piece explains itself on the slot row's hover. The owned
-            # count marks EMPTY slots that have candidates waiting; a worn slot
-            # gives the whole row width to the item's name.
-            tip = self.store_row_extras(slot.equipped_item_id, selling=True)[1] if slot.equipped_item_id else None
-            value = f"x{owned}" if owned and not slot.equipped_item_id else ""
-            self._add_button(rect, label, (lambda sid=slot.id: self.select_equipment_slot(sid)), True,
-                             value=value, tooltip=tip)
-
-        selected_slot = next((slot for slot in slots if slot.id == self.selected_equipment_slot), slots[0])
-        self.screen.blit(self.font_sm.render(f"{selected_slot.name} options", True, TEXT_DIM),
-                         (items_rect.x, items_rect.y - 22))
-        max_items = max(1, items_rect.height // 34)
-        if selected_slot.id == "weapon":
-            equipped_w = next((w for w in snap.weapons if w.equipped), None)
-            equipped_bonus = equipped_w.damage_bonus if equipped_w is not None else 0
-            for i, w in enumerate(snap.weapons[:max_items]):
-                rect = pygame.Rect(items_rect.x, items_rect.y + i * 34, items_rect.width, 28)
-                if w.equipped:
-                    value = "equipped"
-                elif not w.equippable:
-                    value = f"needs Lv {w.required_level}"
-                else:  # compare-vs-equipped: weapons only move the damage stat
-                    value = self._delta_value({"damage": w.damage_bonus}, {"damage": equipped_bonus})
-                color, tip = self.store_row_extras(w.id, selling=True)
-                # Always clickable: a level-locked weapon is restricted (dimmed) but a
-                # click still explains why it can't be equipped. The equipped one is a
-                # no-op ("already equipped").
-                self._add_button(rect, w.name, (lambda wid=w.id: self.equip_weapon(wid)),
-                                 enabled=True, restricted=not w.equippable,
-                                 value=value, label_color=color, tooltip=tip)
-            return
-
-        if selected_slot.equipped_item_id:
-            self._add_button(
-                pygame.Rect(items_rect.x, items_rect.y, items_rect.width, 28),
-                f"Unequip {selected_slot.equipped_item_name}",
-                lambda sid=selected_slot.id: self.unequip_gear_from_slot(sid),
-                True,
-            )
-            start_y = items_rect.y + 38
-        else:
-            start_y = items_rect.y
-        # Stats of the gear currently in this slot, for the compare-vs-equipped delta.
-        equipped_gear = next((g for g in snap.gear if g.id == selected_slot.equipped_item_id), None)
-        equipped_mods = dict(equipped_gear.stat_modifiers) if equipped_gear is not None else {}
-        choices = [
-            gear for gear in snap.gear
-            if gear.slot_type == selected_slot.slot_type and not gear.equipped_slot_id
-        ]
-        max_choices = max(1, (items_rect.bottom - start_y) // 34)
-        for i, gear in enumerate(choices[:max_choices]):
-            rect = pygame.Rect(items_rect.x, start_y + i * 34, items_rect.width, 28)
-            if gear.equippable:
-                value = self._delta_value(dict(gear.stat_modifiers), equipped_mods)
+    def _draw_character_stats(self, rect, snap) -> None:
+        """Left zone: each stat as 'total (+from_gear)' — the gear delta green
+        when it helps, dimmed at zero (B121a data) — then the equipped weapon's
+        type (category · damage_type · tier). Rows explain themselves on hover."""
+        self.screen.blit(self.font_sm.render("Stats", True, TEXT_DIM), (rect.x, rect.y - 22))
+        value_x = min(rect.width - 70, 104)
+        for i, row in enumerate(snap.player.stats):
+            y = rect.y + i * 24
+            self.screen.blit(self.font_sm.render(row.label, True, TEXT_DIM), (rect.x, y + 1))
+            total_s = self.font.render(str(row.total), True, TEXT)
+            self.screen.blit(total_s, (rect.x + value_x, y - 1))
+            if row.from_gear > 0:
+                delta_s = self.font_sm.render(f"(+{row.from_gear})", True, GOOD)
+            elif row.from_gear < 0:
+                delta_s = self.font_sm.render(f"({row.from_gear})", True, BAD)
             else:
-                value = f"needs Lv {gear.required_level}"
-            color, tip = self.store_row_extras(gear.id, selling=True)
-            self._add_button(rect, gear.name,
-                             (lambda gid=gear.id, sid=selected_slot.id: self.equip_gear_to_slot(gid, sid)),
-                             enabled=True, restricted=not gear.equippable,
-                             value=value, label_color=color, tooltip=tip)
+                delta_s = self.font_sm.render("(+0)", True, (86, 92, 108))
+            self.screen.blit(delta_s, (rect.x + value_x + total_s.get_width() + 8, y + 1))
+            row_rect = pygame.Rect(rect.x, y, rect.width, 22)
+            self.hover.add(row_rect, ui.Tooltip(title=row.label, body=T.stat_help(row.stat)))
+
+        weapon = next((w for w in snap.weapons if w.equipped), None)
+        if weapon is not None:
+            wy = rect.y + len(snap.player.stats) * 24 + 14
+            self.screen.blit(self.font_sm.render("Weapon", True, TEXT_DIM), (rect.x, wy))
+            type_line = f"{weapon.category.title()} · {weapon.damage_type} · tier {weapon.tier}"
+            self.screen.blit(self.font_sm.render(self._fit_text(type_line, rect.width, self.font_sm), True, ACCENT),
+                             (rect.x, wy + 20))
+
+    def _draw_character_figure_slots(self, rect, snap) -> None:
+        """Centre zone: the placeholder hooded figure with the ten real slots
+        (equipment_slots.json) placed anatomically via CHARACTER_SLOT_ANATOMY."""
+        self.screen.blit(self.font_sm.render("Equipment", True, TEXT_DIM), (rect.x, rect.y - 22))
+        # Inset the figure box so edge slots (hands/rings/weapon) still sit inside
+        # the zone rather than spilling into the neighbouring columns.
+        box = rect.inflate(-CHAR_SLOT_PX, -CHAR_SLOT_PX // 2)
+        self._draw_character_figure(box)
+        slots = {slot.id: slot for slot in snap.equipment_slots}
+        for slot_id, (fx, fy) in CHARACTER_SLOT_ANATOMY.items():
+            slot = slots.get(slot_id)
+            if slot is None:
+                continue
+            srect = pygame.Rect(0, 0, CHAR_SLOT_PX, CHAR_SLOT_PX)
+            srect.center = (box.x + int(fx * box.width), box.y + int(fy * box.height))
+            self._draw_equip_slot(srect, slot)
+
+    def _draw_character_figure(self, box) -> None:
+        """The placeholder wanderer: a fully dark, hood-open cloak with two cyan
+        eyes. Primitives only — a stand-in for the real illustration (batch)."""
+        w, h = box.width, box.height
+        cx = box.centerx
+        shoulder_y = box.y + int(0.26 * h)
+        hem_y = box.y + int(0.97 * h)
+        shoulder_x = max(6, int(0.20 * w))
+        hem_x = max(8, int(0.30 * w))
+        # Arms held out holding the cloak open (drawn first, behind the body).
+        for sign in (-1, 1):
+            arm = [
+                (cx + sign * (shoulder_x - 2), shoulder_y + 4),
+                (cx + sign * (hem_x + int(0.07 * w)), box.y + int(0.60 * h)),
+                (cx + sign * (hem_x - 2), box.y + int(0.64 * h)),
+                (cx + sign * int(0.06 * w), shoulder_y + int(0.10 * h)),
+            ]
+            pygame.draw.polygon(self.screen, CHAR_CLOAK, arm)
+        # Bell-shaped cloak body.
+        body = [(cx - shoulder_x, shoulder_y), (cx + shoulder_x, shoulder_y),
+                (cx + hem_x, hem_y), (cx - hem_x, hem_y)]
+        pygame.draw.polygon(self.screen, CHAR_CLOAK, body)
+        pygame.draw.polygon(self.screen, CHAR_CLOAK_HI, body, width=2)
+        # Hood: a rounded cowl over the shoulders.
+        hood_w = max(6, int(0.16 * w))
+        hood = pygame.Rect(cx - hood_w, box.y + int(0.02 * h), hood_w * 2, int(0.30 * h))
+        pygame.draw.ellipse(self.screen, CHAR_CLOAK, hood)
+        pygame.draw.ellipse(self.screen, CHAR_CLOAK_HI, hood, width=2)
+        # Face hollow + the two glowing cyan eyes.
+        face = pygame.Rect(0, 0, int(hood_w * 1.3), int(0.16 * h))
+        face.center = (cx, box.y + int(0.15 * h))
+        pygame.draw.ellipse(self.screen, CHAR_FACE_VOID, face)
+        eye_dx = max(4, hood_w // 2)
+        eye_r = max(2, hood_w // 7)
+        for sign in (-1, 1):
+            pygame.draw.circle(self.screen, CHAR_EYE, (cx + sign * eye_dx, face.centery), eye_r)
+
+    def _draw_equip_slot(self, srect, slot) -> None:
+        """One anatomical icon slot: gold-edged when worn, dimmed when empty.
+        Clicking a worn gear slot unequips it; the weapon slot is always worn.
+        Registered as a `custom` button so it stays clickable + keyboard-focusable
+        while keeping its own icon look (B121)."""
+        filled = bool(slot.equipped_item_id)
+        pygame.draw.rect(self.screen, CHAR_SLOT_BG, srect, border_radius=6)
+        edge = CHAR_SLOT_FILLED_EDGE if filled else CHAR_SLOT_EMPTY_EDGE
+        pygame.draw.rect(self.screen, edge, srect, width=2, border_radius=6)
+        if filled:
+            color, tip = self.store_row_extras(slot.equipped_item_id, selling=True)
+            glyph = self._fit_text(slot.equipped_item_name, srect.width - 8, self.font_sm)
+            text_color = color or TEXT
+        else:
+            glyph = CHARACTER_SLOT_ABBR.get(slot.id, slot.name[:4])
+            text_color, tip = TEXT_DIM, None
+        gs = self.font_sm.render(glyph, True, text_color)
+        self.screen.blit(gs, gs.get_rect(center=srect.center))
+        if slot.id == "weapon":
+            on_click = (lambda: None)          # the weapon is always worn; no unequip
+        elif filled:
+            on_click = (lambda sid=slot.id: self.unequip_gear_from_slot(sid))
+        else:
+            on_click = (lambda: None)          # empty slot: equip happens from inventory
+        self._add_button(srect, "", on_click, enabled=True, tooltip=tip,
+                         focus_section="slots", custom=True)
+
+    def _character_inventory_rows(self, snap):
+        """The full owned inventory for the right zone: (item_id, name, color,
+        tooltip, on_click, restricted, value). Weapons/gear are click-to-equip;
+        consumables/misc are shown (rarity-coloured, with tooltip) but inert here
+        — equipping is what this screen is for."""
+        rows = []
+        for w in snap.weapons:
+            value, color, tip = self.inventory_row_extras(w.id)
+            rows.append((w.id, w.name, color, tip,
+                         (lambda wid=w.id: self.equip_weapon(wid)), not w.equippable, value))
+        for g in snap.gear:
+            value, color, tip = self.inventory_row_extras(g.id)
+            rows.append((g.id, g.name, color, tip,
+                         (lambda gid=g.id: self.equip_gear_from_inventory(gid)),
+                         not g.equippable, value))
+        items = self.engine.content.items
+        for item_id, count in sorted(self.engine.player.inventory.consumables.items()):
+            if count <= 0:
+                continue
+            value, color, tip = self.inventory_row_extras(item_id)
+            rows.append((item_id, items[item_id].name, color, tip, None, False, value))
+        return rows
+
+    def _draw_character_inventory(self, rect, snap) -> None:
+        """Right zone: every owned item, rarity-coloured, in a scrollable list
+        (the B113 scroll helper). Rows within the viewport become menu buttons."""
+        self.screen.blit(self.font_sm.render("Inventory", True, TEXT_DIM), (rect.x, rect.y - 22))
+        rows = self._character_inventory_rows(snap)
+        if not rows:
+            self.screen.blit(self.font.render(T.INV_NONE, True, TEXT_DIM), (rect.x, rect.y + 6))
+            return
+        row_h = 30
+        scroll = self._menu_scrolls["character_inv"]
+        scroll.configure(len(rows) * row_h, rect.height)
+        y0 = scroll.y(rect.y)
+        for i, (item_id, name, color, tip, on_click, restricted, value) in enumerate(rows):
+            r = pygame.Rect(rect.x, y0 + i * row_h, rect.width, row_h - 2)
+            if not rect.contains(r):
+                continue
+            self._add_button(r, name, on_click, enabled=on_click is not None,
+                             restricted=restricted, value=value, label_color=color,
+                             tooltip=tip, focus_section="inventory")
+        ui.draw_scroll_indicators(self.screen, self.font_sm, rect, scroll, row_h, TEXT_DIM)
 
     def _overlay_inventory(self, panel) -> None:
         """B40 S2: the menu spec applied. Left a bare category list (no "(N)"
