@@ -598,9 +598,11 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - Lås tidiga trappan till 10→30→cirka 70 XP. Den exponentiella svansen från nivå 4 rörs inte;
   före/efter mäts som encounters till nivå 4 och kurvans monotoni testas.
 
-#### B117 — Riposte: evasion-buff + reflect  · 🟢 **AKTIV (playtest 2026-07-13)**
+#### B117 — Riposte: evasion-buff + reflect  · ⚠️ **FELSPEC — RÄTTAS I B123**
 - **Beslut Lucas:** Riposte ger +30 procentenheter evade i 6 rundor och reflekterar skada
   vid evade under samma tid. Texten ska uttrycka båda delarna tydligt; rogue-sim gates ändringen.
+- **RÄTTELSE (Lucas, 2026-07-14):** felspec — evasion-buffen skulle på **Evasion**-skillen,
+  inte Riposte. Riposte ska vara **ren reflect on_evade**. Se **B123**.
 
 #### B118 — Död respawnar direkt utan meny  · 🟢 **AKTIV (playtest 2026-07-13)**
 - **Beslut Lucas:** dödsstraffet behålls, men load/respawn-menyn tas bort. Spelaren vaknar direkt
@@ -640,6 +642,42 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **B122c — test-hygien:** ~104 tester skriver till riktiga (gitignorade) `settings.json`.
   Isolera mot temp-/mock-sökväg (fixture/monkeypatch); om för brett för en enhet, fixa de
   som skrev riktiga klassvärden + rapportera resten som residual.
+
+#### B123 — Evasion/Riposte-swap (rättar B117:s felspec)  · 🟢 **AKTIV (playtest 2026-07-14)**
+- **EVASION** bär buffen: +30 % `evasion_chance` i 6 rundor (idag +40 %/2 rd).
+- **RIPOSTE** blir ren reflect on_evade (power 1.0×, 6 rd) — ta bort dess egna evasion-buff
+  (B117-felet); använder spelarens befintliga evasion. B103-text: Evasion "+30% evasion for
+  6 rounds", Riposte "Reflect [X] damage when you evade, for 6 rounds" (ingen evasion-rad).
+- **Acceptans:** rogue Evasion+Riposte-kombo är ett äkta defensivt val (kombon belönas).
+  HALT om rogue flippar arketyp-korridor.
+
+#### B124 — Encounter-cooldown 2 s  · 🟢 **AKTIV (playtest 2026-07-14)**
+- B104 tickar korrekt men 1 s rörelsetid är för kort — back-to-back-encounters kvarstår.
+  STEG 0: mät `ENCOUNTER_COOLDOWN_SECONDS` + `encounter_rate_per_step`, rapportera förväntat
+  tiles/encounters mellan strider före/efter. Sätt `ENCOUNTER_COOLDOWN_SECONDS = 2.0`.
+
+#### B125 — Turneringsbuffar läcker (B85-regression)  · 🟢 **AKTIV (playtest 2026-07-14)**
+- "buff expired" mitt i turneringsmatch trots B85:s `active_statuses=[]` i intermission.
+  STEG 0: mät exakta matchövergångsflödet — var startar match N+1, körs rensningen före
+  VARJE match? Fix: rensa spelarens stridsknutna statusar (buffar/debuffs/DoT/reflect) vid
+  VARJE matchstart. HP/mana-intermission oförändrat. Test: buff i match 1 finns ej i match 2.
+
+#### B126 — Tangentnav komplett (strid + inventory)  · 🟢 **AKTIV (playtest 2026-07-14)**
+- B114 gav bara vänster/höger skill-nav; inventory fick ingen. Mot B99-fokusmodellen:
+  strids-skills BÅDE ↑/↓ OCH ←/→ (2D-rutnät, se **B128**), Enter använder, Esc backar;
+  inventory (character screen + item-menyer) pil-nav + Enter, mus parallellt. **Beror på B128.**
+
+#### B127 — Zon 1 wearable loot  · 🟢 **AKTIV (playtest 2026-07-14)**
+- Nästan aldrig wearable drops i zon 1 → tvingas köpa gear. STEG 0: mät droppoolen (items,
+  droptabeller per zon-1-fiende, antal droppbara wearables i cainos/tidiga band); lista
+  saknade common-wearables. Fix: lägg common-wearables i zon-1-fiendernas tabeller med LÅG
+  chans (rar-men-återkommande). B62-ekonomikontroll: butiker ska fortfarande löna sig (drops
+  = bonus, ej ersättning). HALT om droppvärdet spränger zon-ekonomin.
+
+#### B128 — Skill-layout i strid: rutnät  · 🟢 **AKTIV (playtest 2026-07-14)**
+- Lucas: skills som lika stora KVADRATER i ett rutnät, Esc/Back som egen cell. STEG 0: mät
+  nuvarande layout (rad? bredd?). Bygg om till rutnät; fokusmarkering (B126) läser
+  rutnätspositionen; behåll B106-badges/stil. Render före/efter.
 
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
