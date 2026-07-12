@@ -58,7 +58,7 @@ class SkillGridTest(unittest.TestCase):
         battle.open_submenu("skill")
         battle.draw()
         sections = {name for name, _items in battle.focus._sections}
-        self.assertIn("skills", sections)
+        self.assertIn("skill", sections)
         self.assertIsNotNone(battle.focus.focused())
 
     def test_item_submenu_keeps_wide_rows_not_squares(self):

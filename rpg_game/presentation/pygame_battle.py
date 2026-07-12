@@ -744,7 +744,9 @@ class BattleApp:
             elif self.mode in {"game_over"}:
                 self.running = False
             return
-        if self.mode == "submenu" and self.submenu_kind == "skill":
+        if self.mode == "submenu":
+            # B126: 2D grid nav for the skill squares (a single row, so every
+            # arrow steps linearly) and the same arrow+Enter nav for item/swap.
             if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
                 self.focus.move(1)
                 return
@@ -759,9 +761,9 @@ class BattleApp:
                 if button.enabled:
                     button.on_click()
                 else:
-                    # A blocked row remains selectable; confirming explains it
+                    # A blocked option stays selectable; confirming explains it
                     # with B112's compact, fully visible reason.
-                    reason = button.sublabel or "Skill unavailable"
+                    reason = button.sublabel or "Unavailable"
                     self.push_log(f"{button.label}: {reason}", WARN)
                 return
         if self.mode == "victory_idle" and event.key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -1243,16 +1245,20 @@ class BattleApp:
         skill_grid = self.submenu_kind == "skill"
         rects = (self._skill_grid_rects(len(options) + 1) if skill_grid
                  else self._action_rects(len(options) + 1))
+        section = self.submenu_kind        # skill / item / swap
         for rect, (label, action_id, enabled, sub) in zip(rects, options):
             # B112: the detail owns a second line. Inlining it after a long
             # skill name made the important mana reason end as "(m...)".
             button = Button(rect, label, (lambda a=action_id: self.issue_turn(a)),
                             enabled, sublabel=sub, custom=skill_grid)
             self.buttons.append(button)
-            if skill_grid:
-                self.focus.add("skills", button)  # disabled skills are focusable too
-        self.buttons.append(Button(rects[len(options)], "Back", lambda: self.set_mode("combat"),
-                                   True, hotkey="\x1b", custom=skill_grid))
+            # B126: every submenu (skill/item/swap) is keyboard-navigable — a
+            # disabled option stays focusable so confirming explains why.
+            self.focus.add(section, button)
+        back = Button(rects[len(options)], "Back", lambda: self.set_mode("combat"),
+                      True, hotkey="\x1b", custom=skill_grid)
+        self.buttons.append(back)
+        self.focus.add(section, back)      # B126: arrow to Back + Enter to leave
 
     def _build_stat_buttons(self):
         specs = T.STAT_CHOICES
