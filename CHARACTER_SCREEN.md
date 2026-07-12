@@ -1,6 +1,6 @@
 # CHARACTER_SCREEN
 
-Status: design (ej byggt). Fångar spelarkaraktärens visuella identitet och equip-
+Status: **bygger** (B121, batch 2026-07-13 kväll). Fångar spelarkaraktärens visuella identitet och equip-
 /character-skärmen. Ersätter den tidigare paper-doll-tanken och absorberar **B4**
 (vapentyp + item-preview). Slot-placering och färgval är ännu utkast — se Öppna
 beslut. Layout-referens: `equip_skarm_layout.svg`.

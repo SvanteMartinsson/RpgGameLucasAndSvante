@@ -614,8 +614,32 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - **Beslut Lucas:** klass- och vapengatade tomes byggs. Första mallen är rogue-tomen
   `Power Slash` (~200 g, melee), sim-gatad ihop med B116 och B117.
 
-#### Character screen — egen designrunda  · ⭐ **BESLUTAD (playtest 2026-07-13)**
-- En character screen ingår inte i denna fixbatch utan tas i en separat designrunda.
+#### B121 — Character screen (figur + anatomiska slots + stats + inventory)  · 🟢 **AKTIV (batch 2026-07-13 kväll)**
+- Egen designrunda avslutad; se `CHARACTER_SCREEN.md`. Absorberar **B4** (vapentyp +
+  item-preview). Låsta designbeslut (Lucas): ögon = **cyan**, kåpa = **helt mörk** (inget
+  foder), platshållar-figur nu / riktig kåp-öppen-illustration senare, kåp-tier öppen.
+- **B121a — stat-delta i snapshot (kärna):** exponera per stat `total` (= `effective_stat`)
+  + `from_gear` (= `gear_stat_modifiers[stat]`, inkl. vapnets `damage_bonus` i `damage`).
+  Beräknas i kärnan, presentationen ritar bara. Acceptans: test bas vs gear, tom vs full.
+- **B121b — skärmen, tre zoner (presentation, fluid layout):** MITTEN platshållar-figur
+  (mörk silhuett + två cyan-ögon) med de tio slottarna ur `equipment_slots.json`
+  anatomiskt placerade (placering i data-/konstant-tabell, justerbar). VÄNSTER stats
+  `total (+from_gear)` (grön delta >0, dimmad vid 0) + vapentyp. HÖGER scrollbar inventory,
+  alla items, rarity-färgad (B113-hjälparen). Render fylld + tom till `docs/nightly/`.
+- **B121c — interaktion:** hover-tooltip på weapon/armour (slot ELLER inventory), klick
+  equip/unequip, tangentbords-nav (B99-fokusmodellen) fokus slots ↔ inventory, Enter
+  equip/unequip, Esc backar. Acceptans: equip/unequip via klick OCH tangent, tooltip-
+  innehåll, stat-delta live vid equip.
+
+#### B122 — Sprite-/test-hygien  · 🟢 **AKTIV (batch 2026-07-13 kväll)**
+- **B122a — statiska enemy-sprites** i `generated/enemies/*.png` (otrackade): MÄT exakt
+  vilka sökvägar `enemy_sprite()`/enemy-idle laddar från innan radering. Oanvända dubbletter
+  raderas; refereras någon → HALT + rapportera.
+- **B122b — scratch-filer:** `docs/nightly/delta_v3*.{json,md,png}` (reverterad sim-data,
+  ej i repot) raderas.
+- **B122c — test-hygien:** ~104 tester skriver till riktiga (gitignorade) `settings.json`.
+  Isolera mot temp-/mock-sökväg (fixture/monkeypatch); om för brett för en enhet, fixa de
+  som skrev riktiga klassvärden + rapportera resten som residual.
 
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
@@ -880,8 +904,8 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   vald item; olika städer olika utbud; preview visar resultatet före köp; persisterar;
   tester för utbud-data, kostnad, applicering, persistens.
 
-#### B4 — Vapentyp + item-preview → CHARACTER_SCREEN
-- Datadelen klar (`e4f6c08`). UI:t i CHARACTER_SCREEN-bygget. Se **B10** (preview).
+#### B4 — Vapentyp + item-preview → CHARACTER_SCREEN  · 🔁 **ABSORBERAD AV B121 (batch 2026-07-13)**
+- Datadelen klar (`e4f6c08`). Item-preview/tooltip byggs som B121c:s hover-vy. Se **B10** (shop-preview).
 
 ### Städer & UI
 
