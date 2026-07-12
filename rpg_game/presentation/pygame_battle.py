@@ -232,6 +232,68 @@ def attack_fx_frames(weight: str):
     return _fx_frames_cache[weight]
 
 
+# --- B109: animated enemy idle sheets ----------------------------------------
+# generated/enemies/animated/{name}_idle_sheet.png is a 4-frame horizontal strip
+# (frame = width//4 x full height). STEG 0 measured all 32 sheets: every width
+# divides by 4, frames are NOT square. Two authored shapes, both played as a
+# plain 0-1-2-3 loop, so NO per-enemy sequence table is needed:
+#   * 4 distinct frames         -> a 4-step cycle (19 sheets)
+#   * frame 3 == frame 1 (byte) -> the loop reads as an A-B-C-B pendulum (13),
+#     e.g. boss_rotfang; the duplicate tail frame IS the swing back.
+# Frames are 534-1432 px tall vs the 150-250 TIER_HEIGHT target, so every scale
+# is a >2x downscale -> smoothscale throughout. Period ~0.9 s (hero-idle feel).
+ENEMY_IDLE_DIR = os.path.join(SPRITE_DIR, "enemies", "animated")
+ENEMY_IDLE_FRAMES = 4
+ENEMY_IDLE_PERIOD = battle_choreo.frames(900)
+# The one id<->file glitch STEG 0 found: the bear sheet is named for the animal,
+# the enemy id is cave_bear. Everything else maps id -> {id}_idle_sheet.png.
+ENEMY_IDLE_SHEET_NAME = {"cave_bear": "bear"}
+# Per-enemy period override (ms). Empty: every sheet measured as a uniform
+# 4-frame strip, so none needed a retune; a mechanical/fast reader lands here.
+ENEMY_IDLE_PERIOD_MS: "dict[str, int]" = {}
+_enemy_idle_cache: dict[str, "list[pygame.Surface] | None"] = {}
+
+
+def _enemy_idle_sheet_path(enemy_id: str) -> str:
+    name = ENEMY_IDLE_SHEET_NAME.get(enemy_id, enemy_id)
+    return os.path.join(ENEMY_IDLE_DIR, f"{name}_idle_sheet.png")
+
+
+def enemy_idle_frames(enemy_id: str):
+    """The 4 scaled idle frames for an enemy, or None when there's no sheet (the
+    caller falls back to the static still). Each frame is the enemy's tier height,
+    smoothscaled on the heavy downscale; cached per enemy."""
+    if enemy_id in _enemy_idle_cache:
+        return _enemy_idle_cache[enemy_id]
+    path = _enemy_idle_sheet_path(enemy_id)
+    frames = None
+    if os.path.exists(path):
+        sheet = pygame.image.load(path).convert_alpha()
+        fw = sheet.get_width() // ENEMY_IDLE_FRAMES
+        fh = sheet.get_height()
+        target_h = enemy_sprite_height(enemy_id)
+        width = max(1, round(fw * target_h / fh))
+        scale = (pygame.transform.smoothscale
+                 if sprite_scale_mode(fh, target_h) == "smooth"
+                 else pygame.transform.scale)
+        frames = [scale(sheet.subsurface((i * fw, 0, fw, fh)), (width, target_h))
+                  for i in range(ENEMY_IDLE_FRAMES)]
+    _enemy_idle_cache[enemy_id] = frames
+    return frames
+
+
+def enemy_idle_period(enemy_id: str) -> int:
+    override = ENEMY_IDLE_PERIOD_MS.get(enemy_id)
+    return battle_choreo.frames(override) if override else ENEMY_IDLE_PERIOD
+
+
+def enemy_idle_index(enemy_id: str, tick: int) -> int:
+    """0-1-2-3 over the idle period. A 4-frame cycle for unique-frame sheets;
+    sheets whose frame 3 == frame 1 read as an A-B-C-B pendulum."""
+    period = enemy_idle_period(enemy_id)
+    return (tick % period) * ENEMY_IDLE_FRAMES // period
+
+
 @dataclass
 class BattleApp:
     engine: GameEngine
@@ -558,8 +620,10 @@ class BattleApp:
         if result.outcome in ("victory", "defeat") and self._combat_fx:
             self._freeze = 3   # the final blow lands with a short hit-pause
         if result.outcome == "victory" and self._combat_fx and self.enemy is not None:
-            # B107: keep a ghost of the killed enemy for the death fade
-            self._dying_sprite = enemy_sprite(self.enemy.id)
+            # B107: keep a ghost of the killed enemy for the death fade. B109:
+            # freeze the pose actually on screen (idle frame if animating) so
+            # there's no snap to the static still at the moment of death.
+            self._dying_sprite = self._enemy_stage_sprite(self.enemy)
             self._death_fade = 0 if self._dying_sprite is not None else -1
             if self._flushing and self._death_fade == 0:
                 self._death_fade = battle_choreo.DEATH_FADE   # skip: end state
@@ -961,8 +1025,18 @@ class BattleApp:
         rect.bottomleft = (STAGE.x + 48, GROUND_Y)
         return rect
 
+    def _enemy_stage_sprite(self, enemy):
+        """B109: the current animated idle frame when combat animations are on
+        and the enemy has a sheet; otherwise the static still (toggle off, or no
+        sheet). blink/shake/flash/fx all wrap whatever this returns."""
+        if self._combat_fx:
+            frames = enemy_idle_frames(enemy.id)
+            if frames:
+                return frames[enemy_idle_index(enemy.id, self._anim_tick)]
+        return enemy_sprite(enemy.id)
+
     def _draw_enemy_sprite(self, enemy) -> None:
-        sprite = enemy_sprite(enemy.id)
+        sprite = self._enemy_stage_sprite(enemy)
         if sprite is not None:
             rect = self._enemy_sprite_rect(*sprite.get_size())
             # B107: post-impact shake + brightness flash (2.2 -> 1.6 -> normal)
