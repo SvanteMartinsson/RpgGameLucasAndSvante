@@ -10,12 +10,20 @@ class ProgressionTests(unittest.TestCase):
     def test_xp_thresholds_front_load_early_levels_then_use_half_up_curve(self):
         thresholds = [xp_required_for_level(level) for level in range(1, 6)]
 
-        self.assertEqual(thresholds, [10, 30, 225, 338, 506])
+        self.assertEqual(thresholds, [10, 30, 70, 338, 506])
 
     def test_level_three_and_later_thresholds_remain_on_existing_curve(self):
         thresholds = [xp_required_for_level(level) for level in range(3, 8)]
 
-        self.assertEqual(thresholds, [225, 338, 506, 759, 1139])
+        self.assertEqual(thresholds, [70, 338, 506, 759, 1139])
+
+    def test_xp_curve_is_strictly_monotonic(self):
+        thresholds = [xp_required_for_level(level) for level in range(1, 13)]
+        self.assertTrue(all(left < right for left, right in zip(thresholds, thresholds[1:])))
+
+    def test_exponential_tail_from_level_four_is_unchanged(self):
+        self.assertEqual([xp_required_for_level(level) for level in range(4, 8)],
+                         [338, 506, 759, 1139])
 
     def test_enemy_levels_are_loaded_from_progression_table(self):
         enemies = load_content().enemies
@@ -45,7 +53,7 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(levels, 2)
         self.assertEqual(engine.player.level, 3)
         self.assertEqual(engine.player.xp, 5)
-        self.assertEqual(engine.player.xp_required, 225)
+        self.assertEqual(engine.player.xp_required, 70)
 
     def test_two_giant_rat_wins_reach_level_two_with_talent_point(self):
         engine = GameEngine(rng=random.Random(1))

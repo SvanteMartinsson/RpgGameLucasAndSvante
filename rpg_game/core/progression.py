@@ -86,6 +86,7 @@ FLEE_CHANCE_CAP = 0.85           # vs a much weaker enemy
 EARLY_XP_REQUIREMENTS = {
     1: 10,
     2: 30,
+    3: 70,  # B116: bridge 30 -> 70 before the unchanged exponential L4+ tail
 }
 
 
