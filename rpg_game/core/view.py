@@ -91,6 +91,19 @@ class TournamentSnapshot:
 
 
 @dataclass(frozen=True)
+class StatDeltaSnapshot:
+    """B121a: a single character-screen stat row, split into what the player has
+    now (`total` = `effective_stat`) and how much of that comes from equipped gear
+    (`from_gear` = `gear_stat_modifiers[stat]`, plus the equipped weapon's
+    `damage_bonus` for the "damage"/Power row). The implicit base is `total -
+    from_gear`. Computed in the core; presentation only draws it."""
+    stat: str
+    label: str
+    total: int
+    from_gear: int
+
+
+@dataclass(frozen=True)
 class PlayerSnapshot:
     name: str
     class_id: str
@@ -113,6 +126,7 @@ class PlayerSnapshot:
     talent_points: int
     equipped_weapon_id: str
     statuses: tuple[StatusSnapshot, ...]
+    stats: tuple[StatDeltaSnapshot, ...]
 
 
 @dataclass(frozen=True)
@@ -136,6 +150,21 @@ class GameSnapshot:
     gear: tuple[GearSnapshot, ...]
     skills: tuple[SkillSnapshot, ...]
     tournaments: tuple[TournamentSnapshot, ...]
+
+
+# B121a: ordered stat rows for the character screen's stats zone — the single
+# source for stat labelling. "damage" is shown as "Power" per CHARACTER_SCREEN.md;
+# max_mana/wisdom cover the caster stats. Only stats that gear can modify are
+# meaningful here (see equipment.ALLOWED_GEAR_STATS).
+_CHARACTER_STATS: tuple[tuple[str, str], ...] = (
+    ("max_hp", "Max HP"),
+    ("max_mana", "Max Mana"),
+    ("damage", "Power"),
+    ("armor", "Armor"),
+    ("speed", "Speed"),
+    ("crit_chance", "Crit %"),
+    ("wisdom", "Wisdom"),
+)
 
 
 def build_snapshot(engine: "GameEngine") -> GameSnapshot:
@@ -167,6 +196,7 @@ def build_snapshot(engine: "GameEngine") -> GameSnapshot:
             talent_points=player.talent_points,
             equipped_weapon_id=player.equipped_weapon_id,
             statuses=_status_snapshots(player.active_statuses),
+            stats=tuple(_stat_delta_snapshot(engine, weapon, stat, label) for stat, label in _CHARACTER_STATS),
         ),
         place=PlaceSnapshot(
             id=place.id,
@@ -193,6 +223,18 @@ def build_snapshot(engine: "GameEngine") -> GameSnapshot:
         skills=tuple(_skill_snapshot(engine, action_id) for action_id in engine.player.equipped_skill_ids),
         tournaments=tuple(_tournament_snapshot(engine, tournament) for tournament in engine.available_tournaments()),
     )
+
+
+def _stat_delta_snapshot(engine: "GameEngine", weapon, stat: str, label: str) -> StatDeltaSnapshot:
+    """B121a: split a stat into total (effective) and the part contributed by gear.
+    The weapon's damage_bonus is folded into the Power row on both sides so the
+    total matches PlayerSnapshot.total_damage and the delta reflects the weapon."""
+    total = engine.effective_stat(stat)
+    from_gear = engine.gear_modifier_total(stat)
+    if stat == "damage":
+        total += weapon.damage_bonus
+        from_gear += weapon.damage_bonus
+    return StatDeltaSnapshot(stat=stat, label=label, total=total, from_gear=from_gear)
 
 
 def _status_snapshots(statuses) -> tuple[StatusSnapshot, ...]:
