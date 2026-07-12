@@ -178,10 +178,10 @@ def enemy_sprite(enemy_id: str):
 
 # --- B107 S1: hero idle sheet + attack fx sheets -----------------------------
 # hero_idle_right_native.png: 4 frames à 20x29, loop A-B-C-B over 0.9 s in
-# steps(4). Scaled x7 (29 -> 203 px) so the sprite fills the old placeholder
-# box band on the same groundline.
+# steps(4). B111 scales it x3 (29 -> 87 px): readable against the 150–250 px
+# enemy tiers without competing with them, on the same groundline.
 HERO_FRAME_SIZE = (20, 29)
-HERO_SCALE = 7
+HERO_SCALE = 3
 HERO_IDLE_SEQ = (0, 1, 2, 1)
 HERO_IDLE_PERIOD = battle_choreo.frames(900)
 _hero_frames: "list[pygame.Surface] | None | str" = "unloaded"

@@ -129,7 +129,8 @@ class HeroIdleTests(unittest.TestCase):
         self.assertEqual(len(frames), 4)
         fw, fh = pb.HERO_FRAME_SIZE
         self.assertEqual(frames[0].get_size(), (fw * pb.HERO_SCALE, fh * pb.HERO_SCALE))
-        self.assertEqual(fh * pb.HERO_SCALE, 203)   # the mock's ~7x box band
+        self.assertEqual(fh * pb.HERO_SCALE, 87)   # B111: half-height battle hero
+        self.assertLess(frames[0].get_height(), pb.TIER_HEIGHT["small"])
 
     def test_idle_steps_a_b_c_b(self):
         period = pb.HERO_IDLE_PERIOD
