@@ -1480,8 +1480,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
     # -- rendering ----------------------------------------------------------
 
     def _draw_ambience(self) -> None:
-        """B73 S2: the zone's particle preset (ambience.PRESETS) — a screen-
-        space layer over the map, under the HUD. Themes without a wired preset
+        """B73/B110: the zone's world-space particle preset over the map.
+
+        Themes without a wired preset
         draw nothing; the whole layer sits behind the Ambience toggle."""
         if not self._settings.get("ambience", True):
             return
@@ -1489,12 +1490,16 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         preset = ambience.PRESETS.get(theme)
         if preset is None:
             return
+        zoom = self._zoom_factor()
+        view_size = (max(1, self.screen.get_width() // zoom),
+                     max(1, self.screen.get_height() // zoom))
+        center = self.world.player.center
         if self._ambience is None or self._ambience_theme != theme:
-            self._ambience = ambience.ParticleLayer(self.screen.get_size(), preset=preset)
+            self._ambience = ambience.ParticleLayer(view_size, preset=preset, world_center=center)
             self._ambience_theme = theme
-        self._ambience.resize(self.screen.get_size())
-        self._ambience.update()
-        self._ambience.draw(self.screen)
+        self._ambience.resize(view_size, center)
+        self._ambience.update(center)
+        self._ambience.draw(self.screen, self._cam_offset, zoom)
 
     def draw(self) -> None:
         self.buttons = []

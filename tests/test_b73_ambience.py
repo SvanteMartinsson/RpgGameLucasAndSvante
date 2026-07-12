@@ -1,7 +1,7 @@
-"""B73 S1: the ambience particle layer — mork_skog fireflies only.
+"""B73/B110: world-space ambience drawn over the map and under the HUD.
 
-Screen-space layer drawn over the map and under the HUD; its RNG is its own
-stream (never the engine's). Locks: theme gating, particle pool size/wrapping,
+Its RNG is its own stream (never the engine's). Locks: theme gating, pool size,
+world anchoring, culling,
 and that drawing leaves pixels on the surface. Skips without pygame/pytmx.
 """
 
@@ -32,16 +32,34 @@ class AmbienceLayerTests(unittest.TestCase):
     def tearDownClass(cls):
         pygame.quit()
 
-    def test_layer_draws_fireflies_and_wraps_horizontally(self):
-        layer = ambience.ParticleLayer((320, 200), seed=1)
+    def test_layer_draws_fireflies_and_recycles_far_outliers(self):
+        layer = ambience.ParticleLayer((320, 200), seed=1, world_center=(500, 400))
         self.assertEqual(len(layer.particles), ambience.FIREFLY_COUNT)
         surface = pygame.Surface((320, 200), pygame.SRCALPHA)
         for _ in range(30):
             layer.update()
-        layer.draw(surface)
+        layer.draw(surface, (340, 300))
         self.assertGreater(pygame.mask.from_surface(surface).count(), 0)
         for p in layer.particles:
-            self.assertTrue(0 <= p.x < 320)
+            self.assertTrue(260 <= p.x <= 740)
+
+    def test_particle_stays_in_world_when_camera_moves(self):
+        layer = ambience.ParticleLayer((320, 200), seed=4, world_center=(500, 400))
+        particle = layer.particles[0]
+        particle.x, particle.y, particle.vx = 500, 400, 0
+        before = (particle.x, particle.y)
+        layer.update((530, 400))
+        self.assertEqual((particle.x, particle.y), before)
+        self.assertEqual(particle.x - 340, 160)  # first camera position
+        self.assertEqual(particle.x - 370, 130)  # camera moved: particle moved on screen
+
+    def test_offscreen_particles_are_culled_before_blit(self):
+        layer = ambience.ParticleLayer((320, 200), seed=2, world_center=(500, 400))
+        for particle in layer.particles:
+            particle.x, particle.y = 10_000, 10_000
+        surface = pygame.Surface((320, 200), pygame.SRCALPHA)
+        layer.draw(surface, (340, 300))
+        self.assertEqual(pygame.mask.from_surface(surface).count(), 0)
 
     def test_s2_all_four_zone_presets_wired(self):
         # Lucas GO 2026-07-12: all four zones wired — mork_skog fireflies + the

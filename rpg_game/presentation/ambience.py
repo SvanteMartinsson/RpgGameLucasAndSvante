@@ -1,7 +1,8 @@
-"""B73: zone ambience — a thin screen-space particle layer.
+"""B73/B110: zone ambience — a thin world-space particle layer.
 
-Particles live in SCREEN space (cheap: no world transform, no culling math) and
-draw on top of the map, before the HUD. S1 shipped the mork_skog fireflies;
+Particles live in WORLD space, draw through the map camera transform and are
+culled before blitting. A particle therefore stays put while the camera passes
+it instead of following the player. S1 shipped the mork_skog fireflies;
 S2 turns the layer preset-driven: PRESETS maps zone theme -> particle preset,
 and the engine supports the draft kinds (drift/mist/fall) so proposals render.
 ONLY presets listed in PRESETS are live in the game — proposal presets live in
@@ -52,9 +53,10 @@ PRESETS: dict[str, dict] = {
 class Firefly:
     __slots__ = ("x", "y", "vx", "phase", "bob", "size", "blink")
 
-    def __init__(self, rng: random.Random, width: int, height: int):
-        self.x = rng.uniform(0, width)
-        self.y = rng.uniform(0, height * 0.9)
+    def __init__(self, rng: random.Random, bounds: tuple[float, float, float, float]):
+        left, top, right, bottom = bounds
+        self.x = rng.uniform(left, right)
+        self.y = rng.uniform(top, top + (bottom - top) * 0.9)
         self.vx = rng.uniform(-0.25, 0.25) or 0.1
         self.phase = rng.uniform(0, math.tau)
         self.bob = rng.uniform(6, 16)
@@ -68,9 +70,10 @@ class Drifter:
 
     __slots__ = ("x", "y", "vx", "vy", "phase", "sway", "size", "color")
 
-    def __init__(self, rng: random.Random, width: int, height: int, preset: dict):
-        self.x = rng.uniform(0, width)
-        self.y = rng.uniform(0, height)
+    def __init__(self, rng: random.Random, bounds: tuple[float, float, float, float], preset: dict):
+        left, top, right, bottom = bounds
+        self.x = rng.uniform(left, right)
+        self.y = rng.uniform(top, bottom)
         self.vx = rng.uniform(*preset.get("vx", (-0.1, 0.1)))
         self.vy = rng.uniform(*preset.get("vy", (0.0, 0.0)))
         self.phase = rng.uniform(0, math.tau)
@@ -82,37 +85,75 @@ class Drifter:
 
 
 class ParticleLayer:
-    """A fixed pool of particles wrapped to the surface size. Default preset =
-    the S1 mork_skog fireflies (byte-identical behaviour)."""
+    """A fixed, culled pool recycled around the player in world coordinates."""
 
-    def __init__(self, size: tuple[int, int], seed: int = 73, preset: dict | None = None):
+    def __init__(
+        self,
+        size: tuple[int, int],
+        seed: int = 73,
+        preset: dict | None = None,
+        world_center: tuple[float, float] = (0, 0),
+    ):
         self.width, self.height = size
+        self.world_center = world_center
         self.preset = preset or PRESETS["mork_skog"]
         self._rng = random.Random(seed)   # own stream: never the engine's
         self._tick = 0
         self._sprite_cache: dict = {}
+        bounds = self._spawn_bounds(world_center)
         if self.preset.get("kind", "firefly") == "firefly":
-            self.particles = [Firefly(self._rng, self.width, self.height)
+            self.particles = [Firefly(self._rng, bounds)
                               for _ in range(self.preset.get("count", FIREFLY_COUNT))]
         else:
-            self.particles = [Drifter(self._rng, self.width, self.height, self.preset)
+            self.particles = [Drifter(self._rng, bounds, self.preset)
                               for _ in range(self.preset.get("count", 30))]
 
-    def resize(self, size: tuple[int, int]) -> None:
-        if size != (self.width, self.height):
-            self.__init__(size, seed=self._rng.randrange(1 << 16), preset=self.preset)
+    def _spawn_bounds(self, center: tuple[float, float]) -> tuple[float, float, float, float]:
+        cx, cy = center
+        return (cx - self.width / 2, cy - self.height / 2,
+                cx + self.width / 2, cy + self.height / 2)
 
-    def update(self) -> None:
+    def resize(self, size: tuple[int, int], world_center: tuple[float, float] | None = None) -> None:
+        if size != (self.width, self.height):
+            self.__init__(size, seed=self._rng.randrange(1 << 16), preset=self.preset,
+                          world_center=world_center or self.world_center)
+
+    def update(self, world_center: tuple[float, float] | None = None) -> None:
+        """Advance drift, recycling only particles well outside the live view.
+
+        Recycling keeps the fixed pool cheap on an arbitrarily large map. The
+        generous margin is important: ordinary camera movement never moves an
+        on-screen particle, so the player can visibly walk past it.
+        """
+        if world_center is not None:
+            self.world_center = world_center
         self._tick += 1
         if self.preset.get("kind", "firefly") == "firefly":
             for p in self.particles:
-                p.x = (p.x + p.vx) % self.width
+                p.x += p.vx
                 p.phase += p.blink
         else:
             for p in self.particles:
-                p.x = (p.x + p.vx) % self.width
-                p.y = (p.y + p.vy) % self.height
+                p.x += p.vx
+                p.y += p.vy
                 p.phase += 0.02
+        self._recycle_outliers()
+
+    def _recycle_outliers(self) -> None:
+        cx, cy = self.world_center
+        span_x = self.width * 1.5
+        span_y = self.height * 1.5
+        left, right = cx - span_x / 2, cx + span_x / 2
+        top, bottom = cy - span_y / 2, cy + span_y / 2
+        for p in self.particles:
+            while p.x < left:
+                p.x += span_x
+            while p.x > right:
+                p.x -= span_x
+            while p.y < top:
+                p.y += span_y
+            while p.y > bottom:
+                p.y -= span_y
 
     _GLOW_STEPS = 8   # quantized pulse brightnesses -> pre-rendered sprites
 
@@ -141,7 +182,37 @@ class ParticleLayer:
             self._sprite_cache[key] = sprite
         return sprite
 
-    def draw(self, surface: pygame.Surface) -> None:
+    @staticmethod
+    def _visible(x: float, y: float, radius: int, view_size: tuple[int, int]) -> bool:
+        width, height = view_size
+        margin = radius * 2
+        return -margin <= x <= width + margin and -margin <= y <= height + margin
+
+    def _blit_world_sprite(
+        self,
+        surface: pygame.Surface,
+        sprite: pygame.Surface,
+        world_pos: tuple[float, float],
+        camera_offset: tuple[int, int],
+        zoom: int,
+        radius: int,
+    ) -> None:
+        sx = world_pos[0] - camera_offset[0]
+        sy = world_pos[1] - camera_offset[1]
+        view_size = (surface.get_width() // zoom, surface.get_height() // zoom)
+        if not self._visible(sx, sy, radius, view_size):
+            return
+        if zoom != 1:
+            sprite = pygame.transform.scale(sprite, (sprite.get_width() * zoom,
+                                                       sprite.get_height() * zoom))
+        surface.blit(sprite, ((sx - radius * 2) * zoom, (sy - radius * 2) * zoom))
+
+    def draw(
+        self,
+        surface: pygame.Surface,
+        camera_offset: tuple[int, int] = (0, 0),
+        zoom: int = 1,
+    ) -> None:
         tick = self._tick
         if self.preset.get("kind", "firefly") == "firefly":
             for p in self.particles:
@@ -152,10 +223,10 @@ class ParticleLayer:
                 radius = p.size + (1 if glow > 0.8 else 0)
                 step = min(self._GLOW_STEPS - 1, int(glow * self._GLOW_STEPS))
                 sprite = self._glow_sprite(radius, step)
-                surface.blit(sprite, (p.x - radius * 2, y - radius * 2))
+                self._blit_world_sprite(surface, sprite, (p.x, y), camera_offset, zoom, radius)
             return
         alpha = self.preset.get("alpha", 90)
         for p in self.particles:
             x = p.x + math.sin(tick * 0.02 + p.phase) * p.sway
             sprite = self._soft_sprite(p.size, p.color, alpha)
-            surface.blit(sprite, (x - p.size * 2, p.y - p.size * 2))
+            self._blit_world_sprite(surface, sprite, (x, p.y), camera_offset, zoom, p.size)
