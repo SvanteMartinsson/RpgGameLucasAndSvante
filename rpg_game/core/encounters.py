@@ -78,11 +78,11 @@ def simulate_journey(emap: EncounterMap, route, base_rate: float,
 
 # --- B104: post-battle encounter cooldown -------------------------------------
 
-# B124: raised 1.0 -> 2.0. At 144 px/s (PLAYER_SPEED 2.4 * 60 fps) over 32px
-# tiles that is a ~9-tile guaranteed breather (was ~4.5), which stops the
-# back-to-back encounters the playtest flagged; the per-tile roll (rate 0.06)
-# still governs the ~17-tile expected gap after the gate lifts.
-ENCOUNTER_COOLDOWN_SECONDS = 2.0
+# B129: back to 1.0 (B124 tried 2.0). Lucas playtest: 2 s (~9 tiles) was too
+# long a dead walk; 1 s (~4.5 tiles at 144 px/s over 32px tiles) already broke
+# the back-to-back encounters. The per-tile roll (rate 0.06) still governs the
+# ~17-tile expected gap after the gate lifts.
+ENCOUNTER_COOLDOWN_SECONDS = 1.0
 
 
 class EncounterCooldown:

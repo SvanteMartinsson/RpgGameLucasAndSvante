@@ -33,9 +33,9 @@ class EncounterCooldownRuleTest(unittest.TestCase):
         self.assertFalse(cd.active)
 
     def test_start_activates_for_the_cooldown_duration(self):
-        # B124: tracks ENCOUNTER_COOLDOWN_SECONDS (2.0) rather than hardcoding 1s.
-        # Single subtractions keep this exact (frame-by-frame float drift is an
-        # integration detail, not the rule under test).
+        # Tracks ENCOUNTER_COOLDOWN_SECONDS (B129: back to 1.0) rather than
+        # hardcoding it. Single subtractions keep this exact (frame-by-frame
+        # float drift is an integration detail, not the rule under test).
         duration = encounters.ENCOUNTER_COOLDOWN_SECONDS
         cd = encounters.EncounterCooldown()
         cd.start()
@@ -94,8 +94,8 @@ class OverworldCooldownWiringTest(unittest.TestCase):
         baseline = random.Random(99)
         self.app.encounter_cooldown.start()
         self.assertIsNone(self.app.maybe_encounter())
-        # A full cooldown of accumulated movement releases the gate (B124: 2s);
-        # the +2 frames absorb per-frame float drift over the longer window.
+        # A full cooldown of accumulated movement releases the gate (B129: 1s);
+        # the +2 frames absorb per-frame float drift over the window.
         for _ in range(round(encounters.ENCOUNTER_COOLDOWN_SECONDS * 60) + 2):
             self.app.encounter_cooldown.tick_movement(1.0 / 60.0)
         self.assertFalse(self.app.encounter_cooldown.active)
