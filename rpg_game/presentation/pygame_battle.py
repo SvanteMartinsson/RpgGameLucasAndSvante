@@ -53,7 +53,11 @@ PAD = 16
 # the RIGHT column stacks VITALS (bars + stats + weapon) ABOVE the ACTIONS.
 STAGE = pygame.Rect(PAD, PAD, WIDTH - 2 * PAD, 360)
 HUD = pygame.Rect(PAD, STAGE.bottom + PAD, WIDTH - 2 * PAD, HEIGHT - STAGE.bottom - 2 * PAD)
-LOG_PANEL = pygame.Rect(HUD.x, HUD.y, 600, HUD.height)       # tall log (left)
+# B131: narrowed 600 -> 460 (Lucas: the log read too wide). VITALS/ACTIONS are
+# derived from LOG_PANEL.right, so they gain the freed ~140px. The longest
+# typical log line is ~528px; at this width it word-wraps to at most two lines
+# with no mid-word breaks (widest single token "Vulnerability" is ~104px).
+LOG_PANEL = pygame.Rect(HUD.x, HUD.y, 460, HUD.height)       # tall log (left)
 # B130: VITALS content (3 bars + a stats line + a weapon line) needs only
 # ~92px; the box was 148. Trimming it to 118 hands the freed ~30px down to
 # ACTIONS so the 2x2 skill squares land at a readable size instead of ~42px.
