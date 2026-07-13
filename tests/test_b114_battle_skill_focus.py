@@ -43,12 +43,13 @@ class BattleSkillFocusTest(unittest.TestCase):
         self.assertEqual(battle.focus.focused().label, "Frenzy")
         self._key(battle, pygame.K_RIGHT)
         self.assertEqual(battle.focus.focused().label, "Power attack")
-        self._key(battle, pygame.K_UP)
+        # B130: two skills share one grid row, so LEFT (not UP) returns.
+        self._key(battle, pygame.K_LEFT)
         self.assertEqual(battle.focus.focused().label, "Frenzy")
 
     def test_enter_confirms_enabled_focused_skill(self):
         battle = self._battle()
-        self._key(battle, pygame.K_DOWN)
+        self._key(battle, pygame.K_RIGHT)   # B130: step to the second skill in the row
         battle.issue_turn = mock.Mock()
         self._key(battle, pygame.K_RETURN)
         battle.issue_turn.assert_called_once_with("power")

@@ -54,8 +54,11 @@ PAD = 16
 STAGE = pygame.Rect(PAD, PAD, WIDTH - 2 * PAD, 360)
 HUD = pygame.Rect(PAD, STAGE.bottom + PAD, WIDTH - 2 * PAD, HEIGHT - STAGE.bottom - 2 * PAD)
 LOG_PANEL = pygame.Rect(HUD.x, HUD.y, 600, HUD.height)       # tall log (left)
+# B130: VITALS content (3 bars + a stats line + a weapon line) needs only
+# ~92px; the box was 148. Trimming it to 118 hands the freed ~30px down to
+# ACTIONS so the 2x2 skill squares land at a readable size instead of ~42px.
 VITALS = pygame.Rect(LOG_PANEL.right + PAD, HUD.y,
-                     HUD.right - LOG_PANEL.right - PAD, 148)  # bars/stats (right, top)
+                     HUD.right - LOG_PANEL.right - PAD, 118)  # bars/stats (right, top)
 ACTIONS = pygame.Rect(VITALS.x, VITALS.bottom + PAD, VITALS.width,
                       HUD.bottom - VITALS.bottom - PAD)       # buttons (right, bottom)
 GROUND_Y = STAGE.bottom - 28  # shared baseline both combatants stand on
@@ -745,13 +748,11 @@ class BattleApp:
                 self.running = False
             return
         if self.mode == "submenu":
-            # B126: 2D grid nav for the skill squares (a single row, so every
-            # arrow steps linearly) and the same arrow+Enter nav for item/swap.
-            if event.key in (pygame.K_DOWN, pygame.K_RIGHT):
-                self.focus.move(1)
-                return
-            if event.key in (pygame.K_UP, pygame.K_LEFT):
-                self.focus.move(-1)
+            # B130: true 2D nav that follows the VISUAL grid, not add-order — the
+            # 2x2 skill squares and the Esc cell beside them, plus the item/swap
+            # grids, all step by geometry (down = the cell below, etc.).
+            if event.key in (pygame.K_DOWN, pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT):
+                self._focus_grid_step(event.key)
                 return
             if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 button = self.focus.focused()
@@ -781,6 +782,37 @@ class BattleApp:
                 audio.play("menu_click")   # hotkeys are clicks too
                 button.on_click()
                 return
+
+    def _focus_grid_step(self, key: int) -> None:
+        """B130: move focus to the nearest cell in the pressed direction, by
+        button geometry — so the 2x2 skill grid (and the Esc cell beside it, and
+        the item/swap grids) navigate the way they LOOK. Alignment on the cross
+        axis wins ties, then nearest on the travel axis; if nothing lies that way
+        the focus holds. FocusList stays a flat list; we only pick the index."""
+        position = self.focus._position()
+        if position is None:
+            return
+        section, index = position
+        items = self.focus._sections[section][1]
+        cx, cy = items[index].rect.center
+        best, best_score = None, None
+        for j, button in enumerate(items):
+            bx, by = button.rect.center
+            if key == pygame.K_LEFT and bx < cx - 1:
+                travel, cross = cx - bx, abs(by - cy)
+            elif key == pygame.K_RIGHT and bx > cx + 1:
+                travel, cross = bx - cx, abs(by - cy)
+            elif key == pygame.K_UP and by < cy - 1:
+                travel, cross = cy - by, abs(bx - cx)
+            elif key == pygame.K_DOWN and by > cy + 1:
+                travel, cross = by - cy, abs(bx - cx)
+            else:
+                continue
+            score = (cross, travel)            # prefer same row/column, then nearest
+            if best_score is None or score < best_score:
+                best_score, best = score, j
+        if best is not None:
+            self.focus.section, self.focus.index = section, best
 
     # -- rendering ----------------------------------------------------------
 
@@ -1200,16 +1232,40 @@ class BattleApp:
         return rects
 
     def _skill_grid_rects(self, count):
-        """B128: equal SQUARE cells in a single row across the ACTIONS band — the
-        equipped skills plus the Esc/Back cell. The side is bounded by both the
-        row height and the per-column width so every cell is the same square."""
+        """B130: equal SQUARE cells in a 2xN grid. ``count`` includes the trailing
+        Esc/Back cell, so ``count - 1`` skills fill at most two columns (4 skills ->
+        a 2x2 block) and the Esc cell sits BESIDE the block (its own column to the
+        right, vertically centered), NOT on a third row.
+
+        Choice reported for B130: a third row inside the ~138px ACTIONS band would
+        shrink every square to ~35px (unreadable); keeping the skills to two rows
+        and placing Back beside them holds the cells at ~57px. The returned order
+        is skills row-major then Esc last, matching the button add order; the 2D
+        focus nav (_focus_grid_step) reads geometry, not this order."""
         gap = 8
-        side = max(1, min(ACTIONS.height - 2 * gap,
-                          (ACTIONS.width - (count + 1) * gap) // max(1, count)))
-        total = count * side + (count - 1) * gap
-        x0 = ACTIONS.x + max(gap, (ACTIONS.width - total) // 2)
-        y0 = ACTIONS.y + (ACTIONS.height - side) // 2
-        return [pygame.Rect(x0 + i * (side + gap), y0, side, side) for i in range(count)]
+        n_skills = max(1, count - 1)
+        columns = min(2, n_skills)                 # skills use at most two columns
+        skill_rows = (n_skills + columns - 1) // columns
+        # Width must hold the skill columns PLUS one Esc column; height the rows.
+        side = max(1, min(
+            (ACTIONS.width - (columns + 2) * gap) // (columns + 1),
+            (ACTIONS.height - (skill_rows + 1) * gap) // skill_rows,
+        ))
+        block_w = columns * side + (columns - 1) * gap
+        block_h = skill_rows * side + (skill_rows - 1) * gap
+        # Center the whole [block | Esc] cluster in the band.
+        cluster_w = block_w + gap + side
+        x0 = ACTIONS.x + max(gap, (ACTIONS.width - cluster_w) // 2)
+        y0 = ACTIONS.y + (ACTIONS.height - block_h) // 2
+        rects = []
+        for i in range(n_skills):
+            row, col = divmod(i, columns)
+            rects.append(pygame.Rect(x0 + col * (side + gap),
+                                     y0 + row * (side + gap), side, side))
+        esc_x = x0 + block_w + gap
+        esc_y = ACTIONS.y + (ACTIONS.height - side) // 2   # centered beside the block
+        rects.append(pygame.Rect(esc_x, esc_y, side, side))
+        return rects
 
     def _build_action_buttons(self, snapshot):
         if self.mode != "combat" or self.enemy is None:
@@ -1240,8 +1296,9 @@ class BattleApp:
         options = self._submenu_options(snapshot)
         if not options:
             self._text(T.NOTHING_AVAILABLE, (ACTIONS.x + 4, ACTIONS.y + 8), self.font_sm, TEXT_DIM)
-        # B128: skills render as a square grid (with the Esc/Back cell as the last
-        # square); item/swap keep the wide rows their long names need.
+        # B130: skills render as a 2x2 square grid with the Esc/Back cell beside
+        # it (see _skill_grid_rects); item/swap keep the wide rows their long
+        # names need.
         skill_grid = self.submenu_kind == "skill"
         rects = (self._skill_grid_rects(len(options) + 1) if skill_grid
                  else self._action_rects(len(options) + 1))

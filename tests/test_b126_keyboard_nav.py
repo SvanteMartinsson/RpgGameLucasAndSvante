@@ -49,14 +49,36 @@ class BattleSubmenuNavTest(unittest.TestCase):
         return pb.BattleApp(engine=engine, enemy=enemy, standalone=False)
 
     def test_skill_grid_moves_on_both_axes(self):
-        battle = self._battle()
+        # B130: 4 skills -> a real 2x2 block. Focus starts top-left. DOWN lands
+        # on the cell directly below (same column); UP returns. RIGHT lands on
+        # the cell to the right (same row); LEFT returns. Nav follows the VISUAL
+        # grid geometry, not add-order.
+        engine = GameEngine()
+        engine.start_new_game("Hero", "rogue")
+        engine.player.learned_skill_ids = ("evasion", "riposte")
+        engine.player.equipped_skill_ids = ("rupture", "deadly_precision",
+                                            "evasion", "riposte")
+        enemy = engine.content.enemies["giant_rat"].create_enemy()
+        battle = pb.BattleApp(engine=engine, enemy=enemy, standalone=False)
         battle.open_submenu("skill")
         battle.draw()
-        first = battle.focus.focused().label
-        battle._handle_key(_key(pygame.K_DOWN))   # DOWN steps the single-row grid
-        self.assertNotEqual(battle.focus.focused().label, first)
-        battle._handle_key(_key(pygame.K_LEFT))   # LEFT steps back
-        self.assertEqual(battle.focus.focused().label, first)
+
+        top_left = battle.focus.focused()
+        battle._handle_key(_key(pygame.K_DOWN))
+        below = battle.focus.focused()
+        self.assertIsNot(below, top_left)
+        self.assertEqual(below.rect.centerx, top_left.rect.centerx)   # same column
+        self.assertGreater(below.rect.centery, top_left.rect.centery)
+        battle._handle_key(_key(pygame.K_UP))
+        self.assertIs(battle.focus.focused(), top_left)
+
+        battle._handle_key(_key(pygame.K_RIGHT))
+        right = battle.focus.focused()
+        self.assertIsNot(right, top_left)
+        self.assertEqual(right.rect.centery, top_left.rect.centery)   # same row
+        self.assertGreater(right.rect.centerx, top_left.rect.centerx)
+        battle._handle_key(_key(pygame.K_LEFT))
+        self.assertIs(battle.focus.focused(), top_left)
 
     def test_item_submenu_gained_arrow_nav_and_enter(self):
         battle = self._battle()
