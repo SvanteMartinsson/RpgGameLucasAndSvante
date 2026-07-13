@@ -960,6 +960,12 @@ class BattleApp:
                                    battle_choreo.NUMBER_RISE_PX / fade])
         self._choreo_pending = []
 
+    def _hero_idle_frame_index(self) -> int:
+        """B133: the hero idle frame — animated (A-B-C-B) only when the "Combat
+        animations" toggle is on; otherwise a still frame 0, symmetric with the
+        gated enemy idle (B109). Toggle off freezes BOTH combatants."""
+        return hero_idle_index(self._anim_tick) if self._combat_fx else 0
+
     def _tick_choreo(self) -> None:
         """Advance the live choreography one frame (called from draw)."""
         self._anim_tick += 1
@@ -1168,7 +1174,7 @@ class BattleApp:
         offset = self._choreo.hero_offset() if self._choreo is not None else 0
         frames_list = hero_idle_frames()
         if frames_list:
-            sprite = frames_list[hero_idle_index(self._anim_tick)]
+            sprite = frames_list[self._hero_idle_frame_index()]
             rect = self._hero_sprite_rect(*sprite.get_size()).move(offset, 0)
             self.screen.blit(sprite, rect)
             if self._blink_hero > 0:             # B72 flash on the sprite
