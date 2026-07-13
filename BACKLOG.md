@@ -470,7 +470,7 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   samma logik. Träddatan rörs INTE.
 - **Acceptans:** renders före/efter (mage = värsta fallet) i docs/nightly/; tester.
 
-#### B107 — Battle feel (Battle Screen Mock = spec) · ✅ **S1 KLAR + GODKÄND** (98dde1c, Lucas GO 2026-07-12) · S2 väntar
+#### B107 — Battle feel (Battle Screen Mock = spec) · ✅ **S1 KLAR + GODKÄND** (98dde1c, Lucas GO 2026-07-12) · 🟢 **S2 AKTIV (dagbatch 2026-07-13)**
 - **Vad:** Battle-scenens presentation lyfts enligt Lucas godkända design-export
   ("Battle Screen Mock"): (a) hjälte-idle-sprite (hero_idle_right_native.png, 4 frames
   20×29, loop A-B-C-B 0,9 s) ersätter placeholder-boxen; (b) attack-koreografi för
@@ -678,6 +678,36 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
 - Lucas: skills som lika stora KVADRATER i ett rutnät, Esc/Back som egen cell. STEG 0: mät
   nuvarande layout (rad? bredd?). Bygg om till rutnät; fokusmarkering (B126) läser
   rutnätspositionen; behåll B106-badges/stil. Render före/efter.
+
+#### B129 — Encounter-cooldown tillbaka till 1 s (backar B124)  · 🟢 **AKTIV (dagbatch 2026-07-13)**
+- Lucas playtest: B124:s 2 s (~9 tiles) för långt; 1 s (~4,5 tiles) räckte för att bryta
+  back-to-back. `ENCOUNTER_COOLDOWN_SECONDS` 2.0 → 1.0. Justera-testet uppdateras.
+
+#### B130 — Strids-skills som 2×2-rutnät (ersätter B128:s 1×N-rad)  · 🟢 **AKTIV (dagbatch 2026-07-13)**
+- Lucas: skills som 2×2 (X X / X X) i stället för en enda rad. STEG 0: `_skill_grid_rects`
+  lägger allt i EN rad idag. Bygg om till max 2 kolumner (4 skills → 2×2); Esc/Back egen
+  cell (balanserad placering för 5:e cellen — rapportera valet). Större celler. Fokusnav
+  (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
+  visuella 2×2-placeringen, inte radordning. Render före/efter.
+
+#### B131 — Smalare stridslogg, mer plats åt VITALS/ACTIONS  · 🟢 **AKTIV (dagbatch 2026-07-13)**
+- Lucas: logg-panelen för bred. STEG 0: `LOG_PANEL` hårdkodad 600px; VITALS+ACTIONS räknas
+  från `LOG_PANEL.right` → växer automatiskt när loggen krymper. Minska till ~440–480px
+  (mot läsbarhet). VERIFIERA längsta typiska loggrad ryms utan ful trunkering/radbrytning.
+  Render före/efter (helskärm).
+
+#### B132 — Text-i-ruta konsekvent (mot B130+B131:s slutliga geometri)  · 🟢 **AKTIV (dagbatch 2026-07-13)**
+- STEG 0: mät var visningsnamnen kommer ifrån. (a) SKILL-CELLER: långa namn radbryts på
+  ordgräns (2 rader) hellre än "…"; hover/fokus-tooltip (B103) med fullständigt namn för
+  det som ändå inte ryms. (b) CHARACTER-SLOTS: trunkerat item-namn byts mot slot-TYPENS
+  kortnamn/glyf (Head/Chest/Ring) även när fylld; guldkant = fylld; hover-tooltip ger
+  item-namnet. Renders båda ytorna.
+
+#### B133 — Hjälte-idle bakom Combat-animations-toggeln (symmetri)  · 🟢 **AKTIV (dagbatch 2026-07-13)**
+- B109-fynd: fiende-idlen gatas bakom "Combat animations" men hjälte-idlen (`_anim_tick`)
+  går ovillkorligt → toggle AV = hjälten animerar, fienderna fryser. STEG 0: bekräfta att
+  `_anim_tick` inte kollar `_combat_fx`. Fix: gata hjälte-idlen bakom samma flagga →
+  toggle av = BÅDE hjälte och fiende still frame 0. Ren presentation, noll rng. Test.
 
 #### B108 — Fysiska dörrar för apothecary/stable  · 🟢 **AKTIV** (2026-07-12)
 - **STEG 0-fynd (nattbatch):** apothecary/stable står kvar i `COSMETIC_BUILDINGS` trots
