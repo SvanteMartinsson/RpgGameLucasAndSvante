@@ -65,10 +65,14 @@ class CombatFeelTests(unittest.TestCase):
         self.assertEqual(len(battle._floaters), 2)
         self.assertEqual(battle._blink_hero, 0)
 
-    def test_enemy_attack_blinks_the_hero(self):
+    def test_enemy_attack_routes_through_mirrored_choreography(self):
+        # B107 S2: an ENEMY damage action now routes through the choreography too
+        # (mirror of S1) — the hero is the defender and flashes via the choreo,
+        # so the old instant white blink is gone.
         battle = self._battle()
         battle._spawn_combat_fx(_result(actor="Cave Bear", components=((9, "physical"),)))
-        self.assertEqual(battle._blink_hero, 2)
+        self.assertIsNotNone(battle._choreo)
+        self.assertEqual(battle._choreo_attacker, "enemy")
         self.assertEqual(battle._blink_enemy, 0)
 
     def test_crit_shakes_the_screen(self):

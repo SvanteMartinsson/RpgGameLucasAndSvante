@@ -13,7 +13,9 @@ Action -> weight mapping (S1, documented in the night report):
   otherwise (plain roll) -> normal
 - skills: any effect with hits>1 (multi-hit) or a primary damage multiplier
   < 1.0 -> quick; primary multiplier >= 1.5 -> power; else -> normal
-Enemy actions keep the S1-untouched presentation (S2).
+B107 S2: enemy damage actions reuse the SAME mapping (they never roll a style,
+so action_weight takes the effect branch) and the SAME timeline, mirrored by the
+presentation — the enemy dashes left and the fx/number land on the hero.
 """
 
 from __future__ import annotations
@@ -51,8 +53,9 @@ DEATH_ALPHA = 0.25
 
 
 def action_weight(resolution, action) -> str | None:
-    """The mock's weight class for a PLAYER damage action, or None for no
-    choreography (non-damage, S1)."""
+    """The mock's weight class for a damage action, or None for no choreography
+    (non-damage). Serves both the player (S1; a rolled base-attack style wins)
+    and the enemy (S2; enemies never roll a style, so the effect branch runs)."""
     if not getattr(resolution, "damage_components", None):
         return None
     style = getattr(resolution, "rolled_style_id", "")

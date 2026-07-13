@@ -355,10 +355,12 @@ class BattleApp:
         self._blink_hero = 0
         self._shake = 0                 # frames of screen shake left
         self._freeze = 0                # hit-pause frames (floaters hold still)
-        # B107 S1: player attack choreography (mock spec) — pure presentation.
+        # B107 S1/S2: attack choreography (mock spec) — pure presentation.
         self._choreo = None             # live battle_choreo.Choreography
         self._choreo_fx = None          # the weight's fx frames
         self._choreo_pending: list = []  # floater surfaces spawning at impact
+        self._choreo_attacker = "hero"  # B107 S2: "hero" or "enemy" (who swings)
+        self._enemy_swing_tick = 0      # B107 S2: idle frame frozen during a swing
         self._anim_tick = 0             # hero idle clock
         self._death_fade = -1           # frames into the death fade (-1 = off)
         self._dying_sprite = None       # the killed enemy's fading ghost
@@ -903,12 +905,16 @@ class BattleApp:
             return
         player_name = self.engine.player.name
         actor_is_player = resolution.actor_name == player_name
-        if actor_is_player:
-            action = self.engine.content.actions.get(resolution.action_id)
-            weight = battle_choreo.action_weight(resolution, action)
-            if weight is not None:
-                self._start_choreography(weight, resolution)
-                return
+        # B107 S1 (hero) / S2 (enemy): a damage action routes through the mock's
+        # attack choreography — the hero swings right, the enemy swings left, and
+        # the weighted number spawns at impact on the DEFENDER. Non-damage actions
+        # (heal/buff) fall through to the plain floater path below.
+        action = self.engine.content.actions.get(resolution.action_id)
+        weight = battle_choreo.action_weight(resolution, action)
+        if weight is not None:
+            self._start_choreography(weight, resolution,
+                                     attacker="hero" if actor_is_player else "enemy")
+            return
         hits_enemy = actor_is_player   # self-target heals handled separately
         crit = resolution.critical_hits > 0
         for component in resolution.damage_components:
@@ -928,10 +934,13 @@ class BattleApp:
 
     # -- B107 S1: attack choreography ------------------------------------------
 
-    def _start_choreography(self, weight: str, resolution) -> None:
-        """Queue the mock timeline for one player damage action. The weighted
-        damage numbers spawn at IMPACT, not at cast. While flushing (skip-
-        click) the end state applies immediately — no animation frames."""
+    def _start_choreography(self, weight: str, resolution, attacker: str = "hero") -> None:
+        """Queue the mock timeline for one damage action. B107 S2: ``attacker``
+        picks the swinger ("hero" -> dash right, fx/number on the enemy; "enemy"
+        -> dash left, fx/number on the hero). The weighted damage numbers spawn
+        at IMPACT, not at cast. While flushing (skip-click) the end state applies
+        immediately — no animation frames."""
+        self._choreo_attacker = attacker
         spec = battle_choreo.WEIGHTS[weight]
         crit = resolution.critical_hits > 0
         font = pygame.font.SysFont("menlo,consolas,monospace", spec["num_size"], bold=True)
@@ -946,13 +955,14 @@ class BattleApp:
         if self._flushing:
             self._deliver_impact()     # skip-click: end state, no animation
             return
+        self._enemy_swing_tick = self._anim_tick   # freeze the swinger's idle frame
         self._choreo = battle_choreo.Choreography(weight)
         self._choreo_fx = attack_fx_frames(weight)
 
     def _deliver_impact(self) -> None:
         """The impact frame: the pending weighted numbers start rising (60 px
-        over 800 ms per the mock)."""
-        x, y = self._fx_anchor(over_enemy=True)
+        over 800 ms per the mock) over the DEFENDER (B107 S2)."""
+        x, y = self._fx_anchor(over_enemy=self._choreo_attacker == "hero")
         fade = battle_choreo.NUMBER_FADE
         for i, surface in enumerate(self._choreo_pending):
             jitter = (i % 3 - 1) * 16
@@ -1110,48 +1120,68 @@ class BattleApp:
         if self._combat_fx:
             frames = enemy_idle_frames(enemy.id)
             if frames:
-                return frames[enemy_idle_index(enemy.id, self._anim_tick)]
+                # B107 S2: hold the idle frame steady while the enemy is mid-swing
+                # (so it reads as attacking, not bobbing), then resume afterwards.
+                tick = (self._enemy_swing_tick
+                        if self._choreo is not None and self._choreo_attacker == "enemy"
+                        else self._anim_tick)
+                return frames[enemy_idle_index(enemy.id, tick)]
         return enemy_sprite(enemy.id)
 
+    def _flash(self, sprite, brightness: float):
+        """B107: brighten a sprite by the choreography's flash multiplier."""
+        if brightness <= 1.01:
+            return sprite
+        lit = sprite.copy()
+        boost = min(255, int(90 * (brightness - 1.0)))
+        lit.fill((boost, boost, boost), special_flags=pygame.BLEND_RGB_ADD)
+        return lit
+
     def _draw_enemy_sprite(self, enemy) -> None:
+        choreo = self._choreo
+        # B107 S1: the enemy is the DEFENDER (hero swings) -> shake/flash/fx here.
+        # B107 S2: the enemy is the ATTACKER -> it dashes LEFT toward the hero and
+        # the shake/flash/fx move to the hero instead.
+        attacking = choreo is not None and self._choreo_attacker == "enemy"
+        defending = choreo is not None and self._choreo_attacker == "hero"
         sprite = self._enemy_stage_sprite(enemy)
         if sprite is not None:
             rect = self._enemy_sprite_rect(*sprite.get_size())
-            # B107: post-impact shake + brightness flash (2.2 -> 1.6 -> normal)
-            choreo = self._choreo
-            if choreo is not None and choreo.impact_done:
+            if attacking:
+                rect = rect.move(-choreo.hero_offset(), 0)   # mirror: toward hero
+            if defending and choreo.impact_done:
                 rect = rect.move(*choreo.shake_offset())
-                brightness = choreo.flash_brightness()
-                if brightness > 1.01:
-                    lit = sprite.copy()
-                    boost = min(255, int(90 * (brightness - 1.0)))
-                    lit.fill((boost, boost, boost), special_flags=pygame.BLEND_RGB_ADD)
-                    sprite = lit
+                sprite = self._flash(sprite, choreo.flash_brightness())
             self.screen.blit(sprite, rect)
             if self._blink_enemy > 0:            # B72: white hit-flash
                 self._blink_enemy -= 1
                 self._blit_blink(sprite, rect)
-            self._draw_attack_fx(rect)
+            if defending:
+                self._draw_attack_fx(rect)
         else:
             # No sprite file (hollow_worg, arena duelists) -> placeholder block at
             # the enemy's tier size, same baseline. No crash.
             height = enemy_sprite_height(enemy.id)
             rect = self._enemy_sprite_rect(int(height * 0.7), height)
-            if self._choreo is not None and self._choreo.impact_done:
-                rect = rect.move(*self._choreo.shake_offset())
+            if attacking:
+                rect = rect.move(-choreo.hero_offset(), 0)
+            if defending and choreo.impact_done:
+                rect = rect.move(*choreo.shake_offset())
             pygame.draw.rect(self.screen, PANEL, rect, border_radius=6)
             pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
-            self._draw_attack_fx(rect)
+            if defending:
+                self._draw_attack_fx(rect)
 
-    def _draw_attack_fx(self, enemy_rect: pygame.Rect) -> None:
-        """B107: the weight class's fx sheet frame, centered over the enemy."""
+    def _draw_attack_fx(self, target_rect: pygame.Rect) -> None:
+        """B107: the weight class's fx sheet frame, centered over the DEFENDER
+        (the enemy in S1, the hero in S2)."""
         if self._choreo is None or self._choreo_fx is None:
             return
         index = self._choreo.fx_frame()
         if index is None:
             return
         frame = self._choreo_fx[min(index, len(self._choreo_fx) - 1)]
-        self.screen.blit(frame, frame.get_rect(center=enemy_rect.center))
+        self.screen.blit(frame, frame.get_rect(center=target_rect.center))
 
     def _draw_death_fade(self) -> None:
         """B107: the killed enemy fades to grayscale at 25 % opacity over
@@ -1168,26 +1198,39 @@ class BattleApp:
         self.screen.blit(ghost, self._enemy_sprite_rect(*ghost.get_size()))
 
     def _draw_hero_sprite(self) -> None:
-        # B107 S1: the animated hero idle (A-B-C-B, 0.9 s) on the groundline;
-        # the attack choreography offsets it horizontally. Falls back to the
-        # old placeholder box if the sheet is missing.
-        offset = self._choreo.hero_offset() if self._choreo is not None else 0
+        # B107 S1: the animated hero idle (A-B-C-B, 0.9 s) on the groundline; when
+        # the hero swings it dashes right (its choreography). B107 S2: when the
+        # ENEMY swings, the hero is the DEFENDER — no dash, but shake/flash/fx land
+        # on it. Falls back to the old placeholder box if the sheet is missing.
+        choreo = self._choreo
+        attacking = choreo is not None and self._choreo_attacker == "hero"
+        defending = choreo is not None and self._choreo_attacker == "enemy"
+        offset = choreo.hero_offset() if attacking else 0
         frames_list = hero_idle_frames()
         if frames_list:
             sprite = frames_list[self._hero_idle_frame_index()]
             rect = self._hero_sprite_rect(*sprite.get_size()).move(offset, 0)
+            if defending and choreo.impact_done:
+                rect = rect.move(*choreo.shake_offset())
+                sprite = self._flash(sprite, choreo.flash_brightness())
             self.screen.blit(sprite, rect)
             if self._blink_hero > 0:             # B72 flash on the sprite
                 self._blink_hero -= 1
                 self._blit_blink(sprite, rect)
+            if defending:
+                self._draw_attack_fx(rect)
             return
         height = TIER_HEIGHT["medium"]
         rect = self._hero_sprite_rect(int(height * 0.5), height).move(offset, 0)
+        if defending and choreo.impact_done:
+            rect = rect.move(*choreo.shake_offset())
         box = HERO_BOX if self._blink_hero <= 0 else (245, 245, 245)   # B72 flash
         if self._blink_hero > 0:
             self._blink_hero -= 1
         pygame.draw.rect(self.screen, box, rect, border_radius=6)
         pygame.draw.rect(self.screen, PANEL_EDGE, rect, width=2, border_radius=6)
+        if defending:
+            self._draw_attack_fx(rect)
 
     def _log_visible(self) -> int:
         line_h = self.font_sm.get_height() + 3
