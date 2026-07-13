@@ -843,8 +843,18 @@ class BattleApp:
         # Tooltip on the very top, once the mouse has dwelt on a registered row.
         mouse = to_canvas(pygame.mouse.get_pos(), self._transform)
         self.hover.update(mouse, pygame.time.get_ticks())
-        if self.hover.active is not None:
-            ui.draw_tooltip(self.screen, self.hover.active, mouse, self.font, self.font_sm)
+        tooltip, anchor = self.hover.active, mouse
+        if tooltip is None and self.mode == "submenu":
+            # B132: the keyboard-focused skill cell shows its full-name tooltip
+            # too (anchored above the cell), so musfri players see it without a
+            # mouse dwell.
+            focused = self.focus.focused()
+            if focused is not None:
+                cell_tip = self._skill_cell_tooltip(focused)
+                if cell_tip is not None:
+                    tooltip, anchor = cell_tip, focused.rect.midtop
+        if tooltip is not None:
+            ui.draw_tooltip(self.screen, tooltip, anchor, self.font, self.font_sm)
         if self._shake > 0:             # B72: brief screen shake on crits
             self._shake -= 1
             offset = (-2, 2)[self._shake % 2], (1, -1)[self._shake % 2]
@@ -1388,6 +1398,25 @@ class BattleApp:
         if b.sublabel:                     # B112: the mana/cd (or blocked) hint
             sub = self.font_sm.render(ui.fit(b.sublabel, self.font_sm, inner), True, TEXT_DIM)
             self.screen.blit(sub, sub.get_rect(midbottom=(b.rect.centerx, b.rect.bottom - 5)))
+        # B132: a name that doesn't fully fit the square gets a hover tooltip with
+        # the full name (+ its cost); the focused cell also shows it (see draw()).
+        tip = self._skill_cell_tooltip(b)
+        if tip is not None:
+            self.hover.add(b.rect, tip)
+
+    def _skill_cell_tooltip(self, b):
+        """B132: the full skill name (+ cost/blocked reason) for a square whose
+        name is wrapped past two lines or ellipsised; None for the Esc/Back cell
+        or a name that already reads in full inside its cell."""
+        if not getattr(b, "custom", False) or b.hotkey:   # skip the Esc/Back cell
+            return None
+        inner = b.rect.width - 8
+        wrapped = ui.wrap(b.label, self.font_sm, inner)
+        fits = (len(wrapped) <= 2
+                and all(ui.fit(line, self.font_sm, inner) == line for line in wrapped))
+        if fits:
+            return None
+        return ui.Tooltip(title=b.label, lines=[b.sublabel] if b.sublabel else [])
 
     def _draw_banner(self):
         surf = self.font_lg.render(self.banner, True, self.banner_color)

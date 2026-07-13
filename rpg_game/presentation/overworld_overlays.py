@@ -90,6 +90,13 @@ CHARACTER_SLOT_ABBR = {
 }
 
 
+def character_slot_glyph(slot) -> str:
+    """B132: the glyph a character slot shows — its TYPE abbreviation, identical
+    filled or empty, so a worn slot never displays a clipped item name. The worn
+    item's name lives in the slot's hover tooltip instead."""
+    return CHARACTER_SLOT_ABBR.get(slot.id, slot.name[:4])
+
+
 class OverlaysMixin:
     """Fullscreen overlays + modal screens for OverworldApp."""
 
@@ -256,12 +263,15 @@ class OverlaysMixin:
         pygame.draw.rect(self.screen, CHAR_SLOT_BG, srect, border_radius=6)
         edge = CHAR_SLOT_FILLED_EDGE if filled else CHAR_SLOT_EMPTY_EDGE
         pygame.draw.rect(self.screen, edge, srect, width=2, border_radius=6)
+        # B132: the slot always shows WHAT it is (its type abbreviation), the same
+        # glyph empty and filled — never a clipped item name. Filled reads as worn
+        # via the gold edge + a bright (rarity-coloured) glyph; the worn item's
+        # name lives in the hover tooltip.
+        glyph = character_slot_glyph(slot)
         if filled:
             color, tip = self.store_row_extras(slot.equipped_item_id, selling=True)
-            glyph = self._fit_text(slot.equipped_item_name, srect.width - 8, self.font_sm)
             text_color = color or TEXT
         else:
-            glyph = CHARACTER_SLOT_ABBR.get(slot.id, slot.name[:4])
             text_color, tip = TEXT_DIM, None
         gs = self.font_sm.render(glyph, True, text_color)
         self.screen.blit(gs, gs.get_rect(center=srect.center))
