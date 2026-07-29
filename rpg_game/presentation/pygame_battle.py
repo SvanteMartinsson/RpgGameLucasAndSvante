@@ -68,6 +68,15 @@ ACTIONS = pygame.Rect(VITALS.x, VITALS.bottom + PAD, VITALS.width,
 GROUND_Y = STAGE.bottom - 28  # shared baseline both combatants stand on
 HERO_BOX = (90, 120, 170)
 
+# B134: the skill grid's cells are WIDE RECTANGLES filling the ACTIONS band, not
+# squares (B130's squares were capped by the band HEIGHT and left ~330px of the
+# 516px width unused). The Esc/Back column keeps only the width it needs.
+SKILL_CELL_GAP = 8
+SKILL_CELL_PAD = 8         # text inset per side inside a cell
+ESC_CELL_W = 100           # "Esc" badge + "Back" need ~90px; 100 keeps it airy
+SKILL_GRID_ROWS = 2        # the canonical 2x2 shape: cell height is always band/2,
+                           # so a 1- or 2-skill loadout keeps the SAME cell size
+
 # --- Colors ----------------------------------------------------------------
 
 BG = (18, 20, 28)
@@ -1295,39 +1304,43 @@ class BattleApp:
         return rects
 
     def _skill_grid_rects(self, count):
-        """B130: equal SQUARE cells in a 2xN grid. ``count`` includes the trailing
-        Esc/Back cell, so ``count - 1`` skills fill at most two columns (4 skills ->
-        a 2x2 block) and the Esc cell sits BESIDE the block (its own column to the
-        right, vertically centered), NOT on a third row.
+        """B134: equal WIDE RECTANGULAR cells in a 2xN grid that FILLS the ACTIONS
+        band. ``count`` includes the trailing Esc/Back cell, so ``count - 1`` skills
+        fill at most two columns (4 skills -> a 2x2 block, B130's shape) with the
+        Esc cell in its own narrow column to the right (B130's placement, kept).
 
-        Choice reported for B130: a third row inside the ~138px ACTIONS band would
-        shrink every square to ~35px (unreadable); keeping the skills to two rows
-        and placing Back beside them holds the cells at ~57px. The returned order
-        is skills row-major then Esc last, matching the button add order; the 2D
-        focus nav (_focus_grid_step) reads geometry, not this order."""
-        gap = 8
+        Width: the two skill columns split whatever is left after the Esc column
+        and the gaps -> ~192px per cell in the 516px band, so every skill name in
+        the game fits on ONE line (longest is 152px). Height: the rows divide the
+        band's full height -> ~65px, up from B130's 57px squares. Squares were the
+        wrong primitive here — they were bounded by the SHORT axis (the 138px band)
+        and wasted ~330px of width.
+
+        The returned order is skills row-major then Esc last, matching the button
+        add order; the 2D focus nav (_focus_grid_step) reads geometry, not order."""
+        gap = SKILL_CELL_GAP
         n_skills = max(1, count - 1)
         columns = min(2, n_skills)                 # skills use at most two columns
         skill_rows = (n_skills + columns - 1) // columns
-        # Width must hold the skill columns PLUS one Esc column; height the rows.
-        side = max(1, min(
-            (ACTIONS.width - (columns + 2) * gap) // (columns + 1),
-            (ACTIONS.height - (skill_rows + 1) * gap) // skill_rows,
-        ))
-        block_w = columns * side + (columns - 1) * gap
-        block_h = skill_rows * side + (skill_rows - 1) * gap
-        # Center the whole [block | Esc] cluster in the band.
-        cluster_w = block_w + gap + side
-        x0 = ACTIONS.x + max(gap, (ACTIONS.width - cluster_w) // 2)
+        # Horizontal: [gap][cell]...[gap][esc][gap] -> columns + 2 gaps in total.
+        esc_w = min(ESC_CELL_W, max(1, ACTIONS.width - (columns + 2) * gap - columns))
+        cell_w = max(1, (ACTIONS.width - (columns + 2) * gap - esc_w) // columns)
+        # Vertical: the height is always the canonical 2-row split of the band
+        # (ACTIONS already has PAD above and below), so cells keep the SAME size
+        # whether the player has 1, 2, 3 or 4 skills equipped. Two rows fill the
+        # band edge to edge; one row centres in it.
+        cell_h = max(1, (ACTIONS.height - (SKILL_GRID_ROWS - 1) * gap) // SKILL_GRID_ROWS)
+        block_h = skill_rows * cell_h + (skill_rows - 1) * gap
+        x0 = ACTIONS.x + gap
         y0 = ACTIONS.y + (ACTIONS.height - block_h) // 2
         rects = []
         for i in range(n_skills):
             row, col = divmod(i, columns)
-            rects.append(pygame.Rect(x0 + col * (side + gap),
-                                     y0 + row * (side + gap), side, side))
-        esc_x = x0 + block_w + gap
-        esc_y = ACTIONS.y + (ACTIONS.height - side) // 2   # centered beside the block
-        rects.append(pygame.Rect(esc_x, esc_y, side, side))
+            rects.append(pygame.Rect(x0 + col * (cell_w + gap),
+                                     y0 + row * (cell_h + gap), cell_w, cell_h))
+        block_w = columns * cell_w + (columns - 1) * gap
+        # Esc spans the block's full height beside it — a tidy column, no dead space.
+        rects.append(pygame.Rect(x0 + block_w + gap, y0, esc_w, block_h))
         return rects
 
     def _build_action_buttons(self, snapshot):
@@ -1426,11 +1439,12 @@ class BattleApp:
                 self.screen.blit(label, label.get_rect(midleft=(text_x, b.rect.centery)))
 
     def _draw_skill_cell(self, b):
-        """B128: paint one square skill cell — the name wrapped/centered with a
-        compact cost line beneath — or the Esc/Back cell (a key-cap + 'Back').
-        The box + focus ring were already drawn by _draw_buttons."""
+        """B134: paint one wide skill cell — the name (one line at this width for
+        every skill in the game) with the cost line beneath it, both centered as a
+        single block — or the Esc/Back cell (a key-cap + 'Back'). The box + focus
+        ring were already drawn by _draw_buttons."""
         label_color = TEXT if b.enabled else TEXT_DIM
-        inner = b.rect.width - 8
+        inner = self._skill_cell_inner(b)
         if b.hotkey:                       # the Esc / Back cell
             badge_w = self.font_sm.size("Esc")[0] + 14
             ui.draw_key_badge(self.screen, self.font_sm, "Esc",
@@ -1440,26 +1454,37 @@ class BattleApp:
             return
         lines = ui.wrap(b.label, self.font_sm, inner)[:2]
         line_h = self.font_sm.get_linesize()
-        top = b.rect.y + max(6, (b.rect.height - 18 - line_h * len(lines)) // 2)
+        # B134: name + cost centre as ONE block in the taller cell (B112 keeps the
+        # cost/blocked reason on its own line so a long reason is never truncated).
+        rows = len(lines) + (1 if b.sublabel else 0)
+        top = b.rect.centery - (rows * line_h) // 2
         for i, line in enumerate(lines):
             surf = self.font_sm.render(ui.fit(line, self.font_sm, inner), True, label_color)
             self.screen.blit(surf, surf.get_rect(midtop=(b.rect.centerx, top + i * line_h)))
         if b.sublabel:                     # B112: the mana/cd (or blocked) hint
             sub = self.font_sm.render(ui.fit(b.sublabel, self.font_sm, inner), True, TEXT_DIM)
-            self.screen.blit(sub, sub.get_rect(midbottom=(b.rect.centerx, b.rect.bottom - 5)))
-        # B132: a name that doesn't fully fit the square gets a hover tooltip with
-        # the full name (+ its cost); the focused cell also shows it (see draw()).
+            self.screen.blit(sub, sub.get_rect(midtop=(b.rect.centerx,
+                                                      top + len(lines) * line_h)))
+        # B132: a name that STILL doesn't fit gets a hover tooltip with the full
+        # name (+ its cost); the focused cell also shows it (see draw()).
         tip = self._skill_cell_tooltip(b)
         if tip is not None:
             self.hover.add(b.rect, tip)
 
+    def _skill_cell_inner(self, b) -> int:
+        """The text width inside a skill cell — shared by the drawing and the
+        B132 overflow check so the two can't drift apart."""
+        return b.rect.width - 2 * SKILL_CELL_PAD
+
     def _skill_cell_tooltip(self, b):
-        """B132: the full skill name (+ cost/blocked reason) for a square whose
-        name is wrapped past two lines or ellipsised; None for the Esc/Back cell
-        or a name that already reads in full inside its cell."""
+        """B132: the full skill name (+ cost/blocked reason) for a cell whose name
+        is wrapped past two lines or ellipsised; None for the Esc/Back cell or a
+        name that already reads in full inside its cell. B134's ~192px cells fit
+        every current skill name on one line, so this is now a safety net for
+        future/longer names rather than an everyday path."""
         if not getattr(b, "custom", False) or b.hotkey:   # skip the Esc/Back cell
             return None
-        inner = b.rect.width - 8
+        inner = self._skill_cell_inner(b)
         wrapped = ui.wrap(b.label, self.font_sm, inner)
         fits = (len(wrapped) <= 2
                 and all(ui.fit(line, self.font_sm, inner) == line for line in wrapped))

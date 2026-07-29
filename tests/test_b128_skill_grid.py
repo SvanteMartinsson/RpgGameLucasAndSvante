@@ -1,6 +1,11 @@
-"""B128: the battle skill menu is a grid of equal SQUARE cells, with the
-Esc/Back button as its own cell. Item/swap submenus keep their wide rows.
+"""B128: the battle skill menu is a grid of equal-size cells, with the Esc/Back
+button as its own cell. Item/swap submenus keep their wide rows.
 Skips without pygame.
+
+B134 superseded the original SQUARE assertion here: squares were bounded by the
+short axis (the 138px ACTIONS band) and wasted ~330px of width, so the cells are
+now equal WIDE RECTANGLES. The equal-size + own-Esc-cell invariants are what this
+file locks; the rectangle geometry itself lives in test_b134.
 """
 
 import os
@@ -39,16 +44,16 @@ class SkillGridTest(unittest.TestCase):
         enemy = engine.content.enemies["giant_rat"].create_enemy()
         return BattleApp(engine=engine, enemy=enemy, standalone=False)
 
-    def test_skill_cells_are_equal_squares_plus_an_esc_cell(self):
+    def test_skill_cells_are_equal_sized_plus_an_esc_cell(self):
         battle = self._battle(("rupture", "deadly_precision", "evasion", "riposte"))
         battle.open_submenu("skill")
         battle.draw()
         cells = [b for b in battle.buttons if b.custom]
         self.assertEqual(len(cells), 5)                 # 4 skills + Esc/Back
-        for b in cells:
-            self.assertEqual(b.rect.width, b.rect.height, f"{b.label} not square")
-        sides = {b.rect.width for b in cells}
-        self.assertEqual(len(sides), 1, f"cells differ in size: {sides}")
+        # B134: the four SKILL cells are equal-sized (the Esc cell is its own
+        # narrow column, so it is sized independently).
+        sizes = {(b.rect.width, b.rect.height) for b in cells if b.label != "Back"}
+        self.assertEqual(len(sizes), 1, f"skill cells differ in size: {sizes}")
         # the last cell is the Esc/Back one
         back = next(b for b in cells if b.label == "Back")
         self.assertEqual(back.hotkey, "\x1b")

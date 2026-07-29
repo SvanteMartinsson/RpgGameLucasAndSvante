@@ -1,7 +1,10 @@
 """B132: text-in-cell consistency.
 
-(a) A battle skill whose name does not fit its square cell gets a hover/focus
-    tooltip with the FULL name (+ cost) instead of relying on a bare "...".
+(a) A battle skill whose name does not fit its cell gets a hover/focus tooltip
+    with the FULL name (+ cost) instead of relying on a bare "...".
+    B134 widened the cells to ~192px, so every CURRENT skill name now fits on one
+    line and the tooltip became a safety net for future/longer names — these tests
+    therefore drive the rule with a deliberately narrow cell.
 (b) A character equip slot shows its slot-TYPE glyph (Head/Chest/Ring) the same
     whether empty or filled — never a clipped item name; the worn item's name
     lives in the slot's hover tooltip.
@@ -52,18 +55,23 @@ class SkillCellTooltipTest(unittest.TestCase):
         battle.draw()
         return battle
 
-    def test_long_skill_name_registers_full_name_tooltip(self):
+    def _narrow_cell(self, label="Executioner's Swing", sublabel="9 MP"):
+        """A skill cell too narrow for its name — what the overflow rule is for."""
+        return ui.Button(pygame.Rect(0, 0, 60, 65), label, lambda: None, True,
+                         sublabel=sublabel, custom=True)
+
+    def test_overflowing_name_registers_full_name_tooltip(self):
         battle = self._battle(("deadly_precision", "rupture", "evasion", "riposte"))
-        full = next(s.name for s in build_snapshot(battle.engine).skills
-                    if s.id == "deadly_precision")
-        # the cell's name is clipped in-square, so a tooltip carries the full name
-        cell = next(b for b in battle.buttons if b.custom and b.label == full)
+        cell = self._narrow_cell()
         tip = battle._skill_cell_tooltip(cell)
         self.assertIsNotNone(tip, "clipped skill name registered no tooltip")
-        self.assertEqual(tip.title, full)
-        # and it is registered as a live hover zone on the cell rect
+        self.assertEqual(tip.title, "Executioner's Swing")
+        self.assertIn("9 MP", tip.lines)
+        # drawing that cell registers it as a live hover zone
+        battle.hover.begin()
+        battle._draw_skill_cell(cell)
         titles = [p.title for _r, p in battle.hover._zones if isinstance(p, ui.Tooltip)]
-        self.assertIn(full, titles)
+        self.assertIn("Executioner's Swing", titles)
 
     def test_esc_cell_has_no_tooltip(self):
         battle = self._battle(("deadly_precision", "rupture", "evasion", "riposte"))
@@ -71,16 +79,25 @@ class SkillCellTooltipTest(unittest.TestCase):
         self.assertIsNone(battle._skill_cell_tooltip(back))
 
     def test_focused_clipped_cell_tooltip_available_without_mouse(self):
-        # The focus fallback in draw() uses the same helper; focusing the clipped
-        # cell yields a tooltip even though no mouse dwelt on it.
+        # The focus fallback in draw() reads the same helper off focus.focused(),
+        # so a clipped focused cell yields a tooltip with no mouse dwell.
         battle = self._battle(("deadly_precision", "rupture", "evasion", "riposte"))
-        full = next(s.name for s in build_snapshot(battle.engine).skills
-                    if s.id == "deadly_precision")
-        focused = next(b for b in battle.buttons if b.custom and b.label == full)
-        for si, (_name, items) in enumerate(battle.focus._sections):
-            if focused in items:
-                battle.focus.section, battle.focus.index = si, items.index(focused)
+        cell = self._narrow_cell()
+        battle.focus.add("skill", cell)
+        section = next(i for i, (name, items) in enumerate(battle.focus._sections)
+                       if cell in items)
+        battle.focus.section = section
+        battle.focus.index = battle.focus._sections[section][1].index(cell)
+        self.assertIs(battle.focus.focused(), cell)
         self.assertIsNotNone(battle._skill_cell_tooltip(battle.focus.focused()))
+
+    def test_b134_width_means_real_names_need_no_tooltip(self):
+        # The B134 win: at ~192px every current skill name reads in full, so the
+        # everyday case registers NO tooltip (the rule above is the safety net).
+        battle = self._battle(("deadly_precision", "rupture", "evasion", "riposte"))
+        for cell in (b for b in battle.buttons if b.custom and b.label != "Back"):
+            self.assertIsNone(battle._skill_cell_tooltip(cell),
+                              f"{cell.label} unexpectedly needs a tooltip")
 
 
 @unittest.skipUnless(DEPS_OK, "pygame/pytmx not installed")

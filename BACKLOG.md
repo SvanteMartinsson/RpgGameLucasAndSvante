@@ -690,6 +690,15 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
   visuella 2×2-placeringen, inte radordning. Render före/efter.
 
+#### B134 — Skill-cellerna rektangulära och större (polish på B130)  · 🟢 **AKTIV (polish 2026-07-13)**
+- Lucas playtest: B130:s KVADRATISKA celler var fel primitiv — kvadrater begränsas av
+  bandets KORTA axel (ACTIONS 516×138 → 138/2 rader = 57px) och lämnade ~330px av bredden
+  oanvänd, så rutorna såg krympta ut. Behåll 2×2 + Esc-beside; gör cellerna REKTANGULÄRA:
+  bredd = (bandbredd − Esc-kolumn − mellanrum)/2 ≈ 192px, höjd = bandhöjd/2 ≈ 65px, Esc bara
+  ~100px bred. Med ~192px ryms ALLA skill-namn på EN rad (längsta "Executioner's Swing"
+  152px) → ingen radbrytning. B132:s tooltip blir skyddsnät för framtida längre namn.
+  B130:s geometriska fokusnav måste förbli grön. Render före/efter.
+
 #### B131 — Smalare stridslogg, mer plats åt VITALS/ACTIONS  · 🟢 **AKTIV (dagbatch 2026-07-13)**
 - Lucas: logg-panelen för bred. STEG 0: `LOG_PANEL` hårdkodad 600px; VITALS+ACTIONS räknas
   från `LOG_PANEL.right` → växer automatiskt när loggen krymper. Minska till ~440–480px
