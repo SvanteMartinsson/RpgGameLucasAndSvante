@@ -66,25 +66,31 @@ def render_board_active(out: Path) -> None:
 
 
 def _progressed_engine():
-    """A save mid-way through several quests, for the log + tab shots."""
+    """A save mid-way through several quests, for the log + tab shots. Returns
+    (engine, quest_lines) — the lines the hooks produced, so the Quest-tab shot
+    shows the real variety (accepted / progress milestone / ready to hand in)."""
     engine = _engine()
+    lines: list[str] = []
+
+    def kill(enemy_id, zone, times=1):
+        for _ in range(times):
+            lines.extend(core_quests.note_kill(engine.player, engine.content,
+                                               engine.content.quests, enemy_id, zone))
+
     engine.accept_quest("spine_cainos")
-    for _ in range(4):
-        core_quests.note_kill(engine.player, engine.content, engine.content.quests,
-                              "giant_rat", "cainos")
+    kill("giant_rat", "cainos", 4)
     engine.accept_quest("side_rat_pelts")
     engine.player.inventory.add_consumable("rat_pelt", 3)
     engine.accept_quest("side_chests")
-    core_quests.note_chest_opened(engine.player, engine.content, engine.content.quests)
+    lines.extend(core_quests.note_chest_opened(engine.player, engine.content,
+                                              engine.content.quests))
     engine.accept_quest("spine_mork_skog")
-    for _ in range(8):
-        core_quests.note_kill(engine.player, engine.content, engine.content.quests,
-                              "dire_wolf", "mork_skog")
-    return engine
+    kill("dire_wolf", "mork_skog", 8)
+    return engine, lines
 
 
 def render_quest_log(out: Path) -> None:
-    engine = _progressed_engine()
+    engine, _lines = _progressed_engine()
     app = _app(engine)
     app.open_overlay("quest_log")
     app.draw()
@@ -92,9 +98,13 @@ def render_quest_log(out: Path) -> None:
 
 
 def render_quest_tab(out: Path) -> None:
-    engine = _progressed_engine()
+    from rpg_game.presentation import chatlog
+
+    engine, lines = _progressed_engine()
     app = _app(engine)
-    app._drain_quest_events()      # the accept/progress/ready lines land on the tab
+    app._drain_quest_events()      # the accepted lines the engine queued
+    for line in lines:             # ... plus the hooks' progress/ready lines
+        app.push_log(line, chatlog.QUEST, channel=chatlog.CHANNEL_QUEST)
     app.log_tab = "quest"
     app.draw()
     _save(app, out)

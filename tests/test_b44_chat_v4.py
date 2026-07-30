@@ -178,12 +178,17 @@ class OverworldTabTests(unittest.TestCase):
         self.app.buttons = []
         self.app.hover.begin()
         self.app._draw_log()
-        self.assertGreaterEqual(len(self.app.buttons), 3)   # All + Combat + Loot chips (B100)
-        self.app.buttons[-2].on_click()                     # the Combat chip
-        self.assertEqual(self.app.log_tab, "combat")
-        self.assertEqual(self.app.log_scroll, 0)
-        self.app.buttons[-1].on_click()                     # the Loot chip
-        self.assertEqual(self.app.log_tab, "loot")
+        # All + Combat + Loot (B100) + Quest (B135c). The chips are the trailing
+        # borderless buttons, in tab order — selected by ORDER, not by a negative
+        # index, so adding a tab can't silently retarget the assertions.
+        tabs = ["all", "combat", "loot", "quest"]
+        chips = [b for b in self.app.buttons if b.label == ""][-len(tabs):]
+        self.assertEqual(len(chips), len(tabs))
+        for chip, expected in zip(chips, tabs):
+            self.app.log_scroll = 7
+            chip.on_click()
+            self.assertEqual(self.app.log_tab, expected)
+            self.assertEqual(self.app.log_scroll, 0)   # a new filter snaps to newest
 
     def test_switching_tab_resets_scroll(self):
         self.app.log_scroll = 7

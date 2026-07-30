@@ -722,6 +722,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.engine.player.overworld_tile = tuple(self.world.current_tile)
         if place_id != self.engine.player.current_place_id:
             self.engine.enter_place(place_id)
+            # B135c: arriving somewhere can finish a visit_place objective; the
+            # core queued the lines, the shell puts them on the Quest tab.
+            if getattr(self, "event_log", None) is not None:
+                self._drain_quest_events()
         in_town = self.world.town_place_id() is not None
         # getattr: sync_location runs during __init__ before the flag exists; the
         # True default also means "no autosave for merely starting in town".
@@ -854,7 +858,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                                   self.engine.content.spawn_fallbacks,
                                   tile, self.zone.wild_region_at(tile))
             band = spawns.band_at(self.engine.content.spawn_areas, tile)
-            return self.engine.create_encounter(pool=pool, band=band)
+            # B135a: tag the spawn with its ground theme so a kill_in_zone
+            # objective can tick — the shell owns the tile, the core owns the rule.
+            return self.engine.create_encounter(
+                pool=pool, band=band, zone=self.zone.theme_for_tile(tile))
         return None
 
     def _build_path_tiles(self) -> set:
@@ -1448,6 +1455,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if event.key == pygame.K_b:
             self.toggle_overlay("bestiary")             # B66 codex
             return
+        if event.key == pygame.K_q:
+            self.toggle_overlay("quest_log")            # B135c quest log
+            return
         # Chatbox resize/scroll: walk-only. Under menus the chatbox is visible but
         # read-only ('+' grows, '-' shrinks; PageUp/PageDown scroll).
         if self._log_interactive():
@@ -1667,6 +1677,11 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                 parts.append(("   ", TEXT))
                 parts.append((result.drop.name, chatlog.rarity_color(result.drop.rarity)))
             chatlog.push_rich(self.event_log, parts, channel=chatlog.CHANNEL_LOOT)
+            # B135c: the chest's quest lines (open_chests / a delivery finished by
+            # its item) go on the Quest tab.
+            for line in result.quest_events:
+                self.push_log(line, chatlog.QUEST, channel=chatlog.CHANNEL_QUEST)
+            self._drain_quest_events()
             return True
         return False
 
@@ -2028,6 +2043,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             return chatlog.CHANNEL_COMBAT
         if self.log_tab == "loot":
             return chatlog.CHANNEL_LOOT
+        if self.log_tab == "quest":
+            return chatlog.CHANNEL_QUEST     # B135c
         return None
 
     def _set_log_tab(self, tab: str) -> None:
@@ -2052,7 +2069,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         strip.fill((10, 12, 18, 200))
         self.screen.blit(strip, (rect.x, rect.y))
         chip_x = rect.x
-        for tab_id, tab_label in (("all", "All"), ("combat", "Combat"), ("loot", "Loot")):
+        for tab_id, tab_label in (("all", "All"), ("combat", "Combat"),
+                                  ("loot", "Loot"), ("quest", "Quest")):   # B135c
             width = self.font_sm.size(tab_label)[0] + 16
             chip = pygame.Rect(chip_x, rect.y, width, chip_h)
             active = self.log_tab == tab_id

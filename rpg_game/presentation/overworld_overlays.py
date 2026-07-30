@@ -476,6 +476,63 @@ class OverlaysMixin:
                              (lambda qid=quest.id: self.accept_quest(qid)), True,
                              focus_section="board_action")
 
+    # --- B135c: the quest log screen (hotkey Q) ----------------------------
+
+    def _overlay_quest_log(self, panel) -> None:
+        """Every quest you are on: objective, progress, zone hint and reward, with
+        the finished-but-not-handed-in ones called out. Read-only — handing in
+        happens at the board (B135b), which is where the giver is."""
+        content = self._content_rect(panel)
+        tracked = self.engine.tracked_quests()
+        if not tracked:
+            self.screen.blit(self.font.render(T.QUEST_LOG_EMPTY, True, TEXT_DIM),
+                             (content.x, content.y + 6))
+            return
+        # Ready-to-hand-in first: that is the actionable half of the list.
+        tracked.sort(key=lambda q: (not self.engine.quest_is_ready(q), q.title))
+        row_h = 74
+        scroll = self._menu_scrolls["quest_log"]
+        scroll.configure(len(tracked) * row_h, content.height)
+        y0 = scroll.y(content.y)
+        for i, quest in enumerate(tracked):
+            row = pygame.Rect(content.x, y0 + i * row_h, content.width, row_h - 8)
+            if row.bottom < content.top or row.top > content.bottom:
+                continue
+            self._draw_quest_log_row(row, quest)
+        ui.draw_scroll_indicators(self.screen, self.font_sm, content, scroll,
+                                  row_h, TEXT_DIM)
+
+    def _draw_quest_log_row(self, rect, quest) -> None:
+        engine = self.engine
+        ready = engine.quest_is_ready(quest)
+        pygame.draw.rect(self.screen, (26, 30, 42), rect, border_radius=6)
+        pygame.draw.rect(self.screen, GOOD if ready else PANEL_EDGE, rect,
+                         width=2 if ready else 1, border_radius=6)
+        x = rect.x + 12
+        title = self.font.render(self._fit_text(quest.title, rect.width - 150), True, TEXT)
+        self.screen.blit(title, (x, rect.y + 8))
+        if ready:
+            badge = self.font_sm.render(T.QUEST_READY, True, GOOD)
+            self.screen.blit(badge, (rect.right - badge.get_width() - 12, rect.y + 11))
+        elif quest.zone:
+            hint = self.font_sm.render(T.quest_zone_label(quest.zone), True, ACCENT)
+            self.screen.blit(hint, (rect.right - hint.get_width() - 12, rect.y + 11))
+        objective = core_quests.objective_text(engine.content, quest)
+        progress = quest_progress_value(engine, quest)
+        line = objective + (f"   {progress}" if progress else "")
+        self.screen.blit(self.font_sm.render(self._fit_text(line, rect.width - 24),
+                                             True, TEXT_DIM), (x, rect.y + 32))
+        reward = core_quests.reward_text(engine.content, quest)
+        if reward:
+            text = f"{T.QUEST_REWARD}: {reward}"
+            self.screen.blit(self.font_sm.render(self._fit_text(text, rect.width - 24),
+                                                 True, GOOD), (x, rect.y + 49))
+        # Focusable so the log is keyboard-navigable; selecting a row is inert here
+        # (the row IS the information), which keeps Enter from doing something
+        # surprising on a read-only screen.
+        tip = ui.Tooltip(title=quest.title, lines=[objective], body=quest.text)
+        self.hover.add(rect, tip)
+
     # -- board actions (thin wrappers: the engine owns every rule) ----------
 
     def accept_quest(self, quest_id: str) -> None:

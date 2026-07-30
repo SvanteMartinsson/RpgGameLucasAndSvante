@@ -301,16 +301,23 @@ def refresh(player: Player, content: GameContent, quests) -> list[str]:
 
 
 def _advance(player: Player, content: GameContent, quest: Quest, amount: int) -> list[str]:
-    """Add to a counter objective, capped at its target, with a milestone line."""
+    """Add to a counter objective, capped at its target.
+
+    Logs a MILESTONE, not every tick: one line when the halfway mark is crossed,
+    and nothing else (completion is refresh()'s "ready to hand in" line). Logging
+    every increment turned an 8-kill quest into eight log lines; live progress
+    belongs on the board and the quest log, which show it continuously."""
+    count = quest.objective.count
     state = state_of(player, quest.id)
     before = state["progress"]
-    after = min(quest.objective.count, before + amount)
+    after = min(count, before + amount)
     if after == before:
         return []
     _store(player, quest.id, ACTIVE, after)
-    if after < quest.objective.count:
-        return [f"{quest.title}: {after}/{quest.objective.count}."]
-    return []          # the completion line comes from refresh()
+    halfway = (count + 1) // 2
+    if count >= 2 and before < halfway <= after < count:
+        return [f"{quest.title}: {after}/{count}."]
+    return []
 
 
 def _push(player: Player, content: GameContent, quests, kind: str,

@@ -673,6 +673,9 @@ class BattleApp:
                 self.push_rich([(T.gold_gain(result.gold_gained), chatlog.GOLD),
                                 (f" from {enemy_name}.", chatlog.loot_source_color("drop"))],
                                channel=chatlog.CHANNEL_LOOT)
+            # B135c: quest progress earned by the kill (its own channel/tab).
+            for line in result.quest_events:
+                self.push_log(line, chatlog.QUEST, channel=chatlog.CHANNEL_QUEST)
             self.enemy = None
             if result.pending_stat_choices > 0:
                 self.set_mode("stat_choice")  # resolve choices before returning
