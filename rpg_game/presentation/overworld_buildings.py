@@ -158,11 +158,30 @@ class BuildingMenusMixin:
             self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44), "Study skill tomes",
                              (lambda b=building_id: self._open_tome_shop(b)), True)
             y += 52
+        # B135b: the notice board hangs in the REST building — the inn in a
+        # town/city/capital and the cottage in a village. Measured as the only
+        # building type present in all 17 towns (town_hall is in 4, inn in 10),
+        # so every settlement can offer quests without new building art.
+        if func == "rest":
+            offers = len(self.engine.board_quests())
+            tracked = len(self.engine.tracked_quests())
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44),
+                             T.NOTICE_BOARD, self._open_notice_board, True,
+                             value=(f"{offers} new" if offers else
+                                    (f"{tracked} active" if tracked else "")))
+            y += 52
         # B68/B8 2b: brewing moved home — the apothecary door (BUILDING_FUNCTION)
         # is now the only counter; the general shop's interim button is gone.
         back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
         self._add_button(back, T.BACK, self._close_building_menu, badge=T.BACK_KEY)
         self._draw_buttons()
+
+    def _open_notice_board(self) -> None:
+        """B135b: leave the building menu and open the board as an overlay screen
+        (same lifecycle as Character/Inventory, so Esc and focus nav come free)."""
+        self.building_menu = None
+        self.mode = "walk"
+        self.open_overlay("notice_board")
 
     def _open_tome_shop(self, building_id: str) -> None:
         self.building_menu = None

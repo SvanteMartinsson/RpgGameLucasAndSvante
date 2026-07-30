@@ -59,6 +59,10 @@ def rarity_color(rarity: str) -> tuple[int, int, int]:
 CHANNEL_WORLD = "world"
 CHANNEL_COMBAT = "combat"
 CHANNEL_LOOT = "loot"     # B100: every item/gold acquisition, with its source
+CHANNEL_QUEST = "quest"   # B135c: accepted / progress / ready / handed in
+
+# B135c: quest lines get their own tint so the Quest tab reads at a glance.
+QUEST = (185, 200, 140)
 
 # B100: per-source line colour for the Loot tab — the source type tints the
 # line so "where it came from" reads at a glance. Item names keep their rarity

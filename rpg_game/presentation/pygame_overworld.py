@@ -613,7 +613,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self._music_slider_rect = None   # B69: set each frame the settings overlay draws
         self._music_dragging = False
         self._menu_scrolls = {"settings": ui.ScrollArea(), "tomes": ui.ScrollArea(),
-                              "character_inv": ui.ScrollArea()}  # B121
+                              "character_inv": ui.ScrollArea(),  # B121
+                              "notice_board": ui.ScrollArea(),   # B135b
+                              "quest_log": ui.ScrollArea()}      # B135c
         # Sub-pixel movement remainder (float) per axis; the int part moves the rect
         # each frame, the fraction carries over -> a non-integer PLAYER_SPEED. Zeroed
         # on any teleport so no drift accumulates across a reposition.
@@ -643,6 +645,8 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.upgrade_building: str | None = None     # B37 Slice 2: open station building id
         self.selected_upgrade_item: str | None = None  # item being inspected at the station
         self.tome_building: str | None = None        # B38: open mage-tower tome shop building id
+        self.board_selection = ""                    # B135b: notice whose detail is shown
+        self.quest_log_selection = ""                # B135c: quest-log row selection
         self._bridge_img_cache: dict = {}            # B52: gid -> rotated deck image (or None)
         self.bestiary_index = 0                      # B66: selected codex row
         self._bestiary_sprite_cache: dict = {}       # enemy_id -> (thumb, silhouette)
@@ -1075,6 +1079,13 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         else:
             self.set_toast(result.message, GOOD if result.success else BAD)
 
+    def _drain_quest_events(self) -> None:
+        """B135: move the core's pending quest lines onto the Quest log channel.
+        Called after any action that can advance a quest — the core produces the
+        strings, the shell only decides where they are shown."""
+        for line in self.engine.quest_events_pending():
+            self.push_log(line, chatlog.QUEST, channel=chatlog.CHANNEL_QUEST)
+
     # -- inventory overview (everything owned) ------------------------------
 
     GEAR_SLOT_TYPES = ("head", "chest", "hands", "legs", "feet", "amulet", "ring")
@@ -1348,6 +1359,10 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                     self._menu_scrolls["tomes"].scroll(-event.y * 46)
                 elif self.overlay == "character":   # B121: scroll the inventory zone
                     self._menu_scrolls["character_inv"].scroll(-event.y * 46)
+                elif self.overlay == "notice_board":      # B135b
+                    self._menu_scrolls["notice_board"].scroll(-event.y * 46)
+                elif self.overlay == "quest_log":         # B135c
+                    self._menu_scrolls["quest_log"].scroll(-event.y * 46)
                 elif self._log_interactive():   # scroll only in walk; read-only under menus
                     self.scroll_log(event.y * LOG_SCROLL_STEP)   # wheel up = older lines
             elif event.type == pygame.KEYDOWN:
@@ -1859,6 +1874,14 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             pos = self.focus._position()
             if pos is not None and self.focus._sections[pos[0]][0] == "inventory":
                 return self._menu_scrolls["character_inv"]
+        # B135b/c: the notice list and the quest log scroll when they overflow;
+        # the detail/action side is fixed, so only the list sections scroll.
+        if self.overlay == "notice_board":
+            pos = self.focus._position()
+            if pos is None or self.focus._sections[pos[0]][0].startswith("board_"):
+                return self._menu_scrolls["notice_board"]
+        if self.overlay == "quest_log":
+            return self._menu_scrolls["quest_log"]
         return None
 
     def _add_button(self, rect, label, cb, enabled=True, restricted=False, *,

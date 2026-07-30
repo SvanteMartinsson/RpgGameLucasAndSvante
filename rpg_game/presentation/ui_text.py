@@ -136,7 +136,30 @@ SCREEN_TITLES = {
     "system": "System",
     "store": "Store",
     "tournaments": "Tournaments",
+    "notice_board": "Notice Board",   # B135b
+    "quest_log": "Quest Log",         # B135c
 }
+
+# --- B135 quests -------------------------------------------------------------
+# The notice board lives on the REST building (inn in a town/city/capital, cottage
+# in a village) — measured as the only building present in all 17 towns.
+NOTICE_BOARD = "Notice board"
+QUEST_ACCEPT = "Accept"
+QUEST_HAND_IN = "Hand in"
+QUEST_ABANDON = "Abandon"
+QUEST_BOARD_EMPTY = "The board is bare. Come back when the town has work."
+QUEST_LOG_EMPTY = "You have taken no quests."
+QUEST_NONE_SELECTED = "Pick a notice to read it."
+QUEST_READY = "ready to hand in"
+QUEST_OBJECTIVE = "Objective"
+QUEST_REWARD = "Reward"
+QUEST_SECTION_OFFERS = "Notices"
+QUEST_SECTION_ACTIVE = "Your quests"
+
+
+def quest_zone_label(zone: str) -> str:
+    """'mork_skog' -> 'Moerk Skog' for a log/board hint."""
+    return zone.replace("_", " ").title() if zone else ""
 
 TOWN_TOURNAMENTS = "Tournaments"
 

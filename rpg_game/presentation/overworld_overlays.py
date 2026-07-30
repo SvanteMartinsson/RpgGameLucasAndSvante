@@ -14,6 +14,7 @@ import os
 
 import pygame
 
+from rpg_game.core import quests as core_quests
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import chatlog
 from rpg_game.presentation import settings as user_settings
@@ -88,6 +89,12 @@ CHARACTER_SLOT_ABBR = {
     "legs": "Legs", "feet": "Feet", "amulet": "Amul",
     "ring_1": "R1", "ring_2": "R2", "ring_3": "R3",
 }
+
+
+def quest_progress_value(engine, quest) -> str:
+    """B135: '3/5' for a counting objective, '' for a single-step one. Shared by
+    the notice board and the quest log so the two can never disagree."""
+    return core_quests.progress_text(engine.player, engine.content, quest)
 
 
 def character_slot_glyph(slot) -> str:
@@ -329,6 +336,162 @@ class OverlaysMixin:
                              restricted=restricted, value=value, label_color=color,
                              tooltip=tip, focus_section="inventory")
         ui.draw_scroll_indicators(self.screen, self.font_sm, rect, scroll, row_h, TEXT_DIM)
+
+    # --- B135b: the notice board ------------------------------------------
+    # Two zones, the same shape as Inventory: LEFT the notices (offers first,
+    # then the quests you are on), RIGHT the selected notice in full with its
+    # action button. All quest RULES live in core.quests via GameEngine — this
+    # only renders and dispatches.
+
+    def _notice_board_rows(self):
+        """(quest, section, label, value) per row, offers then tracked."""
+        rows = []
+        for quest in self.engine.board_quests():
+            rows.append((quest, "offers", quest.title,
+                         T.quest_zone_label(quest.zone)))
+        for quest in self.engine.tracked_quests():
+            ready = self.engine.quest_is_ready(quest)
+            value = "ready" if ready else quest_progress_value(self.engine, quest)
+            rows.append((quest, "active", quest.title, value))
+        return rows
+
+    def _selected_board_quest(self, rows):
+        """The quest whose detail pane is shown: the remembered pick if it is
+        still on the board, else the first row."""
+        by_id = {quest.id: quest for quest, *_rest in rows}
+        quest = by_id.get(self.board_selection)
+        if quest is None and rows:
+            quest = rows[0][0]
+            self.board_selection = quest.id
+        return quest
+
+    def select_board_quest(self, quest_id: str) -> None:
+        self.board_selection = quest_id
+
+    def _overlay_notice_board(self, panel) -> None:
+        content = self._content_rect(panel)
+        rows = self._notice_board_rows()
+        if not rows:
+            self.screen.blit(self.font.render(T.QUEST_BOARD_EMPTY, True, TEXT_DIM),
+                             (content.x, content.y + 6))
+            return
+        gap = 20
+        # B132 lesson: a 300px column clipped every title ("The Fields Bey..."),
+        # so the list takes the wider half and each row still carries a full-title
+        # tooltip for whatever does not fit.
+        list_w = min(400, content.width * 45 // 100)
+        list_rect = pygame.Rect(content.x, content.y, list_w, content.height)
+        detail = pygame.Rect(list_rect.right + gap, content.y,
+                             content.right - list_rect.right - gap, content.height)
+        # Resolve the selection BEFORE drawing the list so the "> " marker lands
+        # on the right row from the very first frame.
+        quest = self._selected_board_quest(rows)
+        self._draw_notice_list(list_rect, rows)
+        if quest is not None:
+            self._draw_notice_detail(detail, quest)
+
+    def _draw_notice_list(self, rect, rows) -> None:
+        """The scrollable notice list (B113 helper), section headers included."""
+        row_h = 30
+        header_h = 22
+        # one header per non-empty section
+        sections = [key for key in ("offers", "active")
+                    if any(section == key for _q, section, *_r in rows)]
+        content_h = len(rows) * row_h + len(sections) * header_h
+        scroll = self._menu_scrolls["notice_board"]
+        scroll.configure(content_h, rect.height)
+        y = scroll.y(rect.y)
+        drawn_section = ""
+        for quest, section, label, value in rows:
+            if section != drawn_section:
+                drawn_section = section
+                title = (T.QUEST_SECTION_OFFERS if section == "offers"
+                         else T.QUEST_SECTION_ACTIVE)
+                if rect.top - header_h < y < rect.bottom:
+                    self.screen.blit(self.font_sm.render(title, True, TEXT_DIM),
+                                     (rect.x, y + 4))
+                y += header_h
+            row = pygame.Rect(rect.x, y, rect.width, row_h - 2)
+            y += row_h
+            if not rect.contains(row):
+                continue
+            marker = "> " if quest.id == self.board_selection else "  "
+            # B132: the full title rides a tooltip, so a clipped row still reads.
+            tip = ui.Tooltip(title=quest.title,
+                             lines=[core_quests.objective_text(self.engine.content, quest)],
+                             body=quest.text)
+            self._add_button(row, f"{marker}{label}",
+                             (lambda qid=quest.id: self.select_board_quest(qid)),
+                             True, value=value, tooltip=tip,
+                             focus_section=f"board_{section}")
+        ui.draw_scroll_indicators(self.screen, self.font_sm, rect, scroll, row_h, TEXT_DIM)
+
+    def _draw_notice_detail(self, rect, quest) -> None:
+        """The selected notice: flavour text, objective + progress, reward, and the
+        one action it affords (accept / hand in / abandon)."""
+        engine = self.engine
+        eng_content = engine.content
+        y = rect.y
+        title = self.font.render(self._fit_text(quest.title, rect.width), True, TEXT)
+        self.screen.blit(title, (rect.x, y))
+        y += 28
+        if quest.zone:
+            self.screen.blit(self.font_sm.render(T.quest_zone_label(quest.zone),
+                                                 True, TEXT_DIM), (rect.x, y))
+            y += 20
+        for line in ui.wrap(quest.text, self.font_sm, rect.width):
+            self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (rect.x, y))
+            y += 17
+        y += 10
+        objective = core_quests.objective_text(eng_content, quest)
+        progress = quest_progress_value(engine, quest)
+        line = f"{T.QUEST_OBJECTIVE}: {objective}"
+        if progress:
+            line += f"  ({progress})"
+        for wrapped in ui.wrap(line, self.font_sm, rect.width):
+            self.screen.blit(self.font_sm.render(wrapped, True, TEXT), (rect.x, y))
+            y += 17
+        reward = core_quests.reward_text(eng_content, quest)
+        if reward:
+            for wrapped in ui.wrap(f"{T.QUEST_REWARD}: {reward}", self.font_sm, rect.width):
+                self.screen.blit(self.font_sm.render(wrapped, True, GOOD), (rect.x, y))
+                y += 17
+        y += 12
+        status = engine.quest_status(quest.id)
+        button_y = min(y, rect.bottom - 44)
+        if status in (core_quests.ACTIVE, core_quests.COMPLETED):
+            if engine.quest_is_ready(quest):
+                self._add_button(pygame.Rect(rect.x, button_y, rect.width, 40),
+                                 T.QUEST_HAND_IN,
+                                 (lambda qid=quest.id: self.hand_in_quest(qid)), True,
+                                 focus_section="board_action")
+            else:
+                self._add_button(pygame.Rect(rect.x, button_y, rect.width, 40),
+                                 T.QUEST_ABANDON,
+                                 (lambda qid=quest.id: self.abandon_quest(qid)), True,
+                                 focus_section="board_action")
+        else:
+            self._add_button(pygame.Rect(rect.x, button_y, rect.width, 40),
+                             T.QUEST_ACCEPT,
+                             (lambda qid=quest.id: self.accept_quest(qid)), True,
+                             focus_section="board_action")
+
+    # -- board actions (thin wrappers: the engine owns every rule) ----------
+
+    def accept_quest(self, quest_id: str) -> None:
+        if self.engine.accept_quest(quest_id):
+            self.board_selection = quest_id
+            self._drain_quest_events()
+
+    def abandon_quest(self, quest_id: str) -> None:
+        if self.engine.abandon_quest(quest_id):
+            self._drain_quest_events()
+
+    def hand_in_quest(self, quest_id: str) -> None:
+        result = self.engine.turn_in_quest(quest_id)
+        self._drain_quest_events()
+        if not result.ok:
+            self.set_toast(result.text, BAD)
 
     def _overlay_inventory(self, panel) -> None:
         """B40 S2: the menu spec applied. Left a bare category list (no "(N)"
