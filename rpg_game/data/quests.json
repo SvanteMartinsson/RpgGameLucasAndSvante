@@ -1,4 +1,116 @@
 {
-  "_comment": "B135 quests. Authored side content plus a few zone-intro 'spine' quests; nothing here gates zone progression. Schema per row: id, title, text, giver_kind ('board'|'bounty'), objective {kind, target, count}, rewards [{kind, ...}], zone (log hint), prereq_quest_ids, repeatable. Objective kinds: kill_enemy (target=enemy id) | kill_in_zone (target=zone) | deliver_item (target=item id, consumed at turn-in) | visit_place (target=place id) | open_chests. Reward kinds: gold {amount} | xp {amount} | item {item_id, count} | status {stat, magnitude, duration} | unlock_tome {item_id} | shop_discount {percent} | flag {flag}. Everything is validated at load by core.quests.validate_quests. Texts are in the B67 travel-event tone and are meant to be rewritten freely.",
-  "quests": []
+  "_comment": "B135 quests. Authored side content plus four zone-intro 'spine' quests; nothing here gates zone progression (a quest never blocks travel). Schema per row: id, title, text, giver_kind ('board'|'bounty'), objective {kind, target, count}, rewards [{kind, ...}], zone (log hint), prereq_quest_ids, repeatable. Objective kinds: kill_enemy (target=enemy id) | kill_in_zone (target=zone: cainos|mork_skog|cursed_mire|grave_heath) | deliver_item (target=item id, consumed at turn-in) | visit_place (target=place id) | open_chests. Reward kinds: gold {amount} | xp {amount} | item {item_id, count} | status {stat, magnitude, duration} | unlock_tome {item_id} | shop_discount {percent} | flag {flag}. Everything is validated at load by core.quests.validate_quests. TEXTS ARE PLACEHOLDERS IN THE B67 TRAVEL-EVENT TONE - rewrite freely, they are pure data.",
+  "quests": [
+    {
+      "id": "spine_cainos",
+      "title": "The Fields Beyond Hordanita",
+      "text": "The innkeeper keeps a tally of what the farmhands report: rats in the grain, dogs going strange, something worrying the stags. Nobody has thinned any of it. Walk the fields and start.",
+      "giver_kind": "board",
+      "zone": "cainos",
+      "objective": { "kind": "kill_in_zone", "target": "cainos", "count": 6 },
+      "rewards": [
+        { "kind": "gold", "amount": 40 },
+        { "kind": "xp", "amount": 30 }
+      ]
+    },
+    {
+      "id": "spine_mork_skog",
+      "title": "What Moves in Moerk-skogen",
+      "text": "A woodcutter came back without his axe and would not say why. The trees west of the river have gone quiet in the way that means occupied. Someone wants to know what is living in there now.",
+      "giver_kind": "board",
+      "zone": "mork_skog",
+      "objective": { "kind": "kill_in_zone", "target": "mork_skog", "count": 8 },
+      "rewards": [
+        { "kind": "gold", "amount": 90 },
+        { "kind": "xp", "amount": 70 }
+      ]
+    },
+    {
+      "id": "spine_cursed_mire",
+      "title": "The Water Turned",
+      "text": "The mire east of the pass used to be passable in summer. Now the reeds are black to the root and the coach drivers take the long way. Go in far enough to learn what is holding it.",
+      "giver_kind": "board",
+      "zone": "cursed_mire",
+      "objective": { "kind": "kill_in_zone", "target": "cursed_mire", "count": 8 },
+      "rewards": [
+        { "kind": "gold", "amount": 160 },
+        { "kind": "xp", "amount": 120 }
+      ]
+    },
+    {
+      "id": "spine_grave_heath",
+      "title": "Nothing Rests on the Heath",
+      "text": "South past the barrows the ground is all old graves and new holes. The last party sent that way is part of the scenery now. Clear what you can and come back able to describe it.",
+      "giver_kind": "board",
+      "zone": "grave_heath",
+      "objective": { "kind": "kill_in_zone", "target": "grave_heath", "count": 8 },
+      "rewards": [
+        { "kind": "gold", "amount": 240 },
+        { "kind": "xp", "amount": 180 },
+        { "kind": "item", "item_id": "hp_potion", "count": 2 }
+      ]
+    },
+
+    {
+      "id": "side_rat_pelts",
+      "title": "Pelts for the Tanner",
+      "text": "The tanner will take any hide you bring, and she is not particular about what it came off. Five pelts and she can finish the order she has already been paid for.",
+      "giver_kind": "board",
+      "zone": "cainos",
+      "objective": { "kind": "deliver_item", "target": "rat_pelt", "count": 5 },
+      "rewards": [
+        { "kind": "gold", "amount": 60 },
+        { "kind": "xp", "amount": 20 }
+      ]
+    },
+    {
+      "id": "side_goblin_scrap",
+      "title": "Scrap for the Forge",
+      "text": "The goblins west of here carry good iron and use it badly. The smith wants four pieces of it back, and says he will remember the favour every time you come to his counter.",
+      "giver_kind": "board",
+      "zone": "mork_skog",
+      "objective": { "kind": "deliver_item", "target": "iron_scrap", "count": 4 },
+      "rewards": [
+        { "kind": "shop_discount", "percent": 10 },
+        { "kind": "xp", "amount": 40 }
+      ]
+    },
+    {
+      "id": "side_chests",
+      "title": "Whatever the Roads Swallowed",
+      "text": "Caravans drop things and nobody goes back for them. A clerk with an interest in other people's losses will pay for a look inside three of the boxes still out there.",
+      "giver_kind": "board",
+      "objective": { "kind": "open_chests", "target": "", "count": 3 },
+      "rewards": [
+        { "kind": "gold", "amount": 120 },
+        { "kind": "xp", "amount": 50 }
+      ]
+    },
+    {
+      "id": "side_parguillas",
+      "title": "The Road to Parguillas",
+      "text": "Parguillas has no shop, no smith and no reason for anyone to ride out to it, which is why nobody has heard from it this season. Get there and let them see a stranger who is still walking.",
+      "giver_kind": "board",
+      "zone": "cursed_mire",
+      "objective": { "kind": "visit_place", "target": "burg_320", "count": 1 },
+      "rewards": [
+        { "kind": "gold", "amount": 80 },
+        { "kind": "xp", "amount": 40 },
+        { "kind": "status", "stat": "armor", "magnitude": 2, "duration": 5 }
+      ]
+    },
+    {
+      "id": "side_hollow_worg",
+      "title": "The Worg That Isn't There",
+      "text": "Every account of it disagrees except on one point: it is never where the tracks say. Bring back the end of that argument and there is a book here that nobody in town can read anyway.",
+      "giver_kind": "board",
+      "zone": "grave_heath",
+      "objective": { "kind": "kill_enemy", "target": "hollow_worg", "count": 1 },
+      "rewards": [
+        { "kind": "unlock_tome", "item_id": "tome_thunder_strike" },
+        { "kind": "xp", "amount": 120 }
+      ],
+      "prereq_quest_ids": ["spine_grave_heath"]
+    }
+  ]
 }
