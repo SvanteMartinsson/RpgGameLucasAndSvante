@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import alchemy, bestiary, bosses, chests, combat, equipment, inventory, persistence, progression, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, bosses, chests, combat, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -63,6 +63,9 @@ class GameEngine:
         # B65: set while a lair fight is live; the victory path consumes it.
         # Transient by design — a boss fight can't be saved mid-battle.
         self._active_boss_id = ""
+        # B135a: quest log lines from hooks whose call site can't return them
+        # (place arrival). Drained by quest_events_pending().
+        self._quest_events: list[str] = []
 
     @property
     def player(self) -> Player:
@@ -294,8 +297,21 @@ class GameEngine:
         return world.travel(self.player, self.content, destination_id)
 
     def enter_place(self, place_id: str) -> str:
-        """Set location directly for free-walk arrival (no adjacency gate)."""
-        return world.enter_place(self.player, self.content, place_id)
+        """Set location directly for free-walk arrival (no adjacency gate).
+        B135a: also the visit_place hook — arriving anywhere can finish a travel
+        objective. The returned quest lines are drained by quest_events_pending()
+        so this method's existing return value (the arrival text) is unchanged."""
+        message = world.enter_place(self.player, self.content, place_id)
+        self._quest_events.extend(quests.note_place_visited(
+            self.player, self.content, self.content.quests, place_id))
+        return message
+
+    def quest_events_pending(self) -> list[str]:
+        """Drain quest log lines produced by hooks whose call sites have no room in
+        their return value (place arrival, item pickup). The shell calls this after
+        such actions and logs the lines on the Quest channel."""
+        lines, self._quest_events = self._quest_events, []
+        return lines
 
     def fast_travel(self, destination_place_id: str, cost: int) -> FastTravelResult:
         """B8 2b: pay the coach fare and arrive. The presentation owns the map
@@ -314,13 +330,17 @@ class GameEngine:
         self.enter_place(destination_place_id)
         return FastTravelResult(True, f"The coach carries you to {place.name} ({cost} gold).", cost)
 
-    def create_encounter(self, pool=None, band=None) -> Enemy | None:
+    def create_encounter(self, pool=None, band=None, zone: str = "") -> Enemy | None:
         """B48: `pool` (weighted (enemy_id, weight) list) spawns from the tile's
         drawn areas; without it the classic place pool applies (terminal/sims).
         `band` is the tile's spawn-AREA level band (spawns.band_at) — it outranks
-        the region/template bands when set."""
+        the region/template bands when set.
+        B135a: `zone` is the tile's theme, TAGGED onto the spawn by the shell (which
+        owns tiles) so a kill_in_zone objective can tick without the core ever
+        resolving a tile. Tile-less callers (terminal, sims) simply pass nothing."""
         enemy = world.create_encounter(self.player, self.content, self.rng, pool=pool, band=band)
         if enemy is not None:
+            enemy.zone = zone
             bestiary.mark_seen(self.player, enemy.id)   # B66: it is in the codex now
             self._begin_encounter()
         return enemy
@@ -382,15 +402,9 @@ class GameEngine:
         return self._make_loot_drop(entry, enemy, pool)
 
     def collect_loot(self, drop: LootDrop) -> None:
-        player = self.player
-        if drop.kind == "weapon":
-            if drop.item_id not in player.owned_weapon_ids:
-                player.owned_weapon_ids = (*player.owned_weapon_ids, drop.item_id)
-        elif drop.kind == "gear":
-            if drop.item_id not in player.owned_gear_ids:
-                player.owned_gear_ids = (*player.owned_gear_ids, drop.item_id)
-        else:
-            player.inventory.add_consumable(drop.item_id)
+        """B135a: delegates to inventory.grant_item so loot, chests and quest item
+        rewards all acquire items through ONE path (no parallel route)."""
+        inventory.grant_item(self.player, self.content, drop.item_id)
 
     def _weighted_choice(self, pool: list[dict[str, object]]) -> dict[str, object]:
         total = sum(float(entry["weight"]) for entry in pool)
@@ -737,7 +751,67 @@ class GameEngine:
             drop = chests.make_drop(entry, self.content)
             self.collect_loot(drop)
         self.player.opened_chest_ids = (*self.player.opened_chest_ids, chest_id)
-        return chests.ChestResult(True, "You open the chest.", gold=gold, drop=drop)
+        # B135a: the chest hook — open_chests objectives, plus a delivery objective
+        # the chest's item may have just finished.
+        quest_events = quests.note_chest_opened(self.player, self.content,
+                                                self.content.quests)
+        if drop is not None:
+            quest_events.extend(quests.note_item_acquired(
+                self.player, self.content, self.content.quests))
+        return chests.ChestResult(True, "You open the chest.", gold=gold, drop=drop,
+                                  quest_events=quest_events)
+
+    # --- B135a: quests --------------------------------------------------------
+    # The presentation drives quests entirely through these; no quest rule lives
+    # in a shell (same contract as talents/stat choices).
+
+    def quest_by_id(self, quest_id: str):
+        return next((q for q in self.content.quests if q.id == quest_id), None)
+
+    def board_quests(self, giver_kind: str = "board") -> list:
+        """Offerable quests for a notice board: never-taken (or repeatable and
+        handed in) and with every prerequisite handed in."""
+        return quests.offerable_quests(self.player, self.content.quests, giver_kind)
+
+    def tracked_quests(self) -> list:
+        """Active + finished-but-not-handed-in — what the quest log lists."""
+        return quests.tracked_quests(self.player, self.content.quests)
+
+    def quest_status(self, quest_id: str) -> str:
+        return quests.status_of(self.player, quest_id)
+
+    def quest_progress(self, quest) -> int:
+        return quests.objective_progress(self.player, self.content, quest)
+
+    def quest_is_ready(self, quest) -> bool:
+        return quests.is_objective_met(self.player, self.content, quest)
+
+    def accept_quest(self, quest_id: str) -> bool:
+        quest = self.quest_by_id(quest_id)
+        if quest is None or not quests.accept(self.player, quest):
+            return False
+        # Accepting can immediately satisfy a delivery objective already in the bag.
+        self._quest_events.append(f"Quest accepted: {quest.title}.")
+        self._quest_events.extend(
+            quests.refresh(self.player, self.content, self.content.quests))
+        return True
+
+    def abandon_quest(self, quest_id: str) -> bool:
+        quest = self.quest_by_id(quest_id)
+        if quest is None or not quests.abandon(self.player, quest):
+            return False
+        self._quest_events.append(f"Quest abandoned: {quest.title}.")
+        return True
+
+    def turn_in_quest(self, quest_id: str) -> quests.QuestTurnInResult:
+        quest = self.quest_by_id(quest_id)
+        if quest is None:
+            return quests.QuestTurnInResult(False, "No such quest.")
+        result = quests.turn_in(self.player, self.content, quest)
+        if result.ok:
+            self._quest_events.append(result.text)
+            self._quest_events.extend(result.events)
+        return result
 
     # --- B68: alchemy ---------------------------------------------------------
     def brew_recipes(self) -> list:
@@ -836,6 +910,11 @@ class GameEngine:
         xp_gained = progression.level_scaled_xp(enemy.xp_reward, player.level, enemy.level)
         levels_gained = progression.award_xp(player, xp_gained)
         bestiary.record_kill(player, enemy.id)   # B66: kills count toward unlock
+        # B135a: the kill hook. This is the single funnel every victory path
+        # reaches, so kill_enemy/kill_in_zone objectives tick here exactly once.
+        # `enemy.zone` was tagged by the shell at spawn (see create_encounter).
+        quest_events = quests.note_kill(player, self.content, self.content.quests,
+                                        enemy.id, getattr(enemy, "zone", ""))
         events.append(f"{enemy.name} was defeated.")
         events.append(f"Gained {xp_gained} XP and {gold} gold.")
         if levels_gained:
@@ -844,6 +923,9 @@ class GameEngine:
         drop = self.roll_loot(enemy)
         if drop is not None:
             self.collect_loot(drop)
+            # B135a: a dropped item can finish a delivery objective.
+            quest_events.extend(quests.note_item_acquired(
+                player, self.content, self.content.quests))
             events.append(
                 f"{enemy.name} dropped: {drop.name} "
                 f"[{drop.rarity}] (tier {drop.tier})!"
@@ -868,6 +950,7 @@ class GameEngine:
             loot_drop=drop,
             enemy_reveal=enemy_reveal,
             action_resolutions=action_resolutions or [],
+            quest_events=quest_events,
         )
 
     def _combat_result(

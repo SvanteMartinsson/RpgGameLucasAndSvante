@@ -190,6 +190,18 @@ PLAYER_FIELDS: dict[str, tuple] = {
         lambda bits: base64.b64encode(bytes(bits)).decode("ascii"),
         lambda raw: bytearray(base64.b64decode(raw or "")),
     ),
+    # B135a quests. No SAVE_VERSION bump is needed: from_json receives None when
+    # the key is absent and applies its own default, so a pre-quest save loads
+    # with no quest state at all -> every quest reads as available (see
+    # core.quests.state_of). Same shape as the B63/B65/B66 additions.
+    "quest_states": (
+        lambda states: {qid: dict(state) for qid, state in states.items()},
+        lambda raw: {str(qid): {"status": str(state.get("status", "available")),
+                                "progress": int(state.get("progress", 0))}
+                     for qid, state in raw.items()} if raw else {},
+    ),
+    "shop_discount_pct": _int(0),
+    "quest_flags": _str_set(),
 }
 
 # Runtime-derived Player fields — never persisted, always rebuilt after load

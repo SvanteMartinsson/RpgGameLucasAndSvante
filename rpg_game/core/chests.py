@@ -11,7 +11,7 @@ the same LootDrop/collect path enemy drops use — no parallel loot logic.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from rpg_game.core.entities import ChestDef, GameContent, LootDrop, Player
 
@@ -22,6 +22,8 @@ class ChestResult:
     message: str
     gold: int = 0
     drop: LootDrop | None = None
+    # B135a: quest progress lines this chest earned (Quest log channel).
+    quest_events: list[str] = field(default_factory=list)
 
 
 def eligible_loot(chest: ChestDef) -> list[dict[str, object]]:

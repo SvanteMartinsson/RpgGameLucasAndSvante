@@ -164,6 +164,10 @@ class CombatTurnResult:
     respawn: RespawnResult | None = None
     action_resolutions: list[ActionResolution] = field(default_factory=list)
     flee_chance: float | None = None  # set on a flee attempt (for logging)
+    # B135a: quest progress lines earned by this turn (kill objectives). Carried
+    # separately from `events` because they belong on the Quest log channel, not
+    # the combat one; empty for every turn that advanced no quest.
+    quest_events: list[str] = field(default_factory=list)
 
 
 @dataclass

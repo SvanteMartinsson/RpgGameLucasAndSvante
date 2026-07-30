@@ -12,6 +12,25 @@ class UseItemResult:
     message: str
 
 
+def grant_item(player: Player, content: GameContent, item_id: str) -> str:
+    """Put an item into the player's possession by ID, choosing the right bucket:
+    weapons and gear are OWNED (uniquely), everything else stacks as a consumable.
+    Returns the bucket ("weapon"/"gear"/"consumable").
+
+    B135a: the single grant path. `game.collect_loot` (loot rolls, chests) and quest
+    item rewards both go through here, so there is no parallel acquisition route."""
+    if item_id in content.weapons:
+        if item_id not in player.owned_weapon_ids:
+            player.owned_weapon_ids = (*player.owned_weapon_ids, item_id)
+        return "weapon"
+    if item_id in getattr(content, "gear_items", {}):
+        if item_id not in player.owned_gear_ids:
+            player.owned_gear_ids = (*player.owned_gear_ids, item_id)
+        return "gear"
+    player.inventory.add_consumable(item_id)
+    return "consumable"
+
+
 def use_consumable(player: Player, content: GameContent, item_id: str) -> UseItemResult:
     normalized = item_id.strip().lower()
     if normalized not in content.items:

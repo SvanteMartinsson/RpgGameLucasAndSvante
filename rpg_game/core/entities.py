@@ -337,6 +337,11 @@ class Enemy:
     # magnitudes of this enemy's skill effects (DoT/debuff/regen). Set by
     # world.scale_enemy_to_level alongside damage; 1.0 = at template level.
     flat_scale: float = 1.0
+    # B135a: the zone this spawn came from, TAGGED BY THE SHELL at create_encounter
+    # (the shell owns tiles, the core owns rules — same split as B48/B67). Lets a
+    # kill_in_zone objective tick without the core ever resolving a tile. Runtime
+    # only: enemies are never persisted.
+    zone: str = ""
 
     @property
     def is_alive(self) -> bool:
@@ -490,6 +495,15 @@ class Player:
     # overworld tile, row-major) the presentation reads/writes; the core just
     # persists the blob. Empty = nothing revealed (old saves + new games).
     revealed_tiles: bytearray = field(default_factory=bytearray)
+    # B135a: quest state — quest_id -> {"status": ..., "progress": N}. A quest the
+    # dict has never heard of reads as available with 0 progress, which is exactly
+    # how an old save (no quest data at all) loads as "everything available".
+    quest_states: dict[str, dict] = field(default_factory=dict)
+    # B135a: the two reward kinds that needed NEW persistent state (everything
+    # else reuses an existing primitive): a persistent shop discount in percent,
+    # and free-form flags for future quest gating.
+    shop_discount_pct: int = 0
+    quest_flags: set[str] = field(default_factory=set)
 
     @property
     def is_alive(self) -> bool:
@@ -533,6 +547,12 @@ class GameContent:
     # B67: travel events (a rare text choice instead of a wild encounter).
     travel_event_slot_chance: float = 0.1
     travel_events: tuple = ()
+    # B135a: authored quests (validated at load by core.quests.validate_quests).
+    quests: tuple = ()
+    # B135a: the canonical zone/theme names (cainos, mork_skog, cursed_mire,
+    # grave_heath) from core_zone's ground_themes — the exact strings the shell
+    # tags a spawn with, so a kill_in_zone objective can be validated at load.
+    zone_names: tuple = ()
 
 
 @dataclass

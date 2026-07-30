@@ -1,0 +1,4 @@
+{
+  "_comment": "B135 quests. Authored side content plus a few zone-intro 'spine' quests; nothing here gates zone progression. Schema per row: id, title, text, giver_kind ('board'|'bounty'), objective {kind, target, count}, rewards [{kind, ...}], zone (log hint), prereq_quest_ids, repeatable. Objective kinds: kill_enemy (target=enemy id) | kill_in_zone (target=zone) | deliver_item (target=item id, consumed at turn-in) | visit_place (target=place id) | open_chests. Reward kinds: gold {amount} | xp {amount} | item {item_id, count} | status {stat, magnitude, duration} | unlock_tome {item_id} | shop_discount {percent} | flag {flag}. Everything is validated at load by core.quests.validate_quests. Texts are in the B67 travel-event tone and are meant to be rewritten freely.",
+  "quests": []
+}

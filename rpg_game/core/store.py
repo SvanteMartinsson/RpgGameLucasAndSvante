@@ -68,6 +68,18 @@ def sell_value(price: int) -> int:
     return round_half_up(price * SELL_FRACTION)
 
 
+def buy_price(player, price: int) -> int:
+    """B135a: the ONE place a buy price is adjusted for the player. A quest
+    `shop_discount` reward sets a persistent percentage off; without one this
+    returns the price unchanged. Both the displayed price (get_store_entries) and
+    the charged price (buy_item) go through here so they can never disagree.
+    Never drops below 1 gold."""
+    percent = min(50, max(0, getattr(player, "shop_discount_pct", 0)))
+    if not percent:
+        return price
+    return max(1, price - round_half_up(price * percent / 100))
+
+
 def gear_value(gear) -> int:
     """Full shop value of a gear piece (gear has no authored price): derived from
     its tier + rarity. Buy at full value, sell at SELL_FRACTION of it."""
@@ -79,10 +91,17 @@ def gear_sell_value(gear) -> int:
     return round_half_up(gear_value(gear) * SELL_FRACTION)
 
 
-def get_store_entries(content: GameContent, place_id: str, category: str | None = None) -> list[StoreEntry]:
+def get_store_entries(content: GameContent, place_id: str, category: str | None = None,
+                      *, player: Player | None = None) -> list[StoreEntry]:
+    """Store stock for a place. B135a: pass `player` to price the rows with that
+    player's quest shop discount applied — the same buy_price() the charge uses,
+    so the shown price is always the paid price."""
     place = content.places[place_id]
     if not place.has_store:
         return []
+
+    def shown(price: int) -> int:
+        return buy_price(player, price) if player is not None else price
 
     entries: list[StoreEntry] = []
     for item_id in place.store_inventory:
@@ -93,7 +112,7 @@ def get_store_entries(content: GameContent, place_id: str, category: str | None 
                     id=weapon.id,
                     name=weapon.name,
                     kind="weapon",
-                    price=weapon.price,
+                    price=shown(weapon.price),
                     description=(
                         f"+{weapon.damage_bonus} damage, tier {weapon.tier}, "
                         f"requires level {combat.weapon_required_level(weapon)}"
@@ -108,7 +127,7 @@ def get_store_entries(content: GameContent, place_id: str, category: str | None 
                     id=gear.id,
                     name=gear.name,
                     kind="gear",
-                    price=gear_value(gear),
+                    price=shown(gear_value(gear)),
                     description=f"[{gear.rarity}] {mods}, requires level {gear.level_req}",
                 )
             )
@@ -119,7 +138,7 @@ def get_store_entries(content: GameContent, place_id: str, category: str | None 
                     id=item.id,
                     name=item.name,
                     kind="consumable",
-                    price=item.price,
+                    price=shown(item.price),
                     description=f"Heals {item.heal_amount} HP",
                 )
             )
@@ -141,9 +160,10 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
 
     if normalized in content.weapons:
         weapon = content.weapons[normalized]
-        if player.gold < weapon.price:
-            return PurchaseResult(False, f"Not enough gold. {weapon.name} costs {weapon.price}.")
-        player.gold -= weapon.price
+        price = buy_price(player, weapon.price)     # B135a: quest shop discount
+        if player.gold < price:
+            return PurchaseResult(False, f"Not enough gold. {weapon.name} costs {price}.")
+        player.gold -= price
         if weapon.id not in player.owned_weapon_ids:
             player.owned_weapon_ids = (*player.owned_weapon_ids, weapon.id)
         required_level = combat.weapon_required_level(weapon)
@@ -157,7 +177,7 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
 
     if normalized in content.gear_items:
         gear = content.gear_items[normalized]
-        price = gear_value(gear)
+        price = buy_price(player, gear_value(gear))  # B135a: quest shop discount
         if player.gold < price:
             return PurchaseResult(False, f"Not enough gold. {gear.name} costs {price}.")
         player.gold -= price
@@ -167,9 +187,10 @@ def buy_item(player: Player, content: GameContent, item_id: str) -> PurchaseResu
 
     if normalized in content.items:
         item = content.items[normalized]
-        if player.gold < item.price:
-            return PurchaseResult(False, f"Not enough gold. {item.name} costs {item.price}.")
-        player.gold -= item.price
+        price = buy_price(player, item.price)        # B135a: quest shop discount
+        if player.gold < price:
+            return PurchaseResult(False, f"Not enough gold. {item.name} costs {price}.")
+        player.gold -= price
         player.inventory.add_consumable(item.id)
         return PurchaseResult(True, f"Bought {item.name}.")
 

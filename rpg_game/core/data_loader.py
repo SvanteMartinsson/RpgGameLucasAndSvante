@@ -257,6 +257,10 @@ def load_content() -> GameContent:
     # B67: travel events (validated on parse: outcome chances sum to 1).
     from rpg_game.core.events import parse_events
     travel_event_slot_chance, travel_events = parse_events(_read_json("events.json"))
+    # B135a: quests (shape validated on parse; ids/targets validated below, once
+    # the rest of the content exists).
+    from rpg_game.core.quests import parse_quests
+    quests = parse_quests(_read_json("quests.json"))
     upgrade_recipes = _load_upgrade_recipes()
 
     # B68: alchemy brew recipes.
@@ -306,6 +310,15 @@ def load_content() -> GameContent:
         place_id: tuple((e["id"], int(e["weight"])) for e in pool)
         for place_id, pool in core_zone.get("spawn_fallbacks", {}).items()
     }
+    # B135a: the canonical zone names are the GROUND THEMES (cainos / mork_skog /
+    # cursed_mire / grave_heath) — the same strings the shell's theme_for_tile
+    # returns and tags onto a spawn, so a kill_in_zone target is validated against
+    # exactly what the hook will compare. (Spawn-AREA ids are sub-areas like
+    # "skog_beast_1" and are deliberately NOT the zone vocabulary.)
+    zone_names = tuple(dict.fromkeys(
+        str(row["theme"]) for row in core_zone.get("ground_themes", ())
+        if row.get("theme")
+    ))
 
     # B65: zone bosses and their lairs.
     bosses = {
@@ -373,7 +386,7 @@ def load_content() -> GameContent:
     _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests)
     _validate_spawns(spawn_areas, spawn_fallbacks, enemies, places)
 
-    return GameContent(
+    content = GameContent(
         start_place_id=world["meta"]["start_place_id"],
         classes=classes,
         weapons=weapons,
@@ -386,6 +399,7 @@ def load_content() -> GameContent:
         enemies=enemies,
         places=places,
         rare_loot_table=rare_loot_table,
+        quests=quests,
         travel_event_slot_chance=travel_event_slot_chance,
         travel_events=travel_events,
         upgrade_recipes=upgrade_recipes,
@@ -394,7 +408,12 @@ def load_content() -> GameContent:
         bosses=bosses,
         spawn_areas=spawn_areas,
         spawn_fallbacks=spawn_fallbacks,
+        zone_names=zone_names,
     )
+    # B135a: quest ids/targets/rewards/prereqs need the assembled content.
+    from rpg_game.core.quests import validate_quests
+    validate_quests(quests, content)
+    return content
 
 
 def _validate_gear(equipment_slots, gear_items) -> None:
