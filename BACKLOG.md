@@ -690,6 +690,49 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
   visuella 2×2-placeringen, inte radordning. Render före/efter.
 
+#### B135 — QUESTS S1: motor + anslagstavla + questlogg  ⭐ designbärande · 🟢 **AKTIV (batch 2026-07-30)**
+Absorberar **B23**. Innehållssystem, byggbart ART-FRITT (ingen NPC-konst krävs).
+
+**Designbeslut (Lucas, LÅSTA):**
+- Quests är **sidoinnehåll** plus några få **spine-quests** som introducerar varje zon. De
+  **gatar INTE** zonprogression — fri utforskning förblir intakt.
+- Belöningar **blandat per quest**: guld/XP/items OCH unika saker (klass-tome, rabatt,
+  genväg) där det passar. Unika belöningar via **befintliga primitiv** där möjligt.
+- Handskrivna engångs-quests + en **repeterbar bounty-tavla** (egen enhet).
+- Questtexter i **B67-eventens ton**; levereras som rena datarader så Lucas kan skriva om
+  dem trivialt.
+
+**STEG 0-fynd (2026-07-30) — mätt, inte gissat:**
+- **Tavlans hem = VILOHUSET (`inn` ∨ `cottage`), 17/17 städer.** Byggnadsinventering över
+  alla 17 städer: `inn` 10/17 (saknas i ALLA 7 byar — byar har `cottage` som säng),
+  `shop` 8, `blacksmith` 7, `cottage` 7, `barracks` 6, `church`/`town_hall`/`stable` 4,
+  `tower` 3, `shrine`/`apothecary` 2. `town_hall` (turneringarnas hem) finns bara i 4/17 →
+  duger inte. `BUILDING_FUNCTION` mappar redan BÅDA inn+cottage till `"rest"`, och
+  `town_cluster.resolve_template` **garanterar exakt en vilodörr per stad i varje tier** →
+  tavlan på vilo-byggnaden ger 100 % täckning utan ny byggnadskonst.
+- **Progress-hooks (exakta anslutningspunkter, alla i core):** fiende dödad →
+  `game._handle_victory` intill `bestiary.record_kill` (**en** funnel för alla tre
+  victory-returer). Kista → `game.open_chest`. Plats besökt → `game.enter_place`
+  (`world.enter_place`). Item förvärvat → `game.collect_loot` (**en** funnel — `open_chest`
+  och loot-rullningen går båda genom den).
+- **Save:** `persistence.SAVE_VERSION = 2`, `PLAYER_FIELDS: name -> (to_json, from_json)`
+  där `from_json` får `None` när nyckeln saknas och **applicerar sin egen default**.
+  Prejudikat: `opened_chest_ids` (B63), `bestiary_*` (B66), `defeated_boss_ids` (B65).
+  Ett nytt `quest_states`-fält är därför bakåtkompatibelt **utan versionsbump**; ett
+  coverage-test tvingar `PLAYER_FIELDS ∪ DERIVED_FIELDS == Player`.
+
+- **B135a** — quest-motor i core: `quests.json` (id, title, text, giver_kind, zone,
+  objective {kind,target,count}, rewards, prereq_quest_ids, repeatable). Måltyper v1 (LITEN
+  lista): `kill_enemy` · `kill_in_zone` · `deliver_item` · `visit_place` · `open_chests`.
+  Belönings-kinds återanvänder B67:s primitiv (gold/item/xp/status) + `unlock_tome`,
+  `shop_discount`, `flag`. Tillstånd per quest {status, progress}. Load-time-validering.
+- **B135b** — anslagstavlan på vilohuset: lista/acceptera/avbryt/lämna in, fokus-nav.
+- **B135c** — questlogg-skärm (hotkey Q) + fjärde loggflik "Quest".
+- **B135d** — innehåll: 4 zon-intro + 5 sidoquests, blandade belöningar.
+- **B135e** — repeterbar bounty-tavla, seedad generering, B62-ekonomiräcke (HALT om
+  bounties blir optimala guldkällan).
+- **INTE i S1:** dialogskärm, overworld-NPC:er (kräver konst), questkedjor.
+
 #### B134 — Skill-cellerna rektangulära och större (polish på B130)  · 🟢 **AKTIV (polish 2026-07-13)**
 - Lucas playtest: B130:s KVADRATISKA celler var fel primitiv — kvadrater begränsas av
   bandets KORTA axel (ACTIONS 516×138 → 138/2 rader = 57px) och lämnade ~330px av bredden
@@ -1013,7 +1056,14 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   på item (shop + inventory) visar stats + delta mot equippat; klick köper/equippar;
   test för funktion→vendor-mappning + preview-delta.
 
-#### B23 — Notice boards / quests (nytt missions-panel)  ⭐ designbärande  · *nytt*
+#### B23 — Notice boards / quests  · ➡️ **ABSORBERAD I B135** (quests S1, 2026-07-30)
+- Denna post är kvar som historik. Spektrumet nedan (travel-to-X, hitta+döda+rapportera,
+  item-rewards, "städer utan shop får syfte") är exakt B135:s scope och lever vidare där —
+  B135a:s måltyper täcker travel (`visit_place`) och kill (`kill_enemy`/`kill_in_zone`), och
+  B135b sätter tavlan på **vilohuset** (inn/cottage) i stället för ett nytt panel-val, så
+  även shop-lösa byar får ett ärende. Bygg inte B23 separat. Se **B135**.
+
+#### B23 (original) — Notice boards / quests (nytt missions-panel)  ⭐ designbärande
 - **Vad:** **Notice boards** i städer med uppdrag, rewards och info. Kräver ett **nytt
   meny-val** (C/K/I → Missions). Spektrum:
   - **Enklast:** "Travel to X" → XP & guld-reward.
