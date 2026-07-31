@@ -61,14 +61,24 @@ class SpawnDataTests(unittest.TestCase):
                          spawns.weighted_pick(pool, random.Random(7)))
 
     def test_design_intents_hold(self):
-        # hollow worg: rare — strictly the lightest weight wherever it appears
-        worg_areas = [a for a in CONTENT.spawn_areas
+        # hollow worg: rare — strictly the lightest weight wherever it appears,
+        # in EITHER phase. B138 walked it into Moerk-skogen as well, so the count
+        # is no longer the intent; the rarity tier is.
+        worg_areas = [a.id for a in CONTENT.spawn_areas
                       if any(e == "hollow_worg" for e, _w in a.enemies)]
-        self.assertEqual(len(worg_areas), 2)        # worg_column + palegate
-        for area in worg_areas:
-            weights = dict(area.enemies)
-            self.assertLess(weights["hollow_worg"], min(w for e, w in area.enemies
-                                                        if e != "hollow_worg"))
+        self.assertEqual(sorted(worg_areas), [
+            "heath_palegate", "heath_worg_column",      # B48: the heath columns
+            "skog_beast_north", "skog_deep_east", "skog_plant_south",   # B138
+        ])
+        for area in CONTENT.spawn_areas:
+            for phase in ("day", "night"):
+                roster = area.roster(phase)
+                weights = dict(roster)
+                if "hollow_worg" not in weights:
+                    continue
+                self.assertLess(weights["hollow_worg"],
+                                min(w for e, w in roster if e != "hollow_worg"),
+                                f"{area.id} @ {phase}")
         # bog hag: confined to her one pocket
         hag_areas = [a.id for a in CONTENT.spawn_areas
                      if any(e == "bog_hag" for e, _w in a.enemies)]

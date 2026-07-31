@@ -690,6 +690,41 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
   visuella 2×2-placeringen, inte radordning. Render före/efter.
 
+#### B138 — hollow_worg som nattart i Mörk Skog  · 🟢 **AKTIV (datafix 2026-07-31)**
+Följer B136e:s rapporterade fynd: mork_skog saknade natt-flavoured arter (inga
+undead/spirit/cursed i hela zonen). **Beslut (Lucas):** `hollow_worg` (beast+cursed,
+korridor 5–10) släpps in så den går i **BÅDA** faser i mork_skog.
+
+**STEG 0-fynd (2026-07-31):** `hollow_worg` fanns i exakt 2 areas, båda i grave_heath
+(`heath_worg_column`, `heath_palegate`), band 8–10, vikt **6 dag / 10 natt** mot commons på
+35–40 → arten är författad som **rar elit**, inte common. mork_skogs nattroster var
+`goblin_raider` 40 · `goblin_shaman` 30 · `broodmother_spider` 25 — tre **neutrala** arter.
+
+**Byggt:** lagd i `skog_beast_north` (5–7), `skog_plant_south` (6–8), `skog_deep_east` (7–9)
+samt `burg_146`-fallbacken, dag **6** / natt **10** — exakt samma raritetstier som i heath.
+`skog_goblin_west` **utesluten**: band 4–6 har golv under korridorens 5. Räcke jag höll
+strängare än B136e:s validator: areans band ska ligga **helt inuti** korridoren, inte bara
+skära den. Nivåband, stats, HP och damage orörda.
+
+**⚠️ FYND FÖR BALANSBESLUT (inte en HALT — alla räcken i punkten håller):**
+Vid bandets TOPP i `skog_deep_east` (nivå 9 = Δ−3 för en level-6-spelare) vinner spelaren
+bara **3,3 %** — hårdare än allt annat i skogen:
+
+| art i skog_deep_east | vikt | Δ−3 | Δ−2 | |
+|---|---|---|---|---|
+| `treant` | 35 | 15,0 % | 36,7 % | common |
+| `broodmother_spider` | 40 | 27,1 % | 41,2 % | common |
+| `strangling_vine` | 8 | 47,9 % | 72,9 % | rar (befintlig) |
+| `hollow_worg` | 6 | **3,3 %** | 62,9 % | rar (B138) |
+
+Orsak: worgen är **basnivå 8**. Vid nivå 8 sker ingen skalning (62,9 %); vid nivå 9 slår
+`HP_GROWTH_PER_LEVEL = 0.38` in och HP hoppar 38 % → klippan. Samma klippa finns redan i
+heath (banden 8–10 där), så det är **inte** en ny stat-egenskap — bara en ny plats den syns på.
+**Knappen om det känns för hårt: ta bort worgen ur `skog_deep_east`** (2 rader) — då toppar
+skogens worg på nivå 8 = sin oskalade form = 62,9 %-cellen. Behållen nu eftersom deep_east
+redan är en svårighetsgatad area (treant 15 %), worgen är rar (7 % dag / 12,5 % natt) och
+flee finns i vilda strider.
+
 #### B136 — DYGNSCYKEL S1: klocka, mörker, stängda städer, nattspawns  ⭐ designbärande · 🟢 **AKTIV (batch 2026-07-31)**
 
 **Designbeslut (Lucas, LÅSTA):**

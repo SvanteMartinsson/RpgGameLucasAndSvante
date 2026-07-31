@@ -444,6 +444,10 @@
         {
           "id": "cave_bear",
           "weight": 30
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 6
         }
       ],
       "level_min": 5,
@@ -460,6 +464,10 @@
         {
           "id": "broodmother_spider",
           "weight": 25
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 10
         }
       ]
     },
@@ -528,6 +536,10 @@
         {
           "id": "strangling_vine",
           "weight": 8
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 6
         }
       ],
       "level_min": 6,
@@ -544,6 +556,10 @@
         {
           "id": "broodmother_spider",
           "weight": 30
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 10
         }
       ]
     },
@@ -572,6 +588,10 @@
         {
           "id": "strangling_vine",
           "weight": 8
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 6
         }
       ],
       "level_min": 7,
@@ -584,6 +604,10 @@
         {
           "id": "goblin_shaman",
           "weight": 30
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 10
         }
       ]
     },
@@ -1131,6 +1155,10 @@
       {
         "id": "cave_bear",
         "weight": 30
+      },
+      {
+        "id": "hollow_worg",
+        "weight": 6
       }
     ],
     "burg_320": [
@@ -1178,6 +1206,10 @@
       {
         "id": "broodmother_spider",
         "weight": 25
+      },
+      {
+        "id": "hollow_worg",
+        "weight": 10
       }
     ],
     "burg_320": [
