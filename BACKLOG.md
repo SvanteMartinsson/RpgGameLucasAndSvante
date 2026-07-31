@@ -690,6 +690,76 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
   visuella 2×2-placeringen, inte radordning. Render före/efter.
 
+#### B136 — DYGNSCYKEL S1: klocka, mörker, stängda städer, nattspawns  ⭐ designbärande · 🟢 **AKTIV (batch 2026-07-31)**
+
+**Designbeslut (Lucas, LÅSTA):**
+- Natten byter **VILKA fiender som spawnar**. INGA statchanges, INGEN buffning, INGEN
+  ändrad encounter-frekvens — **delta-modellen intakt per konstruktion**.
+- **Städerna STÄNGER på natten.** Första natten ska överraska — ingen förvarning utöver
+  skymningen.
+- **RÄDDNINGSVENTILER:** död+respawn → MORGON. Vila → MORGON. Spelaren kan aldrig fastna.
+- Cykel: ~7 min dag + ~7 min natt (~14 min dygn). Dawn/dusk = korta övergångar (30–60 s).
+- Mörkret är en **TINT-överlagring**. Ingen konst byts.
+
+**STEG 0-fynd (2026-07-31) — mätt, inte gissat:**
+- **Rörelsetid finns redan som mönster:** `encounters.EncounterCooldown.tick_movement(dt)`
+  anropas i `pygame_overworld.update()` (rad ~1496) ENDAST i grenen `if dx or dy:`, och
+  `update()` returnerar tidigt när `self.overlay or self.mode != "walk"`. Klockan hakas in
+  på exakt samma rad → står spelaren still, eller är en meny/strid uppe, går klockan inte.
+  (`_playtime_accum` i `run()` är vägguret och är medvetet INTE hooken.)
+- **Save-migrering:** `PLAYER_FIELDS: name -> (to_json, from_json)`, `from_json` får `None`
+  när nyckeln saknas och applicerar sin egen default. Prejudikat `quest_states` (B135a),
+  `opened_chest_ids` (B63). Ett nytt `world_time_seconds`-fält (`_float(0.0)`) är därför
+  bakåtkompatibelt **utan `SAVE_VERSION`-bump**; 0.0 = dawn = morgon.
+- **Byggnads-gaten hakas in i ETT ställe:** `overworld_buildings._interact_door()`, som redan
+  äger avvisningsgrenen (`push_log(T.BUILDING_LOCKED)`) — samma B106-stil som gaten behöver.
+  Gaten måste gå på `building_id`, INTE på `func`: mage tower (`tower`) har ingen
+  `BUILDING_FUNCTION`-post alls (bara station + tomes), och `blacksmith` bär både butik och
+  vapenstation, så en func-gate skulle missa båda.
+  - **STÄNGER (nattetid):** `shop`, `blacksmith`, `barracks` (butiker + vapenstation),
+    `town_hall` (turneringar), `apothecary` (bryggning), `stable` (snabbresa), `tower`
+    (mage tower: rustningsstation + skill-tomes).
+  - **FÖRBLIR ÖPPNA:** `inn`, `cottage` (vila = ventilen), `church`, `shrine`
+    (respawn-punkt = shrine/respawn).
+  - **ANSLAGSTAVLAN:** kräver ingen egen gate. B135b hänger tavlan i `_draw_building_menu`
+    under `if func == "rest":` — dvs INNE i vilo-byggnadens meny, som förblir öppen. Tavla
+    och vila är alltså inte svåra att skilja: de är två knappar i samma öppna meny.
+- **Ventilernas anslutningspunkter:** vila = `pygame_overworld.do_action("rest")` →
+  `engine.rest(zone)`; död+respawn = `game._handle_defeat` → `_respawn_player()` (core), vars
+  resultat `resolve_battle_outcome("defeat")` speglar i shellet (B118, ingen respawn-meny).
+  Morgonen sätts i CORE på båda ställen så terminalläget inte kan divergera.
+- **B73:s ambienstabell:** `ambience.PRESETS: dict[str, dict]` (zon-tema → preset), läst i
+  `_draw_ambience()` via `PRESETS.get(theme)` och cachead på `self._ambience_theme`. Utökas
+  till zon × fas genom att slå upp `(theme, phase)` först och falla tillbaka på `theme`;
+  cache-nyckeln blir tupeln.
+- **Spawn-insticksplatsen:** `spawns.pool_at(areas, fallbacks, tile, region_place_id)`, anropad
+  från `pygame_overworld.maybe_encounter()`. `band_at()` är en **separat** funktion som
+  `create_encounter` läser oberoende → en fas-parameter på `pool_at` kan per konstruktion
+  inte röra nivåbanden. Encounter-frekvensen sitter i `encounters.encounter_rate_at` och rörs
+  inte.
+
+- **B136a** — klockan i core: faser dawn/day/dusk/night, tickar på ackumulerad rörelsetid.
+- **B136b** — mörker-tint (capped alpha, läsbarhet mätt) + fas-indikator i HUD.
+- **B136c** — städerna stänger; vila/shrine/tavla öppna; vila + respawn → morgon.
+- **B136d** — ambienspresets per zon × fas; eldflugorna flyttas till NATT.
+- **B136e** — fas-gatade spawn-tabeller via trait-ommixning (inga statchanges).
+- **INTE i S1:** nattquests (B135:s motor får `time_of_day`-villkor senare) · nattdrops ·
+  en ny fiende-roster som nattinnehåll.
+- **Framtida knapp:** om natten visar sig för skippbar (spelaren bara vilar bort den) är
+  **nattdrops** den första knappen att vrida — en lootanledning att vara ute i mörkret.
+
+#### B137 — Bakgrundsmusiken cyklar genom alla spår  · 🟢 **AKTIV (batch 2026-07-31)**
+Lucas har lagt `moss_gate.ogg` + `dark_forest.ogg` bredvid `Pixel Heart.ogg`. Alla tre ska
+loopa efter varandra oavsett var spelaren är — variation i stället för samma spår i evighet.
+
+**STEG 0-fynd (2026-07-31):** `audio.music_track()` tar `sorted(...)[0]` och `ensure_music()`
+kör `play(-1)` → ett spår i evighet. **Mekanismval: polling av `mixer.music.get_busy()`, inte
+`set_endevent()`.** Skäl: `set_endevent` postar en pygame-händelse som varje shell måste pumpa
+OCH känna igen — overworld och battle har separata event-loopar och kastar okända typer, så
+händelsen skulle tappas i den loop som råkade äga fönstret. `get_busy()`-pollningen behöver
+ingen händelseregistrering; den viks in i det redan idempotenta `ensure_music()`, som varje
+shell redan anropar, och läggs på `clock.tick`-raden i de två `run()`-looparna.
+
 #### B135 — QUESTS S1: motor + anslagstavla + questlogg  ⭐ designbärande · 🟢 **AKTIV (batch 2026-07-30)**
 Absorberar **B23**. Innehållssystem, byggbart ART-FRITT (ingen NPC-konst krävs).
 
