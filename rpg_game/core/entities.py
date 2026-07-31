@@ -553,6 +553,9 @@ class GameContent:
     # B48: Lucas's drawn spawn areas (union-of-overlaps) + per-region fallbacks.
     spawn_areas: tuple = ()
     spawn_fallbacks: dict = field(default_factory=dict)
+    # B136e: the after-dark region fallback pools. Empty = the region rolls the
+    # same fallback roster around the clock.
+    spawn_fallbacks_night: dict = field(default_factory=dict)
     # B67: travel events (a rare text choice instead of a wild encounter).
     travel_event_slot_chance: float = 0.1
     travel_events: tuple = ()

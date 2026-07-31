@@ -18,23 +18,46 @@ import random
 from dataclasses import dataclass
 
 
+# B136e: the two spawn phases. The clock has four phases; spawning only needs to
+# know dark from light, and core.daynight.spawn_phase does that mapping (dusk
+# already rolls NIGHT — the things that come out in the dark come out as it
+# falls). "day" is the phase-less default, so every existing caller keeps its
+# exact behaviour.
+DAY = "day"
+NIGHT = "night"
+
+
 @dataclass(frozen=True)
 class SpawnArea:
     """One drawn rectangle: inclusive tile bounds + its weighted roster.
     `color` is the sketch colour, used only by the zone-map render tool.
     `level_min`/`level_max` (optional) band the rolled enemy level inside this
-    area; 0 = unset. An area band outranks the region's and the template's."""
+    area; 0 = unset. An area band outranks the region's and the template's.
+
+    B136e: `night_enemies` is the area's roster after dark. Empty = this area
+    does not change with the hour and rolls `enemies` around the clock. It
+    changes WHICH SPECIES roll and nothing else — the level band above is shared
+    by both rosters, and `band_at` never even looks at the phase, so a night
+    spawn cannot be a stronger spawn."""
     id: str
     rect: tuple[int, int, int, int]          # x0, y0, x1, y1 (inclusive)
     enemies: tuple[tuple[str, int], ...]     # (enemy_id, weight)
     color: tuple[int, int, int] = (200, 200, 200)
     level_min: int = 0
     level_max: int = 0
+    night_enemies: tuple[tuple[str, int], ...] = ()
 
     def covers(self, tile: tuple[int, int]) -> bool:
         x, y = tile
         x0, y0, x1, y1 = self.rect
         return x0 <= x <= x1 and y0 <= y <= y1
+
+    def roster(self, phase: str = DAY) -> tuple[tuple[str, int], ...]:
+        """This area's roster for a spawn phase. Falls back to the day roster
+        when the area has no night variant."""
+        if phase == NIGHT and self.night_enemies:
+            return self.night_enemies
+        return self.enemies
 
 
 def pool_at(
@@ -42,16 +65,28 @@ def pool_at(
     fallbacks: dict[str, tuple[tuple[str, int], ...]],
     tile: tuple[int, int],
     region_place_id: str,
+    phase: str = DAY,
+    night_fallbacks: dict[str, tuple[tuple[str, int], ...]] | None = None,
 ) -> tuple[tuple[str, int], ...]:
     """The weighted pool for a tile: union of all covering areas (same enemy in
-    several areas -> weights sum), else the wild region's fallback pool."""
+    several areas -> weights sum), else the wild region's fallback pool.
+
+    B136e: `phase` ("day"/"night") selects each area's roster. With the default
+    phase the result is byte-identical to the pre-B136e function for every tile,
+    which is what keeps the day delta curve untouched. The level band is NOT a
+    parameter here — it comes from `band_at`, which is phase-blind by design.
+    """
     weights: dict[str, int] = {}
     for area in areas:
         if area.covers(tile):
-            for enemy_id, weight in area.enemies:
+            for enemy_id, weight in area.roster(phase):
                 weights[enemy_id] = weights.get(enemy_id, 0) + weight
     if weights:
         return tuple(sorted(weights.items()))
+    if phase == NIGHT and night_fallbacks:
+        night_pool = night_fallbacks.get(region_place_id)
+        if night_pool:
+            return night_pool
     return fallbacks.get(region_place_id, ())
 
 

@@ -319,12 +319,20 @@ def load_content() -> GameContent:
             color=tuple(row.get("color", (200, 200, 200))),
             level_min=int(row.get("level_min", 0)),
             level_max=int(row.get("level_max", 0)),
+            # B136e: the after-dark roster. Absent = this area does not change
+            # with the hour.
+            night_enemies=tuple((e["id"], int(e["weight"]))
+                                for e in row.get("night_enemies", ())),
         )
         for row in core_zone.get("spawn_areas", ())
     )
     spawn_fallbacks = {
         place_id: tuple((e["id"], int(e["weight"])) for e in pool)
         for place_id, pool in core_zone.get("spawn_fallbacks", {}).items()
+    }
+    spawn_fallbacks_night = {
+        place_id: tuple((e["id"], int(e["weight"])) for e in pool)
+        for place_id, pool in core_zone.get("spawn_fallbacks_night", {}).items()
     }
     # B135a: the canonical zone names are the GROUND THEMES (cainos / mork_skog /
     # cursed_mire / grave_heath) — the same strings the shell's theme_for_tile
@@ -424,6 +432,8 @@ def load_content() -> GameContent:
     _validate_brews(brew_recipes, items)
     _validate_bosses(bosses, enemies, places, weapons, gear_items, items, chests)
     _validate_spawns(spawn_areas, spawn_fallbacks, enemies, places)
+    _validate_night_spawns(spawn_areas, spawn_fallbacks_night, spawn_fallbacks,
+                           enemies, places, core_zone.get("ground_themes", ()))
 
     content = GameContent(
         start_place_id=world["meta"]["start_place_id"],
@@ -447,6 +457,7 @@ def load_content() -> GameContent:
         bosses=bosses,
         spawn_areas=spawn_areas,
         spawn_fallbacks=spawn_fallbacks,
+        spawn_fallbacks_night=spawn_fallbacks_night,
         zone_names=zone_names,
         zone_enemies=zone_enemies,
         zone_bands=zone_bands,
@@ -569,6 +580,95 @@ def _validate_spawns(spawn_areas, spawn_fallbacks, enemies, places) -> None:
                 raise ValueError(f"boss enemy {enemy_id} must not be in spawn fallback {place_id}")
             if weight <= 0:
                 raise ValueError(f"spawn fallback {place_id} has a non-positive weight for {enemy_id}")
+
+
+# B136e: the minimum number of distinct species a zone must be able to roll in a
+# phase. Below this the phase stops being a different world and starts being one
+# repeated fight.
+MIN_SPECIES_PER_ZONE_PHASE = 2
+
+
+def _validate_night_spawns(spawn_areas, night_fallbacks, day_fallbacks,
+                           enemies, places, ground_themes) -> None:
+    """B136e: the night rosters obey every day-roster rule, plus three of their own.
+
+    1. No stat lever. A night roster may only name species; the level band is
+       shared with the day roster and `band_at` never sees the phase, so this is
+       structural rather than checked. What IS checked is that nothing sneaks a
+       boss into the dark.
+    2. Every zone x phase can roll at least MIN_SPECIES_PER_ZONE_PHASE species.
+    3. A night species' own level corridor must INTERSECT the band it will be
+       rolled in — a night roster may not put a level-2 ghost in a level-10 band.
+       Only NIGHT rosters are held to this: several pre-existing DAY pools already
+       break it (bog_leech, corridor 4-7, sits in mire_leech_all's 8-10 band), and
+       retro-fitting the rule would fail load on data this slice never touched.
+    """
+    for area in spawn_areas:
+        if not area.night_enemies:
+            continue
+        seen = set()
+        for enemy_id, weight in area.night_enemies:
+            enemy = enemies.get(enemy_id)
+            if enemy is None:
+                raise ValueError(
+                    f"spawn area {area.id} night roster references unknown enemy {enemy_id}")
+            if enemy.boss:
+                raise ValueError(
+                    f"boss enemy {enemy_id} must not be in spawn area {area.id} night roster")
+            if weight <= 0:
+                raise ValueError(f"spawn area {area.id} night roster has a "
+                                 f"non-positive weight for {enemy_id}")
+            if enemy_id in seen:
+                raise ValueError(f"spawn area {area.id} night roster lists {enemy_id} twice")
+            seen.add(enemy_id)
+            # Rule 3: the corridor must overlap the band this area will roll in.
+            if area.level_min or area.level_max:
+                low = area.level_min or area.level_max
+                high = area.level_max or area.level_min
+                corridor_low = enemy.level_min or enemy.level
+                corridor_high = enemy.level_max or enemy.level
+                if corridor_high < low or corridor_low > high:
+                    raise ValueError(
+                        f"spawn area {area.id} night roster puts {enemy_id} "
+                        f"(corridor {corridor_low}-{corridor_high}) in a "
+                        f"{low}-{high} band it cannot reach")
+
+    for place_id, pool in night_fallbacks.items():
+        if place_id not in places:
+            raise ValueError(f"night spawn fallback references unknown place {place_id}")
+        if place_id not in day_fallbacks:
+            raise ValueError(f"night spawn fallback for {place_id} has no day fallback")
+        if not pool:
+            raise ValueError(f"night spawn fallback for {place_id} is empty")
+        for enemy_id, weight in pool:
+            enemy = enemies.get(enemy_id)
+            if enemy is None:
+                raise ValueError(
+                    f"night spawn fallback {place_id} references unknown enemy {enemy_id}")
+            if enemy.boss:
+                raise ValueError(
+                    f"boss enemy {enemy_id} must not be in night spawn fallback {place_id}")
+            if weight <= 0:
+                raise ValueError(f"night spawn fallback {place_id} has a "
+                                 f"non-positive weight for {enemy_id}")
+
+    # Rule 2: no zone may go quiet (or monotonous) in either phase.
+    from rpg_game.core import spawns
+    per_zone: dict[str, dict[str, set]] = {}
+    for area in spawn_areas:
+        x0, y0, x1, y1 = area.rect
+        zone = _theme_for_tile(ground_themes, (x0 + x1) // 2, (y0 + y1) // 2)
+        if not zone:
+            continue
+        buckets = per_zone.setdefault(zone, {spawns.DAY: set(), spawns.NIGHT: set()})
+        for phase in (spawns.DAY, spawns.NIGHT):
+            buckets[phase].update(enemy_id for enemy_id, _w in area.roster(phase))
+    for zone, buckets in sorted(per_zone.items()):
+        for phase, species in sorted(buckets.items()):
+            if len(species) < MIN_SPECIES_PER_ZONE_PHASE:
+                raise ValueError(
+                    f"zone {zone} can only roll {len(species)} species at {phase} "
+                    f"({sorted(species)}) — needs at least {MIN_SPECIES_PER_ZONE_PHASE}")
 
 
 def _validate_content_refs(classes, weapons, gear_items, items, actions, talents,

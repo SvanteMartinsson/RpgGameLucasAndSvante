@@ -263,7 +263,17 @@
         }
       ],
       "level_min": 2,
-      "level_max": 4
+      "level_max": 4,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 45
+        },
+        {
+          "id": "giant_spider",
+          "weight": 30
+        }
+      ]
     },
     {
       "id": "cainos_stag_south",
@@ -285,7 +295,17 @@
         }
       ],
       "level_min": 3,
-      "level_max": 5
+      "level_max": 5,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 45
+        },
+        {
+          "id": "giant_spider",
+          "weight": 30
+        }
+      ]
     },
     {
       "id": "cainos_undead_north",
@@ -307,7 +327,17 @@
         }
       ],
       "level_min": 3,
-      "level_max": 5
+      "level_max": 5,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 60
+        },
+        {
+          "id": "giant_spider",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "cainos_undead_east",
@@ -329,7 +359,17 @@
         }
       ],
       "level_min": 2,
-      "level_max": 4
+      "level_max": 4,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 60
+        },
+        {
+          "id": "goblin_scrapper",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "cainos_generalists",
@@ -363,7 +403,21 @@
         }
       ],
       "level_min": 1,
-      "level_max": 3
+      "level_max": 3,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 35
+        },
+        {
+          "id": "giant_spider",
+          "weight": 30
+        },
+        {
+          "id": "goblin_scrapper",
+          "weight": 30
+        }
+      ]
     },
     {
       "id": "skog_beast_north",
@@ -393,7 +447,21 @@
         }
       ],
       "level_min": 5,
-      "level_max": 7
+      "level_max": 7,
+      "night_enemies": [
+        {
+          "id": "goblin_raider",
+          "weight": 40
+        },
+        {
+          "id": "goblin_shaman",
+          "weight": 30
+        },
+        {
+          "id": "broodmother_spider",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "skog_goblin_west",
@@ -419,7 +487,21 @@
         }
       ],
       "level_min": 4,
-      "level_max": 6
+      "level_max": 6,
+      "night_enemies": [
+        {
+          "id": "goblin_raider",
+          "weight": 45
+        },
+        {
+          "id": "goblin_shaman",
+          "weight": 30
+        },
+        {
+          "id": "broodmother_spider",
+          "weight": 20
+        }
+      ]
     },
     {
       "id": "skog_plant_south",
@@ -449,7 +531,21 @@
         }
       ],
       "level_min": 6,
-      "level_max": 8
+      "level_max": 8,
+      "night_enemies": [
+        {
+          "id": "goblin_shaman",
+          "weight": 40
+        },
+        {
+          "id": "goblin_raider",
+          "weight": 30
+        },
+        {
+          "id": "broodmother_spider",
+          "weight": 30
+        }
+      ]
     },
     {
       "id": "skog_deep_east",
@@ -479,7 +575,17 @@
         }
       ],
       "level_min": 7,
-      "level_max": 9
+      "level_max": 9,
+      "night_enemies": [
+        {
+          "id": "broodmother_spider",
+          "weight": 40
+        },
+        {
+          "id": "goblin_shaman",
+          "weight": 30
+        }
+      ]
     },
     {
       "id": "mire_leech_all",
@@ -501,7 +607,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 35
+        },
+        {
+          "id": "witchlight",
+          "weight": 30
+        },
+        {
+          "id": "bog_hag",
+          "weight": 8
+        }
+      ]
     },
     {
       "id": "mire_crab_coast_north",
@@ -523,7 +643,21 @@
         }
       ],
       "level_min": 5,
-      "level_max": 7
+      "level_max": 7,
+      "night_enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 35
+        },
+        {
+          "id": "witchlight",
+          "weight": 30
+        },
+        {
+          "id": "mire_lurker",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "mire_crab_coast_east",
@@ -545,7 +679,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 35
+        },
+        {
+          "id": "witchlight",
+          "weight": 25
+        },
+        {
+          "id": "bog_hag",
+          "weight": 10
+        }
+      ]
     },
     {
       "id": "mire_spirits",
@@ -571,7 +719,21 @@
         }
       ],
       "level_min": 5,
-      "level_max": 7
+      "level_max": 7,
+      "night_enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 40
+        },
+        {
+          "id": "witchlight",
+          "weight": 40
+        },
+        {
+          "id": "bog_hag",
+          "weight": 8
+        }
+      ]
     },
     {
       "id": "mire_tar_east",
@@ -597,7 +759,21 @@
         }
       ],
       "level_min": 5,
-      "level_max": 7
+      "level_max": 7,
+      "night_enemies": [
+        {
+          "id": "bog_wraith",
+          "weight": 35
+        },
+        {
+          "id": "mire_lurker",
+          "weight": 30
+        },
+        {
+          "id": "witchlight",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "mire_hag_bog",
@@ -619,7 +795,21 @@
         }
       ],
       "level_min": 6,
-      "level_max": 8
+      "level_max": 8,
+      "night_enemies": [
+        {
+          "id": "bog_hag",
+          "weight": 14
+        },
+        {
+          "id": "bog_wraith",
+          "weight": 30
+        },
+        {
+          "id": "witchlight",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "heath_entry_northwest",
@@ -649,7 +839,25 @@
         }
       ],
       "level_min": 6,
-      "level_max": 8
+      "level_max": 8,
+      "night_enemies": [
+        {
+          "id": "undead",
+          "weight": 30
+        },
+        {
+          "id": "undead_priest",
+          "weight": 25
+        },
+        {
+          "id": "rotting_fiend",
+          "weight": 25
+        },
+        {
+          "id": "shade",
+          "weight": 20
+        }
+      ]
     },
     {
       "id": "heath_ghoul_west",
@@ -675,7 +883,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "ghoul",
+          "weight": 35
+        },
+        {
+          "id": "shade",
+          "weight": 30
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 12
+        }
+      ]
     },
     {
       "id": "heath_ghoul_south",
@@ -701,7 +923,21 @@
         }
       ],
       "level_min": 10,
-      "level_max": 12
+      "level_max": 12,
+      "night_enemies": [
+        {
+          "id": "skeleton_warrior",
+          "weight": 35
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 25
+        },
+        {
+          "id": "shade",
+          "weight": 20
+        }
+      ]
     },
     {
       "id": "heath_worg_column",
@@ -727,7 +963,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "shade",
+          "weight": 40
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 10
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 12
+        }
+      ]
     },
     {
       "id": "heath_elite_east",
@@ -757,7 +1007,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "skeleton_warrior",
+          "weight": 35
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 18
+        },
+        {
+          "id": "shade",
+          "weight": 25
+        }
+      ]
     },
     {
       "id": "heath_northeast_pocket",
@@ -783,7 +1047,21 @@
         }
       ],
       "level_min": 10,
-      "level_max": 12
+      "level_max": 12,
+      "night_enemies": [
+        {
+          "id": "skeleton_warrior",
+          "weight": 30
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 25
+        },
+        {
+          "id": "shade",
+          "weight": 20
+        }
+      ]
     },
     {
       "id": "heath_palegate",
@@ -809,7 +1087,21 @@
         }
       ],
       "level_min": 8,
-      "level_max": 10
+      "level_max": 10,
+      "night_enemies": [
+        {
+          "id": "shade",
+          "weight": 40
+        },
+        {
+          "id": "hollow_worg",
+          "weight": 10
+        },
+        {
+          "id": "cursed_wight",
+          "weight": 12
+        }
+      ]
     }
   ],
   "spawn_fallbacks": {
@@ -858,5 +1150,63 @@
       }
     ]
   },
-  "_spawn_comment": "B48: spawn_areas = Lucas's ritade, MEDVETET överlappande områden. Poolen på en tile = UNION av alla träffande areas (vikter summeras per fiende); tom union -> spawn_fallbacks[wild-region-platsen]. Rects är inklusiva [x0,y0,x1,y1]; color = skissens färg (används av render_zone_map). Bossar får ALDRIG ligga här (valideras)."
+  "_spawn_comment": "B48: spawn_areas = Lucas's ritade, MEDVETET överlappande områden. Poolen på en tile = UNION av alla träffande areas (vikter summeras per fiende); tom union -> spawn_fallbacks[wild-region-platsen]. Rects är inklusiva [x0,y0,x1,y1]; color = skissens färg (används av render_zone_map). Bossar får ALDRIG ligga här (valideras). B136e: night_enemies = samma areas roster EFTER MÖRKRETS INBROTT, vald ur zonens EGEN roster efter trait (natt gynnar undead/spirit/cursed, dag gynnar beast/plant, vermin/humanoid/cultist/swamp går i båda). Tom/saknad = arean byter inte arter med timmen. level_min/level_max DELAS av båda rostrarna och band_at ser aldrig fasen, så en nattspawn kan inte vara en starkare spawn. spawn_fallbacks_night = samma sak för region-fallbacken.",
+  "spawn_fallbacks_night": {
+    "burg_54": [
+      {
+        "id": "undead",
+        "weight": 35
+      },
+      {
+        "id": "giant_spider",
+        "weight": 30
+      },
+      {
+        "id": "goblin_scrapper",
+        "weight": 30
+      }
+    ],
+    "burg_146": [
+      {
+        "id": "goblin_raider",
+        "weight": 40
+      },
+      {
+        "id": "goblin_shaman",
+        "weight": 30
+      },
+      {
+        "id": "broodmother_spider",
+        "weight": 25
+      }
+    ],
+    "burg_320": [
+      {
+        "id": "bog_wraith",
+        "weight": 35
+      },
+      {
+        "id": "witchlight",
+        "weight": 30
+      },
+      {
+        "id": "bog_leech",
+        "weight": 25
+      }
+    ],
+    "burg_121": [
+      {
+        "id": "ghoul",
+        "weight": 35
+      },
+      {
+        "id": "shade",
+        "weight": 30
+      },
+      {
+        "id": "cursed_wight",
+        "weight": 12
+      }
+    ]
+  }
 }

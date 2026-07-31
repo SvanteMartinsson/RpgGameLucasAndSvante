@@ -855,9 +855,15 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
                     self.active_event = event
                     self.mode = "travel_event"
                     return None
-            pool = spawns.pool_at(self.engine.content.spawn_areas,
-                                  self.engine.content.spawn_fallbacks,
-                                  tile, self.zone.wild_region_at(tile))
+            # B136e: WHICH species roll depends on the phase; the level band does
+            # NOT (band_at takes no phase, by design), so night changes the
+            # roster and never the difficulty.
+            pool = spawns.pool_at(
+                self.engine.content.spawn_areas,
+                self.engine.content.spawn_fallbacks,
+                tile, self.zone.wild_region_at(tile),
+                phase=daynight.spawn_phase(self.engine.world_phase()),
+                night_fallbacks=self.engine.content.spawn_fallbacks_night)
             band = spawns.band_at(self.engine.content.spawn_areas, tile)
             # B135a: tag the spawn with its ground theme so a kill_in_zone
             # objective can tick — the shell owns the tile, the core owns the rule.
