@@ -508,6 +508,11 @@ class Player:
     # This IS the bounty generator's seed input, so the board is reproducible from
     # the save alone and no rng draw is spent on it.
     bounty_rolls: dict[str, int] = field(default_factory=dict)
+    # B136a: position inside the 14-minute day/night cycle, in seconds of
+    # ACCUMULATED MOVEMENT time (see core.daynight). 0.0 = morning, which is also
+    # what a pre-B136 save loads as. Ticked by the shell only on frames the player
+    # actually moved, so standing still freezes the world's clock.
+    world_time_seconds: float = 0.0
 
     @property
     def is_alive(self) -> bool:

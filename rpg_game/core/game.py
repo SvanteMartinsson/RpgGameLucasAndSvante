@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import alchemy, bestiary, bosses, chests, combat, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, bosses, chests, combat, daynight, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -183,6 +183,45 @@ class GameEngine:
 
     def current_place(self):
         return world.get_current_place(self.player, self.content)
+
+    # -- B136a: the day/night clock -------------------------------------------
+    # The engine owns the field; core.daynight owns the arithmetic. Every caller
+    # (shells, terminal, tests) goes through these four so nobody re-derives a
+    # phase boundary or forgets to normalize.
+
+    def world_time(self) -> float:
+        return self.player.world_time_seconds
+
+    def world_phase(self) -> str:
+        """"dawn" | "day" | "dusk" | "night"."""
+        return daynight.phase_at(self.player.world_time_seconds)
+
+    def world_phase_progress(self) -> float:
+        """How far into the current phase, in [0.0, 1.0) — the gradient input."""
+        return daynight.phase_progress(self.player.world_time_seconds)
+
+    def advance_world_time(self, dt: float) -> str:
+        """Tick the clock by `dt` seconds of MOVEMENT time; returns the new phase.
+
+        Deterministic and rng-free: a phase flip can never perturb a seeded
+        stream. Callers feed dt ONLY on frames the player actually moved.
+        """
+        self.player.world_time_seconds = daynight.advance(self.player.world_time_seconds, dt)
+        return self.world_phase()
+
+    def set_world_phase(self, phase: str = daynight.MORNING_PHASE) -> str:
+        """Snap the clock to the FIRST instant of `phase` (unknown -> morning).
+
+        This is the safety valve the rest and respawn flows pull (B136c): the
+        player can always buy their way back to daylight, so a closed town is
+        never a dead end.
+        """
+        self.player.world_time_seconds = daynight.phase_start(phase)
+        return self.world_phase()
+
+    def towns_closed(self) -> bool:
+        """B136c: whether town services are shut right now (night only)."""
+        return daynight.towns_closed(self.world_phase())
 
     REST_VOUCHER_ID = "rest_voucher"
 

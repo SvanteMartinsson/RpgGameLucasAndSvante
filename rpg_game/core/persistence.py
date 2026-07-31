@@ -24,7 +24,7 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass, fields as dataclass_fields
 
-from rpg_game.core import entities
+from rpg_game.core import daynight, entities
 from rpg_game.core.entities import ActiveStatus, GameState, Inventory, Player
 
 # Bump on EVERY schema change and add a MIGRATIONS entry lifting the previous
@@ -203,6 +203,14 @@ PLAYER_FIELDS: dict[str, tuple] = {
     "shop_discount_pct": _int(0),
     "quest_flags": _str_set(),
     "bounty_rolls": _dict_of(int),      # B135e: the bounty board's seed input
+    # B136a day/night clock. No SAVE_VERSION bump, same reason as quest_states:
+    # from_json gets None for an absent key and applies its own default, and the
+    # default 0.0 IS morning — a pre-B136 save wakes up at daybreak instead of in
+    # an arbitrary dark. Stored normalized so a hand-edited save can't sit outside
+    # the cycle.
+    "world_time_seconds": (lambda v: float(v),
+                           lambda raw: daynight.normalize(raw) if raw is not None
+                           else daynight.MORNING_SECONDS),
 }
 
 # Runtime-derived Player fields — never persisted, always rebuilt after load

@@ -1493,7 +1493,12 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         if dx or dy:
             self._player_moving = True
             # B104: only frames with actual movement count down the cooldown.
-            self.encounter_cooldown.tick_movement(self.clock.get_time() / 1000.0)
+            frame_dt = self.clock.get_time() / 1000.0
+            self.encounter_cooldown.tick_movement(frame_dt)
+            # B136a: the world clock runs on the SAME movement time. update()
+            # already returned early for menus/overlays and this branch only runs
+            # when dx or dy is non-zero, so standing still freezes the day.
+            self.engine.advance_world_time(frame_dt)
             self._player_facing = player_facing(dx, dy, self._player_facing)
             # B87: normalize so diagonal speed equals cardinal speed (was sqrt(2) faster).
             speed = PLAYER_SPEED / math.sqrt(2) if dx and dy else PLAYER_SPEED
