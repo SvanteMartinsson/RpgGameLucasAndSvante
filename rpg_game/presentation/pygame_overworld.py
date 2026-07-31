@@ -2146,6 +2146,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self.update()
             self.draw()
             self.clock.tick(FPS)
+            # B137: pump the music playlist — idempotent while a track plays, so a
+            # screen transition never restarts it; only a finished track advances.
+            audio.ensure_music()
             # B71: accumulate play time (whole seconds land on the player).
             self._playtime_accum += self.clock.get_time() / 1000.0
             if self._playtime_accum >= 1.0:

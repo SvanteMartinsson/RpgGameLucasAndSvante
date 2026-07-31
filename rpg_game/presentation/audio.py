@@ -15,10 +15,14 @@ The walk sound owns a reserved channel: a new step replaces the previous one
 instead of stacking, and rapid steps can never starve the combat sounds of
 free channels.
 
-Background music (the first .ogg in the same dir) streams on
-``pygame.mixer.music`` — a separate stream from the SFX channels. Every shell
-calls ``ensure_music()`` at init; it is idempotent, so the loop carries
-straight through creation -> overworld -> battle without restarting.
+Background music streams on ``pygame.mixer.music`` — a separate stream from the
+SFX channels. B137 turns it into a PLAYLIST: every .ogg in the same dir, played
+one after another in sorted filename order and wrapping at the end, so the
+soundtrack varies instead of looping one piece forever. ``ensure_music()`` is
+both the starter and the pump — it returns instantly while a track is playing and
+advances to the next one when a track ends — so it stays idempotent, and the
+music carries straight through creation -> overworld -> battle without a screen
+change ever restarting it. Every shell calls it at init and once per frame.
 
 This module also owns the two SFX *naming rules* the screens share — which
 drink sound a consumable makes and which cast sound a skill makes — so the
@@ -57,7 +61,9 @@ _ready = False          # mixer is live; False = silent mode
 _cache: dict[str, "pygame.mixer.Sound | None"] = {}
 _volume = 1.0           # master × sfx, sampled from settings at init()
 _music_volume = MUSIC_GAIN   # master × music × MUSIC_GAIN
-_music_path: "str | None" = None   # the track currently looping (None = none)
+_music_path: "str | None" = None   # the track currently playing (None = none)
+_playlist: "tuple[str, ...] | None" = None   # B137: cached .ogg scan
+_playlist_index = -1         # B137: -1 so the first ensure_music() lands on 0
 
 
 def init() -> bool:
@@ -134,36 +140,76 @@ def play(name: str) -> None:
         pass
 
 
+def music_tracks() -> tuple[str, ...]:
+    """B137: the playlist — every .ogg in the sounds dir, in sorted filename
+    order so the sequence is deterministic and testable. Scanned once and cached
+    for the process (``_reset`` clears it), because ``ensure_music`` is polled
+    every frame and must not stat the directory that often."""
+    global _playlist
+    if _playlist is None:
+        try:
+            names = sorted(n for n in os.listdir(SOUNDS_DIR) if n.lower().endswith(".ogg"))
+        except OSError:
+            return ()       # unreadable dir: retry next call rather than cache ()
+        _playlist = tuple(os.path.join(SOUNDS_DIR, name) for name in names)
+    return _playlist
+
+
 def music_track() -> "str | None":
-    """The background track: the alphabetically first .ogg in the sounds dir
-    (one track ships today; a per-context playlist is a later slice)."""
-    try:
-        names = sorted(n for n in os.listdir(SOUNDS_DIR) if n.lower().endswith(".ogg"))
-    except OSError:
-        return None
-    return os.path.join(SOUNDS_DIR, names[0]) if names else None
+    """The track the playlist STARTS on (first in sorted order) — unchanged from
+    the single-track era, so a fresh session still opens on the same music."""
+    tracks = music_tracks()
+    return tracks[0] if tracks else None
 
 
 def ensure_music() -> None:
-    """Start the looping background music if it isn't already on. Idempotent —
-    every shell (creation/overworld/battle) calls this at init, so the track
-    carries straight through screen transitions instead of restarting.
-    Dead mixer or no .ogg = silent no-op."""
-    global _music_path
+    """Keep the background music playing, advancing through the playlist.
+
+    B137: this is BOTH the starter and the pump, and it is polled every frame by
+    each shell's run loop. Two behaviours in one call, which is what makes it
+    safe to call that often:
+
+      * a track is playing -> return immediately. This is the idempotence the
+        shells rely on: creation -> overworld -> battle -> overworld all call it,
+        and the music carries straight through the transitions instead of
+        restarting. A screen change is NOT a track change.
+      * nothing is playing -> advance to the NEXT track and start it (wrapping at
+        the end). Since a track is started with play() rather than play(-1), it
+        finishes on its own and the next poll moves the playlist along.
+
+    Polling was chosen over ``mixer.music.set_endevent``: an end event has to be
+    pumped AND recognised by whichever loop currently owns the window, and the
+    overworld and battle shells run separate event loops that discard unknown
+    types — the event would simply be dropped. A ``get_busy()`` check needs no
+    event registration at all.
+
+    A track that will not load is skipped (each is tried at most once per call,
+    so an entire directory of corrupt files cannot spin). Dead mixer or no .ogg =
+    silent no-op.
+    """
+    global _music_path, _playlist_index
     if not init():
         return
-    path = music_track()
-    if path is None:
+    tracks = music_tracks()
+    if not tracks:
         return
     try:
-        if _music_path == path and pygame.mixer.music.get_busy():
+        if _music_path is not None and pygame.mixer.music.get_busy():
+            return          # still playing: leave it entirely alone
+    except Exception:       # pragma: no cover - device died mid-session
+        return
+    for _attempt in range(len(tracks)):
+        _playlist_index = (_playlist_index + 1) % len(tracks)
+        path = tracks[_playlist_index]
+        try:
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.set_volume(_music_volume)   # the B70/B92 knob, live
+            pygame.mixer.music.play()   # once — ending it is what advances the list
+            _music_path = path
             return
-        pygame.mixer.music.load(path)
-        pygame.mixer.music.set_volume(_music_volume)
-        pygame.mixer.music.play(-1)   # loop forever
-        _music_path = path
-    except Exception:   # unreadable/corrupt track -> the game plays without music
-        _music_path = None
+        except Exception:   # unreadable/corrupt track -> try the next one
+            continue
+    _music_path = None      # nothing in the dir could be played: stay silent
 
 
 def _load(name: str) -> "pygame.mixer.Sound | None":
@@ -189,13 +235,16 @@ def _clamp(value) -> float:
 
 
 def _reset() -> None:
-    """Test hook: forget init state, cached sounds and the music loop."""
+    """Test hook: forget init state, cached sounds and the music playlist."""
     global _attempted, _ready, _volume, _music_volume, _music_path
+    global _playlist, _playlist_index
     _attempted = False
     _ready = False
     _volume = 1.0
     _music_volume = MUSIC_GAIN
     _music_path = None
+    _playlist = None
+    _playlist_index = -1
     _cache.clear()
     try:
         pygame.mixer.music.stop()

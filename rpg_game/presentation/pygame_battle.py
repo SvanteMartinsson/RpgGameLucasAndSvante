@@ -1574,6 +1574,10 @@ class BattleApp:
             self._tick_sequence()   # B75: round playback clock
             self.draw()
             self.clock.tick(FPS)
+            # B137: pump the music playlist. A no-op while a track is playing, so
+            # this neither restarts the track nor costs anything per frame; when a
+            # track ends it starts the next one.
+            audio.ensure_music()
         if self.standalone:
             pygame.quit()
         return self.outcome
@@ -1880,6 +1884,7 @@ def character_creation(engine: GameEngine) -> tuple[str, str, str]:
             ui.draw_tooltip(screen, hover.active, mouse, font, font_sm)
         offset = present(display, screen, BG)
         clock.tick(FPS)
+        audio.ensure_music()   # B137: advance the playlist when a track ends
 
 
 def main(argv: list[str] | None = None) -> None:
