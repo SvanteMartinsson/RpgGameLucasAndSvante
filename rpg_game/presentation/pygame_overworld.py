@@ -37,9 +37,10 @@ from dataclasses import dataclass, field
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from rpg_game.core import combat, encounters, progression, saveslots, spawns, store
+from rpg_game.core import combat, daynight, encounters, progression, saveslots, spawns, store
 from rpg_game.core import events as core_events
 from rpg_game.presentation import ambience
+from rpg_game.presentation import daylight
 from rpg_game.core.game import GameEngine
 from rpg_game.core.view import build_snapshot
 from rpg_game.presentation import audio
@@ -1531,6 +1532,19 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
 
     # -- rendering ----------------------------------------------------------
 
+    def _draw_daylight_tint(self) -> None:
+        """B136b: one translucent rectangle over the finished map — night is a
+        TINT, never a different tileset. Colour and alpha interpolate over the
+        phase's progress (core owns the clock, daylight owns the colour), and the
+        alpha is capped so the world stays readable in the dark."""
+        r, g, b, a = daylight.tint_for(self.engine.world_phase(),
+                                       self.engine.world_phase_progress())
+        if a <= 0:
+            return          # full daylight: no surface, no blit
+        veil = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        veil.fill((r, g, b, a))
+        self.screen.blit(veil, (0, 0))
+
     def _draw_ambience(self) -> None:
         """B73/B110: the zone's world-space particle preset over the map.
 
@@ -1571,6 +1585,9 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
             self.screen = pygame.Surface(self.display.get_size())
         self.screen.fill(BG)
         self._draw_map()
+        # B136b: the darkness tint sits BETWEEN the map and the particles — so the
+        # night's fireflies glow ON TOP of the dark instead of being dimmed by it.
+        self._draw_daylight_tint()
         self._draw_ambience()   # B73: zone particles above the world, below HUD
         self._draw_hud()
         if self.mode == "walk" and not self.overlay:
@@ -1785,10 +1802,30 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
         self.screen.blit(plate_surf, plate.topleft)
         pygame.draw.rect(self.screen, (*PANEL_EDGE, 120), plate, width=1, border_radius=4)
         self.screen.blit(label, rect)
+        self._draw_phase_indicator(plate)
         if self.mode == "walk":
             hint = T.HINT_TOWN if in_town else T.HINT_WALK
             hsurf = self.font_sm.render(hint, True, TEXT_DIM)
             self.screen.blit(hsurf, hsurf.get_rect(midbottom=(self.screen.get_width() // 2, self.screen.get_height() - 6)))
+
+    def _draw_phase_indicator(self, above: pygame.Rect) -> None:
+        """B136b: a small "• Night" chip tucked under the location plate — the
+        only warning the player gets that the shutters are about to come down.
+        Same faint-plate treatment as the location label so it reads over any
+        tile brightness."""
+        phase = self.engine.world_phase()
+        color = daylight.PHASE_COLORS.get(phase, TEXT_DIM)
+        label = self.font_sm.render(daynight.PHASE_LABELS.get(phase, phase), True, color)
+        dot_w = 12
+        rect = label.get_rect(topright=(above.right - 6, above.bottom + 5))
+        plate = pygame.Rect(rect.x - dot_w - 8, rect.y - 4,
+                            rect.width + dot_w + 14, rect.height + 8)
+        plate_surf = pygame.Surface(plate.size, pygame.SRCALPHA)
+        plate_surf.fill((10, 12, 18, 150))
+        self.screen.blit(plate_surf, plate.topleft)
+        pygame.draw.rect(self.screen, (*PANEL_EDGE, 120), plate, width=1, border_radius=4)
+        pygame.draw.circle(self.screen, color, (plate.x + 10, plate.centery), 3)
+        self.screen.blit(label, rect)
 
     def _draw_vitals(self) -> None:
         """B31/B39: a compact "Lv N    Gold G" line above thicker HP/Mana/XP bars,
