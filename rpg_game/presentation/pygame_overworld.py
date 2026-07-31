@@ -1548,21 +1548,27 @@ class OverworldApp(OverlaysMixin, BuildingMenusMixin, MapRenderMixin):
     def _draw_ambience(self) -> None:
         """B73/B110: the zone's world-space particle preset over the map.
 
-        Themes without a wired preset
-        draw nothing; the whole layer sits behind the Ambience toggle."""
+        B136d: the preset is chosen per zone × PHASE (ambience.preset_for), so
+        the fireflies only come out after dark and the day gets airborne matter
+        instead. Themes without a wired preset draw nothing; the whole layer
+        sits behind the Ambience toggle."""
         if not self._settings.get("ambience", True):
             return
         theme = self.zone.theme_for_tile(self.world.current_tile)
-        preset = ambience.PRESETS.get(theme)
+        phase = self.engine.world_phase()
+        preset = ambience.preset_for(theme, phase)
         if preset is None:
             return
+        # The cache key carries the phase group too, so crossing into the night
+        # rebuilds the layer exactly like crossing a zone border does.
+        key = (theme, "night" if daynight.is_dark(phase) else "day")
         zoom = self._zoom_factor()
         view_size = (max(1, self.screen.get_width() // zoom),
                      max(1, self.screen.get_height() // zoom))
         center = self.world.player.center
-        if self._ambience is None or self._ambience_theme != theme:
+        if self._ambience is None or self._ambience_theme != key:
             self._ambience = ambience.ParticleLayer(view_size, preset=preset, world_center=center)
-            self._ambience_theme = theme
+            self._ambience_theme = key
         self._ambience.resize(view_size, center)
         self._ambience.update(center)
         self._ambience.draw(self.screen, self._cam_offset, zoom)

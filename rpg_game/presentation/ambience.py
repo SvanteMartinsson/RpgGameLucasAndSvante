@@ -49,6 +49,58 @@ PRESETS: dict[str, dict] = {
     },
 }
 
+# B136d: zone × PHASE. Keyed (theme, "day" | "night"); the group comes from
+# core.daynight.is_dark, so DUSK already shows the night layer — the lights come
+# out as it darkens, matching how the night spawn roster arrives at dusk.
+# A (theme, group) miss falls back to PRESETS[theme], so a zone that never gets a
+# phase variant keeps behaving exactly as it does today.
+#
+# The headline change: THE FIREFLIES MOVED TO NIGHT. A glowing, pulsing light is
+# wrong in daylight — it reads as a rendering artefact, not as an insect — so
+# every "firefly"-kind layer is now night-only, and the day half of each zone
+# gets airborne matter instead (pollen, seeds, dust, haze) reusing the approved
+# B73 S2 draft presets.
+PHASE_PRESETS: dict[tuple[str, str], dict] = {
+    # Cainos — warm meadow. Day keeps its approved pollen; night gets a sparse
+    # scatter of fireflies (the friendly zone stays friendly after dark).
+    ("cainos", "day"): PRESETS["cainos"],
+    ("cainos", "night"): {"kind": "firefly", "count": 16, "color": FIREFLY_COLOR},
+    # Mork Skog — S1's fireflies, now where they belong. Day is forest litter:
+    # seeds and lit dust hanging under the canopy, dimmer and greener than the
+    # open-meadow pollen.
+    ("mork_skog", "night"): PRESETS["mork_skog"],
+    ("mork_skog", "day"): {
+        "kind": "drift", "count": 20,
+        "colors": ((196, 206, 150), (168, 184, 130)),
+        "size": (1, 2), "vx": (0.05, 0.2), "vy": (0.03, 0.14),
+        "sway": (3, 9), "alpha": 66,
+    },
+    # Cursed Mire — day is the approved creeping haze; night lights it with cold
+    # green wisps (the witchlights and bog wraiths that spawn there after dark).
+    ("cursed_mire", "day"): PRESETS["cursed_mire"],
+    ("cursed_mire", "night"): {"kind": "firefly", "count": 14, "color": (140, 220, 190)},
+    # Grave Heath — day is the approved falling ash; night is a thin scatter of
+    # pale, cold grave-light. Deliberately the sparsest layer of the four: the
+    # heath's threat should feel empty, not decorated.
+    ("grave_heath", "day"): PRESETS["grave_heath"],
+    ("grave_heath", "night"): {"kind": "firefly", "count": 10, "color": (176, 190, 226)},
+}
+
+
+def preset_for(theme: str, phase: str) -> dict | None:
+    """The particle preset for a zone theme in a day/night phase.
+
+    Resolution order: an explicit (theme, group) variant, then the zone's
+    phase-less preset, then None (a theme with no ambience at all draws
+    nothing — same as before B136d).
+    """
+    from rpg_game.core import daynight
+    group = "night" if daynight.is_dark(phase) else "day"
+    variant = PHASE_PRESETS.get((theme, group))
+    if variant is not None:
+        return variant
+    return PRESETS.get(theme)
+
 
 class Firefly:
     __slots__ = ("x", "y", "vx", "phase", "bob", "size", "blink")
@@ -158,14 +210,18 @@ class ParticleLayer:
     _GLOW_STEPS = 8   # quantized pulse brightnesses -> pre-rendered sprites
 
     def _glow_sprite(self, radius: int, step: int) -> pygame.Surface:
-        key = ("glow", radius, step)
+        # B136d: the glow colour comes from the preset, so a night zone can have
+        # its OWN kind of light — the mire's cold wisps and the heath's pale
+        # motes are the same pulsing engine as Mork Skog's fireflies, recoloured.
+        color = self.preset.get("color", FIREFLY_COLOR)
+        key = ("glow", radius, step, color)
         sprite = self._sprite_cache.get(key)
         if sprite is None:
             alpha = int(40 + (step / (self._GLOW_STEPS - 1)) * 160)
             sprite = pygame.Surface((radius * 4, radius * 4), pygame.SRCALPHA)
-            pygame.draw.circle(sprite, (*FIREFLY_COLOR, alpha // 3),
+            pygame.draw.circle(sprite, (*color, alpha // 3),
                                (radius * 2, radius * 2), radius * 2)
-            pygame.draw.circle(sprite, (*FIREFLY_COLOR, alpha),
+            pygame.draw.circle(sprite, (*color, alpha),
                                (radius * 2, radius * 2), radius)
             self._sprite_cache[key] = sprite
         return sprite

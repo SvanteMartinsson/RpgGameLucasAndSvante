@@ -106,8 +106,12 @@ class AmbienceLayerTests(unittest.TestCase):
         # Lucas GO 2026-07-12: every zone now has a preset; the layer is rebuilt
         # when the theme changes so cainos drift and mork_skog fireflies never
         # bleed into each other.
+        # B136d: the cache key gained the phase group and the fireflies moved to
+        # NIGHT, so this walks the zones at night — the phase where mork_skog
+        # still runs the firefly preset this test was written around.
         app = OverworldApp()
         app.screen = pygame.Surface((640, 400))
+        app.engine.set_world_phase("night")
 
         def _tile_for(theme):
             for y in (20, 40, 60):
@@ -124,12 +128,13 @@ class AmbienceLayerTests(unittest.TestCase):
         app.world.set_tile(*cainos)
         app._draw_ambience()
         self.assertIsNotNone(app._ambience)               # cainos has a preset now
-        self.assertEqual(app._ambience_theme, "cainos")
-        self.assertEqual(app._ambience.preset["kind"], "drift")
+        self.assertEqual(app._ambience_theme, ("cainos", "night"))
+        self.assertEqual(app._ambience.preset["kind"], "firefly")   # B136d: night cainos
 
         app.world.set_tile(*skog)
         app._draw_ambience()
-        self.assertEqual(app._ambience_theme, "mork_skog")  # rebuilt for the new zone
+        # rebuilt for the new zone
+        self.assertEqual(app._ambience_theme, ("mork_skog", "night"))
         self.assertEqual(app._ambience.preset["kind"], "firefly")
 
 
