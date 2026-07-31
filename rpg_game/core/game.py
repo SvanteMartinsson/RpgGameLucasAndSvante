@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import alchemy, bestiary, bosses, chests, combat, daynight, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, bosses, characters, chests, combat, daynight, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -823,8 +823,14 @@ class GameEngine:
     def board_quests(self, giver_kind: str = "board") -> list:
         """Offerable quests for a notice board: never-taken (or repeatable and
         handed in) and with every prerequisite handed in. `giver_kind=""` returns
-        both the authored notices and the bounties."""
-        return quests.offerable_quests(self.player, self.all_quests(), giver_kind)
+        both the authored notices and the bounties.
+
+        B139b: a CHARACTER quest is never on a board, whatever the filter says —
+        it is offered by the person. Excluded here rather than only in the ""
+        case, so the invariant cannot be lost by passing the wrong argument."""
+        offered = quests.offerable_quests(self.player, self.all_quests(), giver_kind)
+        return [quest for quest in offered
+                if quest.giver_kind != characters.GIVER_CHARACTER]
 
     def bounty_quests(self) -> list:
         """The bounty section of the board (B135e)."""
@@ -851,6 +857,33 @@ class GameEngine:
     def quest_below_recommended_level(self, quest) -> bool:
         """Whether to warn on the recommended level. NEVER blocks acceptance."""
         return quests.is_below_recommended_level(self.player, quest)
+
+    # -- B139b: characters ----------------------------------------------------
+
+    def character_by_id(self, character_id: str):
+        return characters.character_by_id(self.content, character_id)
+
+    def character_at(self, place_id: str, building_id: str):
+        """Whoever stands behind a town door — None for an ordinary building."""
+        return characters.character_at(self.content, place_id, building_id)
+
+    def character_state(self, character):
+        """The character's CURRENT state: portrait, tone and lines all follow it."""
+        return character.state_for(self.player) if character is not None else None
+
+    def character_quests(self, character_id: str) -> list:
+        """Quests this character is offering RIGHT NOW (offerable only). Character
+        quests never appear on the notice board — see characters.GIVER_CHARACTER."""
+        all_quests = self.all_quests()
+        mine = characters.quests_from(all_quests, character_id)
+        return [quest for quest in mine
+                if quests.is_offerable(self.player, quest, all_quests)]
+
+    def character_turn_ins(self, character_id: str) -> list:
+        """This character's quests that are finished and waiting to be handed in."""
+        return [quest for quest in characters.quests_from(self.all_quests(), character_id)
+                if quests.status_of(self.player, quest.id) in
+                (quests.ACTIVE, quests.COMPLETED) and self.quest_is_ready(quest)]
 
     def quest_status(self, quest_id: str) -> str:
         return quests.status_of(self.player, quest_id)

@@ -277,6 +277,13 @@ def load_content() -> GameContent:
     # the rest of the content exists).
     from rpg_game.core.quests import parse_quests
     quests = parse_quests(_read_json("quests.json"))
+    # B139b: characters + their states. Missing file = no characters at all, so a
+    # content path without them (terminal/sims) keeps loading.
+    from rpg_game.core.characters import parse_characters
+    try:
+        characters = parse_characters(_read_json("characters.json"))
+    except FileNotFoundError:
+        characters = ()
     upgrade_recipes = _load_upgrade_recipes()
 
     # B68: alchemy brew recipes.
@@ -449,6 +456,7 @@ def load_content() -> GameContent:
         places=places,
         rare_loot_table=rare_loot_table,
         quests=quests,
+        characters=characters,
         travel_event_slot_chance=travel_event_slot_chance,
         travel_events=travel_events,
         upgrade_recipes=upgrade_recipes,
@@ -465,6 +473,10 @@ def load_content() -> GameContent:
     # B135a: quest ids/targets/rewards/prereqs need the assembled content.
     from rpg_game.core.quests import validate_quests
     validate_quests(quests, content)
+    # B139b: characters reference places and are referenced BY quests, so this runs
+    # last, on the assembled content.
+    from rpg_game.core.characters import validate_characters
+    validate_characters(characters, content)
     return content
 
 

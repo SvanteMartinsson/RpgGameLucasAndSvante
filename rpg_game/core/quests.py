@@ -68,7 +68,7 @@ class Quest:
     id: str
     title: str
     text: str
-    giver_kind: str                       # "board" (notice board) | "bounty"
+    giver_kind: str                       # "board" | "bounty" | "character" (B139b)
     objective: QuestObjective
     rewards: tuple[dict, ...] = ()
     zone: str = ""                        # hint shown in the log; "" = anywhere
@@ -86,6 +86,11 @@ class Quest:
     # gate: a chain must never block a player from walking where they like, so
     # this only ever renders as a hint. 0 = no suggestion.
     recommended_level: int = 0
+    # B139b: the PERSON who gives this quest. Set together with
+    # giver_kind="character" (validate_characters enforces the pair). A character
+    # quest is offered AT the character, never on the notice board — the board
+    # keeps the impersonal work, because stories come from people.
+    giver_character_id: str = ""
 
 
 @dataclass
@@ -131,6 +136,7 @@ def parse_quests(data: dict) -> tuple[Quest, ...]:
             chain_index=int(row.get("chain_index", 0)),
             next_quest_id=str(row.get("next_quest_id", "")),
             recommended_level=int(row.get("recommended_level", 0)),
+            giver_character_id=str(row.get("giver_character_id", "")),
         ))
     return tuple(quests)
 

@@ -561,6 +561,8 @@ class GameContent:
     travel_events: tuple = ()
     # B135a: authored quests (validated at load by core.quests.validate_quests).
     quests: tuple = ()
+    # B139b: the people stories come from, each with their own STATES.
+    characters: tuple = ()
     # B135a: the canonical zone/theme names (cainos, mork_skog, cursed_mire,
     # grave_heath) from core_zone's ground_themes — the exact strings the shell
     # tags a spawn with, so a kill_in_zone objective can be validated at load.
