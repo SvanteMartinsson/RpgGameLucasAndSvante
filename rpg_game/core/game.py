@@ -858,6 +858,17 @@ class GameEngine:
         """Whether to warn on the recommended level. NEVER blocks acceptance."""
         return quests.is_below_recommended_level(self.player, quest)
 
+    # -- B139d: the hour ------------------------------------------------------
+
+    def quest_accept_blocker(self, quest) -> str:
+        """Why an offered quest cannot be taken this minute ('' = it can). The
+        board keeps SHOWING the quest and dims Accept with this reason."""
+        return quests.accept_blocker(self.player, quest, self.all_quests())
+
+    def quest_time_of_day_label(self, quest) -> str:
+        """'Only at night' / 'Only by day' / '' — the condition, always visible."""
+        return quests.time_of_day_label(quest)
+
     # -- B139b: characters ----------------------------------------------------
 
     def character_by_id(self, character_id: str):

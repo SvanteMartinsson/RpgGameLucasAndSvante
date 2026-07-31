@@ -468,6 +468,14 @@ class OverlaysMixin:
             self.screen.blit(self.font_sm.render(hint, True, WARN if under else TEXT_DIM),
                              (rect.x, y))
             y += 20
+        # B139d: the hour condition is stated up front, not discovered by a
+        # refused click. WARN while it is the wrong hour, dim once it is right.
+        hour = engine.quest_time_of_day_label(quest)
+        if hour:
+            wrong = not core_quests.time_of_day_met(engine.player, quest)
+            self.screen.blit(self.font_sm.render(hour, True, WARN if wrong else TEXT_DIM),
+                             (rect.x, y))
+            y += 20
         for line in ui.wrap(quest.text, self.font_sm, rect.width):
             self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (rect.x, y))
             y += 17
@@ -500,9 +508,17 @@ class OverlaysMixin:
                                  (lambda qid=quest.id: self.abandon_quest(qid)), True,
                                  focus_section="board_action")
         else:
+            # B139d: an hour-gated quest stays on the board with its condition
+            # visible; Accept is dimmed-but-clickable (B112) so the click explains
+            # WHEN to come back instead of the notice simply vanishing.
+            blocker = engine.quest_accept_blocker(quest)
             self._add_button(pygame.Rect(rect.x, button_y, rect.width, 40),
                              T.QUEST_ACCEPT,
-                             (lambda qid=quest.id: self.accept_quest(qid)), True,
+                             (lambda qid=quest.id: self.accept_quest(qid)),
+                             enabled=True, restricted=bool(blocker),
+                             value=engine.quest_time_of_day_label(quest),
+                             tooltip=(ui.Tooltip(title=quest.title, lines=[blocker])
+                                      if blocker else None),
                              focus_section="board_action")
 
     # --- B135c: the quest log screen (hotkey Q) ----------------------------

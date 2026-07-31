@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from rpg_game.core import combat, inventory, progression, tomes
+from rpg_game.core import combat, daynight, inventory, progression, tomes
 from rpg_game.core.entities import ActiveStatus, GameContent, Player
 
 # --- statuses ----------------------------------------------------------------
@@ -86,6 +86,9 @@ class Quest:
     # gate: a chain must never block a player from walking where they like, so
     # this only ever renders as a hint. 0 = no suggestion.
     recommended_level: int = 0
+    # B139d: an hour condition — "" (any time) | "day" | "night". It gates being
+    # TAKEN, never being solved: see accept_blocker for why.
+    time_of_day: str = ""
     # B139b: the PERSON who gives this quest. Set together with
     # giver_kind="character" (validate_characters enforces the pair). A character
     # quest is offered AT the character, never on the notice board — the board
@@ -137,6 +140,7 @@ def parse_quests(data: dict) -> tuple[Quest, ...]:
             next_quest_id=str(row.get("next_quest_id", "")),
             recommended_level=int(row.get("recommended_level", 0)),
             giver_character_id=str(row.get("giver_character_id", "")),
+            time_of_day=str(row.get("time_of_day", "")),
         ))
     return tuple(quests)
 
@@ -184,6 +188,9 @@ def _validate_chains(by_id: dict[str, Quest]) -> None:
     that". So every one of these is an error at startup, not a silent miss.
     """
     for quest in by_id.values():
+        if quest.time_of_day not in TIME_OF_DAY_VALUES:
+            raise ValueError(f"quest {quest.id} has unknown time_of_day "
+                             f"{quest.time_of_day!r} (expected day/night)")
         if quest.recommended_level and quest.recommended_level < 1:
             raise ValueError(f"quest {quest.id} recommended_level must be >= 1")
         if quest.chain_index and not quest.chain_id:
@@ -353,6 +360,55 @@ def prereqs_met(player: Player, quest: Quest, all_quests=()) -> bool:
     return earlier is None or status_of(player, earlier.id) == TURNED_IN
 
 
+# --- B139d: the hour ----------------------------------------------------------
+# TIME_OF_DAY GATES TAKING, NOT SOLVING. Measured before choosing (see the B139d
+# note in BACKLOG.md): `accept()` is a single funnel that both the board and a
+# dialogue choice already pass through, so gating there costs one check and can
+# never lose the player anything. Gating PROGRESS instead would mean touching
+# _push/_advance — the per-kill hot path, a second enforcement point — and would
+# silently discard work done at the wrong hour, which is the worst outcome of the
+# three. Turn-in was rejected for the same reason.
+#
+# "Dark" is `daynight.spawn_phase`, so dusk counts as night here exactly as it
+# does for the spawn roster and the ambience layer — ONE definition of dark for
+# the whole game.
+TIME_OF_DAY_VALUES = frozenset({"", "day", "night"})
+
+
+def quest_phase(player: Player) -> str:
+    """"day" or "night" for quest purposes, read from the player's own clock."""
+    return daynight.spawn_phase(daynight.phase_at(player.world_time_seconds))
+
+
+def time_of_day_met(player: Player, quest: Quest) -> bool:
+    return not quest.time_of_day or quest.time_of_day == quest_phase(player)
+
+
+def time_of_day_label(quest: Quest) -> str:
+    """The condition as the board shows it. Empty for an any-time quest."""
+    if quest.time_of_day == "night":
+        return "Only at night"
+    if quest.time_of_day == "day":
+        return "Only by day"
+    return ""
+
+
+def accept_blocker(player: Player, quest: Quest, all_quests=()) -> str:
+    """Why this OFFERED quest cannot be taken right now ('' = it can).
+
+    Deliberately separate from `is_offerable`: a quest whose hour has not come is
+    still ON the board, shown with its condition, rather than vanishing and
+    leaving the player to wonder whether it exists.
+    """
+    if not is_offerable(player, quest, all_quests):
+        return "Not available."
+    if not time_of_day_met(player, quest):
+        return ("Only at night — come back after dark."
+                if quest.time_of_day == "night"
+                else "Only by day — come back at first light.")
+    return ""
+
+
 def is_offerable(player: Player, quest: Quest, all_quests=()) -> bool:
     """Shown on a board: never accepted (or repeatable and handed in) + prereqs."""
     status = status_of(player, quest.id)
@@ -447,6 +503,10 @@ def accept(player: Player, quest: Quest, all_quests=()) -> bool:
     (or a hand-edited save) must not be able to start part 3 before part 2.
     """
     if not is_offerable(player, quest, all_quests):
+        return False
+    # B139d: the hour is enforced HERE, the one funnel every path already uses —
+    # the board's Accept button and a dialogue choice both land on this.
+    if not time_of_day_met(player, quest):
         return False
     _store(player, quest.id, ACTIVE, 0)
     return True

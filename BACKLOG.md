@@ -740,7 +740,14 @@ bara **droppas in** när de är klara. Inget berättelseinnehåll authoras här.
   `next_quest_id` + synligt erbjudande av nästa del.
 - **B139b** — `characters.json`: karaktärer med tillstånd; Mirr som första post.
 - **B139c** — dialogskärmen: stridschrome, talarnamn, valrutnät, röst-redo `line_id`.
-- **B139d** — `time_of_day`-villkor på quests.
+- **B139d** — `time_of_day`-villkor på quests. **VALT: villkoret gatar att TAS, inte att
+  LÖSAS** (mätt före bygge). `accept()` är EN funnel som både tavlans Accept-knapp och ett
+  dialogval redan går genom → gaten kostar en kontroll. Att gata PROGRESS hade krävt ändring i
+  `_push`/`_advance` (per-kill-hetvägen, en andra kontrollpunkt) och hade **tyst kastat bort**
+  arbete gjort vid fel timme — värsta utfallet av de tre; turn-in föll på samma skäl. Villkoret
+  bor i `accept_blocker`, medvetet **inte** i `is_offerable`, så questen står kvar på tavlan med
+  sitt villkor synligt i stället för att försvinna. "Mörkt" = `daynight.spawn_phase`, så skymning
+  räknas som natt precis som för spawn-rostern och ambiensen — EN definition av mörker.
 - **VÄNTAR PÅ LUCAS (byggs inte):** Mirrs porträtt-sheets (4 st) · hennes kedjetext (5 delar) ·
   Torvald-detaljerna · barn-eller-inte. När de landar är det **ren datainmatning**.
 

@@ -232,6 +232,10 @@ def choice_blocker(player, content, quests_module, all_quests, choice: DialogueC
             reason = ("You are already on that." if
                       quests_module.status_of(player, quest.id) != quests_module.AVAILABLE
                       else "Not available yet.")
+        elif not quests_module.time_of_day_met(player, quest):
+            # B139d: the hour applies wherever a quest is taken, so a character's
+            # offer is gated identically to the board's.
+            reason = quests_module.accept_blocker(player, quest, all_quests)
     elif choice.action == ACTION_TURN_IN:
         quest = next((q for q in all_quests if q.id == choice.quest_id), None)
         if quest is None:
