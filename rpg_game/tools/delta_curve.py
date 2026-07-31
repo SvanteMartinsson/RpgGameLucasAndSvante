@@ -297,6 +297,12 @@ def gate_summary(cells: dict) -> list[str]:
 
 
 # --- known residuals (frozen 2026-07-12, post class-identity pass) -----------
+# SEE ALSO: tools/check_night_spawns.py ACCEPTED_RESIDUALS. B138 accepted one cell
+# that this matrix does NOT currently measure — hollow_worg at the top of
+# skog_deep_east's band (3.3% win at level 9) — because the tool samples a fixed
+# enemy list per zone and hollow_worg is not in mork_skog's. If anyone ever adds it
+# to ZONES["mork_skog"]["enemies"], the resulting fail is EXPECTED and must be
+# frozen here, not tuned away: Lucas's call was "surprises over perfect balance".
 # Lucas's decision: the Δ0 on-level gate and its closely-related Δ−2 cells are a
 # STRUCTURAL residual, not a bug. At Δ0 the per-class median is pinned high by
 # the durable classes (tank/fighter/cleric win on-level almost regardless) while

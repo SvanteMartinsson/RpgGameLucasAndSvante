@@ -28,6 +28,29 @@ from rpg_game.core.world import roll_enemy_level
 NIGHT_TAGS = {"undead", "spirit", "cursed"}
 DAY_TAGS = {"beast", "plant"}
 
+# --- accepted residuals (B138, Lucas 2026-07-31) -----------------------------
+# A cell that FAILS a balance expectation on purpose. Declared here, printed on
+# every run, and bound to the data by
+# tests/test_b138_skog_worg.py::test_the_accepted_residual_still_describes_reality
+# so the record cannot go stale in silence.
+#
+# The point of writing it down: a future sim/balance pass must not "fix" this
+# cell believing it found a regression. It is a design choice — Lucas:
+# "surprises over perfect balance". delta_curve.py's residual section
+# cross-references this list.
+ACCEPTED_RESIDUALS = (
+    {
+        "id": "b138-worg-deep-east-d3",
+        "area": "skog_deep_east",
+        "enemy": "hollow_worg",
+        "measured": "3.3% player win at level 9 (d-3 for a level-6 player)",
+        "compare": "the area's next-hardest is treant at 15.0%",
+        "cause": "base level 8: level 9 triggers HP_GROWTH_PER_LEVEL 0.38 (+38% HP)",
+        "why_accepted": "intentional — surprises over perfect balance (Lucas 2026-07-31)",
+        "rests_on": "the worg stays RARE here and wild fights allow flee",
+    },
+)
+
 
 def _day_pool_pre_b136e(areas, fallbacks, tile, region_place_id):
     """The B48 implementation, verbatim — the oracle for "the day is untouched"."""
@@ -192,6 +215,23 @@ def main() -> int:
               f"(band {band[0]}-{band[1]}) species {species}")
         if (min(levels), max(levels)) != band:
             failures.append(f"{phase} rolled levels outside the area band {band}")
+
+    print("\nACCEPTED RESIDUALS (deliberate — do NOT 'fix' these in a balance pass):")
+    for residual in ACCEPTED_RESIDUALS:
+        print(f"   [{residual['id']}] {residual['enemy']} in {residual['area']}")
+        print(f"      measured : {residual['measured']}")
+        print(f"      compare  : {residual['compare']}")
+        print(f"      cause    : {residual['cause']}")
+        print(f"      accepted : {residual['why_accepted']}")
+        print(f"      rests on : {residual['rests_on']}")
+        # Bound to reality: if the data moved, say so loudly rather than let the
+        # record rot into a comment nobody trusts.
+        area = next((a for a in content.spawn_areas if a.id == residual["area"]), None)
+        present = area is not None and any(
+            e == residual["enemy"] for e, _w in area.roster(spawns.DAY) + area.roster(spawns.NIGHT))
+        print(f"      still in the data: {'yes' if present else 'NO — STALE RECORD'}")
+        if not present:
+            failures.append(f"accepted residual {residual['id']} no longer matches the data")
 
     print()
     if failures:

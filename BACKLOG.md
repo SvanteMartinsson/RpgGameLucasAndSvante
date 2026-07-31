@@ -690,6 +690,60 @@ det är exakt de skärmarna apply-slicarna skriver om; ingen separat punkt.*
   (B126) MÅSTE följa 2D-rutnätet: ↑/↓ rad, ←/→ kolumn — FocusList-ordningen matchar den
   visuella 2×2-placeringen, inte radordning. Render före/efter.
 
+#### B139 — QUESTS S2: berättelsemaskineriet, ART-FRITT  ⭐ designbärande · 🟢 **AKTIV (nattbatch 2026-07-31)**
+Bygger hela kedje-, karaktärs- och dialoginfrastrukturen så att Mirrs porträtt och kedjetext
+bara **droppas in** när de är klara. Inget berättelseinnehåll authoras här.
+
+**Designbeslut (Lucas, LÅSTA):**
+- Berättelser byggs som **KEDJOR av separata quests** (inte etapper inuti en quest) — spelaren
+  återvänder till givaren mellan delarna, och **det återvändandet ÄR relationen**.
+- Karaktärer har **TILLSTÅND** (varm/kall) som byts av en berättelsehändelse. Tillståndet styr
+  porträtt, ton och dialogtext. Måste finnas i datamodellen **från början**.
+- Första karaktären är **Mirr (Miranda)**, värdshusvärdinna i Hordanita, i vilo-byggnaden där
+  anslagstavlan redan bor. Hennes man dör i en senare del: **FAST berättelse**, inte
+  förhindringsbar. Hon fortsätter ge quests efteråt.
+- Dialogskärmen **återanvänder stridsskärmens chrome** enligt godkänd Design-mockup.
+- **RÖST-REDO:** varje replik får ett stabilt id; uppspelning letar efter ljudfil och är TYST
+  om den saknas. Ingen röst byggs nu.
+
+**STEG 0-fynd (2026-07-31) — mätt, inte gissat:**
+- **Questschemat idag:** `Quest(id, title, text, giver_kind, objective, rewards, zone,
+  prereq_quest_ids, repeatable)`, byggd i `quests.parse_quests` med `row.get(...)`-defaults per
+  fält. Nya fält läggs in där med egna defaults → **gammal `quests.json` laddar oförändrat**.
+  Och questTILLSTÅND ligger i `player.quest_states` (`{status, progress}`) som redan har
+  `from_json`-default → **ingen `SAVE_VERSION`-bump** behövs för kedjor (prejudikat B135a).
+- **Tavlans insticksplats:** `_notice_board_rows()` bygger rader ur **tre** engine-anrop
+  (`board_quests()` / `bounty_quests()` / `tracked_quests()`) och `_draw_notice_list` grupperar
+  på en `section`-sträng. Karaktärsgivna quests behöver därför **ingen ny tavelkod**: de
+  filtreras bort ur `board_quests()` via `giver_kind`, och en fjärde section räcker för
+  "erbjuds nu"-markeringen. `engine.board_quests(giver_kind="board")` är redan
+  parametriserad — insticksplatsen finns.
+- **Stridsskärmens geometri (mätt):** `STAGE (16,16,992,360)` · `HUD (16,392,992,272)` ·
+  `LOG_PANEL (16,392,460,272)` · `VITALS (492,392,516,118)` + `ACTIONS (492,526,516,138)`.
+  Brevets "valpanel (492,392,516,272)" är exakt **unionen** av VITALS+ACTIONS → dialogskärmen
+  har ingen vitals-rad, så den tar hela högerkolumnen som valpanel. Canvas 1024×680, PAD 16.
+  Återanvändbart **utan kopiering**: `ui.wrap` · `ui.ScrollArea` + `ui.draw_scroll_indicators`
+  (B113) · `ui.FocusList` (B99/B126) · `ui.Tooltip`/`draw_tooltip` · `ui.draw_key_badge` ·
+  `battle_choreo.frames(ms)` för animationsperioder. B109:s sheet-läsare
+  (`enemy_idle_frames`) är hårdkodad mot `ENEMY_IDLE_DIR` och enemy-tier-höjd → **kan inte**
+  återanvändas rakt; samma 4-frames-strip-*mönster* (bredd//4, plain 0-1-2-3-loop,
+  `smoothscale` på nedskalning) återimplementeras för porträtt i egen modul.
+- **Fas-API:** `daynight.phase_at(seconds)` är rent, och `player.world_time_seconds` bär tiden
+  → en questregel kan läsa fasen **ur spelaren allena**, utan ny parameter i
+  `is_offerable(player, quest)`. Ingen signaturändring behövs.
+- **`quest_flags` BEKRÄFTAT rätt bärare:** `set[str]` på Player, redan i `PLAYER_FIELDS`
+  (`_str_set()`), **skrivs bara** av reward-kind `flag` och **läses av ingenting** i dag. Alltså
+  ett fritt, redan sparat, redan testat primitiv — karaktärstillstånd behöver ingen ny
+  persistens.
+
+- **B139a** — kedjemekanik: `chain_id`, `chain_index`, `recommended_level` (hint, gatar EJ),
+  `next_quest_id` + synligt erbjudande av nästa del.
+- **B139b** — `characters.json`: karaktärer med tillstånd; Mirr som första post.
+- **B139c** — dialogskärmen: stridschrome, talarnamn, valrutnät, röst-redo `line_id`.
+- **B139d** — `time_of_day`-villkor på quests.
+- **VÄNTAR PÅ LUCAS (byggs inte):** Mirrs porträtt-sheets (4 st) · hennes kedjetext (5 delar) ·
+  Torvald-detaljerna · barn-eller-inte. När de landar är det **ren datainmatning**.
+
 #### B138 — hollow_worg som nattart i Mörk Skog  · 🟢 **AKTIV (datafix 2026-07-31)**
 Följer B136e:s rapporterade fynd: mork_skog saknade natt-flavoured arter (inga
 undead/spirit/cursed i hela zonen). **Beslut (Lucas):** `hollow_worg` (beast+cursed,
@@ -706,7 +760,17 @@ samt `burg_146`-fallbacken, dag **6** / natt **10** — exakt samma raritetstier
 strängare än B136e:s validator: areans band ska ligga **helt inuti** korridoren, inte bara
 skära den. Nivåband, stats, HP och damage orörda.
 
-**⚠️ FYND FÖR BALANSBESLUT (inte en HALT — alla räcken i punkten håller):**
+**✅ BESLUT (Lucas 2026-07-31): worgen BEHÅLLS i `skog_deep_east` trots 3,3 % vinst vid Δ−3.**
+Detta är ett **MEDVETET DESIGNVAL** — *"överraskningar framför fullständig balans"* — inte en
+bieffekt och inte en bugg. Cellen är därför registrerad som **accepterad residual** i
+`tools/check_night_spawns.py` (`ACCEPTED_RESIDUALS`), som skriver ut den vid varje körning, och
+korsrefererad från `delta_curve.py`:s residual-sektion. Ett guard-test
+(`test_b138_skog_worg.test_the_accepted_residual_still_describes_reality`) binder deklarationen
+till datan, så den **inte kan bli inaktuell i tysthet**: tas worgen bort ur deep_east, eller
+ändras dess vikt/band, faller testet. Syftet är att en framtida sim-/balanskörning inte
+"råkar fixa" cellen i tron att den är en regression.
+
+**⚠️ MÄTNINGEN SOM LIGGER BAKOM BESLUTET:**
 Vid bandets TOPP i `skog_deep_east` (nivå 9 = Δ−3 för en level-6-spelare) vinner spelaren
 bara **3,3 %** — hårdare än allt annat i skogen:
 
@@ -720,10 +784,12 @@ bara **3,3 %** — hårdare än allt annat i skogen:
 Orsak: worgen är **basnivå 8**. Vid nivå 8 sker ingen skalning (62,9 %); vid nivå 9 slår
 `HP_GROWTH_PER_LEVEL = 0.38` in och HP hoppar 38 % → klippan. Samma klippa finns redan i
 heath (banden 8–10 där), så det är **inte** en ny stat-egenskap — bara en ny plats den syns på.
-**Knappen om det känns för hårt: ta bort worgen ur `skog_deep_east`** (2 rader) — då toppar
-skogens worg på nivå 8 = sin oskalade form = 62,9 %-cellen. Behållen nu eftersom deep_east
-redan är en svårighetsgatad area (treant 15 %), worgen är rar (7 % dag / 12,5 % natt) och
-flee finns i vilda strider.
+Cellen är **accepterad** (se beslutet ovan). Att den är spelbar alls vilar på tre saker som
+måste förbli sanna, annars är beslutet baserat på fel premisser: deep_east är redan en
+svårighetsgatad area (treant 15 %), worgen är **rar** (7 % dag / 12,5 % natt), och **flee finns**
+i vilda strider. Skulle någon av dem ändras — worgen blir common, eller flee tas bort i vilt —
+ska cellen omprövas. Kvarstående knapp om det ändå skaver: ta bort worgen ur `skog_deep_east`
+(2 rader), då toppar skogens worg på nivå 8 = sin oskalade 62,9 %-form.
 
 #### B136 — DYGNSCYKEL S1: klocka, mörker, stängda städer, nattspawns  ⭐ designbärande · 🟢 **AKTIV (batch 2026-07-31)**
 

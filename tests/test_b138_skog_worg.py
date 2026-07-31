@@ -153,6 +153,30 @@ class SkogWorgTests(unittest.TestCase):
             self.assertEqual(buckets[spawns.NIGHT] - buckets[spawns.DAY], set(), zone)
         self.assertIn(WORG, self.content.zone_enemies["mork_skog"])
 
+    def test_the_accepted_residual_still_describes_reality(self):
+        """Lucas accepted the 3.3%-at-d-3 cell as intentional ("surprises over
+        perfect balance"). This binds that written record to the data so it cannot
+        rot: if the worg leaves deep_east, or stops being the rare there, or wild
+        flee disappears, the record's premises no longer hold and this fails."""
+        from rpg_game.tools.check_night_spawns import ACCEPTED_RESIDUALS
+        residual = next(r for r in ACCEPTED_RESIDUALS
+                        if r["id"] == "b138-worg-deep-east-d3")
+        area = self._area(residual["area"])
+        self.assertEqual(residual["enemy"], WORG)
+        # still in the data, in both phases
+        for phase in (spawns.DAY, spawns.NIGHT):
+            self.assertIn(WORG, dict(area.roster(phase)), phase)
+        # premise 1: it is still the RARE one here, not a common
+        for phase in (spawns.DAY, spawns.NIGHT):
+            roster = area.roster(phase)
+            self.assertLess(dict(roster)[WORG],
+                            min(w for e, w in roster if e != WORG), phase)
+        # premise 2: wild fights still allow flee (the escape hatch the call rests on)
+        import inspect
+        from rpg_game.presentation import pygame_overworld
+        self.assertNotIn("allow_flee=False",
+                         inspect.getsource(pygame_overworld.OverworldApp.start_battle))
+
     def test_the_engine_really_spawns_it_in_the_forest(self):
         from rpg_game.core.game import GameEngine
         engine = GameEngine(content=self.content, rng=random.Random(5))
