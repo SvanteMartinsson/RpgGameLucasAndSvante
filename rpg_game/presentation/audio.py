@@ -55,6 +55,7 @@ MUSIC_GAIN = 0.48
 
 _NUM_CHANNELS = 16      # headroom so a busy round never drops a sound
 _WALK_CHANNEL = 0       # reserved: steps replace each other, never stack
+_VOICE_CHANNEL = 1      # B139c: reserved for a spoken dialogue line
 
 _attempted = False      # mixer init tried (success or not) — try only once
 _ready = False          # mixer is live; False = silent mode
@@ -79,7 +80,9 @@ def init() -> bool:
         if pygame.mixer.get_init() is None:
             pygame.mixer.init()
         pygame.mixer.set_num_channels(_NUM_CHANNELS)
-        pygame.mixer.set_reserved(_WALK_CHANNEL + 1)
+        # Walk owns channel 0; B139c reserves the next one for dialogue voice, so a
+        # busy round can never starve a spoken line (or vice versa).
+        pygame.mixer.set_reserved(_VOICE_CHANNEL + 1)
         _ready = True
     except Exception:   # no device / no mixer module — the game plays silent
         _ready = False
@@ -210,6 +213,47 @@ def ensure_music() -> None:
         except Exception:   # unreadable/corrupt track -> try the next one
             continue
     _music_path = None      # nothing in the dir could be played: stay silent
+
+
+# B139c: VOICE-READY, not voiced. A dialogue line carries a stable key
+# (dialogue.voice_key) and this looks for assets/sounds/voice/<key>.ogg. No voice
+# is recorded yet, so today every call is a silent no-op that returns False — the
+# screen never waits on it and never branches on it. When Lucas records lines,
+# dropping the files in is the whole integration.
+VOICE_DIR = os.path.join(SOUNDS_DIR, "voice")
+
+
+def voice_path(voice_key: str) -> "str | None":
+    """The audio file for a line key, or None when nothing has been recorded."""
+    if not voice_key:
+        return None
+    path = os.path.join(VOICE_DIR, f"{voice_key}.ogg")
+    return path if os.path.exists(path) else None
+
+
+def play_voice(voice_key: str) -> bool:
+    """Speak a dialogue line if audio exists for it. SILENT and False otherwise —
+    a missing recording is the normal case, never an error."""
+    path = voice_path(voice_key)
+    if path is None or not init():
+        return False
+    try:
+        sound = pygame.mixer.Sound(path)
+        sound.set_volume(_volume)
+        pygame.mixer.Channel(_VOICE_CHANNEL).play(sound)
+        return True
+    except Exception:   # unreadable/corrupt take -> the line just reads silently
+        return False
+
+
+def stop_voice() -> None:
+    """Cut a line short (the player skipped ahead)."""
+    if not _ready:
+        return
+    try:
+        pygame.mixer.Channel(_VOICE_CHANNEL).stop()
+    except Exception:   # pragma: no cover - device died mid-session
+        pass
 
 
 def _load(name: str) -> "pygame.mixer.Sound | None":

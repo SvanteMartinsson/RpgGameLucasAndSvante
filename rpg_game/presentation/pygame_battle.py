@@ -802,35 +802,12 @@ class BattleApp:
                 return
 
     def _focus_grid_step(self, key: int) -> None:
-        """B130: move focus to the nearest cell in the pressed direction, by
-        button geometry — so the 2x2 skill grid (and the Esc cell beside it, and
-        the item/swap grids) navigate the way they LOOK. Alignment on the cross
-        axis wins ties, then nearest on the travel axis; if nothing lies that way
-        the focus holds. FocusList stays a flat list; we only pick the index."""
-        position = self.focus._position()
-        if position is None:
-            return
-        section, index = position
-        items = self.focus._sections[section][1]
-        cx, cy = items[index].rect.center
-        best, best_score = None, None
-        for j, button in enumerate(items):
-            bx, by = button.rect.center
-            if key == pygame.K_LEFT and bx < cx - 1:
-                travel, cross = cx - bx, abs(by - cy)
-            elif key == pygame.K_RIGHT and bx > cx + 1:
-                travel, cross = bx - cx, abs(by - cy)
-            elif key == pygame.K_UP and by < cy - 1:
-                travel, cross = cy - by, abs(bx - cx)
-            elif key == pygame.K_DOWN and by > cy + 1:
-                travel, cross = by - cy, abs(bx - cx)
-            else:
-                continue
-            score = (cross, travel)            # prefer same row/column, then nearest
-            if best_score is None or score < best_score:
-                best_score, best = score, j
-        if best is not None:
-            self.focus.section, self.focus.index = section, best
+        """B130: geometric 2D focus nav. The RULE now lives in ui.focus_grid_step
+        (extracted in B139c so the dialogue choice grid navigates identically);
+        this only translates the pressed key into a direction."""
+        dx = (key == pygame.K_RIGHT) - (key == pygame.K_LEFT)
+        dy = (key == pygame.K_DOWN) - (key == pygame.K_UP)
+        ui.focus_grid_step(self.focus, dx, dy)
 
     # -- rendering ----------------------------------------------------------
 

@@ -197,11 +197,39 @@ class BuildingMenusMixin:
                              value=(f"{offers} new" if offers else
                                     (f"{tracked} active" if tracked else "")))
             y += 52
+        # B139c: whoever lives behind this door gets a Talk row. Keyed on the
+        # CHARACTER, not on the building type, so any future character in any
+        # building lights up without touching this code again.
+        character = self.engine.character_at(place_id, building_id)
+        if character is not None and self.engine.dialogue_script_for(character) is not None:
+            waiting = len(self.engine.character_quests(character.id))
+            ready = len(self.engine.character_turn_ins(character.id))
+            self._add_button(pygame.Rect(panel.x + 20, y, panel.width - 40, 44),
+                             T.talk_to(character.name),
+                             (lambda c=character: self._talk_to(c)), True,
+                             value=(f"{ready} ready" if ready else
+                                    (f"{waiting} new" if waiting else "")))
+            y += 52
         # B68/B8 2b: brewing moved home — the apothecary door (BUILDING_FUNCTION)
         # is now the only counter; the general shop's interim button is gone.
         back = pygame.Rect(panel.right - 170, panel.bottom - 54, 150, 40)
         self._add_button(back, T.BACK, self._close_building_menu, badge=T.BACK_KEY)
         self._draw_buttons()
+
+    def _talk_to(self, character) -> None:
+        """B139c: hand off to the dialogue screen, then come back to the overworld.
+        Same lifecycle as start_battle — it borrows the display and returns it."""
+        from rpg_game.presentation.pygame_dialogue import DialogueApp
+        self.building_menu = None
+        self.mode = "walk"
+        lines = DialogueApp(engine=self.engine, character=character,
+                            standalone=False, event_log=None).run()
+        self._apply_display_mode()      # re-assert the overworld display
+        for line in lines:
+            self.push_log(line, chatlog.loot_source_color("shop"),
+                          channel=chatlog.CHANNEL_QUEST)
+        for line in self.engine.quest_events_pending():
+            self.push_log(line, GOOD, channel=chatlog.CHANNEL_QUEST)
 
     def _open_notice_board(self) -> None:
         """B135b: leave the building menu and open the board as an overlay screen

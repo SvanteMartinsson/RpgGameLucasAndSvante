@@ -1,0 +1,134 @@
+{
+  "_comment": "B139c: dialogskript. Ett skript pekar på en KARAKTÄR och valfritt ett TILLSTÅND (state_id) — varm-Mirr och kall-Mirr är alltså olika skript för samma person, och B139b:s tillståndsmaskineri väljer mellan dem. Skript utan state_id är fallback för alla tillstånd. line.id är RÖSTNYCKELN (voice_key = '<skript-id>__<rad-id>') och får ALDRIG numreras om — den härleds bara ur id:n, aldrig ur radens position, så en ny rad ovanför en inspelad rad kan inte peka om dess ljud. Val kan HANDLA (accept_quest / turn_in_quest / end) och utförs av motorn genom den vanliga questpipelinen. Ospelbara val dimmas med skäl (B112).",
+  "_placeholder_note": "TEXTEN NEDAN ÄR PLATSHÅLLARE. Mirrs riktiga kedjetext (5 delar) + Torvald-detaljerna väntar på Lucas; det här är precis så mycket text som behövs för att skärmen ska gå att rendera, granska och testa. Byt ut text-fälten och lägg till noder — maskineriet behöver inte röras.",
+  "scripts": [
+    {
+      "id": "mirr_warm_placeholder",
+      "character_id": "mirr",
+      "state_id": "warm",
+      "start_node_id": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "lines": [
+            {
+              "id": "greet_1",
+              "speaker": "npc",
+              "text": "There you are. Sit anywhere that isn't wet — Torvald swore he'd fix the roof before the rains and I swore I'd believe him."
+            },
+            {
+              "id": "greet_2",
+              "speaker": "player",
+              "text": "It's dry enough."
+            },
+            {
+              "id": "greet_3",
+              "speaker": "npc",
+              "text": "It's dry where you're standing. Give it an hour."
+            }
+          ],
+          "choices": [
+            {
+              "id": "ask_town",
+              "text": "Ask about the town",
+              "next_node_id": "town"
+            },
+            {
+              "id": "ask_board",
+              "text": "Ask about the notice board",
+              "next_node_id": "board"
+            },
+            {
+              "id": "offer_roof",
+              "text": "Offer to fix the roof",
+              "next_node_id": "board",
+              "requires_level": 5,
+              "unavailable_reason": "You'd go straight through it. Grow first."
+            }
+          ]
+        },
+        {
+          "id": "town",
+          "lines": [
+            {
+              "id": "town_1",
+              "speaker": "npc",
+              "text": "Hordanita keeps its head down and its gates shut after dark. That's not fear, that's arithmetic."
+            }
+          ],
+          "choices": [
+            {
+              "id": "town_back",
+              "text": "Ask something else",
+              "next_node_id": "greet"
+            }
+          ]
+        },
+        {
+          "id": "board",
+          "lines": [
+            {
+              "id": "board_1",
+              "speaker": "npc",
+              "text": "By the door, where everyone can pretend they aren't reading it. Take what you like. The clerk pays without asking questions, which tells you what kind of work it is."
+            }
+          ],
+          "choices": [
+            {
+              "id": "board_back",
+              "text": "Ask something else",
+              "next_node_id": "greet"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mirr_cold_placeholder",
+      "character_id": "mirr",
+      "state_id": "cold",
+      "start_node_id": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "lines": [
+            {
+              "id": "cold_greet_1",
+              "speaker": "npc",
+              "text": "Sit where you like. The kitchen's open."
+            },
+            {
+              "id": "cold_greet_2",
+              "speaker": "npc",
+              "text": "The roof is fixed."
+            }
+          ],
+          "choices": [
+            {
+              "id": "cold_ask_town",
+              "text": "Ask about the town",
+              "next_node_id": "town"
+            }
+          ]
+        },
+        {
+          "id": "town",
+          "lines": [
+            {
+              "id": "cold_town_1",
+              "speaker": "npc",
+              "text": "The same as it was. Gates shut at dark. Nothing has changed here."
+            }
+          ],
+          "choices": [
+            {
+              "id": "cold_town_back",
+              "text": "Ask something else",
+              "next_node_id": "greet"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

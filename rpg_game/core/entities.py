@@ -563,6 +563,8 @@ class GameContent:
     quests: tuple = ()
     # B139b: the people stories come from, each with their own STATES.
     characters: tuple = ()
+    # B139c: dialogue scripts, keyed by character + state.
+    dialogue: tuple = ()
     # B135a: the canonical zone/theme names (cainos, mork_skog, cursed_mire,
     # grave_heath) from core_zone's ground_themes — the exact strings the shell
     # tags a spawn with, so a kill_in_zone objective can be validated at load.

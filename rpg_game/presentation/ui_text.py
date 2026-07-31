@@ -172,6 +172,11 @@ def quest_zone_label(zone: str) -> str:
     """'mork_skog' -> 'Moerk Skog' for a log/board hint."""
     return zone.replace("_", " ").title() if zone else ""
 
+
+def talk_to(name: str) -> str:
+    """B139c: the Talk row on a building with someone behind its door."""
+    return f"Talk to {name}"
+
 TOWN_TOURNAMENTS = "Tournaments"
 
 # Per-building store titles (the trade buildings each open one category slice).

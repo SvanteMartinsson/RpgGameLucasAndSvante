@@ -187,6 +187,41 @@ class FocusList:
         self.index = index
 
 
+def focus_grid_step(focus: "FocusList", dx: int, dy: int) -> None:
+    """B130: move focus to the nearest cell in a direction, BY GEOMETRY — so a 2D
+    grid navigates the way it LOOKS rather than in registration order. Alignment on
+    the cross axis wins ties, then nearest on the travel axis; if nothing lies that
+    way the focus holds. FocusList stays a flat list; this only picks the index.
+
+    Extracted from BattleApp (B130) in B139c so the dialogue screen's choice grid
+    navigates identically instead of carrying a second copy of the rule.
+    """
+    position = focus._position()
+    if position is None or (dx == 0 and dy == 0):
+        return
+    section, index = position
+    items = focus._sections[section][1]
+    cx, cy = items[index].rect.center
+    best, best_score = None, None
+    for candidate, button in enumerate(items):
+        bx, by = button.rect.center
+        if dx < 0 and bx < cx - 1:
+            travel, cross = cx - bx, abs(by - cy)
+        elif dx > 0 and bx > cx + 1:
+            travel, cross = bx - cx, abs(by - cy)
+        elif dy < 0 and by < cy - 1:
+            travel, cross = cy - by, abs(bx - cx)
+        elif dy > 0 and by > cy + 1:
+            travel, cross = by - cy, abs(bx - cx)
+        else:
+            continue
+        score = (cross, travel)            # prefer same row/column, then nearest
+        if best_score is None or score < best_score:
+            best_score, best = score, candidate
+    if best is not None:
+        focus.section, focus.index = section, best
+
+
 @dataclass
 class FocusSlider:
     """B99 S2: a focusable slider row (music volume). Registered into the

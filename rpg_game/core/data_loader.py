@@ -284,6 +284,12 @@ def load_content() -> GameContent:
         characters = parse_characters(_read_json("characters.json"))
     except FileNotFoundError:
         characters = ()
+    # B139c: dialogue scripts. Missing file = nobody has lines yet.
+    from rpg_game.core.dialogue import parse_dialogue
+    try:
+        dialogue = parse_dialogue(_read_json("dialogue.json"))
+    except FileNotFoundError:
+        dialogue = ()
     upgrade_recipes = _load_upgrade_recipes()
 
     # B68: alchemy brew recipes.
@@ -457,6 +463,7 @@ def load_content() -> GameContent:
         rare_loot_table=rare_loot_table,
         quests=quests,
         characters=characters,
+        dialogue=dialogue,
         travel_event_slot_chance=travel_event_slot_chance,
         travel_events=travel_events,
         upgrade_recipes=upgrade_recipes,
@@ -477,6 +484,9 @@ def load_content() -> GameContent:
     # last, on the assembled content.
     from rpg_game.core.characters import validate_characters
     validate_characters(characters, content)
+    # B139c: dialogue references characters, their states and quests.
+    from rpg_game.core.dialogue import validate_dialogue
+    validate_dialogue(dialogue, content)
     return content
 
 

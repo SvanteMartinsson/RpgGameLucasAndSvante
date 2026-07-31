@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import dataclass
 
-from rpg_game.core import alchemy, bestiary, bosses, characters, chests, combat, daynight, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
+from rpg_game.core import alchemy, bestiary, bosses, characters, chests, combat, daynight, dialogue, equipment, inventory, persistence, progression, quests, store, talents, tomes, tournaments, upgrades, world
 from rpg_game.core.data_loader import load_content
 from rpg_game.core.entities import Enemy, GameContent, GameState, Inventory, LootDrop, Player, Tournament
 
@@ -878,6 +878,43 @@ class GameEngine:
         mine = characters.quests_from(all_quests, character_id)
         return [quest for quest in mine
                 if quests.is_offerable(self.player, quest, all_quests)]
+
+    # -- B139c: dialogue ------------------------------------------------------
+
+    def dialogue_script_for(self, character):
+        """The script this character speaks in their CURRENT state (B139b), or None
+        when they have nothing written yet."""
+        if character is None:
+            return None
+        state = self.character_state(character)
+        return dialogue.script_for(self.content.dialogue, character.id,
+                                   state.id if state is not None else "")
+
+    def start_conversation(self, character):
+        """A fresh Conversation cursor, or None if this character has no script."""
+        script = self.dialogue_script_for(character)
+        return None if script is None else dialogue.Conversation(script)
+
+    def dialogue_choice_blocker(self, choice) -> str:
+        """Why a choice cannot be taken ('' = it can) — a SENTENCE for the dim."""
+        return dialogue.choice_blocker(self.player, self.content, quests,
+                                       self.all_quests(), choice)
+
+    def apply_dialogue_choice(self, choice) -> list:
+        """Run a choice's ACTION through the ordinary quest pipeline and return the
+        log lines it produced. Moving the cursor is the Conversation's job; a
+        blocked choice does nothing at all."""
+        if self.dialogue_choice_blocker(choice):
+            return []
+        events: list[str] = []
+        if choice.action == dialogue.ACTION_ACCEPT:
+            if self.accept_quest(choice.quest_id):
+                events.extend(self.quest_events_pending())
+        elif choice.action == dialogue.ACTION_TURN_IN:
+            result = self.turn_in_quest(choice.quest_id)
+            if result.ok:
+                events.extend(self.quest_events_pending())
+        return events
 
     def character_turn_ins(self, character_id: str) -> list:
         """This character's quests that are finished and waiting to be handed in."""
