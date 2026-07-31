@@ -74,6 +74,18 @@ class Quest:
     zone: str = ""                        # hint shown in the log; "" = anywhere
     prereq_quest_ids: tuple[str, ...] = ()
     repeatable: bool = False
+    # B139a: chains. A STORY is a chain of separate quests, not stages inside one
+    # quest — the player walks back to the giver between parts, and that walking
+    # back IS the relationship. `chain_id` groups the parts, `chain_index` is the
+    # 1-based position ("Part 2 of 4"), and `next_quest_id` names the part this one
+    # unlocks. All optional: a standalone quest sets none of them.
+    chain_id: str = ""
+    chain_index: int = 0
+    next_quest_id: str = ""
+    # THE DIRECTOR'S FIELD. A suggestion shown to the player, deliberately NOT a
+    # gate: a chain must never block a player from walking where they like, so
+    # this only ever renders as a hint. 0 = no suggestion.
+    recommended_level: int = 0
 
 
 @dataclass
@@ -85,6 +97,9 @@ class QuestTurnInResult:
     xp_gained: int = 0
     levels_gained: int = 0
     items_granted: tuple[str, ...] = ()
+    # B139a: set when this turn-in unlocked the next part of a chain, so the shell
+    # can jump the player straight to it instead of making them hunt the list.
+    next_quest_id: str = ""
 
 
 def parse_quests(data: dict) -> tuple[Quest, ...]:
@@ -109,6 +124,13 @@ def parse_quests(data: dict) -> tuple[Quest, ...]:
             zone=str(row.get("zone", "")),
             prereq_quest_ids=tuple(row.get("prereq_quest_ids", ())),
             repeatable=bool(row.get("repeatable", False)),
+            # B139a: every chain field defaults to "unset", so a quests.json
+            # written before chains existed parses to exactly what it parsed to
+            # before — no migration, no version bump.
+            chain_id=str(row.get("chain_id", "")),
+            chain_index=int(row.get("chain_index", 0)),
+            next_quest_id=str(row.get("next_quest_id", "")),
+            recommended_level=int(row.get("recommended_level", 0)),
         ))
     return tuple(quests)
 
@@ -145,6 +167,85 @@ def validate_quests(quests: tuple[Quest, ...], content: GameContent) -> None:
             if required == quest.id:
                 raise ValueError(f"quest {quest.id} requires itself")
     _reject_prereq_cycles(by_id)
+    _validate_chains(by_id)
+
+
+def _validate_chains(by_id: dict[str, Quest]) -> None:
+    """B139a: a chain must be a well-formed line of parts, checked at load.
+
+    A broken chain is worse than a broken single quest: it strands a story
+    half-told, and the player has no way to tell that from "the author meant
+    that". So every one of these is an error at startup, not a silent miss.
+    """
+    for quest in by_id.values():
+        if quest.recommended_level and quest.recommended_level < 1:
+            raise ValueError(f"quest {quest.id} recommended_level must be >= 1")
+        if quest.chain_index and not quest.chain_id:
+            raise ValueError(f"quest {quest.id} has a chain_index but no chain_id")
+        if quest.chain_id and quest.chain_index < 1:
+            raise ValueError(f"quest {quest.id} is in chain {quest.chain_id!r} "
+                             f"but has no 1-based chain_index")
+        if not quest.next_quest_id:
+            continue
+        if quest.next_quest_id == quest.id:
+            raise ValueError(f"quest {quest.id} chains to itself")
+        following = by_id.get(quest.next_quest_id)
+        if following is None:
+            raise ValueError(f"quest {quest.id} chains to unknown quest "
+                             f"{quest.next_quest_id!r}")
+        # The next part belongs to the SAME story, or "Part 2 of 4" is a lie.
+        if quest.chain_id and following.chain_id != quest.chain_id:
+            raise ValueError(f"quest {quest.id} (chain {quest.chain_id!r}) chains to "
+                             f"{following.id} in chain {following.chain_id!r}")
+        if quest.repeatable:
+            raise ValueError(f"quest {quest.id} is repeatable AND chains to "
+                             f"{following.id} — a story part cannot repeat")
+
+    # One predecessor per part: two quests unlocking the same part would make
+    # "which part comes next" ambiguous and the part offer fire twice.
+    predecessors: dict[str, str] = {}
+    for quest in by_id.values():
+        if not quest.next_quest_id:
+            continue
+        earlier = predecessors.get(quest.next_quest_id)
+        if earlier is not None:
+            raise ValueError(f"quests {earlier} and {quest.id} both chain to "
+                             f"{quest.next_quest_id}")
+        predecessors[quest.next_quest_id] = quest.id
+
+    # Unique positions inside a chain, so the part numbering is a real ordering.
+    seen_positions: dict[str, dict[int, str]] = {}
+    for quest in by_id.values():
+        if not quest.chain_id:
+            continue
+        taken = seen_positions.setdefault(quest.chain_id, {})
+        if quest.chain_index in taken:
+            raise ValueError(f"chain {quest.chain_id!r} has two part "
+                             f"{quest.chain_index}s: {taken[quest.chain_index]} "
+                             f"and {quest.id}")
+        taken[quest.chain_index] = quest.id
+
+    _reject_chain_cycles(by_id)
+
+
+def _reject_chain_cycles(by_id: dict[str, Quest]) -> None:
+    """A next_quest_id loop would make a story that never ends."""
+    state: dict[str, int] = {}
+
+    def walk(quest_id: str, trail: tuple[str, ...]) -> None:
+        mark = state.get(quest_id, 0)
+        if mark == 1:
+            raise ValueError("quest chain cycle: " + " -> ".join((*trail, quest_id)))
+        if mark == 2:
+            return
+        state[quest_id] = 1
+        following = by_id[quest_id].next_quest_id
+        if following and following in by_id:
+            walk(following, (*trail, quest_id))
+        state[quest_id] = 2
+
+    for quest_id in by_id:
+        walk(quest_id, ())
 
 
 def _validate_reward(quest: Quest, reward: dict, content: GameContent) -> None:
@@ -229,15 +330,27 @@ def _store(player: Player, quest_id: str, status: str, progress: int) -> None:
     player.quest_states[quest_id] = {"status": status, "progress": max(0, progress)}
 
 
-def prereqs_met(player: Player, quest: Quest) -> bool:
-    return all(status_of(player, required) == TURNED_IN
-               for required in quest.prereq_quest_ids)
+def prereqs_met(player: Player, quest: Quest, all_quests=()) -> bool:
+    """Whether this quest's prerequisites are satisfied.
+
+    B139a: `next_quest_id` IS the chain's ordering — a part is not offered until
+    the part that names it has been handed in. That makes one field the single
+    source of truth: an author writes the chain forwards once, instead of also
+    repeating it backwards in every part's prereq_quest_ids where the two could
+    silently disagree. Pass `all_quests` so the predecessor can be found; without
+    it only the explicit prereqs are checked.
+    """
+    if not all(status_of(player, required) == TURNED_IN
+               for required in quest.prereq_quest_ids):
+        return False
+    earlier = chain_predecessor(all_quests, quest)
+    return earlier is None or status_of(player, earlier.id) == TURNED_IN
 
 
-def is_offerable(player: Player, quest: Quest) -> bool:
+def is_offerable(player: Player, quest: Quest, all_quests=()) -> bool:
     """Shown on a board: never accepted (or repeatable and handed in) + prereqs."""
     status = status_of(player, quest.id)
-    if not prereqs_met(player, quest):
+    if not prereqs_met(player, quest, all_quests):
         return False
     if status == AVAILABLE:
         return True
@@ -247,7 +360,72 @@ def is_offerable(player: Player, quest: Quest) -> bool:
 def offerable_quests(player: Player, quests, giver_kind: str = "") -> list[Quest]:
     return [quest for quest in quests
             if (not giver_kind or quest.giver_kind == giver_kind)
-            and is_offerable(player, quest)]
+            and is_offerable(player, quest, quests)]
+
+
+# --- B139a: chains ------------------------------------------------------------
+# Every chain question below is DERIVED from the quest statuses that already
+# persist. No new player field, no save migration: "part 3 is waiting for you" is
+# just "part 2 is turned_in and part 3 is still available".
+
+def chain_parts(quests, chain_id: str) -> list[Quest]:
+    """Every part of a chain, in story order."""
+    if not chain_id:
+        return []
+    return sorted((q for q in quests if q.chain_id == chain_id),
+                  key=lambda q: q.chain_index)
+
+
+def chain_part_text(quests, quest: Quest) -> str:
+    """'Part 2 of 4' for a chained quest, '' for a standalone one."""
+    if not quest.chain_id or not quest.chain_index:
+        return ""
+    total = len(chain_parts(quests, quest.chain_id))
+    return f"Part {quest.chain_index} of {total}" if total else ""
+
+
+def chain_predecessor(quests, quest: Quest) -> "Quest | None":
+    """The part that unlocks this one (None for a first part / standalone)."""
+    return next((q for q in quests if q.next_quest_id and q.next_quest_id == quest.id),
+                None)
+
+
+def chain_next(quests, quest: Quest) -> "Quest | None":
+    """The part this one unlocks, if it names one and it exists."""
+    if not quest.next_quest_id:
+        return None
+    return next((q for q in quests if q.id == quest.next_quest_id), None)
+
+
+def is_new_chain_offer(player: Player, quests, quest: Quest) -> bool:
+    """Whether this quest is a chain continuation WAITING to be picked up.
+
+    True exactly while its predecessor is handed in and this part has not been
+    accepted yet. That is what the UI marks: a continuation must be ANNOUNCED,
+    never quietly appear among the ordinary notices — the whole point of chains is
+    that the player comes back for the next part on purpose.
+    """
+    if not is_offerable(player, quest, quests):
+        return False
+    earlier = chain_predecessor(quests, quest)
+    return earlier is not None and status_of(player, earlier.id) == TURNED_IN
+
+
+def new_chain_offers(player: Player, quests, giver_kind: str = "") -> list[Quest]:
+    """Every chain continuation currently waiting to be picked up."""
+    return [quest for quest in quests
+            if (not giver_kind or quest.giver_kind == giver_kind)
+            and is_new_chain_offer(player, quests, quest)]
+
+
+def recommended_level_text(quest: Quest) -> str:
+    """The director's hint. Never a gate — see Quest.recommended_level."""
+    return f"Recommended level {quest.recommended_level}" if quest.recommended_level else ""
+
+
+def is_below_recommended_level(player: Player, quest: Quest) -> bool:
+    """Whether to render the hint as a WARNING. Still never blocks anything."""
+    return bool(quest.recommended_level) and player.level < quest.recommended_level
 
 
 def tracked_quests(player: Player, quests) -> list[Quest]:
@@ -256,9 +434,13 @@ def tracked_quests(player: Player, quests) -> list[Quest]:
             if status_of(player, quest.id) in (ACTIVE, COMPLETED)]
 
 
-def accept(player: Player, quest: Quest) -> bool:
-    """Take the quest. Repeating a turned-in quest resets its progress."""
-    if not is_offerable(player, quest):
+def accept(player: Player, quest: Quest, all_quests=()) -> bool:
+    """Take the quest. Repeating a turned-in quest resets its progress.
+
+    The chain order is enforced HERE too, not only in the board listing: a UI bug
+    (or a hand-edited save) must not be able to start part 3 before part 2.
+    """
+    if not is_offerable(player, quest, all_quests):
         return False
     _store(player, quest.id, ACTIVE, 0)
     return True
@@ -382,6 +564,14 @@ def turn_in(player: Player, content: GameContent, quest: Quest) -> QuestTurnInRe
     for reward in quest.rewards:
         _grant_reward(player, content, reward, result)
     _store(player, quest.id, TURNED_IN, quest.objective.count)
+    # B139a: a chain continuation is ANNOUNCED. Handing in part 2 must not leave
+    # part 3 to be discovered by chance in a list — the offer is the reason to walk
+    # back, so it gets its own line. Rewards are stored before this so the
+    # announcement is the LAST thing the player reads.
+    following = chain_next(content.quests, quest)
+    if following is not None and status_of(player, following.id) == AVAILABLE:
+        result.next_quest_id = following.id
+        result.events.append(f"The story continues: {following.title}.")
     return result
 
 

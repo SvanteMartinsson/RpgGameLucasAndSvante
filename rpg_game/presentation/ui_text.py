@@ -161,6 +161,11 @@ QUEST_REWARD = "Reward"
 QUEST_SECTION_OFFERS = "Notices"
 QUEST_SECTION_ACTIVE = "Your quests"
 QUEST_SECTION_BOUNTIES = "Bounties (repeatable)"
+# B139a: a chain continuation gets its OWN section at the top of the board and a
+# badge on the row. A story part must be announced, never quietly filed among the
+# ordinary notices — coming back for the next part is the point.
+QUEST_SECTION_CONTINUES = "The story continues"
+QUEST_CHAIN_NEW = "new"
 
 
 def quest_zone_label(zone: str) -> str:

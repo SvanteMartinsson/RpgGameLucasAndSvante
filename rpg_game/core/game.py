@@ -834,6 +834,24 @@ class GameEngine:
         """Active + finished-but-not-handed-in — what the quest log lists."""
         return quests.tracked_quests(self.player, self.all_quests())
 
+    # -- B139a: chains --------------------------------------------------------
+
+    def chain_offers(self, giver_kind: str = "") -> list:
+        """Chain continuations waiting to be picked up — the ones the UI ANNOUNCES
+        rather than filing among the ordinary notices."""
+        return quests.new_chain_offers(self.player, self.all_quests(), giver_kind)
+
+    def quest_chain_part_text(self, quest) -> str:
+        """'Part 2 of 4', or '' for a standalone quest."""
+        return quests.chain_part_text(self.all_quests(), quest)
+
+    def quest_is_new_chain_offer(self, quest) -> bool:
+        return quests.is_new_chain_offer(self.player, self.all_quests(), quest)
+
+    def quest_below_recommended_level(self, quest) -> bool:
+        """Whether to warn on the recommended level. NEVER blocks acceptance."""
+        return quests.is_below_recommended_level(self.player, quest)
+
     def quest_status(self, quest_id: str) -> str:
         return quests.status_of(self.player, quest_id)
 
@@ -845,7 +863,7 @@ class GameEngine:
 
     def accept_quest(self, quest_id: str) -> bool:
         quest = self.quest_by_id(quest_id)
-        if quest is None or not quests.accept(self.player, quest):
+        if quest is None or not quests.accept(self.player, quest, self.all_quests()):
             return False
         # Accepting can immediately satisfy a delivery objective already in the bag.
         self._quest_events.append(f"Quest accepted: {quest.title}.")

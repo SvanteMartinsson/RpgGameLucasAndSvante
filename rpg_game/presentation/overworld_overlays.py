@@ -345,9 +345,20 @@ class OverlaysMixin:
 
     def _notice_board_rows(self):
         """(quest, section, label, value) per row: authored notices, then the
-        repeatable bounties (B135e), then whatever you are already on."""
+        repeatable bounties (B135e), then whatever you are already on.
+
+        B139a: a chain continuation is lifted OUT of the ordinary notices into its
+        own leading section, so handing in part 2 visibly announces part 3 instead
+        of letting it appear unremarked in the list. Reuses the existing section
+        mechanism — no second list implementation."""
         rows = []
+        continuing = {quest.id for quest in self.engine.chain_offers("board")}
         for quest in self.engine.board_quests():
+            if quest.id in continuing:
+                rows.append((quest, "continues", quest.title, T.QUEST_CHAIN_NEW))
+        for quest in self.engine.board_quests():
+            if quest.id in continuing:
+                continue
             rows.append((quest, "offers", quest.title,
                          T.quest_zone_label(quest.zone)))
         for quest in self.engine.bounty_quests():
@@ -399,7 +410,7 @@ class OverlaysMixin:
         row_h = 30
         header_h = 22
         # one header per non-empty section
-        sections = [key for key in ("offers", "bounties", "active")
+        sections = [key for key in ("continues", "offers", "bounties", "active")
                     if any(section == key for _q, section, *_r in rows)]
         content_h = len(rows) * row_h + len(sections) * header_h
         scroll = self._menu_scrolls["notice_board"]
@@ -409,7 +420,8 @@ class OverlaysMixin:
         for quest, section, label, value in rows:
             if section != drawn_section:
                 drawn_section = section
-                title = {"offers": T.QUEST_SECTION_OFFERS,
+                title = {"continues": T.QUEST_SECTION_CONTINUES,
+                         "offers": T.QUEST_SECTION_OFFERS,
                          "bounties": T.QUEST_SECTION_BOUNTIES,
                          "active": T.QUEST_SECTION_ACTIVE}[section]
                 if rect.top - header_h < y < rect.bottom:
@@ -440,9 +452,21 @@ class OverlaysMixin:
         title = self.font.render(self._fit_text(quest.title, rect.width), True, TEXT)
         self.screen.blit(title, (rect.x, y))
         y += 28
-        if quest.zone:
-            self.screen.blit(self.font_sm.render(T.quest_zone_label(quest.zone),
-                                                 True, TEXT_DIM), (rect.x, y))
+        # B139a: "Part 2 of 4" rides beside the zone hint so the player always
+        # knows where in a story they stand.
+        part = engine.quest_chain_part_text(quest)
+        subtitle = " · ".join(bit for bit in (part, T.quest_zone_label(quest.zone)) if bit)
+        if subtitle:
+            self.screen.blit(self.font_sm.render(subtitle, True,
+                                                 ACCENT if part else TEXT_DIM), (rect.x, y))
+            y += 20
+        # B139a: the director's hint. WARN when under-levelled, never a block —
+        # accepting stays available at any level (see quests.recommended_level).
+        hint = core_quests.recommended_level_text(quest)
+        if hint:
+            under = engine.quest_below_recommended_level(quest)
+            self.screen.blit(self.font_sm.render(hint, True, WARN if under else TEXT_DIM),
+                             (rect.x, y))
             y += 20
         for line in ui.wrap(quest.text, self.font_sm, rect.width):
             self.screen.blit(self.font_sm.render(line, True, TEXT_DIM), (rect.x, y))
