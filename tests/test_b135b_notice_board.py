@@ -13,6 +13,7 @@ Skips without pygame.
 
 import os
 import unittest
+from unittest import mock
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -156,18 +157,15 @@ class NoticeBoardTests(unittest.TestCase):
         self.assertEqual(row.value, "ready")
 
     def test_the_empty_board_says_so(self):
-        # turn every offer into a taken quest, then check the message path
+        # B135e made the board never truly empty (bounties regenerate), so the
+        # empty-state path is driven directly: with nothing on offer and nothing
+        # tracked, the screen draws the bare-board message instead of a list.
         self._open()
-        # Turning one in can UNGATE another (side_hollow_worg), so drain until dry.
-        for _ in range(20):
-            offers = self.eng.board_quests()
-            if not offers:
-                break
-            for quest in offers:
-                self.eng.player.quest_states[quest.id] = {
-                    "status": core_quests.TURNED_IN, "progress": 0}
-        self.app.draw()
-        self.assertEqual(self.app._notice_board_rows(), [])
+        with mock.patch.object(type(self.eng), "board_quests", return_value=[]), \
+             mock.patch.object(type(self.eng), "bounty_quests", return_value=[]), \
+             mock.patch.object(type(self.eng), "tracked_quests", return_value=[]):
+            self.assertEqual(self.app._notice_board_rows(), [])
+            self.app.draw()          # the message path must not raise
 
     # -- the accept / hand-in / abandon loop ---------------------------------
 
@@ -233,8 +231,13 @@ class NoticeBoardTests(unittest.TestCase):
         self.app.draw()
         selected = self.app.board_selection
         self.assertTrue(selected)
-        self.app._handle_key(_key(pygame.K_RIGHT))      # jump to the action section
-        self.app.draw()
+        # Walk sections rightwards until the action pane (B135e added a bounty
+        # section between the notices and the action).
+        for _ in range(len(self.app.focus._sections)):
+            if self.app.focus._sections[self.app.focus.section][0] == "board_action":
+                break
+            self.app._handle_key(_key(pygame.K_RIGHT))
+            self.app.draw()
         self.assertEqual(self.app.focus._sections[self.app.focus.section][0],
                          "board_action")
         self.app._handle_key(_key(pygame.K_RETURN))     # accept

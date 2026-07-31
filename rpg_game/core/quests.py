@@ -447,6 +447,133 @@ def _item_name(content: GameContent, item_id: str) -> str:
     return item_id
 
 
+# --- B135e: the repeatable bounty board --------------------------------------
+# Bounties are GENERATED, not authored: each slot rolls a species out of the
+# player's current zone and asks for N of them. They exist so grinding has a
+# direction, NOT as an income source — see BOUNTY_BONUS_FRACTION.
+
+MAX_BOUNTY_SLOTS = 3          # how many bounties hang on the board at once
+BOUNTY_MIN_COUNT = 3
+BOUNTY_MAX_COUNT = 6
+
+# B62 ECONOMY RAIL. A bounty's gold is a FRACTION of what its own kills already
+# pay: clearing N enemies earns N * avg_kill_gold anyway, and the bounty adds
+# this much on top. Well under 1.0, so per-kill income while on a bounty can
+# never beat free grinding by much — and because a bounty names ONE species, the
+# player spends extra time finding it, which eats even this margin. The authored
+# one-shot quests may pay richer precisely because they cannot be repeated.
+BOUNTY_BONUS_FRACTION = 0.35
+BOUNTY_XP_FRACTION = 0.35
+
+
+def bounty_zone_for(player: Player, content: GameContent) -> str:
+    """The zone a bounty should be rolled from: the one whose level band contains
+    the player's level, else the closest band below (so a high-level player still
+    gets the toughest zone rather than nothing)."""
+    bands = getattr(content, "zone_bands", {}) or {}
+    if not bands:
+        return ""
+    fitting = [zone for zone, (low, high) in bands.items()
+               if low <= player.level <= high]
+    if fitting:
+        return sorted(fitting, key=lambda z: bands[z][0])[0]
+    below = [zone for zone, (low, _high) in bands.items() if low <= player.level]
+    if below:
+        return sorted(below, key=lambda z: bands[z][0])[-1]
+    return sorted(bands, key=lambda z: bands[z][0])[0]
+
+
+def _bounty_rng(zone: str, slot: int, roll: int) -> "random.Random":
+    """A dedicated deterministic stream per (zone, slot, roll).
+
+    Deliberately NOT the engine rng: rolling a bounty must not consume draws from
+    the stream that drives encounters/loot/the map (CLAUDE.md determinism rule).
+    A string seed is stable across runs and platforms."""
+    import random
+    return random.Random(f"bounty|{zone}|{slot}|{roll}")
+
+
+def bounty_roll_count(player: Player, slot: int) -> int:
+    return int((player.bounty_rolls or {}).get(str(slot), 0))
+
+
+def generate_bounty(player: Player, content: GameContent, slot: int,
+                    taken: tuple[str, ...] = (), zone: str = "") -> Quest | None:
+    """Roll slot `slot`'s current bounty. Deterministic: the same player state
+    always yields the same bounty, and handing one in bumps only that slot's
+    counter, which rerolls only that slot. `taken` lists species already posted in
+    earlier slots — the draw walks on until it finds a distinct one, so the board
+    never shows the same beast twice (still deterministic: it is the same stream).
+    `zone` overrides the level-derived zone (used by the economy check tool)."""
+    zone = zone or bounty_zone_for(player, content)
+    roster = (getattr(content, "zone_enemies", {}) or {}).get(zone, ())
+    if not roster:
+        return None
+    roll = bounty_roll_count(player, slot)
+    rng = _bounty_rng(zone, slot, roll)
+    # The SPECIES advances by rotation: a seeded starting offset per slot, then
+    # +1 per hand-in. This makes "the slot never re-posts what it just paid out"
+    # true BY CONSTRUCTION (no repeat while the roster has >1 entry) instead of
+    # relying on a redraw loop, and the board eventually cycles the whole roster.
+    # The count and therefore the reward still roll per hand-in.
+    base = _bounty_rng(zone, slot, 0).randrange(len(roster))
+    index = (base + roll) % len(roster)
+    for _ in range(len(roster)):          # keep the slots on distinct species
+        if roster[index] not in taken:
+            break
+        index = (index + 1) % len(roster)
+    enemy_id = roster[index]
+    enemy = content.enemies[enemy_id]
+    count = rng.randint(BOUNTY_MIN_COUNT, BOUNTY_MAX_COUNT)
+    avg_gold = (enemy.gold_min + enemy.gold_max) / 2
+    gold = max(1, progression.round_half_up(avg_gold * count * BOUNTY_BONUS_FRACTION))
+    xp = max(1, progression.round_half_up(enemy.xp_reward * count * BOUNTY_XP_FRACTION))
+    return Quest(
+        id=f"bounty_{slot}",
+        title=f"Bounty: {enemy.name}",
+        text=(f"The board carries a standing price on {enemy.name.lower()}s in "
+              f"{zone_label(zone)}. Bring proof of {count} and the clerk pays "
+              f"without asking questions."),
+        giver_kind="bounty",
+        objective=QuestObjective(kind="kill_enemy", target=enemy_id, count=count),
+        rewards=({"kind": "gold", "amount": gold}, {"kind": "xp", "amount": xp}),
+        zone=zone,
+        repeatable=True,
+    )
+
+
+def bounty_board(player: Player, content: GameContent) -> tuple[Quest, ...]:
+    """The bounties currently on offer — at most MAX_BOUNTY_SLOTS, all distinct
+    species. A bounty the player has ACCEPTED keeps its posted species (its state
+    is keyed on the slot), so the board is stable while you work on it."""
+    out: list[Quest] = []
+    taken: list[str] = []
+    for slot in range(MAX_BOUNTY_SLOTS):
+        bounty = generate_bounty(player, content, slot, tuple(taken))
+        if bounty is not None:
+            out.append(bounty)
+            taken.append(bounty.objective.target)
+    return tuple(out)
+
+
+def reroll_bounty(player: Player, slot: int) -> None:
+    """Bump one slot's counter so its next bounty is a fresh roll."""
+    rolls = dict(player.bounty_rolls or {})
+    rolls[str(slot)] = bounty_roll_count(player, slot) + 1
+    player.bounty_rolls = rolls
+    # A rerolled slot starts clean: the old bounty's state must not carry over.
+    player.quest_states.pop(f"bounty_{slot}", None)
+
+
+def slot_of_bounty(quest_id: str) -> int | None:
+    if not quest_id.startswith("bounty_"):
+        return None
+    try:
+        return int(quest_id.split("_", 1)[1])
+    except ValueError:
+        return None
+
+
 # --- display helpers (pure, so both shells share them) -----------------------
 
 def objective_text(content: GameContent, quest: Quest) -> str:

@@ -110,6 +110,21 @@ def render_quest_tab(out: Path) -> None:
     _save(app, out)
 
 
+def render_bounty_board(out: Path) -> None:
+    """B135e: the bounty section, with one bounty already under way."""
+    engine = _engine()
+    bounty = engine.bounty_quests()[1]
+    engine.accept_quest(bounty.id)
+    for _ in range(max(1, bounty.objective.count // 2)):
+        core_quests.note_kill(engine.player, engine.content, engine.all_quests(),
+                              bounty.objective.target, bounty.zone)
+    app = _app(engine)
+    app.open_overlay("notice_board")
+    app.board_selection = engine.bounty_quests()[0].id
+    app.draw()
+    _save(app, out)
+
+
 def main() -> None:
     pygame.init()
     pygame.display.set_mode((1, 1))
@@ -118,8 +133,10 @@ def main() -> None:
     render_board_active(root / "b135b_notice_board_active.png")
     render_quest_log(root / "b135c_quest_log.png")
     render_quest_tab(root / "b135c_quest_tab.png")
+    render_bounty_board(root / "b135e_bounty_board.png")
     pygame.quit()
-    print("wrote b135b_notice_board{,_active}.png + b135c_quest_{log,tab}.png")
+    print("wrote b135b_notice_board{,_active}.png + b135c_quest_{log,tab}.png "
+          "+ b135e_bounty_board.png")
 
 
 if __name__ == "__main__":

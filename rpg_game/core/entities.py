@@ -504,6 +504,10 @@ class Player:
     # and free-form flags for future quest gating.
     shop_discount_pct: int = 0
     quest_flags: set[str] = field(default_factory=set)
+    # B135e: per-bounty-slot reroll counter ("0"/"1"/"2" -> how many handed in).
+    # This IS the bounty generator's seed input, so the board is reproducible from
+    # the save alone and no rng draw is spent on it.
+    bounty_rolls: dict[str, int] = field(default_factory=dict)
 
     @property
     def is_alive(self) -> bool:
@@ -553,6 +557,10 @@ class GameContent:
     # grave_heath) from core_zone's ground_themes — the exact strings the shell
     # tags a spawn with, so a kill_in_zone objective can be validated at load.
     zone_names: tuple = ()
+    # B135e: per-zone roster (bosses excluded) and level band, for rolling bounties
+    # out of the zone's own spawn tables.
+    zone_enemies: dict[str, tuple] = field(default_factory=dict)
+    zone_bands: dict[str, tuple] = field(default_factory=dict)
 
 
 @dataclass

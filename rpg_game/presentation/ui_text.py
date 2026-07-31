@@ -83,6 +83,7 @@ CONTROLS = (
     ("Character", "C"),
     ("Inventory", "I"),
     ("Skills & talents", "K"),
+    ("Quest log", "Q"),               # B135c
     ("Log size", "+ / -"),
     ("Scroll log", "PgUp / PgDn"),
     ("Fullscreen", "F11"),
@@ -155,6 +156,7 @@ QUEST_OBJECTIVE = "Objective"
 QUEST_REWARD = "Reward"
 QUEST_SECTION_OFFERS = "Notices"
 QUEST_SECTION_ACTIVE = "Your quests"
+QUEST_SECTION_BOUNTIES = "Bounties (repeatable)"
 
 
 def quest_zone_label(zone: str) -> str:

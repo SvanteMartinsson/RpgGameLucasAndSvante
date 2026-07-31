@@ -46,6 +46,22 @@ def _read_json(filename: str) -> Any:
         return json.load(file)
 
 
+def _theme_for_tile(themes, x: int, y: int) -> str:
+    """B135e: core_zone's ground-theme rule — a y-band (the heath along the south
+    edge) wins over the x-bands. Mirrors the shell's theme_for_tile so a bounty
+    rolled here names an enemy the kill hook will actually match."""
+    for rule in themes:
+        if "min_tile_y" in rule and y >= rule["min_tile_y"]:
+            return str(rule.get("theme", ""))
+    for rule in themes:
+        if "min_tile_y" in rule:
+            continue
+        if (("min_tile_x" not in rule or x >= rule["min_tile_x"])
+                and ("max_tile_x" not in rule or x <= rule["max_tile_x"])):
+            return str(rule.get("theme", ""))
+    return ""
+
+
 def _core_zone_store_towns() -> dict[str, bool]:
     """place_id -> has_store, derived from core_zone tier + shop_category (the
     source of truth for a town's rendered cluster). capital/city/town always have
@@ -319,6 +335,29 @@ def load_content() -> GameContent:
         str(row["theme"]) for row in core_zone.get("ground_themes", ())
         if row.get("theme")
     ))
+    # B135e: per-zone rosters and level bands, needed to ROLL a bounty from the
+    # zone's own tables. Derived from the same ground-theme rule the shell's
+    # theme_for_tile applies (a y-band wins over the x-bands), so a generated
+    # bounty can only ever name an enemy that really spawns in that zone.
+    zone_enemies: dict[str, tuple[str, ...]] = {}
+    zone_bands: dict[str, tuple[int, int]] = {}
+    themes = core_zone.get("ground_themes", ())
+    for area in spawn_areas:
+        x0, y0, x1, y1 = area.rect
+        zone = _theme_for_tile(themes, (x0 + x1) // 2, (y0 + y1) // 2)
+        if not zone:
+            continue
+        roster = list(zone_enemies.get(zone, ()))
+        for enemy_id, _weight in area.enemies:
+            if enemy_id not in roster and not enemies[enemy_id].boss:
+                roster.append(enemy_id)
+        zone_enemies[zone] = tuple(roster)
+        if area.level_min or area.level_max:
+            low = area.level_min or area.level_max
+            high = area.level_max or area.level_min
+            current = zone_bands.get(zone)
+            zone_bands[zone] = ((min(current[0], low), max(current[1], high))
+                                if current else (low, high))
 
     # B65: zone bosses and their lairs.
     bosses = {
@@ -409,6 +448,8 @@ def load_content() -> GameContent:
         spawn_areas=spawn_areas,
         spawn_fallbacks=spawn_fallbacks,
         zone_names=zone_names,
+        zone_enemies=zone_enemies,
+        zone_bands=zone_bands,
     )
     # B135a: quest ids/targets/rewards/prereqs need the assembled content.
     from rpg_game.core.quests import validate_quests

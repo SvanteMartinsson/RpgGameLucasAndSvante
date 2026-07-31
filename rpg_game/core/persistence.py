@@ -202,6 +202,7 @@ PLAYER_FIELDS: dict[str, tuple] = {
     ),
     "shop_discount_pct": _int(0),
     "quest_flags": _str_set(),
+    "bounty_rolls": _dict_of(int),      # B135e: the bounty board's seed input
 }
 
 # Runtime-derived Player fields — never persisted, always rebuilt after load

@@ -303,7 +303,7 @@ class GameEngine:
         so this method's existing return value (the arrival text) is unchanged."""
         message = world.enter_place(self.player, self.content, place_id)
         self._quest_events.extend(quests.note_place_visited(
-            self.player, self.content, self.content.quests, place_id))
+            self.player, self.content, self.all_quests(), place_id))
         return message
 
     def quest_events_pending(self) -> list[str]:
@@ -754,10 +754,10 @@ class GameEngine:
         # B135a: the chest hook — open_chests objectives, plus a delivery objective
         # the chest's item may have just finished.
         quest_events = quests.note_chest_opened(self.player, self.content,
-                                                self.content.quests)
+                                                self.all_quests())
         if drop is not None:
             quest_events.extend(quests.note_item_acquired(
-                self.player, self.content, self.content.quests))
+                self.player, self.content, self.all_quests()))
         return chests.ChestResult(True, "You open the chest.", gold=gold, drop=drop,
                                   quest_events=quest_events)
 
@@ -765,17 +765,29 @@ class GameEngine:
     # The presentation drives quests entirely through these; no quest rule lives
     # in a shell (same contract as talents/stat choices).
 
+    def all_quests(self) -> tuple:
+        """Every quest that can be progressed right now: the AUTHORED ones plus the
+        generated bounties currently on the board (B135e). Every hook and every
+        board/log query goes through this, so a bounty ticks and pays on exactly
+        the same pipeline as a handwritten quest — no parallel path."""
+        return (*self.content.quests, *quests.bounty_board(self.player, self.content))
+
     def quest_by_id(self, quest_id: str):
-        return next((q for q in self.content.quests if q.id == quest_id), None)
+        return next((q for q in self.all_quests() if q.id == quest_id), None)
 
     def board_quests(self, giver_kind: str = "board") -> list:
         """Offerable quests for a notice board: never-taken (or repeatable and
-        handed in) and with every prerequisite handed in."""
-        return quests.offerable_quests(self.player, self.content.quests, giver_kind)
+        handed in) and with every prerequisite handed in. `giver_kind=""` returns
+        both the authored notices and the bounties."""
+        return quests.offerable_quests(self.player, self.all_quests(), giver_kind)
+
+    def bounty_quests(self) -> list:
+        """The bounty section of the board (B135e)."""
+        return quests.offerable_quests(self.player, self.all_quests(), "bounty")
 
     def tracked_quests(self) -> list:
         """Active + finished-but-not-handed-in — what the quest log lists."""
-        return quests.tracked_quests(self.player, self.content.quests)
+        return quests.tracked_quests(self.player, self.all_quests())
 
     def quest_status(self, quest_id: str) -> str:
         return quests.status_of(self.player, quest_id)
@@ -793,7 +805,7 @@ class GameEngine:
         # Accepting can immediately satisfy a delivery objective already in the bag.
         self._quest_events.append(f"Quest accepted: {quest.title}.")
         self._quest_events.extend(
-            quests.refresh(self.player, self.content, self.content.quests))
+            quests.refresh(self.player, self.content, self.all_quests()))
         return True
 
     def abandon_quest(self, quest_id: str) -> bool:
@@ -811,6 +823,10 @@ class GameEngine:
         if result.ok:
             self._quest_events.append(result.text)
             self._quest_events.extend(result.events)
+            # B135e: a handed-in bounty is replaced by a fresh roll in ITS slot.
+            slot = quests.slot_of_bounty(quest.id)
+            if slot is not None:
+                quests.reroll_bounty(self.player, slot)
         return result
 
     # --- B68: alchemy ---------------------------------------------------------
@@ -913,7 +929,7 @@ class GameEngine:
         # B135a: the kill hook. This is the single funnel every victory path
         # reaches, so kill_enemy/kill_in_zone objectives tick here exactly once.
         # `enemy.zone` was tagged by the shell at spawn (see create_encounter).
-        quest_events = quests.note_kill(player, self.content, self.content.quests,
+        quest_events = quests.note_kill(player, self.content, self.all_quests(),
                                         enemy.id, getattr(enemy, "zone", ""))
         events.append(f"{enemy.name} was defeated.")
         events.append(f"Gained {xp_gained} XP and {gold} gold.")
@@ -925,7 +941,7 @@ class GameEngine:
             self.collect_loot(drop)
             # B135a: a dropped item can finish a delivery objective.
             quest_events.extend(quests.note_item_acquired(
-                player, self.content, self.content.quests))
+                player, self.content, self.all_quests()))
             events.append(
                 f"{enemy.name} dropped: {drop.name} "
                 f"[{drop.rarity}] (tier {drop.tier})!"

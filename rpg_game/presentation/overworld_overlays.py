@@ -344,10 +344,14 @@ class OverlaysMixin:
     # only renders and dispatches.
 
     def _notice_board_rows(self):
-        """(quest, section, label, value) per row, offers then tracked."""
+        """(quest, section, label, value) per row: authored notices, then the
+        repeatable bounties (B135e), then whatever you are already on."""
         rows = []
         for quest in self.engine.board_quests():
             rows.append((quest, "offers", quest.title,
+                         T.quest_zone_label(quest.zone)))
+        for quest in self.engine.bounty_quests():
+            rows.append((quest, "bounties", quest.title,
                          T.quest_zone_label(quest.zone)))
         for quest in self.engine.tracked_quests():
             ready = self.engine.quest_is_ready(quest)
@@ -395,7 +399,7 @@ class OverlaysMixin:
         row_h = 30
         header_h = 22
         # one header per non-empty section
-        sections = [key for key in ("offers", "active")
+        sections = [key for key in ("offers", "bounties", "active")
                     if any(section == key for _q, section, *_r in rows)]
         content_h = len(rows) * row_h + len(sections) * header_h
         scroll = self._menu_scrolls["notice_board"]
@@ -405,8 +409,9 @@ class OverlaysMixin:
         for quest, section, label, value in rows:
             if section != drawn_section:
                 drawn_section = section
-                title = (T.QUEST_SECTION_OFFERS if section == "offers"
-                         else T.QUEST_SECTION_ACTIVE)
+                title = {"offers": T.QUEST_SECTION_OFFERS,
+                         "bounties": T.QUEST_SECTION_BOUNTIES,
+                         "active": T.QUEST_SECTION_ACTIVE}[section]
                 if rect.top - header_h < y < rect.bottom:
                     self.screen.blit(self.font_sm.render(title, True, TEXT_DIM),
                                      (rect.x, y + 4))
