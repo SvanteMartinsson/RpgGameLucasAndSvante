@@ -43,6 +43,26 @@ BUILDING_FUNCTION = {
     "stable": "fast_travel",
 }
 
+# B136c: which doors the night shuts. Gated by BUILDING_ID, not by service —
+# `tower` has no BUILDING_FUNCTION entry at all (it is station + tomes only) and
+# `blacksmith` carries both a store AND the weapon station, so a func-based gate
+# would miss both. Everything a shut-in player needs to survive the night stays
+# OPEN and is simply absent from this set:
+#   inn / cottage  — REST, the safety valve back to morning. The B135b notice
+#                    board hangs inside this same menu, so the board keeps
+#                    working too: a board nailed up outdoors does not care what
+#                    time the innkeeper locks up.
+#   church/shrine  — the respawn point, the other safety valve.
+NIGHT_CLOSED_BUILDINGS = frozenset({
+    "shop",         # general store
+    "blacksmith",   # weapon store + weapon upgrade station
+    "barracks",     # armour store
+    "town_hall",    # tournaments
+    "apothecary",   # brewing
+    "stable",       # coach / fast travel
+    "tower",        # mage tower: armour station + skill tomes
+})
+
 # Each trade building opens its own slice of the town store (a category filter on
 # the shared inventory, see store.STORE_CATEGORIES). Applies to every hub that has
 # these building types, so the split generalises to future cities for free.
@@ -79,6 +99,13 @@ class BuildingMenusMixin:
         place tile). A building whose service isn't offered here (unmapped, no store,
         no tournaments) logs as locked instead of opening a menu."""
         self.engine.enter_place(place_id)
+        # B136c: the town shuts at night. A CLOSED door says so and opens nothing
+        # — never an empty menu, which would read as a bug rather than a curfew.
+        # Rest, the shrine and the notice board are absent from the set, so the
+        # player always has a way back to daylight.
+        if self.engine.towns_closed() and building_id in NIGHT_CLOSED_BUILDINGS:
+            self.push_log(T.BUILDING_CLOSED_FOR_NIGHT, TEXT_DIM)
+            return
         func = BUILDING_FUNCTION.get(building_id)
         if func == "store" and not self.engine.current_place().has_store:
             func = None

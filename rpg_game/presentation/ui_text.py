@@ -68,6 +68,10 @@ def gate_message(key: str) -> str:
 HINT_TOWN = "Step to a building's door + Enter   C/I/K: panels   Esc: system"
 HINT_WALK = "WASD/arrows to move   C/I/K: panels   Esc: system"
 BUILDING_LOCKED = "This building seems to be locked."
+# B136c: a building that IS open by day but shut for the night. Distinct from
+# BUILDING_LOCKED (which means "no such service here") — this one tells the
+# player to come back, so a closed town never reads as a broken town.
+BUILDING_CLOSED_FOR_NIGHT = "The shutters are closed — come back at daybreak."
 BACK_TO_MAP = "Esc / Enter: back to map"
 BACK = "Back"
 BACK_KEY = "Esc"   # B106: hotkey renders as a badge chip, never "(Esc)"

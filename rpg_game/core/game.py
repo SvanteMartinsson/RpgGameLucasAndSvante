@@ -253,6 +253,12 @@ class GameEngine:
         # (relocate_respawn) so you never respawn somewhere you didn't buy.
         player.hp = equipment.effective_stat(player, "max_hp")
         player.mana = equipment.effective_stat(player, "max_mana")
+        # B136c SAFETY VALVE: a rest is a night's sleep — you wake in the MORNING.
+        # This is what makes a closed town survivable: the inn is never shut, so
+        # the player can always buy their way back to daylight. Note it is only
+        # reached on a SUCCESSFUL rest — a refused (too poor) rest changes nothing,
+        # time included.
+        self.set_world_phase(daynight.MORNING_PHASE)
         return RestResult(
             outcome="rested",
             message=f"You rest at {place.name} ({paid}) and recover to full HP and mana.",
@@ -901,6 +907,10 @@ class GameEngine:
         # Respawn at the persistent respawn point: Hordanita by default, changed
         # only by a purchased relocation. Never derived from where/how you died.
         player.current_place_id = player.respawn_place_id
+        # B136c SAFETY VALVE: you always wake up in the MORNING. Dying at night
+        # must not drop you back into a town whose every door is shut — that
+        # would be a dead end with no way out but dying again.
+        self.set_world_phase(daynight.MORNING_PHASE)
         return progression.apply_death_penalty(player)
 
     def _defeat(
