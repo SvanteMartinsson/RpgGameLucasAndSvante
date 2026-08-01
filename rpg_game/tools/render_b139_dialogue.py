@@ -10,9 +10,10 @@ Writes docs/nightly/b139_dialogue_<state>_<moment>.png for Mirr in BOTH states
             DIMMED choice with its reason (B112), so the gated state is reviewable
             and not just tested.
 
-Every portrait is a PLACEHOLDER: Lucas's four sheets have not landed. The label on
-the stage says so on screen, which is the point — nobody should mistake this for
-finished art, and dropping the sheets in needs no code change.
+Mirr's four sheets landed 2026-08-01, so these render her REAL portrait: the
+6-frame talk strip while a line types out, the 4-frame idle strip when it stands
+still. The placeholder path is still there for any character whose art has not
+arrived; it just no longer applies to her.
 """
 
 from __future__ import annotations
@@ -65,7 +66,11 @@ def render(out_dir: Path) -> None:
         assert app.is_typing, "expected to still be typing"
         path = out_dir / f"b139_dialogue_{state_id}_typing.png"
         _shot(app).save(path)
-        written.append((path, f"talk sheet: {app.current_portrait_sheet() or '(none)'}"))
+        sheet, count = app.current_portrait()
+        frames = dialogue_screen.portrait_frames(sheet, count)
+        written.append((path, f"talk sheet {sheet} x{count} -> "
+                              f"{'real art' if frames else 'PLACEHOLDER'}, "
+                              f"frame {app.portrait_frame_index()}"))
 
         # 2) the choice grid, with the history filled in above it.
         guard = 0
@@ -83,9 +88,12 @@ def render(out_dir: Path) -> None:
         written.append((path, f"choices: {len(app.buttons)} cells, "
                               f"dimmed: {blocked or 'none'}"))
 
-    print(f"idle/talk sheets on disk: "
-          f"{len(characters.missing_portrait_sheets(content.characters, dialogue_screen.PORTRAIT_DIR))} "
-          f"declared sheets are MISSING -> placeholder portraits (expected today)")
+    missing = characters.missing_portrait_sheets(content.characters,
+                                                dialogue_screen.PORTRAIT_DIR)
+    problems = characters.portrait_sheet_problems(content.characters,
+                                                 dialogue_screen.PORTRAIT_DIR)
+    print(f"sheets missing: {missing or 'none'} · frame-count problems: "
+          f"{problems or 'none'}")
     for path, note in written:
         print(f"wrote {path}  [{note}]")
     pygame.quit()

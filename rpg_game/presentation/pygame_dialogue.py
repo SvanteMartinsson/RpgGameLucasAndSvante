@@ -59,12 +59,14 @@ SPEAKER_COLORS = {core_dialogue.NPC: NPC_COLOR, core_dialogue.PLAYER: PLAYER_COL
 # talk animation has something to play against; any key skips to the full line.
 CHARS_PER_SECOND = 46.0
 
-# B109's sheet shape, reused for portraits.
+# B109's strip shape, reused for portraits. The frame COUNT is per sheet and comes
+# from the data (CharacterState.portrait_*_frames) — Mirr's idle strips hold 4
+# frames and her talk strips 6, and nothing in the pixels says where a frame ends.
 PORTRAIT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "assets", "sprites", "generated", "characters")
-PORTRAIT_FRAMES = 4
+PORTRAIT_FRAMES = 4                             # the default when a state omits it
 PORTRAIT_PERIOD = battle_choreo.frames(900)     # idle: the hero-idle feel
-PORTRAIT_TALK_PERIOD = battle_choreo.frames(320)   # talk: quicker, mouth-paced
+PORTRAIT_TALK_PERIOD = battle_choreo.frames(560)   # talk: quicker, mouth-paced
 PORTRAIT_HEIGHT = 300                           # inside STAGE's 360 with headroom
 
 # Placeholder palette — deliberately flat and obviously unfinished.
@@ -75,22 +77,31 @@ PLACEHOLDER_LABEL = (120, 128, 150)
 _portrait_cache: dict = {}
 
 
-def portrait_frames(sheet_name: str):
-    """The 4 scaled frames of a portrait sheet, or None when the file is absent.
+def portrait_frames(sheet_name: str, count: int = PORTRAIT_FRAMES):
+    """The scaled frames of a portrait strip, or None when the file is absent.
 
-    None is the NORMAL case right now and the caller draws its placeholder — the
-    same contract as B109's enemy_idle_frames.
+    `count` is how many frames the strip holds, declared per sheet in the data. A
+    sheet whose width does not divide by it is REFUSED (None -> placeholder)
+    rather than sliced mid-face — characters.portrait_sheet_problems reports that
+    case so the mismatch is fixed rather than silently rendered.
+
+    None is a normal answer and the caller draws its placeholder — the same
+    contract as B109's enemy_idle_frames.
     """
-    if not sheet_name:
+    if not sheet_name or count < 1:
         return None
-    if sheet_name in _portrait_cache:
-        return _portrait_cache[sheet_name]
+    key = (sheet_name, count)
+    if key in _portrait_cache:
+        return _portrait_cache[key]
     path = os.path.join(PORTRAIT_DIR, sheet_name)
     frames = None
     if os.path.exists(path):
         try:
             sheet = pygame.image.load(path).convert_alpha()
-            frame_w = sheet.get_width() // PORTRAIT_FRAMES
+            if sheet.get_width() % count:
+                raise ValueError(f"{sheet_name}: width {sheet.get_width()} does not "
+                                 f"divide by {count} frames")
+            frame_w = sheet.get_width() // count
             frame_h = sheet.get_height()
             width = max(1, round(frame_w * PORTRAIT_HEIGHT / frame_h))
             # Heavy downscale on authored art -> smoothscale, as B109 measured.
@@ -98,10 +109,10 @@ def portrait_frames(sheet_name: str):
                      else pygame.transform.scale)
             frames = [scale(sheet.subsurface((i * frame_w, 0, frame_w, frame_h)),
                             (width, PORTRAIT_HEIGHT))
-                      for i in range(PORTRAIT_FRAMES)]
-        except Exception:   # unreadable/corrupt sheet -> placeholder, never a crash
+                      for i in range(count)]
+        except Exception:   # unreadable/corrupt/mis-declared -> placeholder, no crash
             frames = None
-    _portrait_cache[sheet_name] = frames
+    _portrait_cache[key] = frames
     return frames
 
 
@@ -314,15 +325,24 @@ class DialogueApp:
     def current_portrait_sheet(self) -> str:
         """Which sheet the current moment wants: TALK while a line types out, IDLE
         when it stands still. That is what the two sheets are for."""
+        return self.current_portrait()[0]
+
+    def current_portrait(self) -> tuple:
+        """(sheet name, frame count) for this moment — the count travels WITH the
+        sheet so a talk strip can hold a different number of frames than an idle
+        one (Mirr: 6 vs 4)."""
         if self.state is None:
-            return ""
-        return (self.state.portrait_talk_sheet if self.is_typing
-                else self.state.portrait_idle_sheet)
+            return ("", PORTRAIT_FRAMES)
+        if self.is_typing:
+            return (self.state.portrait_talk_sheet, self.state.portrait_talk_frames)
+        return (self.state.portrait_idle_sheet, self.state.portrait_idle_frames)
 
     def portrait_frame_index(self) -> int:
+        _sheet, count = self.current_portrait()
+        count = max(1, count)
         period = PORTRAIT_TALK_PERIOD if self.is_typing else PORTRAIT_PERIOD
-        step = max(1, period // PORTRAIT_FRAMES)
-        return (self._anim_tick // step) % PORTRAIT_FRAMES
+        step = max(1, period // count)
+        return (self._anim_tick // step) % count
 
     def _draw_stage(self) -> None:
         self._panel(STAGE)
@@ -332,7 +352,7 @@ class DialogueApp:
         if self.state is not None:
             tag = self.font_sm.render(f"({self.state.id})", True, TEXT_DIM)
             self.screen.blit(tag, (STAGE.x + 20 + title.get_width(), STAGE.y + 22))
-        frames = portrait_frames(self.current_portrait_sheet())
+        frames = portrait_frames(*self.current_portrait())
         centre_x = STAGE.centerx
         baseline = STAGE.bottom - 12
         if frames:

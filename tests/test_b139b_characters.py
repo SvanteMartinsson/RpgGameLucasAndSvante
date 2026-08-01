@@ -229,21 +229,31 @@ class ValidationTests(CharacterTestBase):
 class SoftDegradationTests(CharacterTestBase):
     """Validate, but degrade: absent art must never take the game down."""
 
-    def test_mirrs_portraits_are_declared_but_not_yet_on_disk(self):
-        # The placeholder era, asserted rather than assumed. When Lucas's four
-        # sheets land this list empties and the screen picks them up automatically.
-        missing = characters.missing_portrait_sheets(self.content.characters,
-                                                     PORTRAIT_DIR)
-        self.assertEqual(sorted(missing), [
-            "mirr_cold_idle_sheet.png", "mirr_cold_talk_sheet.png",
-            "mirr_warm_idle_sheet.png", "mirr_warm_talk_sheet.png",
-        ])
+    def test_mirrs_portraits_are_all_on_disk(self):
+        # Lucas's four sheets landed 2026-08-01. The declared names must keep
+        # matching the files, or the screen silently falls back to placeholders.
+        self.assertEqual(characters.missing_portrait_sheets(
+            self.content.characters, PORTRAIT_DIR), ())
 
-    def test_missing_art_does_not_stop_the_content_loading(self):
-        # load_content() already ran in setUpClass with every sheet absent.
-        self.assertTrue(self.content.characters)
-        mirr = characters.character_by_id(self.content, "mirr")
-        self.assertEqual(mirr.name, "Mirr")
+    def test_every_declared_frame_count_matches_its_sheet(self):
+        # A count that does not divide the width would slice frames mid-face, so
+        # the report that catches it must be empty.
+        self.assertEqual(characters.portrait_sheet_problems(
+            self.content.characters, PORTRAIT_DIR), ())
+
+    def test_mirrs_strips_hold_four_idle_and_six_talk_frames(self):
+        # Measured from the art: idle 1024x340 and talk 1536x340, both 256-wide
+        # frames. Pinned because the count cannot be recovered from the pixels.
+        for state in characters.character_by_id(self.content, "mirr").states:
+            self.assertEqual(state.portrait_idle_frames, 4, state.id)
+            self.assertEqual(state.portrait_talk_frames, 6, state.id)
+
+    def test_a_character_still_loads_when_its_art_is_absent(self):
+        # The degrade path must stay alive now that the real art exists.
+        person = _character(states=[_state("warm", portrait_idle_sheet="nope.png")])
+        characters.validate_characters((person,), self.content)
+        self.assertEqual(characters.missing_portrait_sheets((person,), PORTRAIT_DIR),
+                         ("nope.png",))
 
     def test_a_state_flag_no_quest_grants_is_reported_not_raised(self):
         # Mirr's `cold` state waits on the chain text Lucas still owes; that is a

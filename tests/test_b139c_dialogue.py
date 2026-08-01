@@ -410,8 +410,35 @@ class ScreenTests(DialogueTestBase):
 
     def test_a_missing_sheet_gives_no_frames_so_the_placeholder_draws(self):
         pd._reset_portrait_cache()
-        self.assertIsNone(pd.portrait_frames("mirr_warm_idle_sheet.png"))
+        self.assertIsNone(pd.portrait_frames("no_such_sheet.png"))
         self.assertIsNone(pd.portrait_frames(""))
+
+    def test_mirrs_real_sheets_load_at_their_declared_frame_counts(self):
+        pd._reset_portrait_cache()
+        for state in self.content.characters[0].states:
+            idle = pd.portrait_frames(state.portrait_idle_sheet,
+                                      state.portrait_idle_frames)
+            talk = pd.portrait_frames(state.portrait_talk_sheet,
+                                      state.portrait_talk_frames)
+            self.assertEqual(len(idle), 4, state.id)
+            self.assertEqual(len(talk), 6, state.id)
+            # Every frame is the same size and fits the stage.
+            self.assertEqual({f.get_size() for f in idle + talk},
+                             {idle[0].get_size()}, state.id)
+            self.assertLessEqual(idle[0].get_height(), pd.STAGE.height)
+
+    def test_a_wrong_frame_count_is_refused_rather_than_sliced_mid_face(self):
+        pd._reset_portrait_cache()
+        # 1536 does not divide by 5; better a placeholder than 1.2 faces a frame.
+        self.assertIsNone(pd.portrait_frames("mirr_warm_talk.png", 5))
+        self.assertIsNone(pd.portrait_frames("mirr_warm_talk.png", 0))
+
+    def test_the_talk_and_idle_strips_can_hold_different_counts(self):
+        app = self._app()
+        self.assertTrue(app.is_typing)
+        self.assertEqual(app.current_portrait()[1], 6)      # talk
+        app.skip_typing()
+        self.assertEqual(app.current_portrait()[1], 4)      # idle
 
     def test_the_talk_sheet_is_used_while_typing_and_idle_when_still(self):
         app = self._app()
@@ -421,13 +448,20 @@ class ScreenTests(DialogueTestBase):
         self.assertFalse(app.is_typing)
         self.assertEqual(app.current_portrait_sheet(), app.state.portrait_idle_sheet)
 
-    def test_the_portrait_frame_cycles_through_all_four(self):
+    def test_the_talk_cycle_visits_all_six_frames_and_idle_all_four(self):
         app = self._app()
-        seen = set()
-        for _ in range(240):
+        talking = set()
+        for _ in range(600):            # still typing: the 6-frame talk strip
             app.update()
-            seen.add(app.portrait_frame_index())
-        self.assertEqual(seen, {0, 1, 2, 3})
+            if app.is_typing:
+                talking.add(app.portrait_frame_index())
+        self.assertEqual(talking, {0, 1, 2, 3, 4, 5})
+        app.skip_typing()
+        idling = set()
+        for _ in range(1200):           # standing still: the 4-frame idle strip
+            app.update()
+            idling.add(app.portrait_frame_index())
+        self.assertEqual(idling, {0, 1, 2, 3})
 
     def test_a_corrupt_sheet_degrades_to_the_placeholder(self):
         import tempfile

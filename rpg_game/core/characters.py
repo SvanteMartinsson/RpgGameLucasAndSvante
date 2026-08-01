@@ -44,10 +44,18 @@ GIVER_CHARACTER = "character"
 class CharacterState:
     """One condition a character can be in."""
     id: str
-    # Sheet FILENAMES (B109's 4-frame horizontal strip shape). Empty = this state
-    # has no art yet and the screen draws its placeholder.
+    # Sheet FILENAMES (a horizontal strip, B109's shape). Empty = this state has
+    # no art yet and the screen draws its placeholder.
     portrait_idle_sheet: str = ""
     portrait_talk_sheet: str = ""
+    # HOW MANY frames each strip holds. Declared rather than inferred: a strip's
+    # frame count cannot be derived from its pixels — Mirr's sheets are both 340
+    # tall with 256-wide frames, so idle is 1024/256 = 4 and talk is 1536/256 = 6,
+    # and nothing in the image says where one frame ends. Guessing here would
+    # silently render one and a half faces per frame, which is exactly the kind of
+    # asset fact that belongs beside the filename.
+    portrait_idle_frames: int = 4
+    portrait_talk_frames: int = 4
     # A short tone note the WRITER follows — it never renders. It lives in the data
     # so the state's voice travels with the state instead of in someone's head.
     voice_in_text: str = ""
@@ -88,6 +96,8 @@ def parse_characters(data: dict) -> tuple[Character, ...]:
                 id=str(state["id"]),
                 portrait_idle_sheet=str(state.get("portrait_idle_sheet", "")),
                 portrait_talk_sheet=str(state.get("portrait_talk_sheet", "")),
+                portrait_idle_frames=int(state.get("portrait_idle_frames", 4)),
+                portrait_talk_frames=int(state.get("portrait_talk_frames", 4)),
                 voice_in_text=str(state.get("voice_in_text", "")),
                 requires_quest_flag=str(state.get("requires_quest_flag", "")),
             )
@@ -146,6 +156,11 @@ def validate_characters(characters: tuple[Character, ...], content: GameContent)
                     f"character {character.id} state {state.id!r} has no "
                     f"requires_quest_flag — only the first state may be "
                     f"unconditional, or it would always override the others")
+            for label, count in (("idle", state.portrait_idle_frames),
+                                 ("talk", state.portrait_talk_frames)):
+                if count < 1:
+                    raise ValueError(f"character {character.id} state {state.id!r} "
+                                     f"has portrait_{label}_frames {count} (need >= 1)")
             if index == 0 and state.requires_quest_flag:
                 raise ValueError(
                     f"character {character.id} first state {state.id!r} is "
@@ -185,6 +200,50 @@ def missing_portrait_sheets(characters: tuple[Character, ...],
                 if sheet and not os.path.exists(os.path.join(portrait_dir, sheet)):
                     missing.append(sheet)
     return tuple(missing)
+
+
+def portrait_sheet_problems(characters: tuple[Character, ...],
+                           portrait_dir: str) -> tuple[str, ...]:
+    """Sheets that ARE on disk but whose width does not divide evenly by their
+    declared frame count — i.e. the count is wrong and frames would be sliced
+    mid-face.
+
+    Reported rather than raised, like missing_portrait_sheets: bad art must draw
+    something rather than stop the game. But it IS a real error the author needs
+    told, so a test asserts this list is empty.
+    """
+    problems = []
+    for character in characters:
+        for state in character.states:
+            for sheet, count, label in (
+                    (state.portrait_idle_sheet, state.portrait_idle_frames, "idle"),
+                    (state.portrait_talk_sheet, state.portrait_talk_frames, "talk")):
+                if not sheet:
+                    continue
+                path = os.path.join(portrait_dir, sheet)
+                if not os.path.exists(path):
+                    continue
+                width = _png_width(path)
+                if width is None:
+                    problems.append(f"{sheet}: unreadable")
+                elif count < 1 or width % count:
+                    problems.append(
+                        f"{sheet}: width {width} does not divide by "
+                        f"portrait_{label}_frames {count}")
+    return tuple(problems)
+
+
+def _png_width(path: str) -> "int | None":
+    """A PNG's pixel width from its IHDR header — 24 bytes, no image library, so
+    core stays dependency-free and never decodes an image."""
+    try:
+        with open(path, "rb") as handle:
+            header = handle.read(24)
+        if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        return int.from_bytes(header[16:20], "big")
+    except OSError:
+        return None
 
 
 def unwired_state_flags(characters: tuple[Character, ...],
