@@ -430,8 +430,8 @@ class ScreenTests(DialogueTestBase):
     def test_a_wrong_frame_count_is_refused_rather_than_sliced_mid_face(self):
         pd._reset_portrait_cache()
         # 1536 does not divide by 5; better a placeholder than 1.2 faces a frame.
-        self.assertIsNone(pd.portrait_frames("mirr_warm_talk.png", 5))
-        self.assertIsNone(pd.portrait_frames("mirr_warm_talk.png", 0))
+        self.assertIsNone(pd.portrait_frames("mirr_warm_talk_sheet.png", 5))
+        self.assertIsNone(pd.portrait_frames("mirr_warm_talk_sheet.png", 0))
 
     def test_the_talk_and_idle_strips_can_hold_different_counts(self):
         app = self._app()

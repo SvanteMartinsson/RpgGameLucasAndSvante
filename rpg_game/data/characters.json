@@ -5,24 +5,24 @@
       "id": "mirr",
       "name": "Mirr",
       "full_name": "Miranda",
-      "_comment": "Första karaktären. Värdshusvärdinna i Hordanita (burg_5, capital -> har inn). Anslagstavlan bor redan på samma vilo-byggnad, så spelaren har redan en anledning att gå in genom hennes dörr. Hennes man Torvald dör i en senare del av kedjan: FAST berättelse, inte förhindringsbar. Hon fortsätter ge quests efteråt — därför 'cold' och inte 'gone'. Porträtten LANDADE 2026-08-01 (Lucas): idle 1024x340 = 4 frames a 256x340, talk 1536x340 = 6 frames a 256x340 — därav portrait_*_frames per sheet. VÄNTAR PÅ LUCAS: kedjetexten (5 delar) + Torvald-detaljerna + barn-eller-inte.",
+      "_comment": "Första karaktären. Värdshusvärdinna i Hordanita (burg_5, capital -> har inn). Anslagstavlan bor redan på samma vilo-byggnad, så spelaren har redan en anledning att gå in genom hennes dörr. Hennes man Torvald dör i en senare del av kedjan: FAST berättelse, inte förhindringsbar. Hon fortsätter ge quests efteråt — därför 'cold' och inte 'gone'. Porträtten LANDADE 2026-08-01 (Lucas): idle 1024x340 = 4 frames a 256x340, talk 1536x340 = 6 frames a 256x340 — därav portrait_*_frames per sheet. Filnamnen följer samma konvention som B109:s 32 fiendestrippar: <namn>_idle_sheet.png / <namn>_talk_sheet.png. VÄNTAR PÅ LUCAS: kedjetexten (5 delar) + Torvald-detaljerna + barn-eller-inte.",
       "home_place_id": "burg_5",
       "home_building": "inn",
       "states": [
         {
           "id": "warm",
-          "portrait_idle_sheet": "mirr_warm_idle.png",
+          "portrait_idle_sheet": "mirr_warm_idle_sheet.png",
           "portrait_idle_frames": 4,
-          "portrait_talk_sheet": "mirr_warm_talk.png",
+          "portrait_talk_sheet": "mirr_warm_talk_sheet.png",
           "portrait_talk_frames": 6,
           "voice_in_text": "Warm and busy. Talks while working, teases the hero, finishes her own sentences with a laugh. Says more than she needs to.",
           "requires_quest_flag": ""
         },
         {
           "id": "cold",
-          "portrait_idle_sheet": "mirr_cold_idle.png",
+          "portrait_idle_sheet": "mirr_cold_idle_sheet.png",
           "portrait_idle_frames": 4,
-          "portrait_talk_sheet": "mirr_cold_talk.png",
+          "portrait_talk_sheet": "mirr_cold_talk_sheet.png",
           "portrait_talk_frames": 6,
           "voice_in_text": "Courteous and shut. Short sentences, no jokes, still does her job perfectly. Never mentions Torvald unless asked, and does not linger when she answers.",
           "requires_quest_flag": "mirr_bereaved"
