@@ -38,6 +38,9 @@ from rpg_game.core import combat, traits
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+# B140: where character portrait strips live. Only their PNG headers are read from
+# here (for the frame-count rail) — never decoded.
+PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "generated" / "characters"
 DEFAULT_STORE_INVENTORY = ("hp_potion", "sword", "axe", "longsword")
 
 
@@ -483,7 +486,9 @@ def load_content() -> GameContent:
     # B139b: characters reference places and are referenced BY quests, so this runs
     # last, on the assembled content.
     from rpg_game.core.characters import validate_characters
-    validate_characters(characters, content)
+    # B140: pass the portrait dir so a mis-declared frame count fails the START.
+    # Core reads only a PNG's 24-byte header here — no image library, no decoding.
+    validate_characters(characters, content, portrait_dir=str(PORTRAIT_DIR))
     # B139c: dialogue references characters, their states and quests.
     from rpg_game.core.dialogue import validate_dialogue
     validate_dialogue(dialogue, content)

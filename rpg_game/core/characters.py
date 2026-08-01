@@ -24,7 +24,10 @@ when it is absent, exactly as B109's enemy sheets do. That is what lets this who
 slice ship before any art exists. `missing_portrait_sheets` REPORTS the gaps for a
 test/tool so "no art yet" is visible and measured rather than silently forgotten.
 
-Core purity: no print/input, no pygame, no file I/O, no rng.
+Core purity: no print/input, no pygame, no rng. B140 added the ONE file access
+here — reading a portrait strip's 24-byte PNG header to check its declared frame
+count at load. No image library, no decoding, and the path is passed in rather
+than known, so this module still has no opinion about where assets live.
 """
 
 from __future__ import annotations
@@ -114,14 +117,29 @@ def parse_characters(data: dict) -> tuple[Character, ...]:
     return tuple(out)
 
 
-def validate_characters(characters: tuple[Character, ...], content: GameContent) -> None:
+def validate_characters(characters: tuple[Character, ...], content: GameContent,
+                        portrait_dir: str = "") -> None:
     """Load-time validation. A broken character is a story that cannot be told, so
     every one of these fails at startup with a name rather than going quiet.
 
-    NOT validated here: whether a portrait file exists (that is presentation's
-    business and degrades to a placeholder — see missing_portrait_sheets), and
-    whether some quest actually grants a state's flag (the stories are still being
-    written — see unwired_state_flags).
+    B140: with `portrait_dir` given, a strip that IS on disk but whose width does
+    not divide by its declared frame count FAILS THE START, with the filename and
+    both numbers. Two cases that look similar are treated oppositely on purpose:
+
+        file ABSENT           -> placeholder, no error. Art arrives later; the
+                                 game must be playable while it does.
+        file PRESENT, count wrong -> hard error. This is a DATA BUG, and its only
+                                 symptom on screen is a subtly wrong animation
+                                 (one and a half mouths per frame) that nobody
+                                 notices in review. A silent wrong render is worse
+                                 than a loud refusal to start.
+
+    `portrait_dir` is passed in rather than known here, so this stays a pure rule
+    over its inputs; omitting it skips the file check, which is what hand-built
+    test/sim content wants.
+
+    NOT validated here: whether some quest actually grants a state's flag (the
+    stories are still being written — see unwired_state_flags).
     """
     by_id: dict[str, Character] = {}
     for character in characters:
@@ -182,6 +200,11 @@ def validate_characters(characters: tuple[Character, ...], content: GameContent)
             raise ValueError(f"quest {quest.id} has giver_kind "
                              f"{GIVER_CHARACTER!r} but names no character")
 
+    # B140: the rail. A mis-declared frame count can never reach a render again.
+    if portrait_dir:
+        for problem in portrait_sheet_problems(characters, portrait_dir):
+            raise ValueError(f"portrait strip mis-declared: {problem}")
+
 
 # --- soft reports (validate, but degrade) ------------------------------------
 
@@ -203,17 +226,35 @@ def missing_portrait_sheets(characters: tuple[Character, ...],
 
 
 def portrait_sheet_problems(characters: tuple[Character, ...],
-                           portrait_dir: str) -> tuple[str, ...]:
-    """Sheets that ARE on disk but whose width does not divide evenly by their
-    declared frame count — i.e. the count is wrong and frames would be sliced
-    mid-face.
+                            portrait_dir: str) -> tuple[str, ...]:
+    """Every declared frame count that its strip contradicts.
 
-    Reported rather than raised, like missing_portrait_sheets: bad art must draw
-    something rather than stop the game. But it IS a real error the author needs
-    told, so a test asserts this list is empty.
+    THREE rails, because the obvious one is not enough. Divisibility alone would
+    NOT have caught the bug this slice exists for: Mirr's talk strip is 1536 px
+    wide and 1536 / 4 = 384 exactly, so declaring 4 frames on a 6-frame strip
+    divides perfectly and passes. Measured, not assumed.
+
+      1. DIVISIBILITY — width must divide by the count, or frames are cut at
+         fractional pixels.
+      2. FRAME WIDTH AGREEMENT — every strip belonging to one character must slice
+         to the SAME frame width. It is the same face at the same scale in idle and
+         in talk, so a disagreement means one of the counts is wrong. This is what
+         catches 4-vs-6: idle slices to 256 px, talk-as-4 to 384 px.
+      3. PORTRAIT ORIENTATION — a frame must not be wider than it is tall. A
+         head-and-shoulders bust is portrait-shaped, so a landscape frame is a
+         mis-slice. This is the backstop for a character with only ONE strip, where
+         rail 2 has nothing to compare against (talk-as-4 is 384x340 = 1.13).
+
+    Only strips that are actually ON DISK are checked; an absent one is
+    missing_portrait_sheets' business and degrades to a placeholder.
+
+    Used two ways: validate_characters RAISES on these at load (B140), and a test
+    asserts the shipped content produces none. Kept as a report as well as a rail
+    so a tool can list every offender at once instead of dying on the first.
     """
     problems = []
     for character in characters:
+        widths: dict[int, list[str]] = {}
         for state in character.states:
             for sheet, count, label in (
                     (state.portrait_idle_sheet, state.portrait_idle_frames, "idle"),
@@ -223,25 +264,50 @@ def portrait_sheet_problems(characters: tuple[Character, ...],
                 path = os.path.join(portrait_dir, sheet)
                 if not os.path.exists(path):
                     continue
-                width = _png_width(path)
-                if width is None:
-                    problems.append(f"{sheet}: unreadable")
-                elif count < 1 or width % count:
+                size = _png_size(path)
+                if size is None:
+                    problems.append(f"{character.id}/{state.id} {sheet}: unreadable")
+                    continue
+                width, height = size
+                where = f"{character.id}/{state.id} {sheet}"
+                field = f"portrait_{label}_frames"
+                # 1. divisibility
+                if count < 1 or width % count:
                     problems.append(
-                        f"{sheet}: width {width} does not divide by "
-                        f"portrait_{label}_frames {count}")
+                        f"{where}: width {width} px does not divide by {field} "
+                        f"{count} ({width} / {count} = {width / max(1, count):.2f} px "
+                        f"per frame)")
+                    continue
+                frame_w = width // count
+                # 3. a bust is portrait-shaped
+                if frame_w > height:
+                    problems.append(
+                        f"{where}: {field} {count} gives a {frame_w}x{height} frame, "
+                        f"which is WIDER than tall — a portrait frame cannot be "
+                        f"landscape, so the count is too low")
+                widths.setdefault(frame_w, []).append(f"{where} ({field} {count})")
+        # 2. all of one character's strips slice to the same frame width
+        if len(widths) > 1:
+            detail = " vs ".join(
+                f"{frame_w} px [{', '.join(sorted(entries))}]"
+                for frame_w, entries in sorted(widths.items()))
+            problems.append(
+                f"{character.id}: strips disagree on frame width — {detail}. "
+                f"Idle and talk are the same face at the same scale, so at least "
+                f"one frame count is wrong")
     return tuple(problems)
 
 
-def _png_width(path: str) -> "int | None":
-    """A PNG's pixel width from its IHDR header — 24 bytes, no image library, so
-    core stays dependency-free and never decodes an image."""
+def _png_size(path: str) -> "tuple[int, int] | None":
+    """A PNG's (width, height) from its IHDR header — 24 bytes, no image library,
+    so core stays dependency-free and never decodes an image."""
     try:
         with open(path, "rb") as handle:
             header = handle.read(24)
         if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
             return None
-        return int.from_bytes(header[16:20], "big")
+        return (int.from_bytes(header[16:20], "big"),
+                int.from_bytes(header[20:24], "big"))
     except OSError:
         return None
 

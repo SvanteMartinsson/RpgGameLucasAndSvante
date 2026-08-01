@@ -64,10 +64,21 @@ CHARS_PER_SECOND = 46.0
 # frames and her talk strips 6, and nothing in the pixels says where a frame ends.
 PORTRAIT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "assets", "sprites", "generated", "characters")
-PORTRAIT_FRAMES = 4                             # the default when a state omits it
-PORTRAIT_PERIOD = battle_choreo.frames(900)     # idle: the hero-idle feel
-PORTRAIT_TALK_PERIOD = battle_choreo.frames(560)   # talk: quicker, mouth-paced
 PORTRAIT_HEIGHT = 300                           # inside STAGE's 360 with headroom
+
+# B140: TIMING IS PER FRAME, NOT PER CYCLE. This is the root cause of the bug this
+# slice is about, not just a symptom of it: the old constants were CYCLE lengths
+# divided by the frame count, so the same constant played a 4-frame strip at
+# 217 ms/frame and a 6-frame strip at 83 ms/frame. Any new strip length silently
+# re-timed the animation. Stated per frame, a 4-, 6- or 9-frame strip all play at
+# the same cadence and no future sheet needs a retune.
+#
+# frames() rounds to whole 60 fps ticks, so the achievable values are multiples of
+# 16.667 ms: 11 ticks = 183 ms (the ~180 ms Lucas approved in preview) and 13
+# ticks = 217 ms, which is exactly what idle played at before, so idle is
+# unchanged by construction.
+PORTRAIT_IDLE_FRAME_MS = 217        # 13 ticks — preserves the approved idle feel
+PORTRAIT_TALK_FRAME_MS = 183        # 11 ticks — the ~180 ms target for the mouth
 
 # Placeholder palette — deliberately flat and obviously unfinished.
 PLACEHOLDER_BODY = (44, 48, 64)
@@ -77,13 +88,17 @@ PLACEHOLDER_LABEL = (120, 128, 150)
 _portrait_cache: dict = {}
 
 
-def portrait_frames(sheet_name: str, count: int = PORTRAIT_FRAMES):
+def portrait_frames(sheet_name: str, count: int):
     """The scaled frames of a portrait strip, or None when the file is absent.
 
-    `count` is how many frames the strip holds, declared per sheet in the data. A
-    sheet whose width does not divide by it is REFUSED (None -> placeholder)
-    rather than sliced mid-face — characters.portrait_sheet_problems reports that
-    case so the mismatch is fixed rather than silently rendered.
+    `count` is REQUIRED and comes from the data (CharacterState.portrait_*_frames).
+    There is deliberately no default: a hardcoded fallback here is exactly how a
+    6-frame strip got cut into four 384px slices of one-and-a-half faces each.
+
+    A sheet whose width does not divide by its count is REFUSED (None ->
+    placeholder) rather than sliced. That is the belt; the braces is
+    characters.validate_characters, which now REFUSES TO START on the same
+    mismatch, so this path is unreachable for shipped content.
 
     None is a normal answer and the caller draws its placeholder — the same
     contract as B109's enemy_idle_frames.
@@ -332,16 +347,27 @@ class DialogueApp:
         sheet so a talk strip can hold a different number of frames than an idle
         one (Mirr: 6 vs 4)."""
         if self.state is None:
-            return ("", PORTRAIT_FRAMES)
+            return ("", 0)
         if self.is_typing:
             return (self.state.portrait_talk_sheet, self.state.portrait_talk_frames)
         return (self.state.portrait_idle_sheet, self.state.portrait_idle_frames)
 
     def portrait_frame_index(self) -> int:
+        """Which frame of the current strip to show.
+
+        A plain 0..N-1 loop that wraps — no pendulum is derived in code. Both of
+        Mirr's strip kinds already author their own shape: the idle strips repeat
+        frame 1 as frame 3 (byte-identical), so the loop READS as B109's A-B-C-B
+        pendulum, and the talk strips mirror fully (frames 0=5, 1=4, 2=3), so the
+        mouth eases at closed and at wide on its own. Deriving a bounce here would
+        fight the authoring instead of playing it.
+        """
         _sheet, count = self.current_portrait()
-        count = max(1, count)
-        period = PORTRAIT_TALK_PERIOD if self.is_typing else PORTRAIT_PERIOD
-        step = max(1, period // count)
+        if count < 1:
+            return 0
+        per_frame = (PORTRAIT_TALK_FRAME_MS if self.is_typing
+                     else PORTRAIT_IDLE_FRAME_MS)
+        step = battle_choreo.frames(per_frame)
         return (self._anim_tick // step) % count
 
     def _draw_stage(self) -> None:

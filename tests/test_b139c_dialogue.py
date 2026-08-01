@@ -410,8 +410,9 @@ class ScreenTests(DialogueTestBase):
 
     def test_a_missing_sheet_gives_no_frames_so_the_placeholder_draws(self):
         pd._reset_portrait_cache()
-        self.assertIsNone(pd.portrait_frames("no_such_sheet.png"))
-        self.assertIsNone(pd.portrait_frames(""))
+        # B140: the count is a required argument now — no hardcoded 4 to lean on.
+        self.assertIsNone(pd.portrait_frames("no_such_sheet.png", 4))
+        self.assertIsNone(pd.portrait_frames("", 4))
 
     def test_mirrs_real_sheets_load_at_their_declared_frame_counts(self):
         pd._reset_portrait_cache()
@@ -473,7 +474,7 @@ class ScreenTests(DialogueTestBase):
             pd.PORTRAIT_DIR = folder
             try:
                 pd._reset_portrait_cache()
-                self.assertIsNone(pd.portrait_frames(name))
+                self.assertIsNone(pd.portrait_frames(name, 4))
             finally:
                 pd.PORTRAIT_DIR = original
                 pd._reset_portrait_cache()
